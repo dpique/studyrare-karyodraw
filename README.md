@@ -99,8 +99,12 @@ python3 build_ideogram.py       # writes ../ideogram-data.js
 
 - Inversions **physically reverse** the inverted segment's banding (drawn as
   three pieces, the middle one flipped), with breakpoint carets; for a pericentric
-  inversion the centromere moves with the flipped segment. Deletions/duplications
-  highlight the affected segment on the full ideogram so the breakpoint stays visible.
+  inversion the centromere moves with the flipped segment.
+- Deletions draw the **shortened** chromosome (retained material only), with a red
+  mark at the break — so a `del` looks shorter than its normal homolog, exactly as
+  it would on a karyogram (terminal deletions keep the centromere side;
+  interstitial deletions remove the middle and re-join). Duplications currently
+  highlight the affected segment on the full ideogram.
 - Complex `der()` chains beyond a single embedded `t(...)` fall back to drawing
   the base chromosome plus the plain-English decode.
 - Band-name → position uses hg38 cytoband resolution (~850-band-ish); lower-res

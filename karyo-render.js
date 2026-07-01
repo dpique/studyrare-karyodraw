@@ -226,6 +226,11 @@
 
     // overlays (del / dup / inv / add)
     overlays.forEach(function (ov) {
+      if (ov.type === "cut") {                        // deletion break / repair join
+        var cutY = pointY(segments, ov.chrom, ov.at, pad);
+        if (cutY != null) breakMark(cutY, OP_COLORS.del);
+        return;
+      }
       var span = mapRange(segments, ov.chrom, ov.from, ov.to, pad);
       if (!span) return;
       var hh = (span.y1 - span.y0).toFixed(2);
@@ -285,6 +290,18 @@
     }
     return null;
   }
+  // y (in composite space) of a single bp position on a segment.
+  function pointY(segments, chrom, at, pad) {
+    var yOff = pad;
+    for (var i = 0; i < segments.length; i++) {
+      var g = segments[i];
+      if (g.chrom === chrom && at >= g.from && at <= g.to) {
+        return g.reversed ? yOff + (g.to - at) * PX : yOff + (at - g.from) * PX;
+      }
+      yOff += h(g.to - g.from);
+    }
+    return null;
+  }
 
   // ----- instance → segments + overlays -------------------------------------
   function fullSeg(chrom) { return { chrom: chrom, from: 0, to: IDEO.data[chrom].length, hasCen: true, reversed: false }; }
@@ -296,15 +313,23 @@
     var d0 = IDEO.data[chrom];
 
     if (kind === "del") {
-      var bps = (ab.breakpoints[0] || []), ovs = [];
-      if (bps.length >= 2) {
-        var b1 = resolveBand(chrom, bps[0]), b2 = resolveBand(chrom, bps[1]);
-        if (b1 && b2) ovs.push({ type: "del", chrom: chrom, from: Math.min(b1.mid, b2.mid), to: Math.max(b1.mid, b2.mid) });
-      } else if (bps.length === 1) {
-        var b = resolveBand(chrom, bps[0]);
-        if (b) ovs.push(b.arm === "p" ? { type: "del", chrom: chrom, from: 0, to: b.mid } : { type: "del", chrom: chrom, from: b.mid, to: d0.length });
+      // Draw the SHORTENED chromosome (retained material), the way a deletion
+      // actually looks on a karyogram — not the full length with a shaded arm.
+      var dbnds = (ab.breakpoints[0] || []).map(function (x) { return resolveBand(chrom, x); }).filter(Boolean);
+      if (dbnds.length >= 2) {                       // interstitial: remove the middle
+        var lo = Math.min(dbnds[0].mid, dbnds[1].mid), hi = Math.max(dbnds[0].mid, dbnds[1].mid);
+        var dsegs = [];
+        if (lo > 0) dsegs.push({ chrom: chrom, from: 0, to: lo, hasCen: d0.centromere < lo, reversed: false });
+        if (hi < d0.length) dsegs.push({ chrom: chrom, from: hi, to: d0.length, hasCen: d0.centromere > hi, reversed: false });
+        if (!dsegs.length) dsegs = [fullSeg(chrom)];
+        return { segments: dsegs, overlays: [{ type: "cut", chrom: chrom, at: lo }], caption: inst.label };
       }
-      return { segments: [fullSeg(chrom)], overlays: ovs, caption: inst.label };
+      if (dbnds.length === 1) {                      // terminal: keep the centromere side
+        var db = dbnds[0], dbp = db.mid;
+        if (db.arm === "p") return { segments: [{ chrom: chrom, from: dbp, to: d0.length, hasCen: d0.centromere > dbp, reversed: false }], overlays: [{ type: "cut", chrom: chrom, at: dbp }], caption: inst.label };
+        return { segments: [{ chrom: chrom, from: 0, to: dbp, hasCen: d0.centromere < dbp, reversed: false }], overlays: [{ type: "cut", chrom: chrom, at: dbp }], caption: inst.label };
+      }
+      return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label };
     }
     if (kind === "dup" || kind === "trp") {
       var db = (ab.breakpoints[0] || []).map(function (x) { return resolveBand(chrom, x); }).filter(Boolean), ov2 = [];
