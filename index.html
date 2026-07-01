@@ -251,11 +251,17 @@
   function swatch(color, label) {
     return '<span class="item"><span class="sw" style="background:' + color + '"></span>' + label + '</span>';
   }
+  function hatchSwatch(label, color) {
+    color = color || "#475569";
+    var bg = "repeating-linear-gradient(45deg," + color + " 0," + color + " 1.6px,#fff 1.6px,#fff 4.5px)";
+    return '<span class="item"><span class="sw" style="background-image:' + bg + '"></span>' + label + '</span>';
+  }
   function buildLegend() {
     var box = $("#legend");
     if (MODE === "simple") {
       // Plain baseline + only the affected chromosomes are coloured.
-      var html = swatch("#ffffff", "unaffected chromosome (grey banding)");
+      var html = swatch("#ffffff", "unaffected chromosome (grey banding)") +
+        hatchSwatch("centromere / heterochromatin (hatched)");
       var keys = Object.keys(AFFECTED);
       if (keys.length) {
         html += '<span class="item" style="color:#94a3b8">│ involved:</span>';
@@ -268,11 +274,12 @@
     } else {
       var S = window.Karyo.STAIN, OP = window.Karyo.OP_COLORS;
       var items = [
-        [S.gneg, "G-neg (pale, gene-rich)"], [S.gpos50, "G-pos (dark, gene-poor)"],
-        [S.gpos100, "darkest band"], ["#e11d48", "centromere"], [S.gvar, "variable / stalk"],
-        [OP.del, "deleted"], [OP.dup, "duplicated"], [OP.inv, "inverted"], [OP.add, "added (unknown)"]
+        [S.gneg, "G-neg (pale, gene-rich)"], [S.gpos50, "G-pos (dark, gene-poor)"], [S.gpos100, "darkest band"]
       ];
-      box.innerHTML = items.map(function (i) { return swatch(i[0], i[1]); }).join("");
+      var html2 = items.map(function (i) { return swatch(i[0], i[1]); }).join("");
+      html2 += hatchSwatch("centromere / variable / stalk (hatched)");
+      [[OP.del, "deleted"], [OP.dup, "duplicated"], [OP.inv, "inverted"], [OP.add, "added (unknown)"]].forEach(function (i) { html2 += swatch(i[0], i[1]); });
+      box.innerHTML = html2;
     }
   }
 

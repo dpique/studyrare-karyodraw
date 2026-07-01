@@ -66,6 +66,23 @@ gunzip -kf cytoBandIdeo.hg38.txt.gz
 python3 build_ideogram.py       # writes ../ideogram-data.js
 ```
 
+## Rendering conventions
+
+- **Two styles** (toggle): *Simple* draws every chromosome in a quiet neutral grey
+  and colours **only the chromosomes involved in a rearrangement** (keyed by
+  chromosome identity; translocation/derivative pieces are coloured by their
+  origin chromosome, so the event pops). *Detailed* is realistic Giemsa banding.
+- **Band resolution** (toggle): High ~850 / Std ~550 / Low ~400. Lower levels
+  merge sub-bands into their parent band (span-weighted stain) — fewer, wider,
+  easier-to-read bands. Breakpoints still resolve against full-resolution data.
+- **Heterochromatin is hatched**, following the ISCN ideogram convention: the
+  **centromere**, **variable regions** (e.g. 1qh/9qh/16qh, Yq), and **acrocentric
+  stalks** render as a diagonal-hatch *texture* rather than a solid band — so they
+  can't be mistaken for breakpoint markers.
+- **Breakpoints** (del/inv/etc.) render as solid lines with inward carets; a
+  **translocation fusion junction** is a dashed line. Three visually distinct
+  cues (hatched centromere ≠ caret breakpoint ≠ dashed junction).
+
 ## Known simplifications (v1)
 
 - Inversions are shown by **highlighting** the inverted segment rather than
