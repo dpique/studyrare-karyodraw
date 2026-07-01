@@ -85,7 +85,7 @@
     if (!opM) {
       // things like "mar", "mar1", "?", "inc"
       if (/^mar\d*$/i.test(tok)) { ab.kind = "mar"; return ab; }
-      warnings.push('Could not parse aberration "' + raw + '".');
+      warnings.push("Couldn’t read “" + raw + "”. Aberrations look like +21, del(5)(p15.2), or t(9;22)(q34;q11.2).");
       ab.note = "unrecognized token";
       return ab;
     }
@@ -133,7 +133,7 @@
         break;
       default:
         ab.kind = "unknown";
-        warnings.push('Unrecognized operation "' + op + '" in "' + raw + '".');
+        warnings.push("Don’t recognise “" + op + "” in “" + raw + "”. Known: del, dup, inv, t, i, r, der, add, ins, dic, fra, mar.");
     }
     return ab;
   }
@@ -160,12 +160,12 @@
     clone.aberrations.forEach(function (ab) {
       if (ab.kind === "gain") {
         var g = ab.chroms[0];
-        if (comp[g] === undefined) { warnings.push("Gain of unknown chromosome " + g); return; }
+        if (comp[g] === undefined) { warnings.push("“" + g + "” isn’t a human chromosome — use 1–22, X, or Y (e.g. +21)."); return; }
         comp[g] += 1;
         slots[g].push({ chrom: g, kind: "gain", label: g, aberration: ab, primary: g });
       } else if (ab.kind === "loss") {
         var l = ab.chroms[0];
-        if (comp[l] === undefined) { warnings.push("Loss of unknown chromosome " + l); return; }
+        if (comp[l] === undefined) { warnings.push("“" + l + "” isn’t a human chromosome — use 1–22, X, or Y (e.g. -7)."); return; }
         comp[l] -= 1;
         // remove one normal instance if present, else record as under-count
         var idx = slots[l].map(function (x) { return x.kind; }).indexOf("normal");
@@ -181,7 +181,7 @@
         // Multi-chromosome structural: convert one normal copy of each involved
         // chromosome into a derivative (count unchanged unless signed).
         ab.chroms.forEach(function (c, ci) {
-          if (comp[c] === undefined) { warnings.push("Rearrangement involves unknown chromosome " + c); return; }
+          if (comp[c] === undefined) { warnings.push("“" + c + "” isn’t a human chromosome — use 1–22, X, or Y."); return; }
           if (ab.sign === "+") { comp[c] += 1; slots[c].push(mkDer(c, ab)); return; }
           var idx = firstNormal(slots[c]);
           if (idx >= 0) { slots[c][idx] = mkDer(c, ab); replacedChroms.push(c); }
@@ -189,7 +189,7 @@
         });
       } else if (["del", "dup", "inv", "add", "ring", "iso", "der", "fra", "trp"].indexOf(ab.kind) >= 0) {
         var c0 = ab.chroms[0];
-        if (comp[c0] === undefined) { warnings.push("Rearrangement involves unknown chromosome " + c0); return; }
+        if (comp[c0] === undefined) { warnings.push("“" + c0 + "” isn’t a human chromosome — use 1–22, X, or Y."); return; }
         if (ab.sign === "+") { comp[c0] += 1; slots[c0].push(mkDer(c0, ab)); return; }
         if (ab.sign === "-") {
           comp[c0] -= 1;
@@ -244,20 +244,24 @@
       actual: actual,
       ok: clone.modalNumber == null || clone.modalNumber === actual
     };
-    if (clone.modalNumber != null && clone.modalNumber !== actual) {
-      warnings.push("Modal number " + clone.modalNumber + " does not match the " + actual +
-        " chromosomes implied by the aberrations (check the karyotype).");
+    if (clone.modalNumber != null && clone.modalNumber !== actual && clone.sex.tokens.length > 0) {
+      warnings.push("The count says " + clone.modalNumber + ", but the changes listed add up to " + actual +
+        " chromosomes. Check the number at the start, or the +/− and rearrangements — e.g. two extra 21s should be 48,…,+21,+21.");
     }
   }
 
   function parseSex(field, warnings) {
-    var tokens = [];
-    var note = "";
-    if (!field) { note = "no sex chromosomes stated"; return { tokens: tokens, label: "", note: note }; }
+    var tokens = [], bad = [];
+    if (!field) { return { tokens: tokens, label: "", note: "no sex chromosomes stated" }; }
     for (var i = 0; i < field.length; i++) {
       var ch = field[i].toUpperCase();
       if (ch === "X" || ch === "Y") tokens.push(ch);
-      else { warnings.push('Unexpected character "' + field[i] + '" in the sex-chromosome field.'); }
+      else bad.push(field[i]);
+    }
+    if (tokens.length === 0) {
+      warnings.push("The 2nd field should be the sex chromosomes (XX, XY, X, …) — “" + field + "” has no X or Y. Did you skip the sex chromosomes?");
+    } else if (bad.length) {
+      warnings.push("Ignored “" + bad.join("") + "” in the sex chromosomes “" + field + "” — only X and Y belong there.");
     }
     var label = tokens.join("");
     var SEX_NOTE = {
@@ -266,7 +270,7 @@
       "XYY": "one X + two Y", "XXX": "three X",
       "XXYY": "two X + two Y", "XXXX": "four X", "XXXY": "three X + one Y"
     };
-    note = SEX_NOTE[label] || (tokens.length + " sex chromosome" + (tokens.length === 1 ? "" : "s"));
+    var note = SEX_NOTE[label] || (tokens.length + " sex chromosome" + (tokens.length === 1 ? "" : "s"));
     return { tokens: tokens, label: label, note: note };
   }
 
@@ -293,7 +297,7 @@
     clone.modalGiven = fields[0];
     var mn = /^(\d+)/.exec(fields[0]);
     if (mn) clone.modalNumber = parseInt(mn[1], 10);
-    else warnings.push('First field "' + fields[0] + '" is not a chromosome count.');
+    else warnings.push("A karyotype starts with the chromosome count (a number like 46). “" + fields[0] + "” isn’t a number.");
 
     // sex field (second)
     if (fields.length > 1) clone.sex = parseSex(fields[1], warnings);
@@ -307,11 +311,37 @@
     return clone;
   }
 
+  // Spot common typos in the raw text and, where possible, build a corrected
+  // "did you mean" string.
+  function diagnose(raw, result, warnings) {
+    var suggestion = raw;
+    var opens = (raw.match(/\(/g) || []).length, closes = (raw.match(/\)/g) || []).length;
+    if (opens !== closes) {
+      warnings.push("Unbalanced parentheses — " + opens + " “(” but " + closes + " “)”. Make sure every “(” has a matching “)”.");
+    }
+    if (/^\d+[XY]{1,4}(,|\[|$)/i.test(raw)) {
+      warnings.push("Add a comma after the chromosome count — the count comes first, then the sex chromosomes, e.g. 46,XY.");
+      suggestion = suggestion.replace(/^(\d+)([XYxy]{1,4})/, function (m, a, b) { return a + "," + b.toUpperCase(); });
+    }
+    var depth = 0, inner = false, fixed = "";
+    for (var i = 0; i < suggestion.length; i++) {
+      var ch = suggestion[i];
+      if (ch === "(") depth++; else if (ch === ")") depth--;
+      if (ch === "," && depth > 0) { inner = true; fixed += ";"; } else fixed += ch;
+    }
+    if (inner) {
+      warnings.push("Inside parentheses, separate values with a semicolon “;”, not a comma — e.g. t(9;22)(q34;q11.2).");
+      suggestion = fixed;
+    }
+    if (suggestion !== raw) result.suggestion = suggestion;
+  }
+
   function parse(input) {
     var raw = (input || "").trim();
     var warnings = [];
-    var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [] };
-    if (!raw) { warnings.push("Enter a karyotype, e.g. 46,XY"); return result; }
+    var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [], suggestion: null };
+    if (!raw) { warnings.push("Type a karyotype to begin — e.g. 46,XY, 47,XX,+21, or 46,XY,t(9;22)(q34;q11.2)."); return result; }
+    diagnose(raw, result, warnings);
 
     var s = raw;
     // strip a leading mos/chi qualifier

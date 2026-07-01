@@ -66,18 +66,13 @@
   function bandsPhrase(chrom, bands) {
     return bands.map(function (b) { return chrom + b; }).join(" and ");
   }
-  // The centromere-bearing piece a derivative keeps, and the partner piece added.
-  function keptPhrase(chrom, band) {
-    if (!band) return "chromosome " + chrom;
+  // Short phrases describing a derivative's make-up (kept part + attached part).
+  function throughShort(chrom, band) { return band ? " (out to " + chrom + band + ")" : ""; }
+  function endShort(partner, band) {
+    if (!band) return "part of chromosome " + partner;
     return band[0] === "q"
-      ? "chromosome " + chrom + " from the p-arm tip down through " + chrom + band
-      : "chromosome " + chrom + " from " + chrom + band + " down through the q-arm tip";
-  }
-  function addedPhrase(chrom, band) {
-    if (!band) return "material from chromosome " + chrom;
-    return band[0] === "q"
-      ? "the long-arm segment of chromosome " + chrom + " beyond " + chrom + band + " (" + chrom + band + "→qter)"
-      : "the short-arm segment of chromosome " + chrom + " (pter→" + chrom + band + ")";
+      ? "the end of chromosome " + partner + "’s long arm (" + partner + band + "→qter)"
+      : "the end of chromosome " + partner + "’s short arm (pter→" + partner + band + ")";
   }
   function describeAberration(ab) {
     var k = ab.kind, c = ab.chroms[0], bp = ab.breakpoints;
@@ -108,16 +103,15 @@
     }
     if (k === "ring") return { text: "a RING chromosome r(" + c + "): the chromosome's arms break and the broken ends fuse into a circle (usually loses the distal tips)", tag: "ring" };
     if (k === "der") {
+      var base = "an abnormal (“derivative”) chromosome that has chromosome " + c + "’s centromere";
       var td = (ab.subOps || []).filter(function (s) { return s.op === "t"; })[0];
       if (td && td.chroms.length >= 2) {
         var di = td.chroms.indexOf(c); if (di < 0) di = 0;
         var partner = td.chroms[1 - di];
         var bpDer = (td.breakpoints[di] || [])[0], bpPar = (td.breakpoints[1 - di] || [])[0];
-        return { text: "a DERIVATIVE chromosome der(" + c + "): it keeps " + keptPhrase(c, bpDer) +
-          " (the piece carrying chromosome " + c + "’s centromere), with " + addedPhrase(partner, bpPar) +
-          " joined on in place of the rest — a balanced-looking product of the t(" + td.chroms.join(";") + ")", tag: "der" };
+        return { text: base + ". It’s chromosome " + c + throughShort(c, bpDer) + " with " + endShort(partner, bpPar) + " attached.", tag: "der" };
       }
-      return { text: "a DERIVATIVE chromosome der(" + c + "): a rearranged chromosome that keeps chromosome " + c + "’s centromere" + (ab.note ? " — described as " + ab.note : ""), tag: "der" };
+      return { text: base + (ab.note ? " (" + ab.note + ")" : "") + ".", tag: "der" };
     }
     if (k === "add") return { text: "ADDITIONAL material of unknown origin attached to chromosome " + c + " at " + c + ((bp[0] || [])[0] || "?"), tag: "add" };
     if (k === "mar") return { text: "a MARKER chromosome (mar): a small extra chromosome whose origin can't be identified by banding alone", tag: "mar" };

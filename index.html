@@ -135,8 +135,14 @@
   .legend .item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #475569; }
   .legend .sw { width: 16px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,.12); }
 
-  .warnbox { margin: 0 0 14px; padding: 11px 14px; border-radius: 10px; background: var(--amber-50); border: 1px solid #f7d392; color: var(--amber-800); font-size: 13.5px; }
+  .warnbox { margin: 0 0 14px; padding: 12px 15px; border-radius: 10px; background: var(--amber-50); border: 1px solid #f7d392; color: var(--amber-800); font-size: 13.5px; }
   .warnbox ul { margin: 6px 0 0; padding-left: 18px; }
+  .warnbox .dym-row { font-size: 14.5px; color: var(--ink-2); margin-bottom: 6px; }
+  .warnbox .warn-title { font-weight: 700; }
+  .dym { font: 600 13px var(--font-mono); background: var(--peri-50); border: 1px solid var(--peri-300); color: var(--peri-700); border-radius: 7px; padding: 2px 8px; cursor: pointer; }
+  .dym:hover { background: #dee3fb; }
+  .emptystate { padding: 42px 22px; text-align: center; color: var(--muted); font-size: 14.5px; line-height: 1.8; }
+  .emptystate code { font: 13px var(--font-mono); background: #f0f2f7; color: var(--ink-2); padding: 2px 6px; border-radius: 5px; }
   .muted { color: var(--muted); }
   footer { color: var(--muted); font-size: 12.5px; padding: 22px 0 40px; border-top: 1px solid var(--line); margin-top: 30px; }
 
@@ -451,6 +457,16 @@
     var model = window.ISCN.parse(val);
     AFFECTED = window.Karyo.computeAffected(model.clones);
     renderWarnings(model);
+    var invalid = !model.clones.length || model.clones.every(function (c) { return c.modalNumber == null; }) || !!model.suggestion;
+    if (invalid) {
+      $("#summary").innerHTML = '<span class="kt">' + escapeHtml(val) + '</span><span class="sex">couldn’t read this as a karyotype yet</span>';
+      $("#karyo").innerHTML = '<div class="emptystate">Fix the karyotype above and the drawing shows up here.<br>' +
+        'A karyotype looks like <code>46,XY</code> · <code>47,XX,+21</code> · <code>46,XY,t(9;22)(q34;q11.2)</code>.</div>';
+      $("#decode").innerHTML = '<div class="muted">—</div>';
+      $("#clinical-card").style.display = "none";
+      buildLegend();
+      return;
+    }
     renderSummary(model);
     renderKaryogram(model);
     renderDecode(model.clones);
@@ -476,9 +492,18 @@
 
   function renderWarnings(model) {
     var box = $("#warnings");
-    if (!model.warnings.length) { box.innerHTML = ""; return; }
-    box.innerHTML = '<div class="warnbox"><strong>Heads up:</strong><ul>' +
-      model.warnings.map(function (w) { return "<li>" + escapeHtml(w) + "</li>"; }).join("") + '</ul></div>';
+    var w = model.warnings, s = model.suggestion;
+    if (!w.length && !s) { box.innerHTML = ""; return; }
+    var parts = ['<div class="warnbox">'];
+    if (s && s !== model.raw) {
+      parts.push('<div class="dym-row">Did you mean <button class="dym" data-k="' + escapeHtml(s) + '">' + escapeHtml(s) + '</button>?</div>');
+    }
+    if (w.length) {
+      parts.push('<div class="warn-title">' + (s ? "A couple of things to check:" : "Let’s sort this out:") + '</div>');
+      parts.push('<ul>' + w.map(function (x) { return "<li>" + escapeHtml(x) + "</li>"; }).join("") + '</ul>');
+    }
+    parts.push('</div>');
+    box.innerHTML = parts.join("");
   }
 
   function escapeHtml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
@@ -510,6 +535,10 @@
   $("#levelseg").addEventListener("click", function (e) {
     var b = e.target.closest ? e.target.closest("button") : null; if (!b) return;
     LEVEL = parseInt(b.getAttribute("data-level"), 10); syncSeg(); run();
+  });
+  $("#warnings").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest(".dym") : null; if (!b) return;
+    input.value = b.getAttribute("data-k"); run();
   });
 
   var pStyle = getParam("style"); if (pStyle === "simple" || pStyle === "detailed") MODE = pStyle;

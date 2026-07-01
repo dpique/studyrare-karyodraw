@@ -42,9 +42,13 @@ also powers the screenshot tests.)
 - **Mosaicism / composite:** `mos 45,X[12]/46,XX[18]`, `[cp20]`, multiple clones
   with cell counts and percentages.
 
-The parser is deliberately forgiving: anything it can't fully interpret produces
-a *warning* (not a crash) and still draws what it can. It also cross-checks the
-stated modal number against the aberrations and flags mismatches.
+The parser is deliberately forgiving and tries to *coach*: for common typos it
+offers a clickable **"Did you mean …?"** fix (missing comma after the count,
+comma-instead-of-semicolon inside parentheses), points to the specific problem
+(unbalanced parentheses, a non-existent chromosome, a missing sex field) instead
+of dumping raw errors, and cross-checks the modal number against the aberrations.
+Structurally-broken input shows a friendly empty state; a valid-but-miscounted
+karyotype still draws, with the mismatch flagged.
 
 ## Files
 
