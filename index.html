@@ -46,6 +46,17 @@
   .chip:hover { background: #e0f2f1; border-color: #99f6e4; color: var(--accent-ink); }
   .chip b { color: var(--accent-ink); font-weight: 700; }
 
+  .viewopts { display: flex; align-items: center; gap: 8px 12px; margin-top: 12px; flex-wrap: wrap; }
+  .viewopts .vlabel { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .seg { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 9px; overflow: hidden; background: #fff; }
+  .seg button {
+    border: none; background: #fff; padding: 6px 12px; font-size: 13px; cursor: pointer; color: #475569;
+    border-left: 1px solid #e2e8f0; font-family: inherit;
+  }
+  .seg button:first-child { border-left: none; }
+  .seg button.on { background: var(--accent); color: #fff; font-weight: 600; }
+  .seg button:not(.on):hover { background: #f1f5f9; }
+
   main { padding: 18px 0 60px; }
   .grid { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 20px; align-items: start; }
   @media (max-width: 940px) { .grid { grid-template-columns: 1fr; } }
@@ -141,6 +152,19 @@
       <button class="btn" id="draw">Draw &amp; explain</button>
     </div>
     <div class="examples" id="examples"></div>
+    <div class="viewopts">
+      <span class="vlabel">Style</span>
+      <div class="seg" id="modeseg">
+        <button data-mode="simple">Simple</button>
+        <button data-mode="detailed">Detailed</button>
+      </div>
+      <span class="vlabel">Bands</span>
+      <div class="seg" id="levelseg">
+        <button data-level="0">Low · ~400</button>
+        <button data-level="1">Std · ~550</button>
+        <button data-level="99">High · ~850</button>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -198,6 +222,9 @@
   var $ = function (s) { return document.querySelector(s); };
   var input = $("#kinput"), tooltip = $("#tooltip");
   var currentDetailChrom = "1";
+  var MODE = "simple";     // "simple" | "detailed"
+  var LEVEL = 1;           // band resolution: 0 (~400), 1 (~550), 99 (~850)
+  var AFFECTED = {};       // chrom -> hex colour (Simple mode highlight key)
 
   var EXAMPLES = [
     ["46,XY", "typical male"], ["46,XX", "typical female"],
@@ -221,16 +248,32 @@
     });
   }
 
+  function swatch(color, label) {
+    return '<span class="item"><span class="sw" style="background:' + color + '"></span>' + label + '</span>';
+  }
   function buildLegend() {
-    var S = window.Karyo.STAIN, OP = window.Karyo.OP_COLORS;
-    var items = [
-      [S.gneg, "G-neg (pale, gene-rich)"], [S.gpos50, "G-pos (dark, gene-poor)"],
-      [S.gpos100, "darkest band"], ["#e11d48", "centromere"], [S.gvar, "variable / stalk"],
-      [OP.del, "deleted"], [OP.dup, "duplicated"], [OP.inv, "inverted"], [OP.add, "added (unknown)"]
-    ];
-    $("#legend").innerHTML = items.map(function (i) {
-      return '<span class="item"><span class="sw" style="background:' + i[0] + '"></span>' + i[1] + '</span>';
-    }).join("");
+    var box = $("#legend");
+    if (MODE === "simple") {
+      // Plain baseline + only the affected chromosomes are coloured.
+      var html = swatch("#ffffff", "unaffected chromosome (grey banding)");
+      var keys = Object.keys(AFFECTED);
+      if (keys.length) {
+        html += '<span class="item" style="color:#94a3b8">│ involved:</span>';
+        keys.forEach(function (c) { html += swatch(AFFECTED[c], "chr " + c); });
+        html += '<span class="item" style="color:#64748b">— translocation pieces are coloured by the chromosome they came from</span>';
+      } else {
+        html += '<span class="item" style="color:#64748b">no rearrangement in this karyotype — nothing to highlight</span>';
+      }
+      box.innerHTML = html;
+    } else {
+      var S = window.Karyo.STAIN, OP = window.Karyo.OP_COLORS;
+      var items = [
+        [S.gneg, "G-neg (pale, gene-rich)"], [S.gpos50, "G-pos (dark, gene-poor)"],
+        [S.gpos100, "darkest band"], ["#e11d48", "centromere"], [S.gvar, "variable / stalk"],
+        [OP.del, "deleted"], [OP.dup, "duplicated"], [OP.inv, "inverted"], [OP.add, "added (unknown)"]
+      ];
+      box.innerHTML = items.map(function (i) { return swatch(i[0], i[1]); }).join("");
+    }
   }
 
   function renderClinical(clones) {
@@ -290,7 +333,7 @@
         block.appendChild(head);
       }
       var kg = document.createElement("div");
-      window.Karyo.render(kg, clone);
+      window.Karyo.render(kg, clone, { theme: MODE, level: LEVEL, affected: AFFECTED });
       block.appendChild(kg);
       host.appendChild(block);
     });
@@ -299,7 +342,7 @@
   function renderDetail(chrom, hotBand) {
     currentDetailChrom = chrom;
     $("#detail-title").textContent = "Chromosome " + chrom + " — band map";
-    $("#detail-svg").innerHTML = window.Karyo.drawDetail(chrom, { height: 430 });
+    $("#detail-svg").innerHTML = window.Karyo.drawDetail(chrom, { height: 430, theme: MODE, level: LEVEL, hue: AFFECTED[chrom] });
     var info = $("#detail-info"), A = window.Teach.ARM_INFO;
     if (hotBand) {
       var bi = window.Teach.bandInfo(chrom, hotBand);
@@ -326,6 +369,8 @@
 
   // ---- hover / selection ----------------------------------------------------
   function wireInteractions() {
+    if (wireInteractions._done) return;   // #karyo / #detail-svg persist; wire once
+    wireInteractions._done = true;
     var karyo = $("#karyo");
     karyo.addEventListener("mousemove", function (ev) {
       var band = ev.target.closest ? ev.target.closest(".band") : null;
@@ -378,11 +423,13 @@
     if (!val) return;
     setHash(val);
     var model = window.ISCN.parse(val);
+    AFFECTED = window.Karyo.computeAffected(model.clones);
     renderWarnings(model);
     renderSummary(model);
     renderKaryogram(model);
     renderDecode(model.clones);
     renderClinical(model.clones);
+    buildLegend();
     wireInteractions();
     // default detail: first abnormal chromosome, else chromosome 1
     var focus = firstAbnormalChrom(model) || "1";
@@ -410,17 +457,39 @@
 
   function escapeHtml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
   function cssEsc(s) { return String(s).replace(/["\\]/g, "\\$&"); }
-  function setHash(v) { try { history.replaceState(null, "", "?k=" + encodeURIComponent(v)); } catch (e) {} }
-  function getParam() {
-    var m = /[?&]k=([^&]+)/.exec(location.search);
+  function setHash() {
+    try { history.replaceState(null, "", "?k=" + encodeURIComponent(input.value.trim()) + "&style=" + MODE + "&bands=" + LEVEL); } catch (e) {}
+  }
+  function getParam(name) {
+    var m = new RegExp("[?&]" + name + "=([^&]+)").exec(location.search);
     return m ? decodeURIComponent(m[1].replace(/\+/g, " ")) : null;
+  }
+  function syncSeg() {
+    Array.prototype.forEach.call(document.querySelectorAll("#modeseg button"), function (b) {
+      b.classList.toggle("on", b.getAttribute("data-mode") === MODE);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#levelseg button"), function (b) {
+      b.classList.toggle("on", String(b.getAttribute("data-level")) === String(LEVEL));
+    });
   }
 
   // init
-  buildExamples(); buildLegend();
+  buildExamples();
   $("#draw").addEventListener("click", run);
   input.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
-  var initial = getParam() || "46,XY,t(9;22)(q34;q11.2)";
+  $("#modeseg").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("button") : null; if (!b) return;
+    MODE = b.getAttribute("data-mode"); syncSeg(); run();
+  });
+  $("#levelseg").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("button") : null; if (!b) return;
+    LEVEL = parseInt(b.getAttribute("data-level"), 10); syncSeg(); run();
+  });
+
+  var pStyle = getParam("style"); if (pStyle === "simple" || pStyle === "detailed") MODE = pStyle;
+  var pBands = getParam("bands"); if (pBands !== null && ["0", "1", "99"].indexOf(pBands) >= 0) LEVEL = parseInt(pBands, 10);
+  syncSeg();
+  var initial = getParam("k") || "46,XY,t(9;22)(q34;q11.2)";
   input.value = initial;
   run();
 })();
