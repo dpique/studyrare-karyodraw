@@ -104,8 +104,8 @@
   .ksub.muted { color: #808ba8; }
   .kbadge { position: absolute; top: -2px; right: -4px; z-index: 2; font: 700 9px var(--font-mono); color: var(--navy); border-radius: 999px; padding: 1px 4px; }
   .kbadge.gain { background: var(--amber); }
-  svg.ideo .band { }
-  svg.ideo .band:hover { stroke: #0f172a; stroke-width: .8; }
+  svg.ideo .band { cursor: crosshair; }
+  .band-hi { filter: drop-shadow(0 0 1px rgba(236,155,39,.6)); }
 
   /* teaching sidebar */
   .decode-row { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); align-items: start; }
@@ -124,7 +124,7 @@
   .detail-info .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin-top: 8px; }
   .bandlabel { font: 9px var(--font-mono); fill: var(--ink-2); cursor: pointer; }
   .bandlabel:hover, .bandlabel.hot { fill: var(--periwinkle); font-weight: 700; }
-  .ideo-detail .band:hover { stroke: #0f172a; stroke-width: 1; }
+  .ideo-detail .band { cursor: crosshair; }
 
   .syn { padding: 9px 0; border-bottom: 1px dashed var(--line); }
   .syn:last-child { border-bottom: none; }
@@ -404,21 +404,31 @@
     if (wireInteractions._done) return;   // #karyo / #detail-svg persist; wire once
     wireInteractions._done = true;
     var karyo = $("#karyo");
+    var SVGNS = "http://www.w3.org/2000/svg";
+    var hiBand = null, HI = null;
+    function clearHi() { if (HI && HI.parentNode) HI.parentNode.removeChild(HI); HI = null; hiBand = null; }
+    function highlight(band) {   // crisp amber box around the exact band
+      clearHi();
+      var svg = band.ownerSVGElement; if (!svg) return;
+      var x = parseFloat(band.getAttribute("x")), y = parseFloat(band.getAttribute("y")),
+        w = parseFloat(band.getAttribute("width")), h = parseFloat(band.getAttribute("height"));
+      var r = document.createElementNS(SVGNS, "rect");
+      r.setAttribute("x", (x - 1.5).toFixed(2)); r.setAttribute("y", (y - 0.75).toFixed(2));
+      r.setAttribute("width", (w + 3).toFixed(2)); r.setAttribute("height", Math.max(2, h + 1.5).toFixed(2));
+      r.setAttribute("rx", "2.5"); r.setAttribute("fill", "none");
+      r.setAttribute("stroke", "#ec9b27"); r.setAttribute("stroke-width", "2.4");
+      r.setAttribute("pointer-events", "none"); r.setAttribute("class", "band-hi");
+      svg.appendChild(r); HI = r; hiBand = band;
+    }
     karyo.addEventListener("mousemove", function (ev) {
       var band = ev.target.closest ? ev.target.closest(".band") : null;
       if (band && band.getAttribute) {
         var c = band.getAttribute("data-chrom"), b = band.getAttribute("data-band"), s = band.getAttribute("data-stain");
         showTip(ev, "<b>" + c + b + "</b>  " + prettyStain(s));
-      } else hideTip();
+        if (band !== hiBand) { highlight(band); renderDetail(c, b); markSel(c); }
+      } else { hideTip(); if (hiBand) clearHi(); }
     });
-    karyo.addEventListener("mouseover", function (ev) {
-      var band = ev.target.closest ? ev.target.closest(".band") : null;
-      if (band) {
-        renderDetail(band.getAttribute("data-chrom"), band.getAttribute("data-band"));
-        markSel(band.getAttribute("data-chrom"));
-      }
-    });
-    karyo.addEventListener("mouseleave", hideTip);
+    karyo.addEventListener("mouseleave", function () { hideTip(); clearHi(); });
     karyo.addEventListener("click", function (ev) {
       var cell = ev.target.closest ? ev.target.closest(".kchrom") : null;
       if (cell && cell.getAttribute("data-chrom")) { renderDetail(cell.getAttribute("data-chrom")); markSel(cell.getAttribute("data-chrom")); }
@@ -427,9 +437,7 @@
     // labels in the detail plate are hoverable too
     $("#detail-svg").addEventListener("mouseover", function (ev) {
       var t = ev.target;
-      if (t && t.classList && t.classList.contains("bandlabel")) {
-        renderDetail(t.getAttribute("data-chrom"), t.getAttribute("data-band"));
-      } else if (t && t.classList && t.classList.contains("band")) {
+      if (t && t.classList && (t.classList.contains("bandlabel") || t.classList.contains("band"))) {
         renderDetail(t.getAttribute("data-chrom"), t.getAttribute("data-band"));
       }
     });

@@ -54,6 +54,12 @@
   var CEN_COLOR = "#3c4463";
   var OUTLINE = "#4a5375";
 
+  // Hatch textures follow the ideogram convention: the centromere is a tight
+  // forward hatch; variable heterochromatin / stalks are a sparser, opposite hatch
+  // so the two never read the same.
+  var CEN_HATCH = { angle: 45, gap: 3.2, w: 1.8 };
+  var HET_HATCH = { angle: -45, gap: 7, w: 1.4 };
+
   // ----- geometry ------------------------------------------------------------
   var MAXH = 232, W = 22, maxLen = 0;
   IDEO.chromosomes.forEach(function (c) { maxLen = Math.max(maxLen, IDEO.data[c].length); });
@@ -154,15 +160,16 @@
     var defs = ['<clipPath id="' + uid + '"><rect x="' + pad + '" y="' + pad + '" width="' + W +
       '" height="' + H + '" rx="' + cap + '" ry="' + cap + '"/></clipPath>'];
     var patCache = {};
-    function hatch(color, dense) {
-      var key = color + (dense ? "d" : "");
+    function hatch(color, o) {
+      o = o || {};
+      var angle = o.angle == null ? 45 : o.angle, gap = o.gap || 4.6, w = o.w || 1.5;
+      var key = color + "|" + angle + "|" + gap;
       if (patCache[key]) return patCache[key];
       var id = uid + "p" + Object.keys(patCache).length;
       patCache[key] = id;
-      var sp = dense ? 3.4 : 4.6;
-      defs.push('<pattern id="' + id + '" width="' + sp + '" height="' + sp + '" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">' +
-        '<rect width="' + sp + '" height="' + sp + '" fill="#ffffff"/>' +
-        '<line x1="0" y1="0" x2="0" y2="' + sp + '" stroke="' + color + '" stroke-width="1.5"/></pattern>');
+      defs.push('<pattern id="' + id + '" width="' + gap + '" height="' + gap + '" patternTransform="rotate(' + angle + ')" patternUnits="userSpaceOnUse">' +
+        '<rect width="' + gap + '" height="' + gap + '" fill="#ffffff"/>' +
+        '<line x1="0" y1="0" x2="0" y2="' + gap + '" stroke="' + color + '" stroke-width="' + w + '"/></pattern>');
       return id;
     }
     // Heterochromatin (centromere / variable / stalk) colour: distinct, on-theme.
@@ -190,7 +197,8 @@
         else { y0 = segTop + (g.to - be) * PX; y1 = segTop + (g.to - bs) * PX; }
         var st = b[3], fill;
         // heterochromatin renders as a hatched texture, not a solid band
-        if (st === "acen" || st === "gvar" || st === "stalk") fill = "url(#" + hatch(heteroColor(g.chrom, st)) + ")";
+        if (st === "acen") fill = "url(#" + hatch(heteroColor(g.chrom, st), CEN_HATCH) + ")";
+        else if (st === "gvar" || st === "stalk") fill = "url(#" + hatch(heteroColor(g.chrom, st), HET_HATCH) + ")";
         else fill = fillFor(ctx, g.chrom, st);
         body.push('<rect class="band" x="' + pad + '" y="' + y0.toFixed(2) + '" width="' + W +
           '" height="' + Math.max(0.6, y1 - y0).toFixed(2) + '" fill="' + fill + '"' +
@@ -211,7 +219,7 @@
     cenList.forEach(function (c) {
       var col = heteroColor(c.chrom, "acen");
       body.push('<rect x="' + pad + '" y="' + (c.y - CEN_H / 2).toFixed(2) + '" width="' + W + '" height="' + CEN_H +
-        '" fill="url(#' + hatch(col, true) + ')" clip-path="url(#' + uid + ')"/>');
+        '" fill="url(#' + hatch(col, CEN_HATCH) + ')" clip-path="url(#' + uid + ')"/>');
       body.push('<line x1="' + pad + '" y1="' + c.y.toFixed(2) + '" x2="' + (pad + W) + '" y2="' + c.y.toFixed(2) +
         '" stroke="' + col + '" stroke-width="1" stroke-dasharray="2.5 2"/>');
     });
@@ -453,13 +461,15 @@
     var svgW = 128, svgH = H + pad * 2 + 4, uid = "detail" + chrom;
     var defs = ['<clipPath id="' + uid + '"><rect x="' + pad + '" y="' + pad + '" width="' + w + '" height="' + H + '" rx="' + cap + '" ry="' + cap + '"/></clipPath>'];
     var patCache = {};
-    function hatch(color, dense) {
-      var key = color + (dense ? "d" : "");
+    var CEN_HD = { angle: 45, gap: 4, w: 2 }, HET_HD = { angle: -45, gap: 9, w: 1.7 };
+    function hatch(color, o) {
+      o = o || {};
+      var angle = o.angle == null ? 45 : o.angle, gap = o.gap || 5.2, w = o.w || 1.6;
+      var key = color + "|" + angle + "|" + gap;
       if (patCache[key]) return patCache[key];
       var id = uid + "p" + Object.keys(patCache).length;
       patCache[key] = id;
-      var sp = dense ? 4 : 5.2;
-      defs.push('<pattern id="' + id + '" width="' + sp + '" height="' + sp + '" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="' + sp + '" height="' + sp + '" fill="#ffffff"/><line x1="0" y1="0" x2="0" y2="' + sp + '" stroke="' + color + '" stroke-width="1.6"/></pattern>');
+      defs.push('<pattern id="' + id + '" width="' + gap + '" height="' + gap + '" patternTransform="rotate(' + angle + ')" patternUnits="userSpaceOnUse"><rect width="' + gap + '" height="' + gap + '" fill="#ffffff"/><line x1="0" y1="0" x2="0" y2="' + gap + '" stroke="' + color + '" stroke-width="' + w + '"/></pattern>');
       return id;
     }
     function heteroColor(stain) {
@@ -471,7 +481,9 @@
     var bands = getBands(chrom, opts.level == null ? 99 : opts.level);
     bands.forEach(function (b) {
       var y0 = pad + b[1] * scale, y1 = pad + b[2] * scale, st = b[3];
-      var fill = (st === "acen" || st === "gvar" || st === "stalk") ? "url(#" + hatch(heteroColor(st)) + ")" : (ramp[st] || ramp.gneg);
+      var fill = st === "acen" ? "url(#" + hatch(heteroColor(st), CEN_HD) + ")"
+        : (st === "gvar" || st === "stalk") ? "url(#" + hatch(heteroColor(st), HET_HD) + ")"
+          : (ramp[st] || ramp.gneg);
       body.push('<rect class="band" x="' + pad + '" y="' + y0.toFixed(2) + '" width="' + w + '" height="' + Math.max(0.8, y1 - y0).toFixed(2) +
         '" fill="' + fill + '" data-chrom="' + chrom + '" data-band="' + esc(b[0]) + '" data-stain="' + st + '" data-arm="' + b[0][0] + '"/>');
     });
@@ -485,7 +497,7 @@
       body.push('<text class="bandlabel" x="' + labelX + '" y="' + (ymid + 3).toFixed(2) + '" data-chrom="' + chrom + '" data-band="' + esc(b[0]) + '">' + esc(b[0]) + '</text>');
     });
     var cy = pad + d.centromere * scale, CEN_DH = 13, ccol = heteroColor("acen");
-    body.push('<rect x="' + pad + '" y="' + (cy - CEN_DH / 2).toFixed(2) + '" width="' + w + '" height="' + CEN_DH + '" fill="url(#' + hatch(ccol, true) + ')" clip-path="url(#' + uid + ')"/>');
+    body.push('<rect x="' + pad + '" y="' + (cy - CEN_DH / 2).toFixed(2) + '" width="' + w + '" height="' + CEN_DH + '" fill="url(#' + hatch(ccol, CEN_HD) + ')" clip-path="url(#' + uid + ')"/>');
     body.push('<line x1="' + pad + '" y1="' + cy.toFixed(2) + '" x2="' + (pad + w) + '" y2="' + cy.toFixed(2) + '" stroke="' + ccol + '" stroke-width="1.2" stroke-dasharray="3 2"/>');
     body.push('<rect x="' + pad + '" y="' + pad + '" width="' + w + '" height="' + H + '" rx="' + cap + '" ry="' + cap + '" fill="none" stroke="' + (simple && hue ? hexMix(hue, "#000", 0.12) : OUTLINE) + '" stroke-width="1.4"/>');
     return '<svg class="ideo-detail" width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '"><defs>' + defs.join("") + '</defs>' + body.join("") + '</svg>';

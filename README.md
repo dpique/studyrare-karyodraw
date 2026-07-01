@@ -87,7 +87,10 @@ python3 build_ideogram.py       # writes ../ideogram-data.js
 - **Heterochromatin is hatched**, following the ISCN ideogram convention: the
   **centromere**, **variable regions** (e.g. 1qh/9qh/16qh, Yq), and **acrocentric
   stalks** render as a diagonal-hatch *texture* rather than a solid band — so they
-  can't be mistaken for breakpoint markers.
+  can't be mistaken for breakpoint markers. The centromere uses a tight forward
+  hatch (///); variable regions and stalks use a sparser, opposite hatch (\\\) so
+  the two are never confused.
+- **Hover** any band for a crisp amber outline box + a tooltip and a live band decode.
 - **Breakpoints** (del/inv/etc.) render as solid lines with inward carets; a
   **translocation fusion junction** is a dashed line. Three visually distinct
   cues (hatched centromere ≠ caret breakpoint ≠ dashed junction).
