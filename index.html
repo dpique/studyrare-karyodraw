@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>KaryoScope — draw &amp; understand karyotypes</title>
+<style>
+  :root {
+    --bg: #f6f8fb; --panel: #ffffff; --ink: #0f172a; --muted: #64748b;
+    --line: #e2e8f0; --accent: #0d9488; --accent-ink: #0f766e;
+    --shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent-ink); }
+  header.top {
+    padding: 20px 24px 14px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #ffffff, #fbfdff);
+  }
+  .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .brand h1 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
+  .brand h1 span { color: var(--accent); }
+  .brand .tag { color: var(--muted); font-size: 13.5px; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+
+  .controls { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  .controls input[type=text] {
+    flex: 1 1 420px; min-width: 260px; padding: 11px 13px; font-size: 15px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; color: var(--ink);
+  }
+  .controls input[type=text]:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  .btn {
+    padding: 11px 18px; font-size: 15px; font-weight: 600; border: none; border-radius: 10px;
+    background: var(--accent); color: #fff; cursor: pointer;
+  }
+  .btn:hover { background: var(--accent-ink); }
+  .examples { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .chip {
+    font: 12.5px ui-monospace, Menlo, monospace; padding: 5px 10px; border-radius: 999px;
+    background: #eef2f7; color: #334155; border: 1px solid #e2e8f0; cursor: pointer; white-space: nowrap;
+  }
+  .chip:hover { background: #e0f2f1; border-color: #99f6e4; color: var(--accent-ink); }
+  .chip b { color: var(--accent-ink); font-weight: 700; }
+
+  main { padding: 18px 0 60px; }
+  .grid { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 20px; align-items: start; }
+  @media (max-width: 940px) { .grid { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+  .card + .card { margin-top: 16px; }
+  .card h2 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 13px 16px; border-bottom: 1px solid var(--line); }
+  .card .body { padding: 14px 16px; }
+
+  .summary { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; padding: 12px 16px; }
+  .summary .kt { font: 600 17px ui-monospace, Menlo, monospace; color: var(--ink); }
+  .summary .sex { font-size: 13px; color: var(--muted); }
+  .pill { font-size: 12px; padding: 3px 9px; border-radius: 999px; font-weight: 600; }
+  .pill.ok { background: #ecfdf5; color: #047857; }
+  .pill.warn { background: #fef2f2; color: #b91c1c; }
+
+  .clone-block + .clone-block { margin-top: 10px; border-top: 1px dashed var(--line); }
+  .clone-head { display:flex; align-items:baseline; gap:10px; padding: 10px 16px 0; }
+  .clone-head .cn { font: 600 14px ui-monospace, Menlo, monospace; }
+  .clone-head .cc { font-size: 12.5px; color: var(--muted); }
+
+  /* karyogram */
+  .karyogram { display: flex; flex-wrap: wrap; gap: 10px 4px; padding: 14px 12px 6px; }
+  .kgroup { display: flex; gap: 2px; padding: 6px 8px; border-radius: 10px; }
+  .kgroup[data-group="sex"] { background: #f0fdfa; }
+  .kcell { display: flex; flex-direction: column; align-items: center; }
+  .kcell-copies { display: flex; gap: 3px; align-items: flex-start; min-height: 10px; }
+  .klabel { font: 600 12px ui-monospace, Menlo, monospace; color: #475569; margin-top: 3px; }
+  .kchrom { position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 2px; border-radius: 6px; }
+  .kchrom:hover { background: #f1f5f9; }
+  .kchrom.abn { }
+  .kchrom.sel { background: #cbfbf1; outline: 1px solid #5eead4; }
+  .kchrom.ghost { opacity: .8; }
+  .ksub { font: 600 9.5px ui-monospace, Menlo, monospace; color: #b91c1c; margin-top: 1px; white-space: nowrap; }
+  .ksub.muted { color: #94a3b8; }
+  .kbadge { position: absolute; top: -2px; right: -4px; z-index: 2; font: 700 9px ui-monospace, monospace; color: #fff; border-radius: 999px; padding: 1px 4px; }
+  .kbadge.gain { background: #f59e0b; }
+  svg.ideo .band { }
+  svg.ideo .band:hover { stroke: #0f172a; stroke-width: .8; }
+
+  /* teaching sidebar */
+  .decode-row { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); align-items: start; }
+  .decode-row:last-child { border-bottom: none; }
+  .decode-code { font: 700 13px ui-monospace, Menlo, monospace; color: var(--ink); background: #f1f5f9; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+  .decode-code.count { color: #0369a1; } .decode-code.sex { color: #7c3aed; }
+  .decode-code.gain { color: #b45309; } .decode-code.loss,.decode-code.del { color: #b91c1c; }
+  .decode-code.t { color: #0d9488; } .decode-code.inv { color: #7c3aed; }
+  .decode-text { font-size: 13.5px; color: #334155; }
+  .decode-arrow { color: #94a3b8; }
+
+  .detail-wrap { display: flex; gap: 14px; }
+  .detail-svg { flex: 0 0 auto; }
+  .detail-info { font-size: 13px; color: #334155; }
+  .detail-info h3 { margin: 0 0 4px; font-size: 14px; }
+  .detail-info .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin-top: 8px; }
+  .bandlabel { font: 9px ui-monospace, Menlo, monospace; fill: #475569; cursor: pointer; }
+  .bandlabel:hover, .bandlabel.hot { fill: var(--accent-ink); font-weight: 700; }
+  .ideo-detail .band:hover { stroke: #0f172a; stroke-width: 1; }
+
+  .syn { padding: 9px 0; border-bottom: 1px dashed var(--line); }
+  .syn:last-child { border-bottom: none; }
+  .syn .name { font-weight: 700; font-size: 14px; color: #0f172a; }
+  .syn .note { font-size: 13px; color: #475569; margin-top: 3px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .legend .item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #475569; }
+  .legend .sw { width: 16px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,.12); }
+
+  .warnbox { margin: 0 0 14px; padding: 11px 14px; border-radius: 10px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 13.5px; }
+  .warnbox ul { margin: 6px 0 0; padding-left: 18px; }
+  .muted { color: var(--muted); }
+  footer { color: var(--muted); font-size: 12.5px; padding: 22px 0 40px; border-top: 1px solid var(--line); margin-top: 30px; }
+
+  #tooltip {
+    position: fixed; z-index: 50; pointer-events: none; display: none;
+    background: #0f172a; color: #fff; font: 12px ui-monospace, Menlo, monospace;
+    padding: 5px 8px; border-radius: 7px; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: 240px;
+  }
+  #tooltip b { color: #5eead4; }
+  details.anatomy summary { cursor: pointer; font-weight: 600; color: var(--accent-ink); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <h1>Karyo<span>Scope</span></h1>
+      <div class="tag">Type a karyotype — see it drawn, and understand what every symbol means.</div>
+    </div>
+    <div class="controls">
+      <input id="kinput" type="text" spellcheck="false"
+             placeholder="e.g.  46,XY   ·   47,XX,+21   ·   46,XY,t(9;22)(q34;q11.2)" />
+      <button class="btn" id="draw">Draw &amp; explain</button>
+    </div>
+    <div class="examples" id="examples"></div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div id="warnings"></div>
+    <div class="grid">
+      <section>
+        <div class="card">
+          <div id="summary" class="summary"></div>
+          <div id="karyo"></div>
+        </div>
+        <div class="card">
+          <h2>Band &amp; stain legend</h2>
+          <div class="body"><div class="legend" id="legend"></div></div>
+        </div>
+      </section>
+
+      <aside>
+        <div class="card">
+          <h2>Karyotype decoded</h2>
+          <div class="body" id="decode"></div>
+        </div>
+        <div class="card">
+          <h2 id="detail-title">Anatomy of a chromosome</h2>
+          <div class="body">
+            <div class="detail-wrap">
+              <div class="detail-svg" id="detail-svg"></div>
+              <div class="detail-info" id="detail-info"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card" id="clinical-card" style="display:none">
+          <h2>Clinical notes</h2>
+          <div class="body" id="clinical"></div>
+        </div>
+      </aside>
+    </div>
+    <footer class="wrap">
+      Band data: UCSC <em>cytoBandIdeo</em>, human genome build hg38 (24 chromosomes, 862 bands).
+      KaryoScope is an <strong>educational</strong> visualizer for cytogenetic nomenclature — not a diagnostic tool.
+    </footer>
+  </div>
+</main>
+
+<div id="tooltip"></div>
+
+<script src="ideogram-data.js"></script>
+<script src="iscn-parser.js"></script>
+<script src="karyo-render.js"></script>
+<script src="teach.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  var input = $("#kinput"), tooltip = $("#tooltip");
+  var currentDetailChrom = "1";
+
+  var EXAMPLES = [
+    ["46,XY", "typical male"], ["46,XX", "typical female"],
+    ["47,XX,+21", "Down"], ["45,X", "Turner"], ["47,XXY", "Klinefelter"],
+    ["46,XY,t(9;22)(q34;q11.2)", "Philadelphia / CML"],
+    ["46,XX,del(5)(p15.2)", "cri-du-chat"],
+    ["46,XY,inv(9)(p11q13)", "inv 9 variant"],
+    ["46,X,i(X)(q10)", "iso-Xq"],
+    ["46,XX,del(22)(q11.2)", "DiGeorge"],
+    ["mos 45,X[12]/46,XX[18]", "Turner mosaic"]
+  ];
+
+  function buildExamples() {
+    var box = $("#examples");
+    box.innerHTML = EXAMPLES.map(function (e) {
+      return '<span class="chip" data-k="' + e[0].replace(/"/g, "&quot;") + '"><b>' + e[0] + '</b> · ' + e[1] + '</span>';
+    }).join("");
+    box.addEventListener("click", function (ev) {
+      var c = ev.target.closest(".chip"); if (!c) return;
+      input.value = c.getAttribute("data-k"); run();
+    });
+  }
+
+  function buildLegend() {
+    var S = window.Karyo.STAIN, OP = window.Karyo.OP_COLORS;
+    var items = [
+      [S.gneg, "G-neg (pale, gene-rich)"], [S.gpos50, "G-pos (dark, gene-poor)"],
+      [S.gpos100, "darkest band"], ["#e11d48", "centromere"], [S.gvar, "variable / stalk"],
+      [OP.del, "deleted"], [OP.dup, "duplicated"], [OP.inv, "inverted"], [OP.add, "added (unknown)"]
+    ];
+    $("#legend").innerHTML = items.map(function (i) {
+      return '<span class="item"><span class="sw" style="background:' + i[0] + '"></span>' + i[1] + '</span>';
+    }).join("");
+  }
+
+  function renderClinical(clones) {
+    var all = [], seen = {};
+    clones.forEach(function (c) {
+      window.Teach.syndromes(c).forEach(function (s) { if (!seen[s.name]) { seen[s.name] = 1; all.push(s); } });
+    });
+    var card = $("#clinical-card");
+    if (!all.length) { card.style.display = "none"; return; }
+    card.style.display = "";
+    $("#clinical").innerHTML = all.map(function (s) {
+      return '<div class="syn"><div class="name">' + s.name + '</div><div class="note">' + s.note + '</div></div>';
+    }).join("");
+  }
+
+  function renderDecode(clones) {
+    var html = "";
+    clones.forEach(function (clone, i) {
+      if (clones.length > 1) {
+        var pct = "";
+        html += '<div class="clone-head" style="padding-left:0"><span class="cn">Clone ' + (i + 1) + '</span>' +
+          (clone.cellCount != null ? '<span class="cc">' + clone.cellCount + ' cells</span>' : "") + '</div>';
+      }
+      window.Teach.decode(clone).forEach(function (r) {
+        html += '<div class="decode-row"><span class="decode-code ' + r.tag + '">' + escapeHtml(r.code) +
+          '</span><span class="decode-text"><span class="decode-arrow">→</span> ' + r.text + '</span></div>';
+      });
+    });
+    $("#decode").innerHTML = html;
+  }
+
+  function renderSummary(model) {
+    var box = $("#summary");
+    var kt = model.raw;
+    var okPill = model.clones.every(function (c) { return c.counts.ok; })
+      ? '<span class="pill ok">counts check out</span>'
+      : '<span class="pill warn">count mismatch — see notes</span>';
+    var sexes = model.clones.map(function (c) { return c.sex.note; });
+    box.innerHTML = '<span class="kt">' + escapeHtml(kt) + '</span>' +
+      '<span class="sex">' + sexes.join(" · ") + (model.isMosaic ? " · mosaic (" + model.clones.length + " clones)" : "") + '</span>' +
+      okPill;
+  }
+
+  function renderKaryogram(model) {
+    var host = $("#karyo");
+    host.innerHTML = "";
+    model.clones.forEach(function (clone, i) {
+      var block = document.createElement("div");
+      block.className = "clone-block";
+      if (model.clones.length > 1) {
+        var head = document.createElement("div");
+        head.className = "clone-head";
+        var total = 0; model.clones.forEach(function (c) { total += (c.cellCount || 0); });
+        var pct = (clone.cellCount != null && total) ? " (" + Math.round(clone.cellCount / total * 100) + "%)" : "";
+        head.innerHTML = '<span class="cn">' + escapeHtml(clone.raw) + '</span>' +
+          (clone.cellCount != null ? '<span class="cc">' + clone.cellCount + ' cells' + pct + '</span>' : "");
+        block.appendChild(head);
+      }
+      var kg = document.createElement("div");
+      window.Karyo.render(kg, clone);
+      block.appendChild(kg);
+      host.appendChild(block);
+    });
+  }
+
+  function renderDetail(chrom, hotBand) {
+    currentDetailChrom = chrom;
+    $("#detail-title").textContent = "Chromosome " + chrom + " — band map";
+    $("#detail-svg").innerHTML = window.Karyo.drawDetail(chrom, { height: 430 });
+    var info = $("#detail-info"), A = window.Teach.ARM_INFO;
+    if (hotBand) {
+      var bi = window.Teach.bandInfo(chrom, hotBand);
+      var st = bi.stain ? window.Teach.stainInfo(bi.stain) : null;
+      info.innerHTML =
+        '<h3>' + chrom + hotBand + '</h3>' +
+        '<div>' + (bi.read || "") + '</div>' +
+        '<div class="k">Location</div><div>' + (bi.position || "") + '</div>' +
+        (st ? '<div class="k">Stain — ' + st.name + '</div><div>' + st.bio + '</div>' : "");
+      // highlight the label
+      var lbl = $("#detail-svg").querySelector('.bandlabel[data-band="' + cssEsc(hotBand) + '"]');
+      if (lbl) lbl.classList.add("hot");
+    } else {
+      info.innerHTML =
+        '<h3>How to read a chromosome</h3>' +
+        '<div class="k">p — short arm (top)</div><div>' + A.p + '</div>' +
+        '<div class="k">q — long arm (bottom)</div><div>' + A.q + '</div>' +
+        '<div class="k">Centromere</div><div>' + A.centromere + '</div>' +
+        '<div class="k">Telomere (pter / qter)</div><div>' + A.telomere + '</div>' +
+        '<div class="k">Bands</div><div>' + A.band + '</div>' +
+        '<div class="k" style="margin-top:10px">Tip</div><div class="muted">Hover any band in the karyogram (or a label here) to decode it.</div>';
+    }
+  }
+
+  // ---- hover / selection ----------------------------------------------------
+  function wireInteractions() {
+    var karyo = $("#karyo");
+    karyo.addEventListener("mousemove", function (ev) {
+      var band = ev.target.closest ? ev.target.closest(".band") : null;
+      if (band && band.getAttribute) {
+        var c = band.getAttribute("data-chrom"), b = band.getAttribute("data-band"), s = band.getAttribute("data-stain");
+        showTip(ev, "<b>" + c + b + "</b>  " + prettyStain(s));
+      } else hideTip();
+    });
+    karyo.addEventListener("mouseover", function (ev) {
+      var band = ev.target.closest ? ev.target.closest(".band") : null;
+      if (band) {
+        renderDetail(band.getAttribute("data-chrom"), band.getAttribute("data-band"));
+        markSel(band.getAttribute("data-chrom"));
+      }
+    });
+    karyo.addEventListener("mouseleave", hideTip);
+    karyo.addEventListener("click", function (ev) {
+      var cell = ev.target.closest ? ev.target.closest(".kchrom") : null;
+      if (cell && cell.getAttribute("data-chrom")) { renderDetail(cell.getAttribute("data-chrom")); markSel(cell.getAttribute("data-chrom")); }
+    });
+
+    // labels in the detail plate are hoverable too
+    $("#detail-svg").addEventListener("mouseover", function (ev) {
+      var t = ev.target;
+      if (t && t.classList && t.classList.contains("bandlabel")) {
+        renderDetail(t.getAttribute("data-chrom"), t.getAttribute("data-band"));
+      } else if (t && t.classList && t.classList.contains("band")) {
+        renderDetail(t.getAttribute("data-chrom"), t.getAttribute("data-band"));
+      }
+    });
+  }
+  function markSel(chrom) {
+    Array.prototype.forEach.call(document.querySelectorAll(".kchrom.sel"), function (n) { n.classList.remove("sel"); });
+    Array.prototype.forEach.call(document.querySelectorAll('.kchrom[data-chrom="' + cssEsc(chrom) + '"]'), function (n) { n.classList.add("sel"); });
+  }
+  function showTip(ev, html) {
+    tooltip.innerHTML = html; tooltip.style.display = "block";
+    var x = ev.clientX + 14, y = ev.clientY + 14;
+    if (x + 250 > window.innerWidth) x = ev.clientX - 250;
+    tooltip.style.left = x + "px"; tooltip.style.top = y + "px";
+  }
+  function hideTip() { tooltip.style.display = "none"; }
+  function prettyStain(s) {
+    var info = window.Teach.stainInfo(s); return info ? info.name : s;
+  }
+
+  // ---- run ------------------------------------------------------------------
+  function run() {
+    var val = input.value.trim();
+    if (!val) return;
+    setHash(val);
+    var model = window.ISCN.parse(val);
+    renderWarnings(model);
+    renderSummary(model);
+    renderKaryogram(model);
+    renderDecode(model.clones);
+    renderClinical(model.clones);
+    wireInteractions();
+    // default detail: first abnormal chromosome, else chromosome 1
+    var focus = firstAbnormalChrom(model) || "1";
+    renderDetail(focus);
+  }
+
+  function firstAbnormalChrom(model) {
+    for (var ci = 0; ci < model.clones.length; ci++) {
+      var slots = model.clones[ci].slots;
+      var keys = window.ISCN.ALL;
+      for (var i = 0; i < keys.length; i++) {
+        var arr = slots[keys[i]] || [];
+        for (var j = 0; j < arr.length; j++) if (arr[j].kind !== "normal") return keys[i];
+      }
+    }
+    return null;
+  }
+
+  function renderWarnings(model) {
+    var box = $("#warnings");
+    if (!model.warnings.length) { box.innerHTML = ""; return; }
+    box.innerHTML = '<div class="warnbox"><strong>Heads up:</strong><ul>' +
+      model.warnings.map(function (w) { return "<li>" + escapeHtml(w) + "</li>"; }).join("") + '</ul></div>';
+  }
+
+  function escapeHtml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function cssEsc(s) { return String(s).replace(/["\\]/g, "\\$&"); }
+  function setHash(v) { try { history.replaceState(null, "", "?k=" + encodeURIComponent(v)); } catch (e) {} }
+  function getParam() {
+    var m = /[?&]k=([^&]+)/.exec(location.search);
+    return m ? decodeURIComponent(m[1].replace(/\+/g, " ")) : null;
+  }
+
+  // init
+  buildExamples(); buildLegend();
+  $("#draw").addEventListener("click", run);
+  input.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
+  var initial = getParam() || "46,XY,t(9;22)(q34;q11.2)";
+  input.value = initial;
+  run();
+})();
+</script>
+</body>
+</html>
