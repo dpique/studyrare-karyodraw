@@ -25,17 +25,19 @@
 
   var IDEO = window.IDEOGRAM;
 
-  // ----- palettes ------------------------------------------------------------
-  // Detailed Giemsa ramp (realistic).
+  // ----- palettes (StudyRare brand tokens) -----------------------------------
+  // Detailed Giemsa ramp — navy family (the brand neutral).
   var STAIN = {
-    gneg: "#f1f5f9", gpos25: "#cbd5e1", gpos50: "#94a3b8", gpos75: "#64748b",
-    gpos100: "#334155", gvar: "#c7d2fe", stalk: "#c7d2fe", acen: "#fb7185"
+    gneg: "#f0f2f7", gpos25: "#cdd2e1", gpos50: "#808ba8", gpos75: "#5f698a",
+    gpos100: "#2e3550", gvar: "#c2caf6", stalk: "#c2caf6", acen: "#3c4463"
   };
-  var OP_COLORS = { del: "#ef4444", dup: "#f59e0b", inv: "#8b5cf6", add: "#78716c", break: "#e11d48" };
+  // Figure-level encodings (not UI chrome): error / amber / periwinkle / navy.
+  var OP_COLORS = { del: "#e0554f", dup: "#ec9b27", inv: "#5e72e4", add: "#808ba8", break: "#242a45" };
 
-  // Simple-mode: distinct hues assigned to *affected* chromosomes only.
-  var AFFECTED_PALETTE = ["#0d9488", "#7c3aed", "#dc2626", "#2563eb", "#d97706",
-    "#16a34a", "#c026d3", "#0891b2", "#ea580c", "#4f46e5"];
+  // Affected-chromosome hues. Leads with the brand pair — periwinkle "field"
+  // then amber "signal" — so a 2-way rearrangement echoes StudyRare's motif.
+  var AFFECTED_PALETTE = ["#5e72e4", "#ec9b27", "#6b8f55", "#e0554f", "#7c8ae9",
+    "#d17f18", "#4a6b3a", "#4a5375", "#c53d38", "#37428a"];
 
   // colour math
   function parseHex(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(function (c) { return c + c; }).join(""); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
@@ -48,9 +50,9 @@
       stalk: hexMix(hue, "#ffffff", 0.62), acen: hexMix(hue, "#ffffff", 0.32)
     };
   }
-  var BASELINE = tintRamp("#5b6675"); // neutral slate-grey for unaffected chromosomes
-  var CEN_COLOR = "#e11d48";
-  var OUTLINE = "#475569";
+  var BASELINE = tintRamp("#5f698a"); // navy-grey for unaffected chromosomes
+  var CEN_COLOR = "#3c4463";
+  var OUTLINE = "#4a5375";
 
   // ----- geometry ------------------------------------------------------------
   var MAXH = 232, W = 22, maxLen = 0;
@@ -167,10 +169,10 @@
     function heteroColor(chrom, stain) {
       if (simple) {
         var hue = ctx.affected && ctx.affected[chrom];
-        if (hue) return stain === "acen" ? hexMix(hue, "#0f172a", 0.22) : hexMix(hue, "#ffffff", 0.28);
-        return stain === "acen" ? "#334155" : "#9aa7b4";
+        if (hue) return stain === "acen" ? hexMix(hue, "#1a1f36", 0.22) : hexMix(hue, "#ffffff", 0.28);
+        return stain === "acen" ? "#3c4463" : "#808ba8";
       }
-      return stain === "acen" ? "#475569" : "#8ea0c9";
+      return stain === "acen" ? "#3c4463" : "#7c8ae9";
     }
 
     var body = [];
@@ -229,7 +231,7 @@
           '" fill="' + OP_COLORS.dup + '" fill-opacity="0.3" clip-path="url(#' + uid + ')"/>');
       } else if (ov.type === "inv" && !simple) {
         body.push('<rect x="' + pad + '" y="' + span.y0.toFixed(2) + '" width="' + W + '" height="' + hh +
-          '" fill="' + OP_COLORS.inv + '" fill-opacity="0.24" clip-path="url(#' + uid + ')"/>');
+          '" fill="' + OP_COLORS.inv + '" fill-opacity="0.12" clip-path="url(#' + uid + ')"/>');
       } else if (ov.type === "add") {
         body.push('<rect x="' + pad + '" y="' + span.y0.toFixed(2) + '" width="' + W + '" height="' + hh +
           '" fill="url(#' + hatch(OP_COLORS.add) + ')" clip-path="url(#' + uid + ')"/>');
@@ -303,9 +305,19 @@
       return { segments: [fullSeg(chrom)], overlays: ov2, caption: inst.label };
     }
     if (kind === "inv") {
-      var ib = (ab.breakpoints[0] || []).map(function (x) { return resolveBand(chrom, x); }).filter(Boolean), ov3 = [];
-      if (ib.length >= 2) ov3.push({ type: "inv", chrom: chrom, from: Math.min(ib[0].mid, ib[1].mid), to: Math.max(ib[0].mid, ib[1].mid) });
-      return { segments: [fullSeg(chrom)], overlays: ov3, caption: inst.label };
+      var ib = (ab.breakpoints[0] || []).map(function (x) { return resolveBand(chrom, x); }).filter(Boolean);
+      if (ib.length >= 2) {
+        // Physically flip the inverted segment: draw it as three pieces, the
+        // middle one reversed, so the banding actually reads end-for-end.
+        var ip1 = Math.min(ib[0].mid, ib[1].mid), ip2 = Math.max(ib[0].mid, ib[1].mid), ilen = d0.length, icen = d0.centromere;
+        var iseg = function (from, to, rev) { return { chrom: chrom, from: from, to: to, hasCen: (icen > from && icen < to), reversed: rev }; };
+        var isegs = [];
+        if (ip1 > 0) isegs.push(iseg(0, ip1, false));
+        isegs.push(iseg(ip1, ip2, true));
+        if (ip2 < ilen) isegs.push(iseg(ip2, ilen, false));
+        return { segments: isegs, overlays: [{ type: "inv", chrom: chrom, from: ip1, to: ip2 }], caption: inst.label };
+      }
+      return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label };
     }
     if (kind === "add") {
       var abnd = resolveBand(chrom, (ab.breakpoints[0] || [])[0]), ov4 = [];
@@ -451,8 +463,8 @@
       return id;
     }
     function heteroColor(stain) {
-      if (simple) return hue ? (stain === "acen" ? hexMix(hue, "#0f172a", 0.22) : hexMix(hue, "#ffffff", 0.28)) : (stain === "acen" ? "#334155" : "#9aa7b4");
-      return stain === "acen" ? "#475569" : "#8ea0c9";
+      if (simple) return hue ? (stain === "acen" ? hexMix(hue, "#1a1f36", 0.22) : hexMix(hue, "#ffffff", 0.28)) : (stain === "acen" ? "#3c4463" : "#808ba8");
+      return stain === "acen" ? "#3c4463" : "#7c8ae9";
     }
     var body = ['<rect x="' + pad + '" y="' + pad + '" width="' + w + '" height="' + H + '" fill="#fff" clip-path="url(#' + uid + ')"/>'];
     body.push('<g clip-path="url(#' + uid + ')">');

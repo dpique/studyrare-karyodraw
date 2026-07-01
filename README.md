@@ -68,6 +68,11 @@ python3 build_ideogram.py       # writes ../ideogram-data.js
 
 ## Rendering conventions
 
+- **StudyRare brand** — colours, type (Schibsted Grotesk / Nunito Sans / IBM Plex
+  Mono) and the dot-motif follow `../brand/tokens.json` (v3). Amber is the single
+  CTA accent; periwinkle is structural (never a button); navy is ink; sage =
+  success. Affected chromosomes lead periwinkle → amber, echoing the "signal in
+  the noise" motif.
 - **Two styles** (toggle): *Simple* draws every chromosome in a quiet neutral grey
   and colours **only the chromosomes involved in a rearrangement** (keyed by
   chromosome identity; translocation/derivative pieces are coloured by their
@@ -85,10 +90,10 @@ python3 build_ideogram.py       # writes ../ideogram-data.js
 
 ## Known simplifications (v1)
 
-- Inversions are shown by **highlighting** the inverted segment rather than
-  physically reversing its band order (the decode explains pericentric vs
-  paracentric). Deletions/duplications likewise highlight the affected segment on
-  the full ideogram so the breakpoint stays visible.
+- Inversions **physically reverse** the inverted segment's banding (drawn as
+  three pieces, the middle one flipped), with breakpoint carets; for a pericentric
+  inversion the centromere moves with the flipped segment. Deletions/duplications
+  highlight the affected segment on the full ideogram so the breakpoint stays visible.
 - Complex `der()` chains beyond a single embedded `t(...)` fall back to drawing
   the base chromosome plus the plain-English decode.
 - Band-name → position uses hg38 cytoband resolution (~850-band-ish); lower-res

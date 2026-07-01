@@ -5,57 +5,67 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>KaryoScope — draw &amp; understand karyotypes</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   :root {
-    --bg: #f6f8fb; --panel: #ffffff; --ink: #0f172a; --muted: #64748b;
-    --line: #e2e8f0; --accent: #0d9488; --accent-ink: #0f766e;
-    --shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06);
+    /* StudyRare v3 brand tokens */
+    --bg: #f0f2f7; --panel: #ffffff; --ink: #242a45; --ink-2: #3c4463; --muted: #5f698a;
+    --line: #e4e7f0;
+    --navy: #242a45; --periwinkle: #5e72e4; --peri-50: #eef1fd; --peri-300: #9da8ef; --peri-700: #3e4bb0;
+    --amber: #ec9b27; --amber-50: #fef5e6; --amber-600: #d17f18; --amber-800: #894f18;
+    --sage: #6b8f55; --sage-50: #f3f6f0; --sage-700: #4a6b3a; --error: #e0554f; --error-50: #fceceb; --error-700: #a2302c;
+    --accent: #ec9b27; --accent-ink: #242a45;
+    --font-display: "Schibsted Grotesk", system-ui, -apple-system, sans-serif;
+    --font-sans: "Nunito Sans", system-ui, -apple-system, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --shadow: 0 1px 2px rgba(26,31,54,.06), 0 8px 24px rgba(26,31,54,.09);
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body {
-    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font: 15px/1.55 var(--font-sans);
     color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased;
   }
-  a { color: var(--accent-ink); }
+  a { color: var(--peri-700); }
   header.top {
     padding: 20px 24px 14px; border-bottom: 1px solid var(--line);
-    background: linear-gradient(180deg, #ffffff, #fbfdff);
+    background: linear-gradient(180deg, #ffffff, #f7f8fb);
   }
-  .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-  .brand h1 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
-  .brand h1 span { color: var(--accent); }
+  .brand { display: flex; align-items: center; gap: 11px; flex-wrap: wrap; }
+  .brand .dotmark { flex: 0 0 auto; }
+  .brand h1 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 23px; letter-spacing: -.02em; color: var(--navy); }
   .brand .tag { color: var(--muted); font-size: 13.5px; }
+  .brand .byline { color: var(--periwinkle); font-weight: 700; }
   .wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
 
   .controls { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
   .controls input[type=text] {
-    flex: 1 1 420px; min-width: 260px; padding: 11px 13px; font-size: 15px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; color: var(--ink);
+    flex: 1 1 420px; min-width: 260px; padding: 11px 13px; font-size: 15px; font-family: var(--font-mono);
+    border: 1px solid #cdd2e1; border-radius: 10px; background: #fff; color: var(--ink);
   }
-  .controls input[type=text]:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  .controls input[type=text]:focus { outline: 2px solid var(--periwinkle); border-color: var(--periwinkle); }
   .btn {
-    padding: 11px 18px; font-size: 15px; font-weight: 600; border: none; border-radius: 10px;
-    background: var(--accent); color: #fff; cursor: pointer;
+    padding: 11px 18px; font-size: 15px; font-weight: 700; font-family: var(--font-display); border: none; border-radius: 10px;
+    background: var(--amber); color: var(--navy); cursor: pointer;
   }
-  .btn:hover { background: var(--accent-ink); }
+  .btn:hover { background: var(--amber-600); }
   .examples { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
   .chip {
-    font: 12.5px ui-monospace, Menlo, monospace; padding: 5px 10px; border-radius: 999px;
-    background: #eef2f7; color: #334155; border: 1px solid #e2e8f0; cursor: pointer; white-space: nowrap;
+    font: 12.5px var(--font-mono); padding: 5px 10px; border-radius: 999px;
+    background: #f0f2f7; color: var(--ink-2); border: 1px solid var(--line); cursor: pointer; white-space: nowrap;
   }
-  .chip:hover { background: #e0f2f1; border-color: #99f6e4; color: var(--accent-ink); }
-  .chip b { color: var(--accent-ink); font-weight: 700; }
+  .chip:hover { background: var(--peri-50); border-color: var(--peri-300); color: var(--peri-700); }
+  .chip b { color: var(--peri-700); font-weight: 700; }
 
   .viewopts { display: flex; align-items: center; gap: 8px 12px; margin-top: 12px; flex-wrap: wrap; }
   .viewopts .vlabel { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-  .seg { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 9px; overflow: hidden; background: #fff; }
+  .seg { display: inline-flex; border: 1px solid #cdd2e1; border-radius: 9px; overflow: hidden; background: #fff; }
   .seg button {
-    border: none; background: #fff; padding: 6px 12px; font-size: 13px; cursor: pointer; color: #475569;
-    border-left: 1px solid #e2e8f0; font-family: inherit;
+    border: none; background: #fff; padding: 6px 12px; font-size: 13px; cursor: pointer; color: var(--ink-2);
+    border-left: 1px solid var(--line); font-family: inherit;
   }
   .seg button:first-child { border-left: none; }
-  .seg button.on { background: var(--accent); color: #fff; font-weight: 600; }
-  .seg button:not(.on):hover { background: #f1f5f9; }
+  .seg button.on { background: var(--navy); color: #fff; font-weight: 600; }
+  .seg button:not(.on):hover { background: #f0f2f7; }
 
   main { padding: 18px 0 60px; }
   .grid { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 20px; align-items: start; }
@@ -63,88 +73,97 @@
 
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
   .card + .card { margin-top: 16px; }
-  .card h2 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 13px 16px; border-bottom: 1px solid var(--line); }
+  .card h2 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 13px 16px; border-bottom: 1px solid var(--line); }
   .card .body { padding: 14px 16px; }
 
   .summary { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; padding: 12px 16px; }
-  .summary .kt { font: 600 17px ui-monospace, Menlo, monospace; color: var(--ink); }
+  .summary .kt { font: 600 17px var(--font-mono); color: var(--ink); }
   .summary .sex { font-size: 13px; color: var(--muted); }
-  .pill { font-size: 12px; padding: 3px 9px; border-radius: 999px; font-weight: 600; }
-  .pill.ok { background: #ecfdf5; color: #047857; }
-  .pill.warn { background: #fef2f2; color: #b91c1c; }
+  .pill { font-size: 12px; padding: 3px 9px; border-radius: 999px; font-weight: 700; }
+  .pill.ok { background: var(--sage-50); color: var(--sage-700); }
+  .pill.warn { background: var(--error-50); color: var(--error-700); }
 
   .clone-block + .clone-block { margin-top: 10px; border-top: 1px dashed var(--line); }
   .clone-head { display:flex; align-items:baseline; gap:10px; padding: 10px 16px 0; }
-  .clone-head .cn { font: 600 14px ui-monospace, Menlo, monospace; }
+  .clone-head .cn { font: 600 14px var(--font-mono); }
   .clone-head .cc { font-size: 12.5px; color: var(--muted); }
 
   /* karyogram */
   .karyogram { display: flex; flex-wrap: wrap; gap: 10px 4px; padding: 14px 12px 6px; }
   .kgroup { display: flex; gap: 2px; padding: 6px 8px; border-radius: 10px; }
-  .kgroup[data-group="sex"] { background: #f0fdfa; }
+  .kgroup[data-group="sex"] { background: #eef1fd; }
   .kcell { display: flex; flex-direction: column; align-items: center; }
   .kcell-copies { display: flex; gap: 3px; align-items: flex-start; min-height: 10px; }
-  .klabel { font: 600 12px ui-monospace, Menlo, monospace; color: #475569; margin-top: 3px; }
+  .klabel { font: 600 12px var(--font-mono); color: var(--ink-2); margin-top: 3px; }
   .kchrom { position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 2px; border-radius: 6px; }
-  .kchrom:hover { background: #f1f5f9; }
+  .kchrom:hover { background: #f0f2f7; }
   .kchrom.abn { }
-  .kchrom.sel { background: #cbfbf1; outline: 1px solid #5eead4; }
+  .kchrom.sel { background: #eef1fd; outline: 1px solid #9da8ef; }
   .kchrom.ghost { opacity: .8; }
-  .ksub { font: 600 9.5px ui-monospace, Menlo, monospace; color: #b91c1c; margin-top: 1px; white-space: nowrap; }
-  .ksub.muted { color: #94a3b8; }
-  .kbadge { position: absolute; top: -2px; right: -4px; z-index: 2; font: 700 9px ui-monospace, monospace; color: #fff; border-radius: 999px; padding: 1px 4px; }
-  .kbadge.gain { background: #f59e0b; }
+  .ksub { font: 600 9.5px var(--font-mono); color: #a2302c; margin-top: 1px; white-space: nowrap; }
+  .ksub.muted { color: #808ba8; }
+  .kbadge { position: absolute; top: -2px; right: -4px; z-index: 2; font: 700 9px var(--font-mono); color: var(--navy); border-radius: 999px; padding: 1px 4px; }
+  .kbadge.gain { background: var(--amber); }
   svg.ideo .band { }
   svg.ideo .band:hover { stroke: #0f172a; stroke-width: .8; }
 
   /* teaching sidebar */
   .decode-row { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); align-items: start; }
   .decode-row:last-child { border-bottom: none; }
-  .decode-code { font: 700 13px ui-monospace, Menlo, monospace; color: var(--ink); background: #f1f5f9; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
-  .decode-code.count { color: #0369a1; } .decode-code.sex { color: #7c3aed; }
-  .decode-code.gain { color: #b45309; } .decode-code.loss,.decode-code.del { color: #b91c1c; }
-  .decode-code.t { color: #0d9488; } .decode-code.inv { color: #7c3aed; }
+  .decode-code { font: 700 13px var(--font-mono); color: var(--ink); background: #f0f2f7; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+  .decode-code.count { color: #3e4bb0; } .decode-code.sex { color: #37428a; }
+  .decode-code.gain { color: #894f18; } .decode-code.loss,.decode-code.del { color: #a2302c; }
+  .decode-code.t { color: #4a6b3a; } .decode-code.inv { color: #3e4bb0; }
   .decode-text { font-size: 13.5px; color: #334155; }
   .decode-arrow { color: #94a3b8; }
 
   .detail-wrap { display: flex; gap: 14px; }
   .detail-svg { flex: 0 0 auto; }
   .detail-info { font-size: 13px; color: #334155; }
-  .detail-info h3 { margin: 0 0 4px; font-size: 14px; }
+  .detail-info h3 { margin: 0 0 4px; font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--navy); }
   .detail-info .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin-top: 8px; }
-  .bandlabel { font: 9px ui-monospace, Menlo, monospace; fill: #475569; cursor: pointer; }
-  .bandlabel:hover, .bandlabel.hot { fill: var(--accent-ink); font-weight: 700; }
+  .bandlabel { font: 9px var(--font-mono); fill: var(--ink-2); cursor: pointer; }
+  .bandlabel:hover, .bandlabel.hot { fill: var(--periwinkle); font-weight: 700; }
   .ideo-detail .band:hover { stroke: #0f172a; stroke-width: 1; }
 
   .syn { padding: 9px 0; border-bottom: 1px dashed var(--line); }
   .syn:last-child { border-bottom: none; }
-  .syn .name { font-weight: 700; font-size: 14px; color: #0f172a; }
+  .syn .name { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--navy); }
   .syn .note { font-size: 13px; color: #475569; margin-top: 3px; }
 
   .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; }
   .legend .item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #475569; }
   .legend .sw { width: 16px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,.12); }
 
-  .warnbox { margin: 0 0 14px; padding: 11px 14px; border-radius: 10px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 13.5px; }
+  .warnbox { margin: 0 0 14px; padding: 11px 14px; border-radius: 10px; background: var(--amber-50); border: 1px solid #f7d392; color: var(--amber-800); font-size: 13.5px; }
   .warnbox ul { margin: 6px 0 0; padding-left: 18px; }
   .muted { color: var(--muted); }
   footer { color: var(--muted); font-size: 12.5px; padding: 22px 0 40px; border-top: 1px solid var(--line); margin-top: 30px; }
 
   #tooltip {
     position: fixed; z-index: 50; pointer-events: none; display: none;
-    background: #0f172a; color: #fff; font: 12px ui-monospace, Menlo, monospace;
-    padding: 5px 8px; border-radius: 7px; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: 240px;
+    background: var(--navy); color: #fff; font: 12px var(--font-mono);
+    padding: 5px 8px; border-radius: 7px; box-shadow: 0 6px 20px rgba(26,31,54,.3); max-width: 240px;
   }
-  #tooltip b { color: #5eead4; }
-  details.anatomy summary { cursor: pointer; font-weight: 600; color: var(--accent-ink); }
+  #tooltip b { color: #9da8ef; }
+  details.anatomy summary { cursor: pointer; font-weight: 600; color: var(--periwinkle); }
 </style>
 </head>
 <body>
 <header class="top">
   <div class="wrap">
     <div class="brand">
-      <h1>Karyo<span>Scope</span></h1>
-      <div class="tag">Type a karyotype — see it drawn, and understand what every symbol means.</div>
+      <svg class="dotmark" width="34" height="30" viewBox="0 0 34 30" aria-hidden="true">
+        <circle cx="7" cy="21" r="3" fill="#5e72e4"/>
+        <circle cx="15" cy="25" r="2.3" fill="#5e72e4"/>
+        <circle cx="13" cy="15" r="4" fill="#5e72e4"/>
+        <circle cx="23" cy="20" r="2.6" fill="#5e72e4"/>
+        <circle cx="24" cy="11" r="3.2" fill="#5e72e4"/>
+        <circle cx="8" cy="10" r="2.1" fill="#9da8ef"/>
+        <circle cx="29" cy="5" r="3.4" fill="#ec9b27"/>
+      </svg>
+      <h1>KaryoScope</h1>
+      <div class="tag">Type a karyotype — see it drawn, and understand what every symbol means. <span class="byline">a StudyRare tool</span></div>
     </div>
     <div class="controls">
       <input id="kinput" type="text" spellcheck="false"
@@ -227,7 +246,7 @@
   var AFFECTED = {};       // chrom -> hex colour (Simple mode highlight key)
 
   var EXAMPLES = [
-    ["46,XY", "typical male"], ["46,XX", "typical female"],
+    ["46,XY", "male"], ["46,XX", "female"],
     ["47,XX,+21", "Down"], ["45,X", "Turner"], ["47,XXY", "Klinefelter"],
     ["46,XY,t(9;22)(q34;q11.2)", "Philadelphia / CML"],
     ["46,XX,del(5)(p15.2)", "cri-du-chat"],

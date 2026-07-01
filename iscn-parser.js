@@ -261,8 +261,8 @@
     }
     var label = tokens.join("");
     var SEX_NOTE = {
-      "XX": "typically female", "XY": "typically male",
-      "X": "single X (monosomy X)", "XXY": "two X + one Y",
+      "XX": "two X — usual female karyotype", "XY": "one X, one Y — usual male karyotype",
+      "X": "a single X — monosomy X", "XXY": "two X + one Y",
       "XYY": "one X + two Y", "XXX": "three X",
       "XXYY": "two X + two Y", "XXXX": "four X", "XXXY": "three X + one Y"
     };
