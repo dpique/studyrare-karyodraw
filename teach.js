@@ -242,8 +242,51 @@
     return parts.filter(Boolean).join(". ");
   }
 
+  // ---- plain-language summary (for the printable patient sheet) ------------
+  var SEX_PLAIN = {
+    "XX": "two X chromosomes (a typical female pattern)",
+    "XY": "one X and one Y chromosome (a typical male pattern)",
+    "X": "a single X chromosome",
+    "XXY": "two X and one Y chromosome",
+    "XYY": "one X and two Y chromosomes",
+    "XXX": "three X chromosomes",
+    "XXYY": "two X and two Y chromosomes"
+  };
+  function plainAb(ab) {
+    var c = ab.chroms[0], b0 = (ab.breakpoints || [])[0] || [];
+    switch (ab.kind) {
+      case "gain": return "There is an extra copy of chromosome " + c + " (three copies instead of the usual two). This is called trisomy " + c + ".";
+      case "loss": return "There is a missing copy of chromosome " + c + " (one copy instead of the usual two).";
+      case "del": return "A piece of chromosome " + c + " is missing" + (b0.length ? " (the part around " + c + b0.join(" to ") + ")" : "") + ".";
+      case "dup": return "A small region of chromosome " + c + " is present twice (a duplication), so there is a little extra genetic material there.";
+      case "inv": return "A piece of chromosome " + c + " is flipped around in the opposite direction (an inversion). Usually no genetic material is gained or lost.";
+      case "t": case "dic": return "Chromosomes " + ab.chroms.join(" and ") + " have exchanged pieces with each other (a translocation). Often no genetic material is gained or lost overall, but the swap can still matter.";
+      case "iso": return "Chromosome " + c + " formed as a mirror image of one of its arms (an isochromosome), so there is extra of one part and less of another.";
+      case "ring": return "The ends of chromosome " + c + " joined together into a ring shape (a ring chromosome).";
+      case "der": return "Chromosome " + c + " is rearranged (doctors call it a 'derivative' chromosome).";
+      case "add": return "Extra chromosome material of uncertain origin is attached to chromosome " + c + ".";
+      case "mar": return "There is a small extra chromosome whose origin has not been identified (a 'marker' chromosome).";
+      case "trp": return "A region of chromosome " + c + " is present three times (a triplication).";
+      default: return "There is a change involving chromosome " + (c || "material") + ".";
+    }
+  }
+  function plainSummary(clone) {
+    var out = [];
+    out.push("Chromosomes are the packages of DNA inside your cells. A typical result has 46 chromosomes, arranged in 23 pairs, including the two that determine sex.");
+    var s = SEX_PLAIN[clone.sex.label] || (clone.sex.label ? clone.sex.label + " sex chromosomes" : "");
+    out.push("This result shows " + (clone.modalNumber != null ? clone.modalNumber : "an unusual number of") + " chromosomes" + (s ? ", with " + s : "") + ".");
+    if (!clone.aberrations.length) {
+      out.push("No changes were seen in the chromosomes with this test.");
+    } else {
+      out.push(clone.aberrations.length === 1 ? "One change was found:" : "The following changes were found:");
+      clone.aberrations.forEach(function (ab) { out.push(plainAb(ab)); });
+    }
+    return out;
+  }
+
   window.Teach = {
     decode: decode,
+    plainSummary: plainSummary,
     bandInfo: bandInfo,
     stainInfo: stainInfo,
     describeAberration: describeAberration,

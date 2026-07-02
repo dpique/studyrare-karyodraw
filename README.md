@@ -7,8 +7,10 @@ A modern, **teaching-first** karyogram tool. Type an ISCN karyotype
    with derivative chromosomes reshaped for structural rearrangements, and
 2. **explains** it — a plain-English, token-by-token decode of the karyotype, a
    hover-to-learn band map, an "anatomy of a chromosome" reference, curated
-   clinical notes for board-relevant findings, and a 🔊 **"hear it pronounced"**
-   button (free, offline, via the browser's Web Speech API).
+   clinical notes for board-relevant findings, a 🔊 **"hear it pronounced"**
+   button (free, offline, via the browser's Web Speech API), and a **printable
+   1-page summary** (plain-language explanation + clinical details, affected-only
+   picture) for a genetic counselor.
 
 Built as a spiritual successor to the old CyDAS *WebExample4* static-image
 generator — but with a clean palette and an actual teaching layer. See
@@ -75,7 +77,7 @@ python3 build_ideogram.py       # writes ../ideogram-data.js
 
 ## Rendering conventions
 
-- **StudyRare brand** — colours, type (Schibsted Grotesk / Nunito Sans / IBM Plex
+- **StudyRare brand** — colors, type (Schibsted Grotesk / Nunito Sans / IBM Plex
   Mono) and the dot-motif follow `../brand/tokens.json` (v3). Amber is the single
   CTA accent; periwinkle is structural (never a button); navy is ink; sage =
   success. Affected chromosomes lead periwinkle → amber, echoing the "signal in
@@ -84,10 +86,10 @@ python3 build_ideogram.py       # writes ../ideogram-data.js
   16–18 / 19–20 / 21–22), one per line (not width-wrapped); sex chromosomes get
   their own row at the end. Within a pair, the **normal homolog is on the left,
   the abnormal/derivative on the right**.
-- **Two styles** (toggle): *Highlight* draws every chromosome in quiet neutral grey
-  and colours **only the chromosomes involved in the abnormality** (keyed by
+- **Two styles** (toggle): *Highlight* draws every chromosome in quiet neutral gray
+  and colors **only the chromosomes involved in the abnormality** (keyed by
   chromosome identity; translocation/derivative pieces take their origin
-  chromosome's colour, so the event pops). *Realistic* is true-to-life Giemsa
+  chromosome's color, so the event pops). *Realistic* is true-to-life Giemsa
   banding on every chromosome, with nothing highlighted (spot the change yourself).
 - **Show** (toggle): *All* draws the full karyogram; *Affected* isolates just the
   chromosomes involved in the abnormality (each with its normal homolog) into one

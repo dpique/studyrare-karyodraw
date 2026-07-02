@@ -133,7 +133,7 @@
         break;
       default:
         ab.kind = "unknown";
-        warnings.push("Don’t recognise “" + op + "” in “" + raw + "”. Known: del, dup, inv, t, i, r, der, add, ins, dic, fra, mar.");
+        warnings.push("Don’t recognize “" + op + "” in “" + raw + "”. Known: del, dup, inv, t, i, r, der, add, ins, dic, fra, mar.");
     }
     return ab;
   }

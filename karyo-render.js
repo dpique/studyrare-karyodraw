@@ -7,15 +7,15 @@
  * Two independent, user-facing knobs live here:
  *   theme:  "detailed"  full Giemsa banding (realistic, dense)
  *           "simple"    light neutral baseline; ONLY chromosomes involved in an
- *                       aberration get colour, keyed by chromosome identity, and
- *                       translocation/derivative pieces are coloured by ORIGIN so
- *                       the rearrangement pops. Everything else stays quiet grey.
+ *                       aberration get color, keyed by chromosome identity, and
+ *                       translocation/derivative pieces are colored by ORIGIN so
+ *                       the rearrangement pops. Everything else stays quiet gray.
  *   level:  band resolution. 99 = full (~850). 1 = ~550. 0 = ~400. Lower merges
  *           sub-bands into their parent band → fewer, wider, easier-to-read bands.
  *
  * Public API:
  *   render(container, clone, {theme, level, affected})
- *   computeAffected(clones)   -> { chrom: hexColour } stable across clones
+ *   computeAffected(clones)   -> { chrom: hexColor } stable across clones
  *   drawDetail(chrom, {theme, level, hue})
  *   resolveBand(chrom, band)  -> {start,end,mid,arm}   (always full resolution)
  *   STAIN, AFFECTED_PALETTE
@@ -39,7 +39,7 @@
   var AFFECTED_PALETTE = ["#5e72e4", "#ec9b27", "#6b8f55", "#e0554f", "#7c8ae9",
     "#d17f18", "#4a6b3a", "#4a5375", "#c53d38", "#37428a"];
 
-  // colour math
+  // color math
   function parseHex(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(function (c) { return c + c; }).join(""); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
   function toHex(rgb) { return "#" + rgb.map(function (v) { v = Math.max(0, Math.min(255, Math.round(v))); return ("0" + v.toString(16)).slice(-2); }).join(""); }
   function hexMix(a, b, t) { var A = parseHex(a), B = parseHex(b); return toHex([A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t]); }
@@ -50,7 +50,7 @@
       stalk: hexMix(hue, "#ffffff", 0.62), acen: hexMix(hue, "#ffffff", 0.32)
     };
   }
-  var BASELINE = tintRamp("#5f698a"); // navy-grey for unaffected chromosomes
+  var BASELINE = tintRamp("#5f698a"); // navy-gray for unaffected chromosomes
   var CEN_COLOR = "#3c4463";
   var OUTLINE = "#4a5375";
 
@@ -129,7 +129,7 @@
     return { centric: [0, bp], acentric: [bp, d.length], bp: bp, side: "q" };
   }
 
-  // ----- theme-aware colour resolvers ---------------------------------------
+  // ----- theme-aware color resolvers ---------------------------------------
   function fillFor(ctx, chrom, stain) {
     if (!ctx || ctx.theme === "detailed") return STAIN[stain] || STAIN.gneg;
     var hue = ctx.affected && ctx.affected[chrom];
@@ -156,7 +156,7 @@
     var svgW = W + pad * 2, svgH = H + pad * 2;
     var uid = "c" + (renderComposite._n = (renderComposite._n || 0) + 1);
 
-    // dynamic diagonal-hatch patterns (heterochromatin texture), de-duped by colour
+    // dynamic diagonal-hatch patterns (heterochromatin texture), de-duped by color
     var defs = ['<clipPath id="' + uid + '"><rect x="' + pad + '" y="' + pad + '" width="' + W +
       '" height="' + H + '" rx="' + cap + '" ry="' + cap + '"/></clipPath>'];
     var patCache = {};
@@ -172,7 +172,7 @@
         '<line x1="0" y1="0" x2="0" y2="' + gap + '" stroke="' + color + '" stroke-width="' + w + '"/></pattern>');
       return id;
     }
-    // Heterochromatin (centromere / variable / stalk) colour: distinct, on-theme.
+    // Heterochromatin (centromere / variable / stalk) color: distinct, on-theme.
     function heteroColor(chrom, stain) {
       if (simple) {
         var hue = ctx.affected && ctx.affected[chrom];
