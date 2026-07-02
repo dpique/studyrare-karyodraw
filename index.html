@@ -70,8 +70,8 @@
   .seg button:not(.on):hover { background: #f0f2f7; }
 
   main { padding: 18px 0 60px; }
-  .grid { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 20px; align-items: start; }
-  @media (max-width: 940px) { .grid { grid-template-columns: 1fr; } }
+  .grid { display: grid; grid-template-columns: minmax(0, 640px) 360px; gap: 20px; align-items: start; justify-content: center; }
+  @media (max-width: 1040px) { .grid { grid-template-columns: 1fr; justify-content: stretch; } }
 
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
   .card + .card { margin-top: 16px; }
