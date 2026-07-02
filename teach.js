@@ -1,4 +1,4 @@
-/* KaryoScope, teaching layer.
+/* KaryoDraw, teaching layer.
  *
  * All the "explain it to a newbie" content:
  *   Teach.decode(clone)          -> token-by-token plain-English breakdown
@@ -119,7 +119,7 @@
     if (k === "add") return { text: "ADDITIONAL material of unknown origin attached to chromosome " + c + " at " + c + ((bp[0] || [])[0] || "?"), tag: "add" };
     if (k === "mar") return { text: "a MARKER chromosome (mar): a small extra chromosome whose origin can't be identified by banding alone", tag: "mar" };
     if (k === "trp") return { text: "a TRIPLICATION in chromosome " + c + ": the segment " + bandsPhrase(c, bp[0] || []) + " is present three times", tag: "dup" };
-    return { text: "an aberration (" + (ab.raw || k) + ") that KaryoScope drew as best it could", tag: "unknown" };
+    return { text: "an aberration (" + (ab.raw || k) + ") that KaryoDraw drew as best it could", tag: "unknown" };
   }
 
   // ---- token-by-token decode of a clone ------------------------------------

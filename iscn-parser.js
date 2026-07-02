@@ -1,4 +1,4 @@
-/* KaryoScope, ISCN karyotype parser.
+/* KaryoDraw, ISCN karyotype parser.
  *
  * window.ISCN.parse(str) turns an ISCN karyotype designation into a structured,
  * render-ready model. It is deliberately forgiving: unrecognized tokens produce

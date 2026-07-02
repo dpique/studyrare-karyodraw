@@ -1,7 +1,7 @@
-# KaryoScope
+# KaryoDraw
 
 A modern, **teaching-first** karyogram tool. Type an ISCN karyotype
-(`46,XY`, `47,XX,+21`, `46,XY,t(9;22)(q34;q11.2)`, …) and KaryoScope:
+(`46,XY`, `47,XX,+21`, `46,XY,t(9;22)(q34;q11.2)`, …) and KaryoDraw:
 
 1. **draws** the banded chromosome ideograms — arranged as a real karyogram,
    with derivative chromosomes reshaped for structural rearrangements, and
@@ -124,5 +124,5 @@ python3 build_ideogram.py       # writes ../ideogram-data.js
 - Band-name → position uses hg38 cytoband resolution (~850-band-ish); lower-res
   breakpoints (e.g. `q34`) resolve to the span of their sub-bands.
 
-KaryoScope is an **educational** visualizer for cytogenetic nomenclature — not a
+KaryoDraw is an **educational** visualizer for cytogenetic nomenclature — not a
 diagnostic tool.

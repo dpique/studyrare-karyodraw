@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Launch KaryoScope.
+# Launch KaryoDraw.
 #
 # The app must be *served* over HTTP — browsers refuse to load the <script src>
 # data/module files over a file:// URL. This starts a tiny local web server
@@ -22,5 +22,5 @@ if ! lsof -ti "tcp:${PORT}" >/dev/null 2>&1; then
 fi
 
 open "${URL}"
-echo "KaryoScope → ${URL}"
+echo "KaryoDraw → ${URL}"
 echo "(server on port ${PORT}; stop it with:  lsof -ti tcp:${PORT} | xargs kill)"

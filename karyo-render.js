@@ -1,4 +1,4 @@
-/* KaryoScope — SVG karyogram renderer.
+/* KaryoDraw — SVG karyogram renderer.
  *
  * Turns a parsed ISCN clone (from window.ISCN) + the IDEOGRAM band data into
  * crisp SVG chromosome ideograms, including reshaped derivative chromosomes for

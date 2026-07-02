@@ -1,6 +1,6 @@
 # Lineage & conventions — CyDAS
 
-KaryoScope is a modern re-imagining of the karyogram drawing in **CyDAS**
+KaryoDraw is a modern re-imagining of the karyogram drawing in **CyDAS**
 (the Cytogenetic Data Analysis System, `cydas.org`; ISCNAnalyser), which is
 copyrighted but free under the GPL. CyDAS is now effectively defunct/offline;
 this file records the conventions we borrowed from its documentation so the
@@ -14,7 +14,7 @@ DrawSequence, Colored, BackGroundColor, AlteredChromosomesOnly)` draws all the
 normal and altered chromosomes of a karyotype. The parameters line up with our
 controls almost one-to-one:
 
-| CyDAS parameter | KaryoScope equivalent |
+| CyDAS parameter | KaryoDraw equivalent |
 |---|---|
 | `Resolution` (`eResolutionLevel`) | **Bands** toggle — Low ~400 / Std ~550 / High ~850 |
 | `Colored` (bool) | **Style** toggle — *Highlight* vs *Realistic* |
