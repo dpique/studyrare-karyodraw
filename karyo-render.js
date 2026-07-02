@@ -45,9 +45,9 @@
   function hexMix(a, b, t) { var A = parseHex(a), B = parseHex(b); return toHex([A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t]); }
   function tintRamp(hue) {
     return {
-      gneg: "#ffffff", gpos25: hexMix(hue, "#ffffff", 0.76), gpos50: hexMix(hue, "#ffffff", 0.52),
-      gpos75: hexMix(hue, "#ffffff", 0.26), gpos100: hue, gvar: hexMix(hue, "#ffffff", 0.55),
-      stalk: hexMix(hue, "#ffffff", 0.62), acen: hexMix(hue, "#ffffff", 0.32)
+      gneg: hexMix(hue, "#ffffff", 0.85), gpos25: hexMix(hue, "#ffffff", 0.58), gpos50: hexMix(hue, "#ffffff", 0.34),
+      gpos75: hexMix(hue, "#ffffff", 0.15), gpos100: hue, gvar: hexMix(hue, "#ffffff", 0.4),
+      stalk: hexMix(hue, "#ffffff", 0.5), acen: hexMix(hue, "#ffffff", 0.2)
     };
   }
   var BASELINE = tintRamp("#5f698a"); // navy-gray for unaffected chromosomes
@@ -401,13 +401,12 @@
   }
 
   // ----- karyogram (one clone) ----------------------------------------------
-  // 3-row karyogram (wide, not a tall column), Denver groups kept intact:
-  //   row 1: groups A+B (1-5)  ·  row 2: group C (6-12)
-  //   row 3: groups D+E+F+G (13-22) + sex (X,Y) + markers
+  // 3 even rows of 8 (numeric order; groups not preserved, per request):
+  //   1-8 · 9-16 · 17-22 + X,Y + markers
   var GROUPS = [
-    { name: "AB", chroms: ["1", "2", "3", "4", "5"] },
-    { name: "C", chroms: ["6", "7", "8", "9", "10", "11", "12"] },
-    { name: "DEFG", chroms: ["13", "14", "15", "16", "17", "18", "19", "20", "21", "22"], sex: true }
+    { name: "r1", chroms: ["1", "2", "3", "4", "5", "6", "7", "8"] },
+    { name: "r2", chroms: ["9", "10", "11", "12", "13", "14", "15", "16"] },
+    { name: "r3", chroms: ["17", "18", "19", "20", "21", "22"], sex: true }
   ];
 
   function cellHtml(labelText, insts, opts, ctx) {
