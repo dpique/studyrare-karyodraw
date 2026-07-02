@@ -183,8 +183,8 @@
     <div class="viewopts">
       <span class="vlabel">Style</span>
       <div class="seg" id="modeseg">
-        <button data-mode="simple" title="Muted grey chromosomes; only the chromosomes involved in an abnormality are coloured, so the rearrangement stands out.">Simple</button>
-        <button data-mode="detailed" title="Full realistic Giemsa banding on every chromosome, with no highlighting.">Detailed</button>
+        <button data-mode="simple" title="Colours the chromosomes involved in the abnormality; everything else stays quiet grey.">Highlight</button>
+        <button data-mode="detailed" title="True-to-life Giemsa banding on every chromosome, nothing highlighted. Spot the abnormality yourself.">Realistic</button>
       </div>
       <span class="vlabel">Bands</span>
       <div class="seg" id="levelseg">
@@ -538,8 +538,8 @@
     });
     var vh = $("#viewhint");
     if (vh) vh.innerHTML = MODE === "simple"
-      ? "<b>Simple</b>, quiet grey chromosomes; only the ones involved in an abnormality are coloured (a normal karyotype looks all-grey)."
-      : "<b>Detailed</b>, realistic Giemsa banding on every chromosome, with no highlighting.";
+      ? "<b>Highlight</b>: the chromosomes involved in the abnormality are coloured; everything else stays quiet grey (a normal karyotype looks all-grey)."
+      : "<b>Realistic</b>: true-to-life Giemsa banding on every chromosome, nothing highlighted. Try to spot the abnormality yourself.";
   }
 
   // init

@@ -77,15 +77,15 @@ python3 build_ideogram.py       # writes ../ideogram-data.js
   CTA accent; periwinkle is structural (never a button); navy is ink; sage =
   success. Affected chromosomes lead periwinkle → amber, echoing the "signal in
   the noise" motif.
-- **Karyogram layout** follows convention: fixed **Denver-group rows** (1–3 / 4–5 /
-  6–12 / 13–15 / 16–18 / 19–20 / 21–22), one per line — not width-wrapped. **X** rides
-  with group **C** and **Y** with group **G** (placed by size); markers trail group G.
-  Within a pair, the **normal homolog is on the left, the abnormal/derivative on the
-  right**.
-- **Two styles** (toggle): *Simple* draws every chromosome in a quiet neutral grey
-  and colours **only the chromosomes involved in a rearrangement** (keyed by
-  chromosome identity; translocation/derivative pieces are coloured by their
-  origin chromosome, so the event pops). *Detailed* is realistic Giemsa banding.
+- **Karyogram layout**: fixed **Denver-group rows** (1–3 / 4–5 / 6–12 / 13–15 /
+  16–18 / 19–20 / 21–22), one per line (not width-wrapped); sex chromosomes get
+  their own row at the end. Within a pair, the **normal homolog is on the left,
+  the abnormal/derivative on the right**.
+- **Two styles** (toggle): *Highlight* draws every chromosome in quiet neutral grey
+  and colours **only the chromosomes involved in the abnormality** (keyed by
+  chromosome identity; translocation/derivative pieces take their origin
+  chromosome's colour, so the event pops). *Realistic* is true-to-life Giemsa
+  banding on every chromosome, with nothing highlighted (spot the change yourself).
 - **Band resolution** (toggle): High ~850 / Std ~550 / Low ~400. Lower levels
   merge sub-bands into their parent band (span-weighted stain) — fewer, wider,
   easier-to-read bands. Breakpoints still resolve against full-resolution data.
