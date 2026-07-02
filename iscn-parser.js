@@ -184,7 +184,8 @@
           if (comp[c] === undefined) { warnings.push("“" + c + "” isn’t a human chromosome — use 1–22, X, or Y."); return; }
           if (ab.sign === "+") { comp[c] += 1; slots[c].push(mkDer(c, ab)); return; }
           var idx = firstNormal(slots[c]);
-          if (idx >= 0) { slots[c][idx] = mkDer(c, ab); replacedChroms.push(c); }
+          // convention: normal homolog stays on the left, derivative on the right
+          if (idx >= 0) { slots[c].splice(idx, 1); slots[c].push(mkDer(c, ab)); replacedChroms.push(c); }
           else slots[c].push(mkDer(c, ab));
         });
       } else if (["del", "dup", "inv", "add", "ring", "iso", "der", "fra", "trp"].indexOf(ab.kind) >= 0) {
@@ -197,7 +198,7 @@
           return;
         }
         var i2 = firstNormal(slots[c0]);
-        if (i2 >= 0) { slots[c0][i2] = mkDer(c0, ab); replacedChroms.push(c0); }
+        if (i2 >= 0) { slots[c0].splice(i2, 1); slots[c0].push(mkDer(c0, ab)); replacedChroms.push(c0); }
         else slots[c0].push(mkDer(c0, ab));
       }
     });

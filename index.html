@@ -58,6 +58,8 @@
 
   .viewopts { display: flex; align-items: center; gap: 8px 12px; margin-top: 12px; flex-wrap: wrap; }
   .viewopts .vlabel { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .viewhint { margin-top: 7px; font-size: 12.5px; color: var(--muted); }
+  .viewhint b { color: var(--ink-2); font-weight: 700; }
   .seg { display: inline-flex; border: 1px solid #cdd2e1; border-radius: 9px; overflow: hidden; background: #fff; }
   .seg button {
     border: none; background: #fff; padding: 6px 12px; font-size: 13px; cursor: pointer; color: var(--ink-2);
@@ -88,11 +90,11 @@
   .clone-head .cn { font: 600 14px var(--font-mono); }
   .clone-head .cc { font-size: 12.5px; color: var(--muted); }
 
-  /* karyogram */
-  .karyogram { display: flex; flex-wrap: wrap; gap: 10px 4px; padding: 14px 12px 6px; }
-  .kgroup { display: flex; gap: 2px; padding: 6px 8px; border-radius: 10px; }
-  .kgroup[data-group="sex"] { background: #eef1fd; }
+  /* karyogram — one fixed Denver-group row per line (not width-wrapped) */
+  .karyogram { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px 14px 10px; }
+  .kgroup { display: flex; flex-wrap: wrap; gap: 3px; padding: 4px 6px; border-radius: 10px; align-items: flex-start; }
   .kcell { display: flex; flex-direction: column; align-items: center; }
+  .kcell.sexcell .klabel { color: var(--periwinkle); }
   .kcell-copies { display: flex; gap: 3px; align-items: flex-start; min-height: 10px; }
   .klabel { font: 600 12px var(--font-mono); color: var(--ink-2); margin-top: 3px; }
   .kchrom { position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 2px; border-radius: 6px; }
@@ -180,16 +182,17 @@
     <div class="viewopts">
       <span class="vlabel">Style</span>
       <div class="seg" id="modeseg">
-        <button data-mode="simple">Simple</button>
-        <button data-mode="detailed">Detailed</button>
+        <button data-mode="simple" title="Muted grey chromosomes; only the chromosomes involved in an abnormality are coloured, so the rearrangement stands out.">Simple</button>
+        <button data-mode="detailed" title="Full realistic Giemsa banding on every chromosome, with no highlighting.">Detailed</button>
       </div>
       <span class="vlabel">Bands</span>
       <div class="seg" id="levelseg">
-        <button data-level="0">Low · ~400</button>
-        <button data-level="1">Std · ~550</button>
-        <button data-level="99">High · ~850</button>
+        <button data-level="0" title="~400-band resolution: fewer, wider bands — easiest to read.">Low · ~400</button>
+        <button data-level="1" title="~550-band resolution: the usual clinical level.">Std · ~550</button>
+        <button data-level="99" title="~850-band resolution: maximum detail.">High · ~850</button>
       </div>
     </div>
+    <div class="viewhint" id="viewhint"></div>
   </div>
 </header>
 
@@ -530,6 +533,10 @@
     Array.prototype.forEach.call(document.querySelectorAll("#levelseg button"), function (b) {
       b.classList.toggle("on", String(b.getAttribute("data-level")) === String(LEVEL));
     });
+    var vh = $("#viewhint");
+    if (vh) vh.innerHTML = MODE === "simple"
+      ? "<b>Simple</b> — quiet grey chromosomes; only the ones involved in an abnormality are coloured (a normal karyotype looks all-grey)."
+      : "<b>Detailed</b> — realistic Giemsa banding on every chromosome, with no highlighting.";
   }
 
   // init

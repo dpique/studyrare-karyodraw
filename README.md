@@ -77,6 +77,11 @@ python3 build_ideogram.py       # writes ../ideogram-data.js
   CTA accent; periwinkle is structural (never a button); navy is ink; sage =
   success. Affected chromosomes lead periwinkle → amber, echoing the "signal in
   the noise" motif.
+- **Karyogram layout** follows convention: fixed **Denver-group rows** (1–3 / 4–5 /
+  6–12 / 13–15 / 16–18 / 19–20 / 21–22), one per line — not width-wrapped. **X** rides
+  with group **C** and **Y** with group **G** (placed by size); markers trail group G.
+  Within a pair, the **normal homolog is on the left, the abnormal/derivative on the
+  right**.
 - **Two styles** (toggle): *Simple* draws every chromosome in a quiet neutral grey
   and colours **only the chromosomes involved in a rearrangement** (keyed by
   chromosome identity; translocation/derivative pieces are coloured by their
