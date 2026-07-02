@@ -35,7 +35,7 @@
   .brand h1 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 23px; letter-spacing: -.02em; color: var(--navy); }
   .brand .tag { color: var(--muted); font-size: 13.5px; }
   .brand .byline { color: var(--periwinkle); font-weight: 700; }
-  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 0 24px; }
 
   .controls { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
   .controls input[type=text] {
@@ -70,8 +70,8 @@
   .seg button:not(.on):hover { background: #f0f2f7; }
 
   main { padding: 18px 0 60px; }
-  .grid { display: grid; grid-template-columns: minmax(0, 640px) 360px; gap: 20px; align-items: start; justify-content: center; }
-  @media (max-width: 1040px) { .grid { grid-template-columns: 1fr; justify-content: stretch; } }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+  @media (max-width: 1040px) { .grid { grid-template-columns: 1fr; } }
 
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
   .card + .card { margin-top: 16px; }
@@ -92,11 +92,12 @@
   .clone-head .cn { font: 600 14px var(--font-mono); }
   .clone-head .cc { font-size: 12.5px; color: var(--muted); }
 
-  /* karyogram, one fixed Denver-group row per line (not width-wrapped); block centered */
-  .karyogram { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 14px 10px; width: 100%; }
-  .kgroup { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 6px; border-radius: 10px; align-items: flex-end; }
-  .kgroup[data-group="sex"] { background: #eef1fd; }
+  /* karyogram — 4 fixed Denver rows; rendered at natural size, then JS scales it to fill the card */
+  #karyo .kwrap { overflow: visible; }
+  .karyogram { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 8px 10px; width: max-content; margin: 0 auto; transform-origin: top center; }
+  .kgroup { display: flex; flex-wrap: nowrap; gap: 5px; padding: 4px 6px; border-radius: 10px; align-items: flex-end; }
   .kcell { display: flex; flex-direction: column; align-items: center; }
+  .kcell.sexcell { background: #eef1fd; border-radius: 8px; }
   .kcell.sexcell .klabel { color: var(--periwinkle); }
   .kcell-copies { display: flex; gap: 3px; align-items: flex-start; min-height: 10px; }
   .klabel { font: 600 12px var(--font-mono); color: var(--ink-2); margin-top: 3px; }
@@ -433,9 +434,24 @@
         block.appendChild(head);
       }
       var kg = document.createElement("div");
+      kg.className = "kwrap";
       window.Karyo.render(kg, clone, { theme: MODE, level: LEVEL, affected: AFFECTED, only: only });
       block.appendChild(kg);
       host.appendChild(block);
+    });
+    fitKaryograms();
+  }
+
+  // Scale each karyogram to fill the card width (dynamic / responsive).
+  function fitKaryograms() {
+    var host = $("#karyo"); if (!host) return;
+    var avail = host.clientWidth - 4;
+    Array.prototype.forEach.call(host.querySelectorAll(".karyogram"), function (kg) {
+      var natural = kg.offsetWidth, naturalH = kg.offsetHeight;
+      if (!natural || avail <= 0) return;
+      var scale = Math.max(0.55, Math.min(1.7, avail / natural));
+      kg.style.transform = "scale(" + scale.toFixed(3) + ")";
+      if (kg.parentNode) kg.parentNode.style.height = Math.ceil(naturalH * scale) + "px";
     });
   }
 
@@ -659,6 +675,8 @@
     SHOW = b.getAttribute("data-show"); syncSeg(); run();
   });
   $("#printbtn").addEventListener("click", function () { window.print(); });
+  var _fitT;
+  window.addEventListener("resize", function () { clearTimeout(_fitT); _fitT = setTimeout(fitKaryograms, 120); });
   $("#warnings").addEventListener("click", function (e) {
     var b = e.target.closest ? e.target.closest(".dym") : null; if (!b) return;
     input.value = b.getAttribute("data-k"); run();
