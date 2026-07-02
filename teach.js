@@ -1,4 +1,4 @@
-/* KaryoScope — teaching layer.
+/* KaryoScope, teaching layer.
  *
  * All the "explain it to a newbie" content:
  *   Teach.decode(clone)          -> token-by-token plain-English breakdown
@@ -15,6 +15,8 @@
   var IDEO = window.IDEOGRAM;
 
   function ordinalArm(a) { return a === "p" ? "short arm (p)" : a === "q" ? "long arm (q)" : a; }
+  var DIGIT_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+  function digitWords(s) { return String(s).split("").map(function (d) { return DIGIT_WORDS[+d] != null ? DIGIT_WORDS[+d] : d; }).join(" "); }
 
   // Parse a band name like "q22.13" into readable pieces.
   function bandInfo(chrom, band) {
@@ -23,13 +25,14 @@
     var out = { chrom: chrom, band: band, arm: arm, armName: ordinalArm(arm), read: "", parts: [], stain: null, position: "" };
     if (m) {
       var region = m[2], bnd = m[3], sub = m[4];
-      out.parts.push({ label: "arm", value: arm, note: ordinalArm(arm) + " — counted outward from the centromere" });
+      out.parts.push({ label: "arm", value: arm, note: ordinalArm(arm) + ", counted outward from the centromere" });
       out.parts.push({ label: "region", value: region, note: "region " + region + ", counting away from the centromere" });
       if (bnd) out.parts.push({ label: "band", value: bnd, note: "band " + bnd + " within that region" });
       if (sub) out.parts.push({ label: "sub-band", value: sub, note: "finer sub-division seen at higher resolution" });
-      var spoken = arm + "-" + region + (bnd || "") + (sub ? "-point-" + sub.split("").join("-") : "");
-      out.read = "Read “" + chrom + spoken.replace(/-/g, " ").replace("point", "point") + "”. " +
-        "Band names are read digit-by-digit (e.g. q22.13 is “q two-two point one-three”, NOT “twenty-two”).";
+      var regBand = region + (bnd || "");
+      var spokenBand = digitWords(regBand) + (sub ? " point " + digitWords(sub) : "");
+      out.read = "Read the band one digit at a time. " + chrom + band + " is spoken “" + chrom + " " + arm + " " + spokenBand +
+        "”. Say the digits separately (“" + spokenBand + "”); never run them together (it is NOT “eleven” or “twenty-two”).";
     }
     // resolve stain + position from the ideogram
     var r = window.Karyo.resolveBand(chrom, band);
@@ -52,12 +55,12 @@
 
   var STAIN_INFO = {
     gneg: { name: "G-negative (pale)", bio: "Pale Giemsa band: gene-rich, GC-rich, early-replicating, more transcriptionally active euchromatin." },
-    gpos25: { name: "G-positive (light)", bio: "Lightly staining dark band — moderate gene density." },
+    gpos25: { name: "G-positive (light)", bio: "Lightly staining dark band, moderate gene density." },
     gpos50: { name: "G-positive (medium)", bio: "Medium-dark band: AT-rich, gene-poorer, later-replicating." },
     gpos75: { name: "G-positive (dark)", bio: "Dark band: AT-rich, gene-poor, late-replicating heterochromatin-like." },
     gpos100: { name: "G-positive (darkest)", bio: "Darkest band: very AT-rich, gene-poor, latest-replicating." },
     acen: { name: "Centromere", bio: "The centromere (α-satellite heterochromatin) where the kinetochore assembles and spindle fibres attach at cell division." },
-    gvar: { name: "Variable region", bio: "Polymorphic heterochromatin whose size varies normally between people (e.g. 1q, 9q, 16q, Yq) — usually not pathogenic." },
+    gvar: { name: "Variable region", bio: "Polymorphic heterochromatin whose size varies normally between people (e.g. 1q, 9q, 16q, Yq), usually not pathogenic." },
     stalk: { name: "Acrocentric stalk", bio: "The stalk of an acrocentric short arm (chr 13,14,15,21,22): houses the ribosomal RNA genes (NOR). Losing it is generally harmless." }
   };
   function stainInfo(s) { return STAIN_INFO[s] || { name: s, bio: "" }; }
@@ -87,7 +90,7 @@
     if (k === "inv") {
       var arms = (bp[0] || []).map(function (b) { return b[0]; });
       var peri = arms.indexOf("p") >= 0 && arms.indexOf("q") >= 0;
-      return { text: "an INVERSION in chromosome " + c + ": the segment between " + bandsPhrase(c, bp[0] || []) + " is flipped end-for-end (" + (peri ? "pericentric — it spans the centromere" : "paracentric — within one arm") + ")", tag: "inv" };
+      return { text: "an INVERSION in chromosome " + c + ": the segment between " + bandsPhrase(c, bp[0] || []) + " is flipped end-for-end (" + (peri ? "pericentric, it spans the centromere" : "paracentric, within one arm") + ")", tag: "inv" };
     }
     if (k === "t" || k === "dic") {
       var a = ab.chroms[0], b = ab.chroms[1];
@@ -99,7 +102,7 @@
       var arm = (bp[0] || [])[0] || "q10";
       var whicharm = /^q/.test(arm) ? "long (q)" : "short (p)";
       var lostarm = /^q/.test(arm) ? "short (p)" : "long (q)";
-      return { text: "an ISOCHROMOSOME i(" + c + "): a mirror-image chromosome made of two " + whicharm + " arms — the " + lostarm + " arm is lost, so you get 3 copies of one arm and 1 of the other", tag: "iso" };
+      return { text: "an ISOCHROMOSOME i(" + c + "): a mirror-image chromosome made of two " + whicharm + " arms, so the " + lostarm + " arm is lost; you end up with 3 copies of one arm and 1 of the other", tag: "iso" };
     }
     if (k === "ring") return { text: "a RING chromosome r(" + c + "): the chromosome's arms break and the broken ends fuse into a circle (usually loses the distal tips)", tag: "ring" };
     if (k === "der") {
@@ -126,7 +129,7 @@
       rows.push({ code: String(clone.modalNumber), text: "total chromosome count" + (clone.modalNumber === 46 ? " (the normal human number)" : " (normal is 46)"), tag: "count" });
     }
     if (clone.sex.label) {
-      rows.push({ code: clone.sex.label, text: "sex chromosomes — " + clone.sex.note, tag: "sex" });
+      rows.push({ code: clone.sex.label, text: "sex chromosomes: " + clone.sex.note, tag: "sex" });
     }
     clone.aberrations.forEach(function (ab) {
       var d = describeAberration(ab);
@@ -141,37 +144,37 @@
   // ---- curated clinical / board notes --------------------------------------
   // Each matcher inspects a clone and returns notes when it fits.
   var SYNDROMES = [
-    { test: function (c) { return c.complement["21"] >= 3; }, name: "Trisomy 21 — Down syndrome",
+    { test: function (c) { return c.complement["21"] >= 3; }, name: "Trisomy 21, Down syndrome",
       note: "The most common autosomal trisomy compatible with life (~1/700 births). Three copies of chromosome 21. Features: characteristic facies, hypotonia, intellectual disability, ~50% congenital heart disease (AV canal), ↑ risk of AML/ALL and early Alzheimer disease. ~95% free trisomy (nondisjunction, ↑ with maternal age), ~4% Robertsonian translocation, ~1% mosaic." },
-    { test: function (c) { return c.complement["18"] >= 3; }, name: "Trisomy 18 — Edwards syndrome",
+    { test: function (c) { return c.complement["18"] >= 3; }, name: "Trisomy 18, Edwards syndrome",
       note: "Three copies of chromosome 18. Clenched fists with overlapping fingers, rocker-bottom feet, micrognathia, congenital heart disease; most die in the first year." },
-    { test: function (c) { return c.complement["13"] >= 3; }, name: "Trisomy 13 — Patau syndrome",
+    { test: function (c) { return c.complement["13"] >= 3; }, name: "Trisomy 13, Patau syndrome",
       note: "Three copies of chromosome 13. Holoprosencephaly, cleft lip/palate, polydactyly, cutis aplasia; high early mortality." },
-    { test: function (c) { return c.sex.label === "X"; }, name: "45,X — Turner syndrome",
+    { test: function (c) { return c.sex.label === "X"; }, name: "45,X, Turner syndrome",
       note: "A single X, no second sex chromosome (monosomy X). Short stature, ovarian dysgenesis/streak gonads, webbed neck, coarctation/bicuspid aortic valve, lymphedema. Often mosaic (45,X/46,XX) or with an i(Xq)." },
-    { test: function (c) { return c.sex.label === "XXY" || c.sex.label === "XXXY"; }, name: "47,XXY — Klinefelter syndrome",
+    { test: function (c) { return c.sex.label === "XXY" || c.sex.label === "XXXY"; }, name: "47,XXY, Klinefelter syndrome",
       note: "An extra X in a male (≥1 Y with ≥2 X). Tall stature, small firm testes, gynecomastia, infertility, low testosterone. One X is inactivated as a Barr body." },
     { test: function (c) { return c.sex.label === "XYY"; }, name: "47,XYY",
       note: "An extra Y. Usually tall stature; typically normal fertility and intelligence within the normal range. Often incidental." },
-    { test: function (c) { return c.sex.label === "XXX"; }, name: "47,XXX — Triple X",
+    { test: function (c) { return c.sex.label === "XXX"; }, name: "47,XXX, Triple X",
       note: "An extra X in a female. Often mild/absent phenotype; tall stature, sometimes learning difficulties. Two Barr bodies." },
-    { test: function (c) { return hasT(c, "9", "22"); }, name: "t(9;22) — Philadelphia chromosome",
-      note: "The reciprocal t(9;22)(q34;q11.2) fuses BCR (22) with ABL1 (9), creating BCR-ABL1 — the hallmark of chronic myeloid leukemia (also some ALL). Target of imatinib and other tyrosine-kinase inhibitors." },
-    { test: function (c) { return hasT(c, "15", "17"); }, name: "t(15;17) — Acute promyelocytic leukemia",
+    { test: function (c) { return hasT(c, "9", "22"); }, name: "t(9;22), Philadelphia chromosome",
+      note: "The reciprocal t(9;22)(q34;q11.2) fuses BCR (22) with ABL1 (9), creating BCR-ABL1, the hallmark of chronic myeloid leukemia (also some ALL). Target of imatinib and other tyrosine-kinase inhibitors." },
+    { test: function (c) { return hasT(c, "15", "17"); }, name: "t(15;17), Acute promyelocytic leukemia",
       note: "t(15;17)(q24;q21) fuses PML-RARA. APL (AML-M3); responsive to all-trans retinoic acid (ATRA) and arsenic. A medical emergency due to DIC." },
-    { test: function (c) { return hasT(c, "8", "14"); }, name: "t(8;14) — Burkitt lymphoma",
+    { test: function (c) { return hasT(c, "8", "14"); }, name: "t(8;14), Burkitt lymphoma",
       note: "t(8;14)(q24;q32) places MYC next to the IGH enhancer → MYC overexpression. Classic 'starry-sky' Burkitt lymphoma." },
-    { test: function (c) { return hasT(c, "8", "21"); }, name: "t(8;21) — AML",
+    { test: function (c) { return hasT(c, "8", "21"); }, name: "t(8;21), AML",
       note: "t(8;21)(q22;q22) RUNX1-RUNX1T1; a core-binding-factor AML with generally favorable prognosis." },
-    { test: function (c) { return hasT(c, "14", "18"); }, name: "t(14;18) — Follicular lymphoma",
+    { test: function (c) { return hasT(c, "14", "18"); }, name: "t(14;18), Follicular lymphoma",
       note: "t(14;18)(q32;q21) juxtaposes BCL2 with IGH → anti-apoptotic BCL2 overexpression." },
-    { test: function (c) { return hasDel(c, "5", "p"); }, name: "del(5p) — Cri-du-chat syndrome",
+    { test: function (c) { return hasDel(c, "5", "p"); }, name: "del(5p), Cri-du-chat syndrome",
       note: "Terminal deletion of 5p ('5p−'). High-pitched cat-like cry in infancy, microcephaly, hypotonia, intellectual disability." },
-    { test: function (c) { return hasDel(c, "4", "p"); }, name: "del(4p) — Wolf–Hirschhorn syndrome",
+    { test: function (c) { return hasDel(c, "4", "p"); }, name: "del(4p), Wolf–Hirschhorn syndrome",
       note: "Deletion of 4p16.3. 'Greek warrior helmet' facies, growth delay, seizures, intellectual disability." },
-    { test: function (c) { return hasDelBand(c, "15", "q11"); }, name: "del(15)(q11q13) — Prader–Willi / Angelman",
+    { test: function (c) { return hasDelBand(c, "15", "q11"); }, name: "del(15)(q11q13), Prader–Willi / Angelman",
       note: "The 15q11-q13 imprinted region: a paternal deletion → Prader–Willi (hypotonia, hyperphagia/obesity, hypogonadism); a maternal deletion → Angelman ('happy puppet', ataxia, seizures). Parent-of-origin matters." },
-    { test: function (c) { return hasDelBand(c, "22", "q11"); }, name: "del(22)(q11.2) — DiGeorge / 22q11.2 deletion",
+    { test: function (c) { return hasDelBand(c, "22", "q11"); }, name: "del(22)(q11.2), DiGeorge / 22q11.2 deletion",
       note: "The most common microdeletion. CATCH-22: Cardiac (conotruncal) defects, Abnormal facies, Thymic aplasia (T-cell immunodeficiency), Cleft palate, Hypocalcemia." }
   ];
   function hasT(c, a, b) {
@@ -202,7 +205,7 @@
     q: "The LONG arm. 'q' simply follows 'p' in the alphabet. Always drawn on the BOTTOM. Bands numbered from the centromere (q1…) out to the telomere.",
     centromere: "The primary constriction that joins the two arms. The kinetochore assembles here and spindle fibres attach during cell division. Its position (metacentric / submetacentric / acrocentric) helps identify a chromosome.",
     telomere: "The very tip of each arm ('ter' = pter / qter). Repetitive TTAGGG caps that protect chromosome ends and shorten with each division.",
-    band: "A stretch of chromosome that stains light or dark with Giemsa (G-banding). The reproducible pattern of bands is a chromosome's 'barcode' — it's how each one is identified and how breakpoints are pinpointed."
+    band: "A stretch of chromosome that stains light or dark with Giemsa (G-banding). The reproducible pattern of bands is a chromosome's 'barcode', it's how each one is identified and how breakpoints are pinpointed."
   };
 
   window.Teach = {

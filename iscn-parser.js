@@ -1,4 +1,4 @@
-/* KaryoScope — ISCN karyotype parser.
+/* KaryoScope, ISCN karyotype parser.
  *
  * window.ISCN.parse(str) turns an ISCN karyotype designation into a structured,
  * render-ready model. It is deliberately forgiving: unrecognized tokens produce
@@ -80,7 +80,7 @@
       return ab;
     }
 
-    // op(chroms)(breakpoints)  — op(chroms) — with 1 or 2 paren groups.
+    // op(chroms)(breakpoints) , op(chroms), with 1 or 2 paren groups.
     var opM = /^([a-zA-Z]+)\(([^)]*)\)(?:\(([^)]*)\))?/.exec(tok);
     if (!opM) {
       // things like "mar", "mar1", "?", "inc"
@@ -160,12 +160,12 @@
     clone.aberrations.forEach(function (ab) {
       if (ab.kind === "gain") {
         var g = ab.chroms[0];
-        if (comp[g] === undefined) { warnings.push("“" + g + "” isn’t a human chromosome — use 1–22, X, or Y (e.g. +21)."); return; }
+        if (comp[g] === undefined) { warnings.push("“" + g + "” isn’t a human chromosome, use 1–22, X, or Y (e.g. +21)."); return; }
         comp[g] += 1;
         slots[g].push({ chrom: g, kind: "gain", label: g, aberration: ab, primary: g });
       } else if (ab.kind === "loss") {
         var l = ab.chroms[0];
-        if (comp[l] === undefined) { warnings.push("“" + l + "” isn’t a human chromosome — use 1–22, X, or Y (e.g. -7)."); return; }
+        if (comp[l] === undefined) { warnings.push("“" + l + "” isn’t a human chromosome, use 1–22, X, or Y (e.g. -7)."); return; }
         comp[l] -= 1;
         // remove one normal instance if present, else record as under-count
         var idx = slots[l].map(function (x) { return x.kind; }).indexOf("normal");
@@ -181,7 +181,7 @@
         // Multi-chromosome structural: convert one normal copy of each involved
         // chromosome into a derivative (count unchanged unless signed).
         ab.chroms.forEach(function (c, ci) {
-          if (comp[c] === undefined) { warnings.push("“" + c + "” isn’t a human chromosome — use 1–22, X, or Y."); return; }
+          if (comp[c] === undefined) { warnings.push("“" + c + "” isn’t a human chromosome, use 1–22, X, or Y."); return; }
           if (ab.sign === "+") { comp[c] += 1; slots[c].push(mkDer(c, ab)); return; }
           var idx = firstNormal(slots[c]);
           // convention: normal homolog stays on the left, derivative on the right
@@ -190,7 +190,7 @@
         });
       } else if (["del", "dup", "inv", "add", "ring", "iso", "der", "fra", "trp"].indexOf(ab.kind) >= 0) {
         var c0 = ab.chroms[0];
-        if (comp[c0] === undefined) { warnings.push("“" + c0 + "” isn’t a human chromosome — use 1–22, X, or Y."); return; }
+        if (comp[c0] === undefined) { warnings.push("“" + c0 + "” isn’t a human chromosome, use 1–22, X, or Y."); return; }
         if (ab.sign === "+") { comp[c0] += 1; slots[c0].push(mkDer(c0, ab)); return; }
         if (ab.sign === "-") {
           comp[c0] -= 1;
@@ -203,18 +203,22 @@
       }
     });
 
-    // Reconcile toward the stated modal number: if we're short, the most likely
-    // reason is a structural derivative that is *additional* to a normal homolog
-    // (classically 46,X,i(X)(q10)). Restore homologs until the count matches.
+    // Reconcile toward the stated modal number ONLY in the specific case where a
+    // structural op consumed a chromosome's sole copy, so the derivative is
+    // additional to a normal homolog (classically 46,X,i(X)(q10)). Never invent
+    // extra copies just to chase a wrong modal number (e.g. a typo'd count).
     if (clone.modalNumber != null) {
       var running = 0;
       Object.keys(comp).forEach(function (c) { running += comp[c]; });
       var deficit = clone.modalNumber - running;
       for (var r = 0; r < replacedChroms.length && deficit > 0; r++) {
         var rc = replacedChroms[r];
-        slots[rc].unshift({ chrom: rc, kind: "normal", label: rc, aberration: null, primary: null });
-        comp[rc] += 1;
-        deficit--;
+        var normalsLeft = slots[rc].filter(function (x) { return x.kind === "normal"; }).length;
+        if (normalsLeft === 0) {
+          slots[rc].unshift({ chrom: rc, kind: "normal", label: rc, aberration: null, primary: null });
+          comp[rc] += 1;
+          deficit--;
+        }
       }
     }
 
@@ -246,8 +250,7 @@
       ok: clone.modalNumber == null || clone.modalNumber === actual
     };
     if (clone.modalNumber != null && clone.modalNumber !== actual && clone.sex.tokens.length > 0) {
-      warnings.push("The count says " + clone.modalNumber + ", but the changes listed add up to " + actual +
-        " chromosomes. Check the number at the start, or the +/− and rearrangements — e.g. two extra 21s should be 48,…,+21,+21.");
+      warnings.push("The number at the start says " + clone.modalNumber + ", but this karyotype describes " + actual + " chromosomes.");
     }
   }
 
@@ -260,14 +263,14 @@
       else bad.push(field[i]);
     }
     if (tokens.length === 0) {
-      warnings.push("The 2nd field should be the sex chromosomes (XX, XY, X, …) — “" + field + "” has no X or Y. Did you skip the sex chromosomes?");
+      warnings.push("The 2nd field should be the sex chromosomes (XX, XY, X, …), “" + field + "” has no X or Y. Did you skip the sex chromosomes?");
     } else if (bad.length) {
-      warnings.push("Ignored “" + bad.join("") + "” in the sex chromosomes “" + field + "” — only X and Y belong there.");
+      warnings.push("Ignored “" + bad.join("") + "” in the sex chromosomes “" + field + "”, only X and Y belong there.");
     }
     var label = tokens.join("");
     var SEX_NOTE = {
-      "XX": "two X — usual female karyotype", "XY": "one X, one Y — usual male karyotype",
-      "X": "a single X — monosomy X", "XXY": "two X + one Y",
+      "XX": "two X (usual female karyotype)", "XY": "one X, one Y (usual male karyotype)",
+      "X": "a single X (monosomy X)", "XXY": "two X + one Y",
       "XYY": "one X + two Y", "XXX": "three X",
       "XXYY": "two X + two Y", "XXXX": "four X", "XXXY": "three X + one Y"
     };
@@ -318,10 +321,10 @@
     var suggestion = raw;
     var opens = (raw.match(/\(/g) || []).length, closes = (raw.match(/\)/g) || []).length;
     if (opens !== closes) {
-      warnings.push("Unbalanced parentheses — " + opens + " “(” but " + closes + " “)”. Make sure every “(” has a matching “)”.");
+      warnings.push("Unbalanced parentheses, " + opens + " “(” but " + closes + " “)”. Make sure every “(” has a matching “)”.");
     }
     if (/^\d+[XY]{1,4}(,|\[|$)/i.test(raw)) {
-      warnings.push("Add a comma after the chromosome count — the count comes first, then the sex chromosomes, e.g. 46,XY.");
+      warnings.push("Add a comma after the chromosome count, the count comes first, then the sex chromosomes, e.g. 46,XY.");
       suggestion = suggestion.replace(/^(\d+)([XYxy]{1,4})/, function (m, a, b) { return a + "," + b.toUpperCase(); });
     }
     var depth = 0, inner = false, fixed = "";
@@ -331,7 +334,7 @@
       if (ch === "," && depth > 0) { inner = true; fixed += ";"; } else fixed += ch;
     }
     if (inner) {
-      warnings.push("Inside parentheses, separate values with a semicolon “;”, not a comma — e.g. t(9;22)(q34;q11.2).");
+      warnings.push("Inside parentheses, separate values with a semicolon “;”, not a comma, e.g. t(9;22)(q34;q11.2).");
       suggestion = fixed;
     }
     if (suggestion !== raw) result.suggestion = suggestion;
@@ -340,8 +343,8 @@
   function parse(input) {
     var raw = (input || "").trim();
     var warnings = [];
-    var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [], suggestion: null };
-    if (!raw) { warnings.push("Type a karyotype to begin — e.g. 46,XY, 47,XX,+21, or 46,XY,t(9;22)(q34;q11.2)."); return result; }
+    var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [], suggestion: null, countFix: null };
+    if (!raw) { warnings.push("Type a karyotype to begin, e.g. 46,XY, 47,XX,+21, or 46,XY,t(9;22)(q34;q11.2)."); return result; }
     diagnose(raw, result, warnings);
 
     var s = raw;
@@ -354,6 +357,14 @@
 
     cloneStrs.forEach(function (cs) { result.clones.push(parseClone(cs, warnings)); });
     result.ok = result.clones.length > 0 && result.clones.every(function (c) { return c.modalNumber != null; });
+
+    // If a single clone's stated count is off, offer the corrected count as a fix.
+    if (!result.suggestion && result.clones.length === 1) {
+      var cl0 = result.clones[0];
+      if (cl0.modalNumber != null && cl0.counts && !cl0.counts.ok && cl0.counts.actual != null) {
+        result.countFix = raw.replace(/\d+/, String(cl0.counts.actual));
+      }
+    }
     return result;
   }
 

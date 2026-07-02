@@ -401,16 +401,16 @@
   }
 
   // ----- karyogram (one clone) ----------------------------------------------
-  // Canonical Denver-group rows. X rides with group C (it's C-sized), Y with
-  // group G; marker chromosomes trail the last row.
+  // Denver-group rows, one per line. Sex chromosomes get their own row at the end.
   var GROUPS = [
     { name: "A", chroms: ["1", "2", "3"] },
     { name: "B", chroms: ["4", "5"] },
-    { name: "C", chroms: ["6", "7", "8", "9", "10", "11", "12"], sex: "X" },
+    { name: "C", chroms: ["6", "7", "8", "9", "10", "11", "12"] },
     { name: "D", chroms: ["13", "14", "15"] },
     { name: "E", chroms: ["16", "17", "18"] },
     { name: "F", chroms: ["19", "20"] },
-    { name: "G", chroms: ["21", "22"], sex: "Y", mar: true }
+    { name: "G", chroms: ["21", "22"] },
+    { name: "sex", chroms: ["X", "Y"] }
   ];
 
   function cellHtml(labelText, insts, opts, ctx) {
@@ -452,15 +452,19 @@
     var html = ['<div class="karyogram">'];
     GROUPS.forEach(function (grp) {
       html.push('<div class="kgroup" data-group="' + grp.name + '">');
-      grp.chroms.forEach(function (chrom) {
-        var insts = clone.slots[chrom] || [];
-        html.push(cellHtml(chrom, insts, { ghost: insts.length === 0, ghostChrom: chrom, ghostText: "nullisomy" }, ctx));
-      });
-      if (grp.sex) {  // X in row C, Y in row G — placed at the tail, next to the autosomes
-        var sinsts = clone.slots[grp.sex] || [];
-        if (sinsts.length) html.push(cellHtml(grp.sex, sinsts, { sexcell: true }, ctx));
+      if (grp.name === "sex") {
+        var xN = (clone.slots["X"] || []).length, yN = (clone.slots["Y"] || []).length;
+        if (xN) html.push(cellHtml("X", clone.slots["X"], { sexcell: true }, ctx));
+        if (yN) html.push(cellHtml("Y", clone.slots["Y"], { sexcell: true }, ctx));
+        var missing = 2 - (xN + yN);
+        for (var mi = 0; mi < missing; mi++) html.push(cellHtml("?", [], { ghost: true, ghostChrom: "X", ghostText: "missing" }, ctx));
+        if ((clone.slots["mar"] || []).length) html.push(cellHtml("mar", clone.slots["mar"], {}, ctx));
+      } else {
+        grp.chroms.forEach(function (chrom) {
+          var insts = clone.slots[chrom] || [];
+          html.push(cellHtml(chrom, insts, { ghost: insts.length === 0, ghostChrom: chrom, ghostText: "nullisomy" }, ctx));
+        });
       }
-      if (grp.mar && (clone.slots["mar"] || []).length) html.push(cellHtml("mar", clone.slots["mar"], {}, ctx));
       html.push('</div>');
     });
     html.push('</div>');

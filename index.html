@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>KaryoScope — draw &amp; understand karyotypes</title>
+<title>KaryoScope, draw &amp; understand karyotypes</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   :root {
@@ -90,9 +90,10 @@
   .clone-head .cn { font: 600 14px var(--font-mono); }
   .clone-head .cc { font-size: 12.5px; color: var(--muted); }
 
-  /* karyogram — one fixed Denver-group row per line (not width-wrapped) */
+  /* karyogram, one fixed Denver-group row per line (not width-wrapped) */
   .karyogram { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px 14px 10px; }
   .kgroup { display: flex; flex-wrap: wrap; gap: 3px; padding: 4px 6px; border-radius: 10px; align-items: flex-start; }
+  .kgroup[data-group="sex"] { background: #eef1fd; }
   .kcell { display: flex; flex-direction: column; align-items: center; }
   .kcell.sexcell .klabel { color: var(--periwinkle); }
   .kcell-copies { display: flex; gap: 3px; align-items: flex-start; min-height: 10px; }
@@ -171,7 +172,7 @@
         <circle cx="29" cy="5" r="3.4" fill="#ec9b27"/>
       </svg>
       <h1>KaryoScope</h1>
-      <div class="tag">Type a karyotype — see it drawn, and understand what every symbol means. <span class="byline">a StudyRare tool</span></div>
+      <div class="tag">Type a karyotype, see it drawn, and understand what every symbol means. <span class="byline">a StudyRare tool</span></div>
     </div>
     <div class="controls">
       <input id="kinput" type="text" spellcheck="false"
@@ -187,7 +188,7 @@
       </div>
       <span class="vlabel">Bands</span>
       <div class="seg" id="levelseg">
-        <button data-level="0" title="~400-band resolution: fewer, wider bands — easiest to read.">Low · ~400</button>
+        <button data-level="0" title="~400-band resolution: fewer, wider bands, easiest to read.">Low · ~400</button>
         <button data-level="1" title="~550-band resolution: the usual clinical level.">Std · ~550</button>
         <button data-level="99" title="~850-band resolution: maximum detail.">High · ~850</button>
       </div>
@@ -233,7 +234,7 @@
     </div>
     <footer class="wrap">
       Band data: UCSC <em>cytoBandIdeo</em>, human genome build hg38 (24 chromosomes, 862 bands).
-      KaryoScope is an <strong>educational</strong> visualizer for cytogenetic nomenclature — not a diagnostic tool.
+      KaryoScope is an <strong>educational</strong> visualizer for cytogenetic nomenclature, not a diagnostic tool.
     </footer>
   </div>
 </main>
@@ -279,24 +280,26 @@
   function swatch(color, label) {
     return '<span class="item"><span class="sw" style="background:' + color + '"></span>' + label + '</span>';
   }
-  function hatchSwatch(label, color) {
-    color = color || "#475569";
-    var bg = "repeating-linear-gradient(45deg," + color + " 0," + color + " 1.6px,#fff 1.6px,#fff 4.5px)";
+  function hatchSwatch(label, opts) {
+    opts = opts || {};
+    var color = opts.color || "#475569", angle = opts.angle == null ? 45 : opts.angle, gap = opts.gap || 4.5;
+    var bg = "repeating-linear-gradient(" + angle + "deg," + color + " 0," + color + " 1.6px,#fff 1.6px,#fff " + gap + "px)";
     return '<span class="item"><span class="sw" style="background-image:' + bg + '"></span>' + label + '</span>';
   }
+  var CEN_SW = { angle: 45, gap: 3.4 }, HET_SW = { angle: -45, gap: 7 };
   function buildLegend() {
     var box = $("#legend");
     if (MODE === "simple") {
-      // Plain baseline + only the affected chromosomes are coloured.
-      var html = swatch("#ffffff", "unaffected chromosome (grey banding)") +
-        hatchSwatch("centromere / heterochromatin (hatched)");
+      // Plain baseline + only the involved chromosomes are coloured.
+      var html = swatch("#ffffff", "grey = a chromosome not involved in the abnormality") +
+        hatchSwatch("centromere", CEN_SW) + hatchSwatch("variable region / stalk", HET_SW);
       var keys = Object.keys(AFFECTED);
       if (keys.length) {
         html += '<span class="item" style="color:#94a3b8">│ involved:</span>';
         keys.forEach(function (c) { html += swatch(AFFECTED[c], "chr " + c); });
-        html += '<span class="item" style="color:#64748b">— translocation pieces are coloured by the chromosome they came from</span>';
+        html += '<span class="item" style="color:#64748b">(translocation pieces take the colour of the chromosome they came from)</span>';
       } else {
-        html += '<span class="item" style="color:#64748b">no rearrangement in this karyotype — nothing to highlight</span>';
+        html += '<span class="item" style="color:#64748b">nothing to highlight in a normal karyotype</span>';
       }
       box.innerHTML = html;
     } else {
@@ -305,7 +308,7 @@
         [S.gneg, "G-neg (pale, gene-rich)"], [S.gpos50, "G-pos (dark, gene-poor)"], [S.gpos100, "darkest band"]
       ];
       var html2 = items.map(function (i) { return swatch(i[0], i[1]); }).join("");
-      html2 += hatchSwatch("centromere / variable / stalk (hatched)");
+      html2 += hatchSwatch("centromere", CEN_SW) + hatchSwatch("variable region / stalk", HET_SW);
       [[OP.del, "deleted"], [OP.dup, "duplicated"], [OP.inv, "inverted"], [OP.add, "added (unknown)"]].forEach(function (i) { html2 += swatch(i[0], i[1]); });
       box.innerHTML = html2;
     }
@@ -343,13 +346,13 @@
   function renderSummary(model) {
     var box = $("#summary");
     var kt = model.raw;
-    var okPill = model.clones.every(function (c) { return c.counts.ok; })
-      ? '<span class="pill ok">counts check out</span>'
-      : '<span class="pill warn">count mismatch — see notes</span>';
+    var pill = model.clones.every(function (c) { return c.counts.ok; })
+      ? ''
+      : '<span class="pill warn">count doesn’t add up</span>';
     var sexes = model.clones.map(function (c) { return c.sex.note; });
     box.innerHTML = '<span class="kt">' + escapeHtml(kt) + '</span>' +
       '<span class="sex">' + sexes.join(" · ") + (model.isMosaic ? " · mosaic (" + model.clones.length + " clones)" : "") + '</span>' +
-      okPill;
+      pill;
   }
 
   function renderKaryogram(model) {
@@ -376,7 +379,7 @@
 
   function renderDetail(chrom, hotBand) {
     currentDetailChrom = chrom;
-    $("#detail-title").textContent = "Chromosome " + chrom + " — band map";
+    $("#detail-title").textContent = "Chromosome " + chrom + ", band map";
     $("#detail-svg").innerHTML = window.Karyo.drawDetail(chrom, { height: 430, theme: MODE, level: LEVEL, hue: AFFECTED[chrom] });
     var info = $("#detail-info"), A = window.Teach.ARM_INFO;
     if (hotBand) {
@@ -386,15 +389,15 @@
         '<h3>' + chrom + hotBand + '</h3>' +
         '<div>' + (bi.read || "") + '</div>' +
         '<div class="k">Location</div><div>' + (bi.position || "") + '</div>' +
-        (st ? '<div class="k">Stain — ' + st.name + '</div><div>' + st.bio + '</div>' : "");
+        (st ? '<div class="k">Stain, ' + st.name + '</div><div>' + st.bio + '</div>' : "");
       // highlight the label
       var lbl = $("#detail-svg").querySelector('.bandlabel[data-band="' + cssEsc(hotBand) + '"]');
       if (lbl) lbl.classList.add("hot");
     } else {
       info.innerHTML =
         '<h3>How to read a chromosome</h3>' +
-        '<div class="k">p — short arm (top)</div><div>' + A.p + '</div>' +
-        '<div class="k">q — long arm (bottom)</div><div>' + A.q + '</div>' +
+        '<div class="k">p, short arm (top)</div><div>' + A.p + '</div>' +
+        '<div class="k">q, long arm (bottom)</div><div>' + A.q + '</div>' +
         '<div class="k">Centromere</div><div>' + A.centromere + '</div>' +
         '<div class="k">Telomere (pter / qter)</div><div>' + A.telomere + '</div>' +
         '<div class="k">Bands</div><div>' + A.band + '</div>' +
@@ -473,7 +476,7 @@
       $("#summary").innerHTML = '<span class="kt">' + escapeHtml(val) + '</span><span class="sex">couldn’t read this as a karyotype yet</span>';
       $("#karyo").innerHTML = '<div class="emptystate">Fix the karyotype above and the drawing shows up here.<br>' +
         'A karyotype looks like <code>46,XY</code> · <code>47,XX,+21</code> · <code>46,XY,t(9;22)(q34;q11.2)</code>.</div>';
-      $("#decode").innerHTML = '<div class="muted">—</div>';
+      $("#decode").innerHTML = '<div class="muted">…</div>';
       $("#clinical-card").style.display = "none";
       buildLegend();
       return;
@@ -503,14 +506,14 @@
 
   function renderWarnings(model) {
     var box = $("#warnings");
-    var w = model.warnings, s = model.suggestion;
-    if (!w.length && !s) { box.innerHTML = ""; return; }
+    var w = model.warnings, fix = model.suggestion || model.countFix;
+    if (!w.length && !fix) { box.innerHTML = ""; return; }
     var parts = ['<div class="warnbox">'];
-    if (s && s !== model.raw) {
-      parts.push('<div class="dym-row">Did you mean <button class="dym" data-k="' + escapeHtml(s) + '">' + escapeHtml(s) + '</button>?</div>');
+    if (fix && fix !== model.raw) {
+      parts.push('<div class="dym-row">Did you mean <button class="dym" data-k="' + escapeHtml(fix) + '">' + escapeHtml(fix) + '</button>?</div>');
     }
     if (w.length) {
-      parts.push('<div class="warn-title">' + (s ? "A couple of things to check:" : "Let’s sort this out:") + '</div>');
+      parts.push('<div class="warn-title">' + (fix ? "A couple of things to check:" : "Let’s sort this out:") + '</div>');
       parts.push('<ul>' + w.map(function (x) { return "<li>" + escapeHtml(x) + "</li>"; }).join("") + '</ul>');
     }
     parts.push('</div>');
@@ -535,8 +538,8 @@
     });
     var vh = $("#viewhint");
     if (vh) vh.innerHTML = MODE === "simple"
-      ? "<b>Simple</b> — quiet grey chromosomes; only the ones involved in an abnormality are coloured (a normal karyotype looks all-grey)."
-      : "<b>Detailed</b> — realistic Giemsa banding on every chromosome, with no highlighting.";
+      ? "<b>Simple</b>, quiet grey chromosomes; only the ones involved in an abnormality are coloured (a normal karyotype looks all-grey)."
+      : "<b>Detailed</b>, realistic Giemsa banding on every chromosome, with no highlighting.";
   }
 
   // init
