@@ -449,6 +449,23 @@
   function render(container, clone, opts) {
     opts = opts || {};
     var ctx = { theme: opts.theme || "detailed", level: opts.level == null ? 99 : opts.level, affected: opts.affected || computeAffected(clone) };
+
+    // "Affected only" view (CyDAS AlteredChromosomesOnly): a single focused row of
+    // just the involved chromosomes (each with its normal homolog + derivative).
+    if (opts.only != null) {
+      var order = window.ISCN.ALL;
+      var list = opts.only.slice().sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); });
+      var oh = ['<div class="karyogram affected-only"><div class="kgroup">'];
+      list.forEach(function (chrom) {
+        var insts = clone.slots[chrom] || [];
+        if (insts.length) oh.push(cellHtml(chrom, insts, { sexcell: (chrom === "X" || chrom === "Y") }, ctx));
+      });
+      if ((clone.slots["mar"] || []).length) oh.push(cellHtml("mar", clone.slots["mar"], {}, ctx));
+      oh.push('</div></div>');
+      container.innerHTML = oh.join("");
+      return;
+    }
+
     var html = ['<div class="karyogram">'];
     GROUPS.forEach(function (grp) {
       html.push('<div class="kgroup" data-group="' + grp.name + '">');

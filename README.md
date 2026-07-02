@@ -89,6 +89,10 @@ python3 build_ideogram.py       # writes ../ideogram-data.js
   chromosome identity; translocation/derivative pieces take their origin
   chromosome's colour, so the event pops). *Realistic* is true-to-life Giemsa
   banding on every chromosome, with nothing highlighted (spot the change yourself).
+- **Show** (toggle): *All* draws the full karyogram; *Affected* isolates just the
+  chromosomes involved in the abnormality (each with its normal homolog) into one
+  focused row — CyDAS's `AlteredChromosomesOnly`. For `t(9;22)` that's 9, der(9),
+  22, der(22) instead of all 46.
 - **Band resolution** (toggle): High ~850 / Std ~550 / Low ~400. Lower levels
   merge sub-bands into their parent band (span-weighted stain) — fewer, wider,
   easier-to-read bands. Breakpoints still resolve against full-resolution data.

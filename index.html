@@ -194,6 +194,11 @@
         <button data-level="1" title="~550-band resolution: the usual clinical level.">Std · ~550</button>
         <button data-level="99" title="~850-band resolution: maximum detail.">High · ~850</button>
       </div>
+      <span class="vlabel">Show</span>
+      <div class="seg" id="showseg">
+        <button data-show="all" title="The full karyogram, all 46 chromosomes.">All</button>
+        <button data-show="affected" title="Only the chromosomes involved in the abnormality, each with its normal homolog.">Affected</button>
+      </div>
     </div>
     <div class="viewhint" id="viewhint"></div>
   </div>
@@ -255,6 +260,7 @@
   var currentDetailChrom = "1";
   var MODE = "simple";     // "simple" | "detailed"
   var LEVEL = 1;           // band resolution: 0 (~400), 1 (~550), 99 (~850)
+  var SHOW = "all";        // "all" | "affected" (isolate the involved chromosomes)
   var AFFECTED = {};       // chrom -> hex colour (Simple mode highlight key)
   var spokenText = "";     // current karyotype rendered for text-to-speech
 
@@ -370,6 +376,13 @@
   function renderKaryogram(model) {
     var host = $("#karyo");
     host.innerHTML = "";
+    var affKeys = Object.keys(AFFECTED);
+    var hasMar = model.clones.some(function (c) { return (c.slots.mar || []).length; });
+    if (SHOW === "affected" && affKeys.length === 0 && !hasMar) {
+      host.innerHTML = '<div class="emptystate">Nothing abnormal to isolate in this karyotype. Switch <b>Show</b> back to <b>All</b> for the full karyogram.</div>';
+      return;
+    }
+    var only = SHOW === "affected" ? affKeys : null;
     model.clones.forEach(function (clone, i) {
       var block = document.createElement("div");
       block.className = "clone-block";
@@ -383,7 +396,7 @@
         block.appendChild(head);
       }
       var kg = document.createElement("div");
-      window.Karyo.render(kg, clone, { theme: MODE, level: LEVEL, affected: AFFECTED });
+      window.Karyo.render(kg, clone, { theme: MODE, level: LEVEL, affected: AFFECTED, only: only });
       block.appendChild(kg);
       host.appendChild(block);
     });
@@ -536,7 +549,7 @@
   function escapeHtml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
   function cssEsc(s) { return String(s).replace(/["\\]/g, "\\$&"); }
   function setHash() {
-    try { history.replaceState(null, "", "?k=" + encodeURIComponent(input.value.trim()) + "&style=" + MODE + "&bands=" + LEVEL); } catch (e) {}
+    try { history.replaceState(null, "", "?k=" + encodeURIComponent(input.value.trim()) + "&style=" + MODE + "&bands=" + LEVEL + "&show=" + SHOW); } catch (e) {}
   }
   function getParam(name) {
     var m = new RegExp("[?&]" + name + "=([^&]+)").exec(location.search);
@@ -548,6 +561,9 @@
     });
     Array.prototype.forEach.call(document.querySelectorAll("#levelseg button"), function (b) {
       b.classList.toggle("on", String(b.getAttribute("data-level")) === String(LEVEL));
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#showseg button"), function (b) {
+      b.classList.toggle("on", b.getAttribute("data-show") === SHOW);
     });
     var vh = $("#viewhint");
     if (vh) vh.innerHTML = MODE === "simple"
@@ -567,6 +583,10 @@
     var b = e.target.closest ? e.target.closest("button") : null; if (!b) return;
     LEVEL = parseInt(b.getAttribute("data-level"), 10); syncSeg(); run();
   });
+  $("#showseg").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("button") : null; if (!b) return;
+    SHOW = b.getAttribute("data-show"); syncSeg(); run();
+  });
   $("#warnings").addEventListener("click", function (e) {
     var b = e.target.closest ? e.target.closest(".dym") : null; if (!b) return;
     input.value = b.getAttribute("data-k"); run();
@@ -577,6 +597,7 @@
 
   var pStyle = getParam("style"); if (pStyle === "simple" || pStyle === "detailed") MODE = pStyle;
   var pBands = getParam("bands"); if (pBands !== null && ["0", "1", "99"].indexOf(pBands) >= 0) LEVEL = parseInt(pBands, 10);
+  var pShow = getParam("show"); if (pShow === "all" || pShow === "affected") SHOW = pShow;
   syncSeg();
   var initial = getParam("k") || "46,XY,t(9;22)(q34;q11.2)";
   input.value = initial;
