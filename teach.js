@@ -208,12 +208,47 @@
     band: "A stretch of chromosome that stains light or dark with Giemsa (G-banding). The reproducible pattern of bands is a chromosome's 'barcode', it's how each one is identified and how breakpoints are pinpointed."
   };
 
+  // ---- spoken pronunciation (fed to the browser's free Web Speech API) -----
+  function pronounceBand(chrom, band, withChrom) {
+    var m = /^([pq])(\d+)(?:\.(\d+))?/.exec(band || "");
+    var body = m ? (m[1] + " " + digitWords(m[2]) + (m[3] ? " point " + digitWords(m[3]) : "")) : (band || "");
+    return (withChrom ? chrom + " " : "") + body;
+  }
+  function pronounceAb(ab) {
+    var c = ab.chroms[0], bp = ab.breakpoints || [];
+    function bands(i, withChrom) { return (bp[i] || []).map(function (b) { return pronounceBand(ab.chroms[i] || c, b, withChrom); }).join(" and "); }
+    switch (ab.kind) {
+      case "gain": return "gain of chromosome " + c;
+      case "loss": return "loss of chromosome " + c;
+      case "del": return "deletion of chromosome " + c + ((bp[0] || []).length ? " at " + bands(0, false) : "");
+      case "dup": return "duplication on chromosome " + c;
+      case "inv": return "inversion of chromosome " + c + ((bp[0] || []).length ? " between " + bands(0, false) : "");
+      case "t": case "dic": return "translocation between chromosomes " + ab.chroms.join(" and ") +
+        (bp.length ? ", breakpoints " + ab.chroms.map(function (cc, i) { return pronounceBand(cc, (bp[i] || [])[0], true); }).join(" and ") : "");
+      case "iso": return "isochromosome " + c;
+      case "ring": return "ring chromosome " + c;
+      case "der": return "derivative chromosome " + c;
+      case "add": return "additional material on chromosome " + c;
+      case "mar": return "a marker chromosome";
+      case "trp": return "triplication on chromosome " + c;
+      default: return ab.raw || "";
+    }
+  }
+  function pronounce(clone) {
+    var parts = [];
+    if (clone.modalNumber != null) parts.push(String(clone.modalNumber));
+    if (clone.sex.tokens.length) parts.push(clone.sex.tokens.join(" "));
+    clone.aberrations.forEach(function (ab) { parts.push(pronounceAb(ab)); });
+    return parts.filter(Boolean).join(". ");
+  }
+
   window.Teach = {
     decode: decode,
     bandInfo: bandInfo,
     stainInfo: stainInfo,
     describeAberration: describeAberration,
     syndromes: syndromes,
+    pronounce: pronounce,
     ARM_INFO: ARM_INFO
   };
 })();

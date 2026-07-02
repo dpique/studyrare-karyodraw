@@ -78,8 +78,10 @@
   .card h2 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 13px 16px; border-bottom: 1px solid var(--line); }
   .card .body { padding: 14px 16px; }
 
-  .summary { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; padding: 12px 16px; }
+  .summary { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; padding: 12px 16px; }
   .summary .kt { font: 600 17px var(--font-mono); color: var(--ink); }
+  .speak { border: none; background: transparent; cursor: pointer; font-size: 15px; padding: 0 2px; line-height: 1; opacity: .6; }
+  .speak:hover { opacity: 1; }
   .summary .sex { font-size: 13px; color: var(--muted); }
   .pill { font-size: 12px; padding: 3px 9px; border-radius: 999px; font-weight: 700; }
   .pill.ok { background: var(--sage-50); color: var(--sage-700); }
@@ -90,9 +92,9 @@
   .clone-head .cn { font: 600 14px var(--font-mono); }
   .clone-head .cc { font-size: 12.5px; color: var(--muted); }
 
-  /* karyogram, one fixed Denver-group row per line (not width-wrapped) */
-  .karyogram { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px 14px 10px; }
-  .kgroup { display: flex; flex-wrap: wrap; gap: 3px; padding: 4px 6px; border-radius: 10px; align-items: flex-start; }
+  /* karyogram, one fixed Denver-group row per line (not width-wrapped); block centred */
+  .karyogram { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px 14px 10px; width: fit-content; max-width: 100%; margin: 0 auto; }
+  .kgroup { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 6px; border-radius: 10px; align-items: flex-end; }
   .kgroup[data-group="sex"] { background: #eef1fd; }
   .kcell { display: flex; flex-direction: column; align-items: center; }
   .kcell.sexcell .klabel { color: var(--periwinkle); }
@@ -254,6 +256,15 @@
   var MODE = "simple";     // "simple" | "detailed"
   var LEVEL = 1;           // band resolution: 0 (~400), 1 (~550), 99 (~850)
   var AFFECTED = {};       // chrom -> hex colour (Simple mode highlight key)
+  var spokenText = "";     // current karyotype rendered for text-to-speech
+
+  function speakKaryotype() {
+    if (!window.speechSynthesis || !spokenText) return;
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(spokenText);
+    u.rate = 0.9;
+    window.speechSynthesis.speak(u);
+  }
 
   var EXAMPLES = [
     ["46,XY", "male"], ["46,XX", "female"],
@@ -351,6 +362,7 @@
       : '<span class="pill warn">count doesn’t add up</span>';
     var sexes = model.clones.map(function (c) { return c.sex.note; });
     box.innerHTML = '<span class="kt">' + escapeHtml(kt) + '</span>' +
+      '<button class="speak" title="Hear it pronounced" aria-label="Hear it pronounced">🔊</button>' +
       '<span class="sex">' + sexes.join(" · ") + (model.isMosaic ? " · mosaic (" + model.clones.length + " clones)" : "") + '</span>' +
       pill;
   }
@@ -470,6 +482,7 @@
     setHash(val);
     var model = window.ISCN.parse(val);
     AFFECTED = window.Karyo.computeAffected(model.clones);
+    spokenText = model.clones.map(function (c) { return window.Teach.pronounce(c); }).filter(Boolean).join(". Next clone. ");
     renderWarnings(model);
     var invalid = !model.clones.length || model.clones.every(function (c) { return c.modalNumber == null; }) || !!model.suggestion;
     if (invalid) {
@@ -557,6 +570,9 @@
   $("#warnings").addEventListener("click", function (e) {
     var b = e.target.closest ? e.target.closest(".dym") : null; if (!b) return;
     input.value = b.getAttribute("data-k"); run();
+  });
+  $("#summary").addEventListener("click", function (e) {
+    if (e.target && e.target.closest && e.target.closest(".speak")) speakKaryotype();
   });
 
   var pStyle = getParam("style"); if (pStyle === "simple" || pStyle === "detailed") MODE = pStyle;

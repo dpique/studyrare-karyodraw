@@ -61,7 +61,7 @@
   var HET_HATCH = { angle: -45, gap: 7, w: 1.4 };
 
   // ----- geometry ------------------------------------------------------------
-  var MAXH = 232, W = 22, maxLen = 0;
+  var MAXH = 280, W = 28, maxLen = 0;
   IDEO.chromosomes.forEach(function (c) { maxLen = Math.max(maxLen, IDEO.data[c].length); });
   var PX = MAXH / maxLen;
   function h(bp) { return Math.max(1, bp * PX); }

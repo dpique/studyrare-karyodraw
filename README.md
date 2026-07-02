@@ -6,11 +6,14 @@ A modern, **teaching-first** karyogram tool. Type an ISCN karyotype
 1. **draws** the banded chromosome ideograms — arranged as a real karyogram,
    with derivative chromosomes reshaped for structural rearrangements, and
 2. **explains** it — a plain-English, token-by-token decode of the karyotype, a
-   hover-to-learn band map, an "anatomy of a chromosome" reference, and curated
-   clinical notes for board-relevant findings.
+   hover-to-learn band map, an "anatomy of a chromosome" reference, curated
+   clinical notes for board-relevant findings, and a 🔊 **"hear it pronounced"**
+   button (free, offline, via the browser's Web Speech API).
 
 Built as a spiritual successor to the old CyDAS *WebExample4* static-image
-generator — but with a clean palette and an actual teaching layer.
+generator — but with a clean palette and an actual teaching layer. See
+[`docs/CYDAS.md`](docs/CYDAS.md) for the lineage and which CyDAS conventions we
+follow (fixed rows, count-fix, replace-vs-add).
 
 ## Run it
 
