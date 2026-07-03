@@ -1,0 +1,7 @@
+_build_inputs/
+docs/
+README.md
+start.sh
+.gitignore
+wrangler.jsonc
+.assetsignore

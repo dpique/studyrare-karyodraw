@@ -1,0 +1,10 @@
+{
+  // KaryoDraw is a pure static site (index.html + JS modules, no server code).
+  // This deploys it as an assets-only Worker: `npx wrangler deploy` uploads the
+  // files below and serves index.html at the root. No build step.
+  "name": "studyrare-karyodraw",
+  "compatibility_date": "2026-07-03",
+  "assets": {
+    "directory": "."
+  }
+}
