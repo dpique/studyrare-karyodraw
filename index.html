@@ -173,8 +173,9 @@
   .viewout { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
   .kactions { display: flex; align-items: center; gap: 8px; padding: 2px 16px 12px; flex-wrap: wrap; }
   .kactions .spacer { flex: 1 1 auto; }
-  .kactions .hint { font-size: 12px; color: var(--muted); }
-  .kactions .hint b { color: var(--peri-700); font-weight: 700; }
+  .kactions .sharelink { border: none; background: none; color: var(--peri-700); font: 600 12px var(--font-sans); cursor: pointer; padding: 4px 7px; border-radius: 7px; }
+  .kactions .sharelink:hover { background: var(--peri-50); text-decoration: underline; }
+  .kactions .sharelink:disabled { text-decoration: none; opacity: .85; }
 
   /* ---- printable 1-page summary (hidden on screen) ---- */
   #printsheet { display: none; }
@@ -279,7 +280,7 @@
             <button class="pbtn" id="copyimg" title="Copy the karyogram as an image — ready to paste into slides, notes, or a message">⧉ Copy image</button>
             <button class="pbtn" id="dlimg" title="Download the karyogram as a PNG file">↓ PNG</button>
             <span class="spacer"></span>
-            <span class="hint"><b>🔗 Shareable:</b> the link updates as you edit — copy it to share this exact view.</span>
+            <button class="sharelink" id="copyhint" type="button" title="Copy a link that reproduces this exact view — it updates as you edit">🔗 Copy link to this view</button>
           </div>
           <div id="karyo"></div>
         </div>
@@ -774,10 +775,9 @@
 
     var M = 18, footH = 16, gap = 12;
     var title = model.raw;
-    var subtitle = model.clones.map(function (c) { return c.sex.note; }).join(" · ") + (model.isMosaic ? " · mosaic" : "");
-    var titleBlockH = subtitle ? 34 : 20;
-    // widen the canvas so a long karyotype / sex note never runs past the edge
-    var contentW = Math.max(kgW, title.length * 9.2, subtitle.length * 6.3, 320);
+    var titleBlockH = 20;   // karyotype title only; sex note omitted for a clean image
+    // widen the canvas so a long karyotype never runs past the edge
+    var contentW = Math.max(kgW, title.length * 9.2, 320);
     var outW = Math.ceil(contentW + M * 2);
     var outH = Math.ceil(M + titleBlockH + gap + kgH + gap + footH + M);
     var kgX = M + (contentW - kgW) / 2, kgY = M + titleBlockH + gap;
@@ -785,7 +785,6 @@
     var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + outW + '" height="' + outH + '" viewBox="0 0 ' + outW + ' ' + outH + '">' +
       '<rect width="' + outW + '" height="' + outH + '" fill="#ffffff"/>' +
       '<text x="' + M + '" y="' + (M + 14) + '" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" font-weight="700" fill="#242a45">' + escXml(title) + '</text>' +
-      (subtitle ? '<text x="' + M + '" y="' + (M + 30) + '" font-family="system-ui, sans-serif" font-size="11.5" fill="#5f698a">' + escXml(subtitle) + '</text>' : '') +
       '<g transform="translate(' + kgX.toFixed(1) + ',' + kgY.toFixed(1) + ')">' + pieces.join("") + '</g>' +
       '<text x="' + M + '" y="' + (outH - M + 8) + '" font-family="system-ui, sans-serif" font-size="9" fill="#a0a8bd">Educational visualizer · not a diagnostic tool</text>' +
       '<text x="' + (outW - M) + '" y="' + (outH - M + 8) + '" text-anchor="end" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#5e72e4">karyodraw.com</text>' +
@@ -837,8 +836,9 @@
       pngBlob().then(function (b) { downloadBlob(b); flash(btn, "↓ Saved PNG"); }).catch(function () { flash(btn, "✕ Failed"); });
     }
   }
-  function copyLink() {
-    var btn = $("#copylink"), url = location.href;
+  function copyLink(btn) {
+    btn = btn || $("#copylink");
+    var url = location.href;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(function () { flash(btn, "✓ Link copied!"); })
         .catch(function () { window.prompt("Copy this link:", url); });
@@ -862,7 +862,8 @@
     SHOW = b.getAttribute("data-show"); syncSeg(); run();
   });
   $("#printbtn").addEventListener("click", function () { window.print(); });
-  $("#copylink").addEventListener("click", copyLink);
+  $("#copylink").addEventListener("click", function () { copyLink($("#copylink")); });
+  $("#copyhint").addEventListener("click", function () { copyLink($("#copyhint")); });
   $("#copyimg").addEventListener("click", copyImage);
   $("#dlimg").addEventListener("click", function () {
     var btn = this; pngBlob().then(function (b) { downloadBlob(b); flash(btn, "✓ Saved"); }).catch(function () { flash(btn, "✕ Failed"); });
