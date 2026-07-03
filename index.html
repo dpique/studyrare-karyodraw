@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>KaryoDraw: visualize &amp; understand any karyotype</title>
 <link rel="canonical" href="https://karyodraw.com/" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='9' cy='22' r='3.4' fill='%235e72e4'/%3E%3Ccircle cx='15' cy='15' r='4.4' fill='%235e72e4'/%3E%3Ccircle cx='23' cy='20' r='3' fill='%235e72e4'/%3E%3Ccircle cx='24' cy='11' r='3.4' fill='%235e72e4'/%3E%3Ccircle cx='9' cy='11' r='2.3' fill='%239da8ef'/%3E%3Ccircle cx='29' cy='6' r='3.6' fill='%23ec9b27'/%3E%3C/svg%3E" />
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   :root {
@@ -161,8 +162,16 @@
   #tooltip b { color: #9da8ef; }
   details.anatomy summary { cursor: pointer; font-weight: 600; color: var(--periwinkle); }
 
-  .pbtn { margin-left: auto; border: 1px solid #cdd2e1; background: #fff; color: var(--ink-2); border-radius: 9px; padding: 6px 12px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .pbtn { border: 1px solid #cdd2e1; background: #fff; color: var(--ink-2); border-radius: 9px; padding: 6px 12px; font-size: 13px; cursor: pointer; font-family: inherit; }
   .pbtn:hover { background: #f0f2f7; border-color: var(--periwinkle); color: var(--peri-700); }
+  .pbtn:disabled { opacity: .7; cursor: default; }
+  .pbtn.primary { background: var(--peri-50); border-color: var(--peri-300); color: var(--peri-700); font-weight: 700; }
+  .pbtn.primary:hover { background: #dee3fb; }
+  .viewout { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .kactions { display: flex; align-items: center; gap: 8px; padding: 2px 16px 12px; flex-wrap: wrap; }
+  .kactions .spacer { flex: 1 1 auto; }
+  .kactions .hint { font-size: 12px; color: var(--muted); }
+  .kactions .hint b { color: var(--peri-700); font-weight: 700; }
 
   /* ---- printable 1-page summary (hidden on screen) ---- */
   #printsheet { display: none; }
@@ -236,7 +245,10 @@
         <button data-show="all" title="The full karyogram, all 46 chromosomes.">All</button>
         <button data-show="affected" title="Only the chromosomes involved in the abnormality, each with its normal homolog.">Affected</button>
       </div>
-      <button class="pbtn" id="printbtn" title="Print, or save as a 1-page PDF summary for a genetic counselor">🖨 Print summary</button>
+      <span class="viewout">
+        <button class="pbtn primary" id="copylink" title="Copy a link to this exact karyotype + view — anyone who opens it lands on precisely what you see">🔗 Copy link</button>
+        <button class="pbtn" id="printbtn" title="Print, or save as a 1-page PDF summary for a genetic counselor">🖨 Print summary</button>
+      </span>
     </div>
     <div class="viewhint" id="viewhint"></div>
   </div>
@@ -249,6 +261,12 @@
       <section>
         <div class="card">
           <div id="summary" class="summary"></div>
+          <div class="kactions" id="kactions">
+            <button class="pbtn" id="copyimg" title="Copy the karyogram as an image — ready to paste into slides, notes, or a message">⧉ Copy image</button>
+            <button class="pbtn" id="dlimg" title="Download the karyogram as a PNG file">↓ PNG</button>
+            <span class="spacer"></span>
+            <span class="hint"><b>🔗 Shareable:</b> the link updates as you edit — copy it to share this exact view.</span>
+          </div>
           <div id="karyo"></div>
         </div>
         <div class="card">
@@ -278,6 +296,7 @@
       </aside>
     </div>
     <footer class="wrap">
+      <strong>KaryoDraw</strong> · <a href="https://karyodraw.com">karyodraw.com</a> · a StudyRare tool<br>
       Band data: UCSC <em>cytoBandIdeo</em>, human genome build hg38 (24 chromosomes, 862 bands).
       KaryoDraw is an <strong>educational</strong> visualizer for cytogenetic nomenclature, not a diagnostic tool.
     </footer>
@@ -302,6 +321,15 @@
   var SHOW = "all";        // "all" | "affected" (isolate the involved chromosomes)
   var AFFECTED = {};       // chrom -> hex color (Simple mode highlight key)
   var spokenText = "";     // current karyotype rendered for text-to-speech
+  var currentModel = null; // last successfully parsed model (for image export)
+
+  // URL <-> UI vocabulary. Internally MODE stays simple/detailed and LEVEL 0/1/99,
+  // but the shareable query uses the words on the buttons so a shared link reads
+  // like what's on screen. Old values are still accepted so existing links work.
+  var STYLE_TO_URL = { simple: "highlight", detailed: "realistic" };
+  var URL_TO_STYLE = { highlight: "simple", realistic: "detailed", simple: "simple", detailed: "detailed" };
+  var BANDS_TO_URL = { 0: "400", 1: "550", 99: "850" };
+  var URL_TO_BANDS = { "400": 0, "550": 1, "850": 99, "0": 0, "1": 1, "99": 99 };
 
   function speakKaryotype() {
     if (!window.speechSynthesis || !spokenText) return;
@@ -559,9 +587,13 @@
       $("#decode").innerHTML = '<div class="muted">…</div>';
       $("#clinical-card").style.display = "none";
       $("#printsheet").innerHTML = "";
+      currentModel = null;
+      var kaHide = $("#kactions"); if (kaHide) kaHide.style.display = "none";
       buildLegend();
       return;
     }
+    currentModel = model;
+    var kaShow = $("#kactions"); if (kaShow) kaShow.style.display = "flex";
     renderSummary(model);
     renderKaryogram(model);
     renderDecode(model.clones);
@@ -636,8 +668,18 @@
 
   function escapeHtml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
   function cssEsc(s) { return String(s).replace(/["\\]/g, "\\$&"); }
+  // Keep punctuation that's legal in a query value readable (46,XY,t(9;22)…)
+  // instead of a wall of %2C/%3B, so the shared URL mirrors the input box.
+  function prettyEncode(s) {
+    return encodeURIComponent(s)
+      .replace(/%2C/g, ",").replace(/%3B/g, ";").replace(/%2F/g, "/")
+      .replace(/%5B/g, "[").replace(/%5D/g, "]");
+  }
   function setHash() {
-    try { history.replaceState(null, "", "?k=" + encodeURIComponent(input.value.trim()) + "&style=" + MODE + "&bands=" + LEVEL + "&show=" + SHOW); } catch (e) {}
+    try {
+      history.replaceState(null, "", "?k=" + prettyEncode(input.value.trim()) +
+        "&style=" + STYLE_TO_URL[MODE] + "&bands=" + BANDS_TO_URL[LEVEL] + "&show=" + SHOW);
+    } catch (e) {}
   }
   function getParam(name) {
     var m = new RegExp("[?&]" + name + "=([^&]+)").exec(location.search);
@@ -659,6 +701,127 @@
       : "<b>Realistic</b>: true-to-life Giemsa banding on every chromosome, nothing highlighted. Try to spot the abnormality yourself.";
   }
 
+  // ---- image export + share -------------------------------------------------
+  function escXml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+
+  function flash(btn, msg) {
+    if (!btn) return;
+    if (btn._t) clearTimeout(btn._t);
+    if (btn._orig == null) btn._orig = btn.textContent;
+    btn.textContent = msg; btn.disabled = true;
+    btn._t = setTimeout(function () { btn.textContent = btn._orig; btn._orig = null; btn.disabled = false; btn._t = null; }, 1600);
+  }
+
+  // Rebuild the on-screen karyogram as ONE self-contained SVG. The chromosome
+  // ideograms are already SVG, so we render a fresh natural-size copy off-screen,
+  // measure where each piece + label landed, and stitch them into a single titled,
+  // watermarked image. Pure SVG (no foreignObject) → rasterizes cleanly everywhere.
+  function buildExportSVG(model) {
+    var clone = model.clones[0];
+    var only = SHOW === "affected" ? Object.keys(AFFECTED) : null;
+    if (only && only.length === 0) only = null;
+    var stage = document.createElement("div");
+    stage.style.cssText = "position:absolute;left:-99999px;top:0;width:max-content;";
+    document.body.appendChild(stage);
+    window.Karyo.render(stage, clone, { theme: MODE, level: LEVEL, affected: AFFECTED, only: only });
+    var kg = stage.querySelector(".karyogram");
+    var base = kg.getBoundingClientRect();
+    var pieces = [];
+    Array.prototype.forEach.call(kg.querySelectorAll("svg.ideo"), function (svg) {
+      var r = svg.getBoundingClientRect();
+      var s = svg.cloneNode(true);
+      s.setAttribute("x", (r.left - base.left).toFixed(1));
+      s.setAttribute("y", (r.top - base.top).toFixed(1));
+      s.setAttribute("width", r.width.toFixed(1));
+      s.setAttribute("height", r.height.toFixed(1));
+      pieces.push(s.outerHTML);
+    });
+    Array.prototype.forEach.call(kg.querySelectorAll(".klabel, .ksub, .kbadge"), function (el) {
+      var txt = (el.textContent || "").trim(); if (!txt) return;
+      var r = el.getBoundingClientRect(); if (!r.width) return;
+      var x = (r.left - base.left + r.width / 2), y = (r.top - base.top + r.height * 0.78);
+      var isSub = el.classList.contains("ksub"), isBadge = el.classList.contains("kbadge");
+      var fill = isBadge ? "#d17f18" : isSub ? (el.classList.contains("muted") ? "#808ba8" : "#a2302c") : "#3c4463";
+      var fs = el.classList.contains("klabel") ? 12 : isBadge ? 9 : 9.5;
+      pieces.push('<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" text-anchor="middle" ' +
+        'font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-weight="600" font-size="' + fs + '" fill="' + fill + '">' + escXml(txt) + '</text>');
+    });
+    var kgW = base.width, kgH = base.height;
+    document.body.removeChild(stage);
+
+    var M = 18, footH = 16, gap = 12;
+    var title = model.raw;
+    var subtitle = model.clones.map(function (c) { return c.sex.note; }).join(" · ") + (model.isMosaic ? " · mosaic" : "");
+    var titleBlockH = subtitle ? 34 : 20;
+    // widen the canvas so a long karyotype / sex note never runs past the edge
+    var contentW = Math.max(kgW, title.length * 9.2, subtitle.length * 6.3, 320);
+    var outW = Math.ceil(contentW + M * 2);
+    var outH = Math.ceil(M + titleBlockH + gap + kgH + gap + footH + M);
+    var kgX = M + (contentW - kgW) / 2, kgY = M + titleBlockH + gap;
+
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + outW + '" height="' + outH + '" viewBox="0 0 ' + outW + ' ' + outH + '">' +
+      '<rect width="' + outW + '" height="' + outH + '" fill="#ffffff"/>' +
+      '<text x="' + M + '" y="' + (M + 14) + '" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" font-weight="700" fill="#242a45">' + escXml(title) + '</text>' +
+      (subtitle ? '<text x="' + M + '" y="' + (M + 30) + '" font-family="system-ui, sans-serif" font-size="11.5" fill="#5f698a">' + escXml(subtitle) + '</text>' : '') +
+      '<g transform="translate(' + kgX.toFixed(1) + ',' + kgY.toFixed(1) + ')">' + pieces.join("") + '</g>' +
+      '<text x="' + M + '" y="' + (outH - M + 8) + '" font-family="system-ui, sans-serif" font-size="9" fill="#a0a8bd">Educational visualizer · not a diagnostic tool</text>' +
+      '<text x="' + (outW - M) + '" y="' + (outH - M + 8) + '" text-anchor="end" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#5e72e4">karyodraw.com</text>' +
+      '</svg>';
+    return { svg: svg, width: outW, height: outH };
+  }
+
+  function rasterize(ex, scale) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () {
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.ceil(ex.width * scale); canvas.height = Math.ceil(ex.height * scale);
+        var cx = canvas.getContext("2d");
+        cx.fillStyle = "#ffffff"; cx.fillRect(0, 0, canvas.width, canvas.height);
+        cx.setTransform(scale, 0, 0, scale, 0, 0);
+        cx.drawImage(img, 0, 0);
+        canvas.toBlob(function (b) { b ? resolve(b) : reject(new Error("toBlob")); }, "image/png");
+      };
+      img.onerror = function () { reject(new Error("svg load")); };
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(ex.svg);
+    });
+  }
+
+  function pngBlob() {
+    if (!currentModel) return Promise.reject(new Error("no model"));
+    return rasterize(buildExportSVG(currentModel), 2);
+  }
+  function fileName() {
+    var raw = (currentModel && currentModel.raw) || "karyotype";
+    return raw.replace(/[\/\\:*?"<>|]+/g, "-").slice(0, 60) + " · karyodraw.png";
+  }
+  function downloadBlob(blob) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = fileName();
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  }
+  function copyImage() {
+    var btn = $("#copyimg");
+    if (!currentModel) return;
+    // Promise-in-ClipboardItem keeps Safari's user gesture alive across the async raster.
+    if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+      var p = pngBlob();
+      navigator.clipboard.write([new ClipboardItem({ "image/png": p })])
+        .then(function () { flash(btn, "✓ Copied!"); })
+        .catch(function () { p.then(function (b) { downloadBlob(b); flash(btn, "↓ Saved PNG"); }).catch(function () { flash(btn, "✕ Failed"); }); });
+    } else {
+      pngBlob().then(function (b) { downloadBlob(b); flash(btn, "↓ Saved PNG"); }).catch(function () { flash(btn, "✕ Failed"); });
+    }
+  }
+  function copyLink() {
+    var btn = $("#copylink"), url = location.href;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { flash(btn, "✓ Link copied!"); })
+        .catch(function () { window.prompt("Copy this link:", url); });
+    } else { window.prompt("Copy this link:", url); }
+  }
+
   // init
   buildExamples();
   $("#draw").addEventListener("click", run);
@@ -676,6 +839,11 @@
     SHOW = b.getAttribute("data-show"); syncSeg(); run();
   });
   $("#printbtn").addEventListener("click", function () { window.print(); });
+  $("#copylink").addEventListener("click", copyLink);
+  $("#copyimg").addEventListener("click", copyImage);
+  $("#dlimg").addEventListener("click", function () {
+    var btn = this; pngBlob().then(function (b) { downloadBlob(b); flash(btn, "✓ Saved"); }).catch(function () { flash(btn, "✕ Failed"); });
+  });
   var _fitT;
   window.addEventListener("resize", function () { clearTimeout(_fitT); _fitT = setTimeout(fitKaryograms, 120); });
   $("#warnings").addEventListener("click", function (e) {
@@ -686,8 +854,8 @@
     if (e.target && e.target.closest && e.target.closest(".speak")) speakKaryotype();
   });
 
-  var pStyle = getParam("style"); if (pStyle === "simple" || pStyle === "detailed") MODE = pStyle;
-  var pBands = getParam("bands"); if (pBands !== null && ["0", "1", "99"].indexOf(pBands) >= 0) LEVEL = parseInt(pBands, 10);
+  var pStyle = getParam("style"); if (pStyle && URL_TO_STYLE[pStyle]) MODE = URL_TO_STYLE[pStyle];
+  var pBands = getParam("bands"); if (pBands !== null && pBands in URL_TO_BANDS) LEVEL = URL_TO_BANDS[pBands];
   var pShow = getParam("show"); if (pShow === "all" || pShow === "affected") SHOW = pShow;
   syncSeg();
   var initial = getParam("k") || "46,XY,t(9;22)(q34;q11.2)";
