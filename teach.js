@@ -17,6 +17,13 @@
   function ordinalArm(a) { return a === "p" ? "short arm (p)" : a === "q" ? "long arm (q)" : a; }
   var DIGIT_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
   function digitWords(s) { return String(s).split("").map(function (d) { return DIGIT_WORDS[+d] != null ? DIGIT_WORDS[+d] : d; }).join(" "); }
+  // Join a list into readable English: "a", "a and b", "a, b, and c".
+  function listJoin(arr) {
+    arr = arr.filter(function (x) { return x != null && x !== ""; });
+    if (arr.length <= 1) return arr.join("");
+    if (arr.length === 2) return arr[0] + " and " + arr[1];
+    return arr.slice(0, -1).join(", ") + ", and " + arr[arr.length - 1];
+  }
 
   // Parse a band name like "q22.13" into readable pieces.
   function bandInfo(chrom, band) {
@@ -93,10 +100,21 @@
       return { text: "an INVERSION in chromosome " + c + ": the segment between " + bandsPhrase(c, bp[0] || []) + " is flipped end-for-end (" + (peri ? "pericentric, it spans the centromere" : "paracentric, within one arm") + ")", tag: "inv" };
     }
     if (k === "t" || k === "dic") {
-      var a = ab.chroms[0], b = ab.chroms[1];
-      var ba = (bp[0] || [])[0], bb = (bp[1] || [])[0];
-      return { text: "a " + (k === "dic" ? "DICENTRIC translocation" : "reciprocal TRANSLOCATION") + ": chromosomes " + a + " and " + b +
-        " break (at " + a + ba + " and " + b + bb + ") and swap the pieces beyond those breaks, giving two derivative chromosomes der(" + a + ") and der(" + b + ")", tag: "t" };
+      var chroms = ab.chroms, n = chroms.length;
+      var breaks = chroms.map(function (cc, i) { return cc + ((bp[i] || [])[0] || ""); });
+      var ders = chroms.map(function (cc) { return "der(" + cc + ")"; });
+      var nWord = DIGIT_WORDS[n] || String(n);
+      if (k === "dic") {
+        return { text: "a DICENTRIC chromosome: chromosomes " + listJoin(chroms) + " break (at " + listJoin(breaks) +
+          ") and fuse into a single chromosome that carries two centromeres", tag: "t" };
+      }
+      if (n >= 3) {
+        return { text: "a " + (n === 3 ? "three-way" : nWord + "-way") + " TRANSLOCATION: chromosomes " + listJoin(chroms) +
+          " each break (at " + listJoin(breaks) + ") and pass the segment beyond the break to the next chromosome in the group, giving " +
+          nWord + " derivative chromosomes " + listJoin(ders), tag: "t" };
+      }
+      return { text: "a reciprocal TRANSLOCATION: chromosomes " + listJoin(chroms) + " break (at " + listJoin(breaks) +
+        ") and swap the pieces beyond those breaks, giving two derivative chromosomes " + listJoin(ders), tag: "t" };
     }
     if (k === "iso") {
       var arm = (bp[0] || [])[0] || "q10";
@@ -260,7 +278,7 @@
       case "del": return "A piece of chromosome " + c + " is missing" + (b0.length ? " (the part around " + c + b0.join(" to ") + ")" : "") + ".";
       case "dup": return "A small region of chromosome " + c + " is present twice (a duplication), so there is a little extra genetic material there.";
       case "inv": return "A piece of chromosome " + c + " is flipped around in the opposite direction (an inversion). Usually no genetic material is gained or lost.";
-      case "t": case "dic": return "Chromosomes " + ab.chroms.join(" and ") + " have exchanged pieces with each other (a translocation). Often no genetic material is gained or lost overall, but the swap can still matter.";
+      case "t": case "dic": return "Chromosomes " + listJoin(ab.chroms) + " have exchanged pieces with each other (a translocation). Often no genetic material is gained or lost overall, but the swap can still matter.";
       case "iso": return "Chromosome " + c + " formed as a mirror image of one of its arms (an isochromosome), so there is extra of one part and less of another.";
       case "ring": return "The ends of chromosome " + c + " joined together into a ring shape (a ring chromosome).";
       case "der": return "Chromosome " + c + " is rearranged (doctors call it a 'derivative' chromosome).";

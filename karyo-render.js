@@ -269,8 +269,11 @@
         '" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="2 1.5"/>');
     });
 
+    // Outline color follows the centromere-donor (the chromosome the derivative is
+    // named for), not whichever piece happens to be drawn on top.
+    var idChrom = (segments.filter(function (s) { return s.hasCen; })[0] || segments[0]).chrom;
     body.push('<rect x="' + pad + '" y="' + pad + '" width="' + W + '" height="' + H + '" rx="' + cap + '" ry="' + cap +
-      '" fill="none" stroke="' + outlineFor(ctx, segments[0].chrom) + '" stroke-width="1.1"/>');
+      '" fill="none" stroke="' + outlineFor(ctx, idChrom) + '" stroke-width="1.1"/>');
 
     return {
       svg: '<svg class="ideo" width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '"><defs>' +
@@ -386,17 +389,22 @@
       var t = ab.subOps.filter(function (s) { return s.op === "t"; })[0];
       if (t) { chroms = t.chroms; bps = t.breakpoints; } else return null;
     }
-    if (chroms.length < 2 || bps.length < 2) return null;
-    var a = chroms[0], b = chroms[1], ba = (bps[0] || [])[0], bb = (bps[1] || [])[0];
-    if (!IDEO.data[a] || !IDEO.data[b] || !ba || !bb) return null;
-    var sa = splitAtBreak(a, ba), sb = splitAtBreak(b, bb);
-    function centricSeg(c, s) { return { chrom: c, from: s.centric[0], to: s.centric[1], hasCen: true, reversed: false }; }
-    function acentricSeg(c, s) { return { chrom: c, from: s.acentric[0], to: s.acentric[1], hasCen: false, reversed: false }; }
-    var isA = String(primary) === String(a);
-    var keep = isA ? centricSeg(a, sa) : centricSeg(b, sb);
-    var add = isA ? acentricSeg(b, sb) : acentricSeg(a, sa);
-    var keepSide = isA ? sa.side : sb.side;
-    return (keepSide === "q") ? [keep, add] : [add, keep];
+    var n = chroms.length;
+    if (n < 2 || bps.length < n) return null;
+    // Each der(Xi) keeps Xi's own centromere and receives the distal (acentric)
+    // segment of the PREVIOUS chromosome in the cycle (ISCN convention). For a
+    // 2-way this is exactly the reciprocal swap; for 3+ way it's the cyclic
+    // exchange, so every derivative shows real material from its own chromosome.
+    var pi = chroms.map(String).indexOf(String(primary));
+    if (pi < 0) pi = 0;
+    var di = (pi - 1 + n) % n;                     // donor = previous in the cycle
+    var keepChrom = chroms[pi], keepBand = (bps[pi] || [])[0];
+    var addChrom = chroms[di], addBand = (bps[di] || [])[0];
+    if (!IDEO.data[keepChrom] || !IDEO.data[addChrom] || !keepBand || !addBand) return null;
+    var sk = splitAtBreak(keepChrom, keepBand), sd = splitAtBreak(addChrom, addBand);
+    var keep = { chrom: keepChrom, from: sk.centric[0], to: sk.centric[1], hasCen: true, reversed: false };
+    var add = { chrom: addChrom, from: sd.acentric[0], to: sd.acentric[1], hasCen: false, reversed: false };
+    return (sk.side === "q") ? [keep, add] : [add, keep];
   }
 
   function drawInstance(inst, ctx) {
