@@ -336,6 +336,7 @@
   var $ = function (s) { return document.querySelector(s); };
   var input = $("#kinput"), tooltip = $("#tooltip");
   var currentDetailChrom = "1";
+  var detailHotBand = null;   // band currently decoded in the detail panel, or null for the chromosome overview
   var MODE = "simple";     // "simple" | "detailed"
   var LEVEL = 1;           // band resolution: 0 (~400), 1 (~550), 99 (~850)
   var SHOW = "all";        // "all" | "affected" (isolate the involved chromosomes)
@@ -510,6 +511,7 @@
 
   function renderDetail(chrom, hotBand) {
     currentDetailChrom = chrom;
+    detailHotBand = hotBand || null;
     $("#detail-title").textContent = "Chromosome " + chrom + ", band map";
     $("#detail-svg").innerHTML = window.Karyo.drawDetail(chrom, { height: 430, theme: MODE, level: LEVEL, hue: AFFECTED[chrom] });
     var info = $("#detail-info"), A = window.Teach.ARM_INFO;
@@ -571,12 +573,16 @@
       if (cell && cell.getAttribute("data-chrom")) { renderDetail(cell.getAttribute("data-chrom")); markSel(cell.getAttribute("data-chrom")); }
     });
 
-    // labels in the detail plate are hoverable too
-    $("#detail-svg").addEventListener("mouseover", function (ev) {
-      var t = ev.target;
-      if (t && t.classList && (t.classList.contains("bandlabel") || t.classList.contains("band"))) {
-        renderDetail(t.getAttribute("data-chrom"), t.getAttribute("data-band"));
-      }
+    // Bands and labels in the detail plate scrub the decode; moving the pointer off
+    // the map drops back to the chromosome overview, which is the resting state.
+    var detail = $("#detail-svg");
+    detail.addEventListener("mousemove", function (ev) {
+      var el = ev.target && ev.target.closest ? ev.target.closest(".band, .bandlabel") : null;
+      var band = el && el.getAttribute ? el.getAttribute("data-band") : null;
+      if (band && band !== detailHotBand) renderDetail(el.getAttribute("data-chrom"), band);
+    });
+    detail.addEventListener("mouseleave", function () {
+      if (detailHotBand != null) renderDetail(currentDetailChrom);
     });
   }
   function markSel(chrom) {

@@ -5,3 +5,7 @@ start.sh
 .gitignore
 wrangler.jsonc
 .assetsignore
+LICENSE
+package.json
+test/
+paper/

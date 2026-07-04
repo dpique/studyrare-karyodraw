@@ -30,19 +30,33 @@ as a `file://` URL — browsers block the `<script src>` module files. It must b
 *served*.) Everything runs in the browser; there is no backend. Stop the server
 with `lsof -ti tcp:8770 | xargs kill`.
 
-**Hosted** — it's fully static, so push this repo and enable **GitHub Pages**
-(or drop the files on any static host / embed into the studyrare Next.js site).
+**Hosted** — it's fully static and served at
+**[karyodraw.com](https://karyodraw.com)** via Cloudflare (any static host works —
+drop the files anywhere).
 
 **Share / deep-link** — the current karyotype is stored in the URL, e.g.
 `index.html?k=47,XX,%2B21`, so any view is a shareable/bookmarkable link. (This
 also powers the screenshot tests.)
 
+## Tests
+
+The ISCN parser is covered by a small, dependency-free test suite (Node's built-in
+runner — nothing to install):
+
+```
+npm test        # or:  node --test test/*.test.js
+```
+
+It asserts that canonical designations — normal constitutions, aneuploidy,
+reciprocal and three-way translocations, terminal deletions, isochromosomes,
+inversions, and mosaics — parse into the expected model.
+
 ## What it understands (ISCN)
 
 - **Normal & sex constitutions:** `46,XX`, `46,XY`, `45,X`, `47,XXY`, `47,XYY`, `47,XXX`, …
 - **Aneuploidy:** gains/losses — `+21`, `+18`, `+13`, `-7`, …
-- **Structural:** `del`, `dup`, `inv`, `t` (reciprocal translocation → both
-  derivatives drawn), `i` (isochromosome), `r` (ring), `der`, `add`, `dic`,
+- **Structural:** `del`, `dup`, `inv`, `t` (reciprocal **and n-way** translocations
+  → all derivatives drawn), `i` (isochromosome), `r` (ring), `der`, `add`, `dic`,
   `ins`, `fra`, `mar`, `trp`.
 - **Mosaicism / composite:** `mos 45,X[12]/46,XX[18]`, `[cp20]`, multiple clones
   with cell counts and percentages.

@@ -17,6 +17,17 @@
   function ordinalArm(a) { return a === "p" ? "short arm (p)" : a === "q" ? "long arm (q)" : a; }
   var DIGIT_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
   function digitWords(s) { return String(s).split("").map(function (d) { return DIGIT_WORDS[+d] != null ? DIGIT_WORDS[+d] : d; }).join(" "); }
+  // The WRONG "run it together" reading of a band number, e.g. "15" -> "fifteen", "22" -> "twenty-two".
+  var TEEN_WORDS = ["ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+  var TENS_WORDS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+  function numberWord(s) {
+    var n = +s;
+    if (isNaN(n)) return String(s);
+    if (n < 10) return DIGIT_WORDS[n];
+    if (n < 20) return TEEN_WORDS[n - 10];
+    if (n < 100) return TENS_WORDS[Math.floor(n / 10)] + (n % 10 ? "-" + DIGIT_WORDS[n % 10] : "");
+    return String(s);
+  }
   // Join a list into readable English: "a", "a and b", "a, b, and c".
   function listJoin(arr) {
     arr = arr.filter(function (x) { return x != null && x !== ""; });
@@ -38,8 +49,11 @@
       if (sub) out.parts.push({ label: "sub-band", value: sub, note: "finer sub-division seen at higher resolution" });
       var regBand = region + (bnd || "");
       var spokenBand = digitWords(regBand) + (sub ? " point " + digitWords(sub) : "");
-      out.read = "Read the band one digit at a time. " + chrom + band + " is spoken “" + chrom + " " + arm + " " + spokenBand +
-        "”. Say the digits separately (“" + spokenBand + "”); never run them together (it is NOT “eleven” or “twenty-two”).";
+      out.read = "Read the band one digit at a time. " + chrom + band + " is spoken “" + chrom + " " + arm + " " + spokenBand + "”.";
+      // Only warn against "running the digits together" when there are two digits to run together.
+      if (regBand.length > 1) {
+        out.read += " Say the digits separately (“" + digitWords(regBand) + "”); never run them together (it is NOT “" + numberWord(regBand) + "”).";
+      }
     }
     // resolve stain + position from the ideogram
     var r = window.Karyo.resolveBand(chrom, band);

@@ -106,7 +106,10 @@ parser, an SVG karyogram renderer, and a teaching module — with no build step,
 and is served as static assets. It is deployed at <https://karyodraw.com> and the
 source is available at <https://github.com/dpique/studyrare-karyodraw> under the
 MIT license. Chromosome band data are
-derived from the UCSC Genome Browser `cytoBandIdeo` table (hg38).
+derived from the UCSC Genome Browser `cytoBandIdeo` table (hg38). The nomenclature
+parser is validated by a dependency-free test suite (Node's built-in runner)
+covering canonical designations from aneuploidy through three-way translocations
+and mosaicism.
 
 # Acknowledgements
 
