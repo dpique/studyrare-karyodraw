@@ -109,9 +109,10 @@
           ") and fuse into a single chromosome that carries two centromeres", tag: "t" };
       }
       if (n >= 3) {
+        var cycle = chroms.join("→") + "→" + chroms[0];   // e.g. 2→7→5→2
         return { text: "a " + (n === 3 ? "three-way" : nWord + "-way") + " TRANSLOCATION: chromosomes " + listJoin(chroms) +
-          " each break (at " + listJoin(breaks) + ") and pass the segment beyond the break to the next chromosome in the group, giving " +
-          nWord + " derivative chromosomes " + listJoin(ders), tag: "t" };
+          " each break (at " + listJoin(breaks) + ") and hand the piece beyond the break to the next chromosome in the list, wrapping around at the end (" +
+          cycle + "). The result is " + listJoin(ders) + " — each keeps its own centromere plus a segment from the chromosome before it.", tag: "t" };
       }
       return { text: "a reciprocal TRANSLOCATION: chromosomes " + listJoin(chroms) + " break (at " + listJoin(breaks) +
         ") and swap the pieces beyond those breaks, giving two derivative chromosomes " + listJoin(ders), tag: "t" };
