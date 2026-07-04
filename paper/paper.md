@@ -59,7 +59,11 @@ such as karyoploteR and chromoMap draw ideograms from genomic coordinates and
 feature tables but do not accept ISCN karyotype nomenclature at all. Cytogenetics
 teaching tools that do target learners generally focus on the manual task of
 *arranging* chromosomes into a karyotype rather than on decoding and visualizing
-ISCN designations. KaryoDraw is, to our knowledge, the only tool that combines
+ISCN designations. A browser-based, visualization-first approach also underlies
+the author's earlier tool Aneuvis, which explores numerical chromosomal variation
+across single cells [@aneuvis], though it addresses copy-number analysis rather
+than nomenclature interpretation. KaryoDraw is, to our knowledge, the only tool
+that combines
 ISCN parsing, client-side karyogram rendering, and an explicit educational
 explanation layer in a single zero-install, shareable web page.
 
