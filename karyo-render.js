@@ -66,6 +66,10 @@
   var PX = MAXH / maxLen;
   function h(bp) { return Math.max(1, bp * PX); }
 
+  // End roundness as a fraction of chromosome width (0.5 = full stadium caps).
+  // Blunter than a half-round so terminal bands and terminal deletions stay visible.
+  var CAP_RATIO = 0.34;
+
   // ----- band resolution -----------------------------------------------------
   // Merge sub-bands to a target decimal depth. level 99 = full; 1 = one decimal;
   // 0 = whole band (no decimals). Cached per (chrom, level).
@@ -152,7 +156,7 @@
     var overlays = opts.overlays || [];
     var totalBp = segments.reduce(function (s, g) { return s + (g.to - g.from); }, 0);
     var H = h(totalBp);
-    var pad = 3, cap = W / 2, CEN_H = 9;
+    var pad = 3, cap = W * CAP_RATIO, CEN_H = 9;
     var svgW = W + pad * 2, svgH = H + pad * 2;
     var uid = "c" + (renderComposite._n = (renderComposite._n || 0) + 1);
 
@@ -497,7 +501,7 @@
 
   function ghost(chrom, label) {
     var d = IDEO.data[chrom] || IDEO.data["X"];
-    var H = h(d.length), pad = 3, cap = W / 2;
+    var H = h(d.length), pad = 3, cap = W * CAP_RATIO;
     return '<div class="kchrom ghost"><svg class="ideo" width="' + (W + pad * 2) + '" height="' + (H + pad * 2) +
       '"><rect x="' + pad + '" y="' + pad + '" width="' + W + '" height="' + H + '" rx="' + cap + '" ry="' + cap +
       '" fill="none" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 3"/></svg><div class="ksub muted">' + esc(label || "absent") + '</div></div>';
@@ -511,7 +515,7 @@
     var hue = opts.hue || null;
     var ramp = simple ? (hue ? tintRamp(hue) : BASELINE) : STAIN;
     var scale = (opts.height || 460) / d.length;
-    var pad = 8, w = 34, cap = w / 2, labelX = pad + w + 12, H = d.length * scale;
+    var pad = 8, w = 34, cap = w * CAP_RATIO, labelX = pad + w + 12, H = d.length * scale;
     var svgW = 128, svgH = H + pad * 2 + 4, uid = "detail" + chrom;
     var defs = ['<clipPath id="' + uid + '"><rect x="' + pad + '" y="' + pad + '" width="' + w + '" height="' + H + '" rx="' + cap + '" ry="' + cap + '"/></clipPath>'];
     var patCache = {};
