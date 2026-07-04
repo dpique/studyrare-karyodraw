@@ -271,7 +271,8 @@
     return {
       svg: '<svg class="ideo" width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '"><defs>' +
         defs.join("") + '</defs>' + body.join("") + '</svg>',
-      width: svgW, height: svgH
+      width: svgW, height: svgH,
+      cenY: cenList.length ? cenList[0].y : null   // centromere y (for aligning homologs)
     };
   }
 
@@ -397,7 +398,7 @@
   function drawInstance(inst, ctx) {
     var built = buildInstance(inst);
     var out = renderComposite(built.segments, { overlays: built.overlays, ctx: ctx });
-    return { svg: out.svg, width: out.width, height: out.height, built: built };
+    return { svg: out.svg, width: out.width, height: out.height, cenY: out.cenY, built: built };
   }
 
   // ----- karyogram (one clone) ----------------------------------------------
@@ -412,14 +413,25 @@
   function cellHtml(labelText, insts, opts, ctx) {
     opts = opts || {};
     var h2 = ['<div class="kcell' + (opts.sexcell ? " sexcell" : "") + '"><div class="kcell-copies">'];
-    if (insts.length === 0 && opts.ghost) h2.push(ghost(opts.ghostChrom || labelText, opts.ghostText || "absent"));
-    else insts.forEach(function (inst) {
-      var d = drawInstance(inst, ctx);
-      var cls = "kchrom" + (inst.kind !== "normal" ? " abn" : "");
-      var sub = (inst.kind !== "normal") ? '<div class="ksub">' + esc(d.built.caption) + '</div>' : "";
-      var badge = inst.kind === "gain" ? '<div class="kbadge gain">+1</div>' : "";
-      h2.push('<div class="' + cls + '" data-chrom="' + inst.chrom + '" data-kind="' + inst.kind + '">' + badge + d.svg + sub + '</div>');
-    });
+    if (insts.length === 0 && opts.ghost) {
+      h2.push(ghost(opts.ghostChrom || labelText, opts.ghostText || "absent"));
+    } else {
+      // Align the copies (normal homolog, derivative, del…) by their centromere,
+      // so a shortened p-arm reads as a p-arm loss and a shortened q-arm as a
+      // q-arm loss — matching how a real karyogram is compared side by side.
+      var drawn = insts.map(function (inst) { return { inst: inst, d: drawInstance(inst, ctx) }; });
+      var maxCen = 0, anyCen = false;
+      drawn.forEach(function (x) { if (x.d.cenY != null) { anyCen = true; if (x.d.cenY > maxCen) maxCen = x.d.cenY; } });
+      drawn.forEach(function (x) {
+        var inst = x.inst, d = x.d;
+        var mt = (anyCen && d.cenY != null) ? Math.max(0, maxCen - d.cenY) : 0;
+        var cls = "kchrom" + (inst.kind !== "normal" ? " abn" : "");
+        var sub = (inst.kind !== "normal") ? '<div class="ksub">' + esc(d.built.caption) + '</div>' : "";
+        var badge = inst.kind === "gain" ? '<div class="kbadge gain">+1</div>' : "";
+        var style = mt > 0.5 ? ' style="margin-top:' + mt.toFixed(1) + 'px"' : "";
+        h2.push('<div class="' + cls + '" data-chrom="' + inst.chrom + '" data-kind="' + inst.kind + '"' + style + '>' + badge + d.svg + sub + '</div>');
+      });
+    }
     h2.push('</div><div class="klabel">' + esc(labelText) + '</div></div>');
     return h2.join("");
   }

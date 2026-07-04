@@ -458,9 +458,9 @@
     var pill = model.clones.every(function (c) { return c.counts.ok; })
       ? ''
       : '<span class="pill warn">count doesn’t add up</span>';
-    var sexes = model.clones.map(function (c) { return c.sex.note; });
+    var meta = model.isMosaic ? "mosaic (" + model.clones.length + " clones)" : "";
     box.innerHTML = '<span class="kt">' + escapeHtml(kt) + '</span>' +
-      '<span class="sex">' + sexes.join(" · ") + (model.isMosaic ? " · mosaic (" + model.clones.length + " clones)" : "") + '</span>' +
+      (meta ? '<span class="sex">' + meta + '</span>' : '') +
       pill;
   }
 
