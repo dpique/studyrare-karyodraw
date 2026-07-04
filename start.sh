@@ -9,7 +9,7 @@
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PORT="${KARYOSCOPE_PORT:-8770}"
+PORT="${KARYODRAW_PORT:-8770}"
 URL="http://localhost:${PORT}/index.html"
 
 if ! lsof -ti "tcp:${PORT}" >/dev/null 2>&1; then
