@@ -68,7 +68,7 @@
 
   // End roundness as a fraction of chromosome width (0.5 = full stadium caps).
   // Blunter than a half-round so terminal bands and terminal deletions stay visible.
-  var CAP_RATIO = 0.34;
+  var CAP_RATIO = 0.25;
 
   // ----- band resolution -----------------------------------------------------
   // Merge sub-bands to a target decimal depth. level 99 = full; 1 = one decimal;
