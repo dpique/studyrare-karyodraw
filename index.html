@@ -191,6 +191,13 @@
   .emptystate { padding: 42px 22px; text-align: center; color: var(--muted); font-size: 14.5px; line-height: 1.8; }
   .emptystate code { font: 13px var(--font-mono); background: #f0f2f7; color: var(--ink-2); padding: 2px 6px; border-radius: 5px; }
   .muted { color: var(--muted); }
+  .about { margin-top: 20px; }
+  .about-body { max-width: 760px; }
+  .about-body p { margin: 0 0 12px; font-size: 14.5px; line-height: 1.65; color: var(--ink-2); }
+  .about-body p:last-child { margin-bottom: 0; }
+  .about-body h3 { margin: 18px 0 6px; font-family: var(--font-display); font-weight: 700; font-size: 14.5px; color: var(--navy); }
+  .about-body strong { color: var(--navy); font-weight: 700; }
+  .about-body code { font: 500 12.5px var(--font-mono); background: var(--peri-50); color: var(--peri-700); padding: 1px 5px; border-radius: 5px; white-space: nowrap; }
   footer { color: var(--muted); font-size: 12.5px; padding: 22px 0 40px; border-top: 1px solid var(--line); margin-top: 30px; }
 
   #tooltip {
@@ -351,6 +358,20 @@
         </div>
       </aside>
     </div>
+    <section class="about" aria-labelledby="about-h">
+      <div class="card">
+        <h2 id="about-h">About KaryoDraw</h2>
+        <div class="body about-body">
+          <p><strong>KaryoDraw</strong> is a free, browser-based <strong>karyotype visualizer</strong> for notation written in <strong>ISCN</strong>, the International System for Human Cytogenomic Nomenclature. Type a designation such as <code>47,XX,+21</code> or <code>46,XY,t(9;22)(q34;q11.2)</code> and KaryoDraw draws a correctly Giemsa-banded <strong>karyogram</strong>, aligns any derivative chromosomes against their normal homologs, and decodes every symbol in the nomenclature into plain language. It runs entirely in your browser — no account, no upload, no server round-trip.</p>
+          <h3>What is ISCN?</h3>
+          <p>ISCN is the standardized shorthand cytogeneticists use to describe chromosome number and structure: the arm (<code>p</code> or <code>q</code>), region, band and sub-band coordinates, and operators such as <code>t</code> (translocation), <code>del</code> (deletion), <code>dup</code>, <code>inv</code>, and <code>i</code> (isochromosome). KaryoDraw takes this notation as input and turns it into a picture plus an explanation, so you can check that a written karyotype means what you think it means.</p>
+          <h3>Who it's for</h3>
+          <p>KaryoDraw is built for <strong>genetic counseling</strong> and <strong>medical genetics</strong> learners — students preparing for <strong>ABGC</strong> or <strong>ABMGG</strong> board exams, residents and fellows, and anyone teaching cytogenetics who wants a fast way to see a karyotype drawn with the reasoning spelled out. It is an educational visualizer of cytogenetic nomenclature, not a diagnostic tool.</p>
+          <h3>How to use it</h3>
+          <p>Enter a karyotype in the box at the top of the page (or pick one of the examples), then switch between highlight and realistic banding, adjust the band resolution from roughly 400 to 850 bands, and hover any band to read its coordinate one digit at a time along with the biology of its stain. Every view has a shareable link and can be exported as an image or a one-page printable summary.</p>
+        </div>
+      </div>
+    </section>
     <footer class="wrap">
       <strong>KaryoDraw</strong> · <a href="https://karyodraw.com">karyodraw.com</a> · a StudyRare tool<br>
       Band data: UCSC <em>cytoBandIdeo</em>, human genome build hg38 (24 chromosomes, 862 bands).
