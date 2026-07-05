@@ -22,17 +22,19 @@ bibliography: paper.bib
 # Summary
 
 KaryoDraw (<https://karyodraw.com>) is a free, browser-based tool that turns a
-karyotype written in ISCN (the International System for Human Cytogenomic
-Nomenclature) into an annotated, correctly banded karyogram *and* a
+karyotype written in ISCN 2024 (the current International System for Human
+Cytogenomic Nomenclature) into an annotated, correctly banded karyogram *and* a
 plain-language explanation of every symbol it contains. A learner types a
 designation such as `46,XY,t(9;22)(q34;q11.2)` and immediately sees the
 derivative chromosomes drawn against their normal homologs
 (\autoref{fig:interface}), together with a
 token-by-token decoding of the nomenclature, the biology of the relevant Giemsa
-bands, and curated board-relevant clinical notes. The application runs entirely
-in the browser — no installation, account, or server round-trip — and every view
-has a shareable deep-link URL and can be exported as an image or a one-page
-printable summary.
+bands, and curated board-relevant clinical notes. The application runs
+client-side, with no installation and no account. It stores no personal data:
+an anonymous, cookieless beacon records the karyotype drawn and the features
+used, with no IP address or identifier, to guide development. Every view has a
+shareable deep-link URL and can be exported as an image or a one-page printable
+summary.
 
 ![KaryoDraw rendering the reciprocal translocation `46,XY,t(9;22)(q34;q11.2)` (the Philadelphia chromosome) in "highlight" mode. Chromosomes involved in the rearrangement are colored by identity — der(9) carries the amber chromosome-22 segment and der(22) the periwinkle chromosome-9 segment, centromere-aligned against their normal homologs — while the panel at right decodes each token of the ISCN designation into plain language.\label{fig:interface}](fig1-interface.png)
 

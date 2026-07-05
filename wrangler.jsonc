@@ -1,10 +1,20 @@
 {
-  // KaryoDraw is a pure static site (index.html + JS modules, no server code).
-  // This deploys it as an assets-only Worker: `npx wrangler deploy` uploads the
-  // files below and serves index.html at the root. No build step.
+  // KaryoDraw: a static site plus a small Worker. The Worker (worker.js) serves
+  // the static assets via the ASSETS binding and handles POST /api/collect,
+  // which writes an anonymous, cookieless usage row to the D1 database below.
+  // No build step. Deploys via CI (push to main) — see .github/workflows/deploy.yml.
   "name": "studyrare-karyodraw",
   "compatibility_date": "2026-07-03",
+  "main": "worker.js",
   "assets": {
-    "directory": "."
-  }
+    "directory": ".",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "karyodraw-usage",
+      "database_id": "a3ffb445-1e1c-47a9-9004-4d1ed257f58e"
+    }
+  ]
 }
