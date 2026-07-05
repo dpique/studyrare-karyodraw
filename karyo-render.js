@@ -439,30 +439,49 @@
       defs.push('<pattern id="' + id + '" width="4.6" height="4.6" patternTransform="rotate(' + angle + ')" patternUnits="userSpaceOnUse"><rect width="4.6" height="4.6" fill="#ffffff"/><line x1="0" y1="0" x2="0" y2="4.6" stroke="' + color + '" stroke-width="1.5"/></pattern>');
       return id;
     }
-    function pt(a, rad) { return (cx + rad * Math.sin(a)).toFixed(2) + " " + (cy - rad * Math.cos(a)).toFixed(2); }
+    var DEG = 180 / Math.PI;
+    function px(a, rad) { return cx + rad * Math.sin(a); }
+    function py(a, rad) { return cy - rad * Math.cos(a); }
+    function pt(a, rad) { return px(a, rad).toFixed(2) + " " + py(a, rad).toFixed(2); }
     function sector(a0, a1, fill, attr) {
       if (a1 - a0 < 0.001) return "";
       var large = (a1 - a0) > Math.PI ? 1 : 0;
       return '<path d="M' + pt(a0, R) + ' A' + R + ' ' + R + ' 0 ' + large + ' 1 ' + pt(a1, R) +
         ' L' + pt(a1, r0) + ' A' + r0 + ' ' + r0 + ' 0 ' + large + ' 0 ' + pt(a0, r0) + ' Z" fill="' + fill + '"' + (attr || "") + '/>';
     }
+    // Hatched sector whose texture follows the ring: rotate the pattern by the
+    // sector's angular position (minus 90, so at 3 o'clock, where the band is
+    // locally vertical like the linear ideogram, the hatch matches the linear).
+    function hatchSector(a0, a1, stain, base, attr) {
+      return sector(a0, a1, "url(#" + hatch(heteroColor(stain), base + (a0 + a1) / 2 * DEG - 90) + ")", attr);
+    }
 
-    var body = [];
+    var body = [], cenAngle = null;
     getBands(chrom, ctx.level == null ? 99 : ctx.level).forEach(function (b) {
       var bs = Math.max(b[1], from), be = Math.min(b[2], to);
       if (be <= bs) return;
-      var st = b[3], fill;
-      if (st === "acen") fill = "url(#" + hatch(heteroColor("acen"), 45) + ")";
-      else if (st === "gvar" || st === "stalk") fill = "url(#" + hatch(heteroColor(st), -45) + ")";
-      else fill = fillFor(ctx, chrom, st);
+      var st = b[3];
       var a0 = (bs - from) / total * TAU, a1 = (be - from) / total * TAU;
+      if (st === "acen") cenAngle = (a0 + a1) / 2;
       var attr = ' class="band" data-chrom="' + esc(chrom) + '" data-band="' + esc(b[0]) + '" data-stain="' + st + '"';
-      if (a1 - a0 > Math.PI) { var am = (a0 + a1) / 2; body.push(sector(a0, am, fill, attr)); body.push(sector(am, a1, fill, attr)); }
-      else body.push(sector(a0, a1, fill, attr));
+      var parts = (a1 - a0 > Math.PI) ? [[a0, (a0 + a1) / 2], [(a0 + a1) / 2, a1]] : [[a0, a1]];
+      parts.forEach(function (p) {
+        if (st === "acen") body.push(hatchSector(p[0], p[1], "acen", 45, attr));
+        else if (st === "gvar" || st === "stalk") body.push(hatchSector(p[0], p[1], st, -45, attr));
+        else body.push(sector(p[0], p[1], fillFor(ctx, chrom, st), attr));
+      });
     });
     var ocol = outlineFor(ctx, chrom);
     body.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + R.toFixed(2) + '" fill="none" stroke="' + ocol + '" stroke-width="1.4"/>');
     body.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + r0.toFixed(2) + '" fill="none" stroke="' + ocol + '" stroke-width="1.1"/>');
+    // Mark the centromere with a dashed radial line across the ring, echoing the
+    // dashed centromere line on the linear ideogram.
+    if (cenAngle != null) {
+      var ccol = heteroColor("acen");
+      body.push('<line x1="' + px(cenAngle, r0 - 2).toFixed(2) + '" y1="' + py(cenAngle, r0 - 2).toFixed(2) +
+        '" x2="' + px(cenAngle, R + 2).toFixed(2) + '" y2="' + py(cenAngle, R + 2).toFixed(2) +
+        '" stroke="' + ccol + '" stroke-width="1.6" stroke-dasharray="3 2"/>');
+    }
     return {
       svg: '<svg class="ideo ideo-ring" width="' + size.toFixed(1) + '" height="' + size.toFixed(1) +
         '" viewBox="0 0 ' + size.toFixed(1) + ' ' + size.toFixed(1) + '"><defs>' + defs.join("") + '</defs>' + body.join("") + '</svg>',
