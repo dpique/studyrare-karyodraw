@@ -31,20 +31,24 @@ function cap(v, n) {
 async function record(b, country, env) {
   if (!b) return;
   const type = b.type === "pageview" ? "pageview" : "draw";
+  // Keep the karyotype capped for storage, but record the full length so we can
+  // see whether the cap is ever hit (SELECT count(*) WHERE len > 512).
+  const len = type === "draw" && typeof b.k === "string" ? b.k.length : null;
   try {
     await env.DB.prepare(
-      "INSERT INTO usage (ts, type, karyotype, parsed, style, bands, show_mode, country, referer) " +
-      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      "INSERT INTO usage (ts, type, karyotype, parsed, style, bands, show_mode, country, referer, len) " +
+      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     ).bind(
       Date.now(),
       type,
-      type === "draw" ? cap(b.k, 120) : null,
+      type === "draw" ? cap(b.k, 512) : null,
       type === "draw" ? (b.ok ? 1 : 0) : null,
       cap(b.style, 16),
       cap(b.bands, 8),
       cap(b.show, 16),
       country,
-      cap(b.ref, 80)
+      cap(b.ref, 80),
+      len
     ).run();
   } catch (e) {
     console.error("usage insert failed:", e && e.message);

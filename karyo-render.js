@@ -410,8 +410,72 @@
     return (sk.side === "q") ? [keep, add] : [add, keep];
   }
 
+  // Draw a ring chromosome as an actual ring: the retained material (from..to)
+  // wraps 360 degrees around an annulus, each band an arc sector. Loses the tips.
+  function renderRing(seg, ctx) {
+    ctx = ctx || { theme: "detailed", level: 99, affected: {} };
+    var simple = ctx.theme === "simple";
+    var chrom = seg.chrom, d = IDEO.data[chrom];
+    var from = seg.from, to = seg.to, total = to - from;
+    if (!(total > 0)) { from = 0; to = d.length; total = d.length; }
+    var uid = "ring" + (renderRing._n = (renderRing._n || 0) + 1);
+    var R = Math.max(30, Math.min(62, h(total) * 0.42));      // outer radius
+    var thick = Math.max(12, Math.min(22, R * 0.44));
+    var r0 = R - thick, pad = 6, size = (R + pad) * 2, cx = size / 2, cy = size / 2, TAU = Math.PI * 2;
+
+    function heteroColor(stain) {
+      if (simple) {
+        var hue = ctx.affected && ctx.affected[chrom];
+        if (hue) return stain === "acen" ? hexMix(hue, "#1a1f36", 0.22) : hexMix(hue, "#ffffff", 0.28);
+        return stain === "acen" ? "#3c4463" : "#808ba8";
+      }
+      return stain === "acen" ? "#3c4463" : "#7c8ae9";
+    }
+    var defs = [], patCache = {};
+    function hatch(color, angle) {
+      var key = color + "|" + angle;
+      if (patCache[key]) return patCache[key];
+      var id = uid + "h" + Object.keys(patCache).length; patCache[key] = id;
+      defs.push('<pattern id="' + id + '" width="4.6" height="4.6" patternTransform="rotate(' + angle + ')" patternUnits="userSpaceOnUse"><rect width="4.6" height="4.6" fill="#ffffff"/><line x1="0" y1="0" x2="0" y2="4.6" stroke="' + color + '" stroke-width="1.5"/></pattern>');
+      return id;
+    }
+    function pt(a, rad) { return (cx + rad * Math.sin(a)).toFixed(2) + " " + (cy - rad * Math.cos(a)).toFixed(2); }
+    function sector(a0, a1, fill, attr) {
+      if (a1 - a0 < 0.001) return "";
+      var large = (a1 - a0) > Math.PI ? 1 : 0;
+      return '<path d="M' + pt(a0, R) + ' A' + R + ' ' + R + ' 0 ' + large + ' 1 ' + pt(a1, R) +
+        ' L' + pt(a1, r0) + ' A' + r0 + ' ' + r0 + ' 0 ' + large + ' 0 ' + pt(a0, r0) + ' Z" fill="' + fill + '"' + (attr || "") + '/>';
+    }
+
+    var body = [];
+    getBands(chrom, ctx.level == null ? 99 : ctx.level).forEach(function (b) {
+      var bs = Math.max(b[1], from), be = Math.min(b[2], to);
+      if (be <= bs) return;
+      var st = b[3], fill;
+      if (st === "acen") fill = "url(#" + hatch(heteroColor("acen"), 45) + ")";
+      else if (st === "gvar" || st === "stalk") fill = "url(#" + hatch(heteroColor(st), -45) + ")";
+      else fill = fillFor(ctx, chrom, st);
+      var a0 = (bs - from) / total * TAU, a1 = (be - from) / total * TAU;
+      var attr = ' class="band" data-chrom="' + esc(chrom) + '" data-band="' + esc(b[0]) + '" data-stain="' + st + '"';
+      if (a1 - a0 > Math.PI) { var am = (a0 + a1) / 2; body.push(sector(a0, am, fill, attr)); body.push(sector(am, a1, fill, attr)); }
+      else body.push(sector(a0, a1, fill, attr));
+    });
+    var ocol = outlineFor(ctx, chrom);
+    body.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + R.toFixed(2) + '" fill="none" stroke="' + ocol + '" stroke-width="1.4"/>');
+    body.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + r0.toFixed(2) + '" fill="none" stroke="' + ocol + '" stroke-width="1.1"/>');
+    return {
+      svg: '<svg class="ideo ideo-ring" width="' + size.toFixed(1) + '" height="' + size.toFixed(1) +
+        '" viewBox="0 0 ' + size.toFixed(1) + ' ' + size.toFixed(1) + '"><defs>' + defs.join("") + '</defs>' + body.join("") + '</svg>',
+      width: size, height: size, cenY: null
+    };
+  }
+
   function drawInstance(inst, ctx) {
     var built = buildInstance(inst);
+    if (built.ring && built.segments && built.segments[0]) {
+      var rout = renderRing(built.segments[0], ctx);
+      return { svg: rout.svg, width: rout.width, height: rout.height, cenY: null, built: built };
+    }
     var out = renderComposite(built.segments, { overlays: built.overlays, ctx: ctx });
     return { svg: out.svg, width: out.width, height: out.height, cenY: out.cenY, built: built };
   }
