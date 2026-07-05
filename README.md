@@ -32,7 +32,9 @@ with `lsof -ti tcp:8770 | xargs kill`.
 
 **Hosted** — it's fully static and served at
 **[karyodraw.com](https://karyodraw.com)** via Cloudflare (any static host works —
-drop the files anywhere).
+drop the files anywhere). Pushing a served file to `main` auto-deploys via
+`.github/workflows/deploy.yml` (needs the `CLOUDFLARE_API_TOKEN` repo secret);
+you can also deploy by hand with `npx wrangler deploy`.
 
 **Share / deep-link** — the current karyotype is stored in the URL, e.g.
 `index.html?k=47,XX,%2B21`, so any view is a shareable/bookmarkable link. (This
