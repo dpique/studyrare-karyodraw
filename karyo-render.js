@@ -59,6 +59,9 @@
   // so the two never read the same.
   var CEN_HATCH = { angle: 45, gap: 3.2, w: 1.8 };
   var HET_HATCH = { angle: -45, gap: 7, w: 1.4 };
+  // Same texture with the diagonal mirrored. Used inside an inverted segment so the
+  // hatch leans the opposite way and the flipped region reads as rotated end-for-end.
+  function mirrorHatch(o) { return { angle: -(o.angle == null ? 45 : o.angle), gap: o.gap, w: o.w }; }
 
   // ----- geometry ------------------------------------------------------------
   var MAXH = 280, W = 28, maxLen = 0;
@@ -201,8 +204,8 @@
         else { y0 = segTop + (g.to - be) * PX; y1 = segTop + (g.to - bs) * PX; }
         var st = b[3], fill;
         // heterochromatin renders as a hatched texture, not a solid band
-        if (st === "acen") fill = "url(#" + hatch(heteroColor(g.chrom, st), CEN_HATCH) + ")";
-        else if (st === "gvar" || st === "stalk") fill = "url(#" + hatch(heteroColor(g.chrom, st), HET_HATCH) + ")";
+        if (st === "acen") fill = "url(#" + hatch(heteroColor(g.chrom, st), g.reversed ? mirrorHatch(CEN_HATCH) : CEN_HATCH) + ")";
+        else if (st === "gvar" || st === "stalk") fill = "url(#" + hatch(heteroColor(g.chrom, st), g.reversed ? mirrorHatch(HET_HATCH) : HET_HATCH) + ")";
         else fill = fillFor(ctx, g.chrom, st);
         body.push('<rect class="band" x="' + pad + '" y="' + y0.toFixed(2) + '" width="' + W +
           '" height="' + Math.max(0.6, y1 - y0).toFixed(2) + '" fill="' + fill + '"' +
@@ -210,7 +213,7 @@
           '" data-arm="' + b[0][0] + '"/>');
       });
       if (g.hasCen && d.centromere > g.from && d.centromere < g.to) {
-        cenList.push({ y: g.reversed ? segTop + (g.to - d.centromere) * PX : segTop + (d.centromere - g.from) * PX, chrom: g.chrom });
+        cenList.push({ y: g.reversed ? segTop + (g.to - d.centromere) * PX : segTop + (d.centromere - g.from) * PX, chrom: g.chrom, reversed: g.reversed });
       }
       if (gi > 0 && segments[gi - 1].chrom !== g.chrom) junctionYs.push(segTop);
       yOff += segH;
@@ -223,7 +226,7 @@
     cenList.forEach(function (c) {
       var col = heteroColor(c.chrom, "acen");
       body.push('<rect x="' + pad + '" y="' + (c.y - CEN_H / 2).toFixed(2) + '" width="' + W + '" height="' + CEN_H +
-        '" fill="url(#' + hatch(col, CEN_HATCH) + ')" clip-path="url(#' + uid + ')"/>');
+        '" fill="url(#' + hatch(col, c.reversed ? mirrorHatch(CEN_HATCH) : CEN_HATCH) + ')" clip-path="url(#' + uid + ')"/>');
       body.push('<line x1="' + pad + '" y1="' + c.y.toFixed(2) + '" x2="' + (pad + W) + '" y2="' + c.y.toFixed(2) +
         '" stroke="' + col + '" stroke-width="1" stroke-dasharray="2.5 2"/>');
     });
