@@ -5,6 +5,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>KaryoDraw: visualize &amp; understand any karyotype</title>
 <link rel="canonical" href="https://karyodraw.com/" />
+<meta name="description" content="Free browser tool that draws any ISCN karyotype as a correctly banded karyogram and explains every symbol in plain language — for genetics, cytogenetics, and board exam prep." />
+<meta name="keywords" content="ISCN karyotype, karyotype visualizer, karyotype interpreter, cytogenetics, chromosome nomenclature, karyogram, genetic counseling, medical genetics board prep" />
+<meta name="author" content="Daniel Pique, StudyRare" />
+<meta name="robots" content="index, follow" />
+<meta name="theme-color" content="#5e72e4" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="KaryoDraw" />
+<meta property="og:title" content="KaryoDraw — draw &amp; understand any ISCN karyotype" />
+<meta property="og:description" content="Type a karyotype like 46,XY,t(9;22)(q34;q11.2) and instantly see it drawn as a banded karyogram with every symbol explained. Free, no install." />
+<meta property="og:url" content="https://karyodraw.com/" />
+<meta property="og:image" content="https://karyodraw.com/preview.png" />
+<meta property="og:image:width" content="1440" />
+<meta property="og:image:height" content="900" />
+<meta property="og:image:alt" content="KaryoDraw rendering a t(9;22) translocation with a plain-language decode of the ISCN designation." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="KaryoDraw — draw &amp; understand any ISCN karyotype" />
+<meta name="twitter:description" content="Type a karyotype and instantly see it drawn as a banded karyogram with every symbol explained. Free, runs entirely in your browser." />
+<meta name="twitter:image" content="https://karyodraw.com/preview.png" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "KaryoDraw",
+  "url": "https://karyodraw.com/",
+  "description": "Free browser tool that draws any ISCN karyotype as a correctly banded karyogram and explains every symbol in plain language.",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "Any (modern web browser)",
+  "browserRequirements": "Requires JavaScript",
+  "inLanguage": "en",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "creator": { "@type": "Organization", "name": "StudyRare", "url": "https://studyrare.com/" },
+  "author": { "@type": "Person", "name": "Daniel Pique", "url": "https://orcid.org/0000-0003-0074-3974" },
+  "keywords": "ISCN, karyotype, cytogenetics, karyogram, chromosome nomenclature, genetic counseling, medical genetics education"
+}
+</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3CclipPath id='a'%3E%3Crect x='6' y='3' width='8' height='26' rx='4'/%3E%3C/clipPath%3E%3CclipPath id='b'%3E%3Crect x='18' y='3' width='8' height='26' rx='4'/%3E%3C/clipPath%3E%3C/defs%3E%3Cg clip-path='url(%23a)'%3E%3Crect x='6' y='3' width='8' height='26' fill='%238b97ee'/%3E%3Crect x='6' y='7.5' width='8' height='2.6' fill='%235e72e4'/%3E%3Crect x='6' y='13.5' width='8' height='2.6' fill='%23eef1fd'/%3E%3Crect x='6' y='20' width='8' height='2.6' fill='%235e72e4'/%3E%3C/g%3E%3Crect x='6' y='3' width='8' height='26' rx='4' fill='none' stroke='%234a5ac8' stroke-width='1.1'/%3E%3Cg clip-path='url(%23b)'%3E%3Crect x='18' y='3' width='8' height='26' fill='%238b97ee'/%3E%3Crect x='18' y='7.5' width='8' height='2.6' fill='%235e72e4'/%3E%3Crect x='18' y='13.5' width='8' height='2.6' fill='%23eef1fd'/%3E%3Crect x='18' y='22' width='8' height='7' fill='%23ec9b27'/%3E%3C/g%3E%3Crect x='18' y='3' width='8' height='26' rx='4' fill='none' stroke='%234a5ac8' stroke-width='1.1'/%3E%3C/svg%3E" />
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
