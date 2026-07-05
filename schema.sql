@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS usage (
   bands     TEXT,               -- '0' | '1' | '99'
   show_mode TEXT,               -- 'all' | 'affected'
   country   TEXT,               -- coarse geo from Cloudflare (request.cf.country)
-  referer   TEXT                -- referring host only, client-supplied
+  referer   TEXT,               -- referring host only, client-supplied
+  len       INTEGER             -- full karyotype length before the 512-char cap
 );
 CREATE INDEX IF NOT EXISTS idx_usage_ts   ON usage(ts);
 CREATE INDEX IF NOT EXISTS idx_usage_type ON usage(type);
