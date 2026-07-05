@@ -419,9 +419,14 @@
     var from = seg.from, to = seg.to, total = to - from;
     if (!(total > 0)) { from = 0; to = d.length; total = d.length; }
     var uid = "ring" + (renderRing._n = (renderRing._n || 0) + 1);
-    var R = Math.max(30, Math.min(62, h(total) * 0.42));      // outer radius
-    var thick = Math.max(12, Math.min(22, R * 0.44));
-    var r0 = R - thick, pad = 6, size = (R + pad) * 2, cx = size / 2, cy = size / 2, TAU = Math.PI * 2;
+    // Size by circumference, not radius: the ring's mid-line circumference equals
+    // the retained DNA length (in the linear px scale), so a ring, which always
+    // loses the tips, reads as more compact than its linear homolog rather than
+    // larger. A floor keeps small rings legible.
+    var Rm = Math.max(17, h(total) / (2 * Math.PI) * 1.25);   // mid-line radius
+    var thick = Math.max(10, Math.min(W, Rm * 0.62));
+    var R = Rm + thick / 2, r0 = Math.max(6, Rm - thick / 2);
+    var pad = 6, size = (R + pad) * 2, cx = size / 2, cy = size / 2, TAU = Math.PI * 2;
 
     function heteroColor(stain) {
       if (simple) {
