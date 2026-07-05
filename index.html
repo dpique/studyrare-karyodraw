@@ -211,9 +211,6 @@
   .pbtn { border: 1px solid #cdd2e1; background: #fff; color: var(--ink-2); border-radius: 9px; padding: 6px 12px; font-size: 13px; cursor: pointer; font-family: inherit; }
   .pbtn:hover { background: #f0f2f7; border-color: var(--periwinkle); color: var(--peri-700); }
   .pbtn:disabled { opacity: .7; cursor: default; }
-  .pbtn.primary { background: var(--peri-50); border-color: var(--peri-300); color: var(--peri-700); font-weight: 700; }
-  .pbtn.primary:hover { background: #dee3fb; }
-  .viewout { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
   .kactions { display: flex; align-items: center; gap: 8px; padding: 2px 16px 12px; flex-wrap: wrap; }
   .kactions .spacer { flex: 1 1 auto; }
   .kactions .sharelink { border: none; background: none; color: var(--peri-700); font: 600 12px var(--font-sans); cursor: pointer; padding: 4px 7px; border-radius: 7px; }
@@ -303,10 +300,6 @@
         <button data-show="all" title="The full karyogram, all 46 chromosomes.">All</button>
         <button data-show="affected" title="Only the chromosomes involved in the abnormality, each with its normal homolog.">Affected</button>
       </div>
-      <span class="viewout">
-        <button class="pbtn primary" id="copylink" title="Copy a link to this exact karyotype + view — anyone who opens it lands on precisely what you see">🔗 Copy link</button>
-        <button class="pbtn" id="printbtn" title="Print, or save as a 1-page PDF summary for a genetic counselor">🖨 Print summary</button>
-      </span>
     </div>
     <div class="viewhint" id="viewhint"></div>
   </div>
@@ -320,10 +313,11 @@
         <div class="card">
           <div id="summary" class="summary"></div>
           <div class="kactions" id="kactions">
-            <button class="pbtn" id="copyimg" title="Copy the karyogram as an image — ready to paste into slides, notes, or a message">⧉ Copy image</button>
+            <button class="pbtn" id="copyimg" title="Copy the karyogram as an image, ready to paste into slides, notes, or a message">⧉ Copy image</button>
             <button class="pbtn" id="dlimg" title="Download the karyogram as a PNG file">↓ PNG</button>
             <span class="spacer"></span>
-            <button class="sharelink" id="copyhint" type="button" title="Copy a link that reproduces this exact view — it updates as you edit">🔗 Copy link to this view</button>
+            <button class="sharelink" id="copyhint" type="button" title="Copy a link that reproduces this exact view. It updates as you edit.">🔗 Copy link to this view</button>
+            <button class="sharelink" id="printbtn" type="button" title="Print, or save as a 1-page PDF summary for a genetic counselor">🖨 Print summary</button>
           </div>
           <div id="karyo"></div>
         </div>
@@ -900,7 +894,7 @@
     }
   }
   function copyLink(btn) {
-    btn = btn || $("#copylink");
+    btn = btn || $("#copyhint");
     var url = location.href;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(function () { flash(btn, "✓ Link copied!"); })
@@ -925,7 +919,6 @@
     SHOW = b.getAttribute("data-show"); syncSeg(); run();
   });
   $("#printbtn").addEventListener("click", function () { window.print(); });
-  $("#copylink").addEventListener("click", function () { copyLink($("#copylink")); });
   $("#copyhint").addEventListener("click", function () { copyLink($("#copyhint")); });
   $("#copyimg").addEventListener("click", copyImage);
   $("#dlimg").addEventListener("click", function () {
