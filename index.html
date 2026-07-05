@@ -149,8 +149,6 @@
   .kchrom.ghost { opacity: .8; }
   .ksub { font: 600 9.5px var(--font-mono); color: #a2302c; margin-top: 1px; white-space: nowrap; }
   .ksub.muted { color: #808ba8; }
-  .kbadge { position: absolute; top: -2px; right: -4px; z-index: 2; font: 700 9px var(--font-mono); color: var(--navy); border-radius: 999px; padding: 1px 4px; }
-  .kbadge.gain { background: var(--amber); }
   svg.ideo .band { cursor: crosshair; }
   .band-hi { filter: drop-shadow(0 0 1px rgba(236,155,39,.6)); }
 
@@ -356,7 +354,7 @@
       <div class="card">
         <h2 id="about-h">About KaryoDraw</h2>
         <div class="body about-body">
-          <p><strong>KaryoDraw</strong> is a free, browser-based <strong>karyotype visualizer</strong> for notation written in <strong>ISCN</strong>, the International System for Human Cytogenomic Nomenclature. Type a designation such as <code>47,XX,+21</code> or <code>46,XY,t(9;22)(q34;q11.2)</code> and KaryoDraw draws a correctly Giemsa-banded <strong>karyogram</strong>, aligns any derivative chromosomes against their normal homologs, and decodes every symbol in the nomenclature into plain language. It runs entirely in your browser — no account, no upload, no server round-trip.</p>
+          <p><strong>KaryoDraw</strong> is a free, browser-based <strong>karyotype visualizer</strong> for notation written in <strong>ISCN 2024</strong>, the current International System for Human Cytogenomic Nomenclature. Type a designation such as <code>47,XX,+21</code> or <code>46,XY,t(9;22)(q34;q11.2)</code> and KaryoDraw draws a correctly Giemsa-banded <strong>karyogram</strong>, aligns any derivative chromosomes against their normal homologs, and decodes every symbol in the nomenclature into plain language. It runs in your browser, with no account and nothing to install.</p>
           <h3>What is ISCN?</h3>
           <p>ISCN is the standardized shorthand cytogeneticists use to describe chromosome number and structure: the arm (<code>p</code> or <code>q</code>), region, band and sub-band coordinates, and operators such as <code>t</code> (translocation), <code>del</code> (deletion), <code>dup</code>, <code>inv</code>, and <code>i</code> (isochromosome). KaryoDraw takes this notation as input and turns it into a picture plus an explanation, so you can check that a written karyotype means what you think it means.</p>
           <h3>Who it's for</h3>
@@ -368,6 +366,7 @@
     </section>
     <footer class="wrap">
       <strong>KaryoDraw</strong> · <a href="https://karyodraw.com">karyodraw.com</a> · a StudyRare tool<br>
+      Nomenclature follows <strong>ISCN 2024</strong> (Cytogenet Genome Res 2024;164, <a href="https://doi.org/10.1159/000538512">DOI 10.1159/000538512</a>).
       Band data: UCSC <em>cytoBandIdeo</em>, human genome build hg38 (24 chromosomes, 862 bands).
       KaryoDraw is an <strong>educational</strong> visualizer for cytogenetic nomenclature, not a diagnostic tool.
     </footer>
@@ -817,13 +816,13 @@
       s.setAttribute("height", r.height.toFixed(1));
       pieces.push(s.outerHTML);
     });
-    Array.prototype.forEach.call(kg.querySelectorAll(".klabel, .ksub, .kbadge"), function (el) {
+    Array.prototype.forEach.call(kg.querySelectorAll(".klabel, .ksub"), function (el) {
       var txt = (el.textContent || "").trim(); if (!txt) return;
       var r = el.getBoundingClientRect(); if (!r.width) return;
       var x = (r.left - base.left + r.width / 2), y = (r.top - base.top + r.height * 0.78);
-      var isSub = el.classList.contains("ksub"), isBadge = el.classList.contains("kbadge");
-      var fill = isBadge ? "#d17f18" : isSub ? (el.classList.contains("muted") ? "#808ba8" : "#a2302c") : "#3c4463";
-      var fs = el.classList.contains("klabel") ? 12 : isBadge ? 9 : 9.5;
+      var isSub = el.classList.contains("ksub");
+      var fill = isSub ? (el.classList.contains("muted") ? "#808ba8" : "#a2302c") : "#3c4463";
+      var fs = el.classList.contains("klabel") ? 12 : 9.5;
       pieces.push('<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" text-anchor="middle" ' +
         'font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-weight="600" font-size="' + fs + '" fill="' + fill + '">' + escXml(txt) + '</text>');
     });

@@ -1,6 +1,7 @@
 # KaryoDraw
 
-A modern, **teaching-first** karyogram tool. Type an ISCN karyotype
+A modern, **teaching-first** karyogram tool, following **ISCN 2024** (the current
+International System for Human Cytogenomic Nomenclature). Type an ISCN karyotype
 (`46,XY`, `47,XX,+21`, `46,XY,t(9;22)(q34;q11.2)`, …) and KaryoDraw:
 
 1. **draws** the banded chromosome ideograms — arranged as a real karyogram,
@@ -54,6 +55,15 @@ reciprocal and three-way translocations, terminal deletions, isochromosomes,
 inversions, and mosaics — parse into the expected model.
 
 ## What it understands (ISCN)
+
+KaryoDraw follows **ISCN 2024**, the current *International System for Human
+Cytogenomic Nomenclature* (Cytogenet Genome Res 2024;164 suppl 1,
+[DOI 10.1159/000538512](https://doi.org/10.1159/000538512)). The abbreviations
+and band syntax it reads are those defined there; band coordinates come from the
+current hg38 genome build. **Scope:** the constitutional and neoplastic
+*karyotype* (chromosome-level) system. The microarray (`arr`), sequence-based,
+and region-specific-assay chapters of ISCN are out of scope by design, as are
+the `×` copy-number sign and clonal-evolution shorthand (`idem`, `sl`, `sdl`).
 
 - **Normal & sex constitutions:** `46,XX`, `46,XY`, `45,X`, `47,XXY`, `47,XYY`, `47,XXX`, …
 - **Aneuploidy:** gains/losses — `+21`, `+18`, `+13`, `-7`, …

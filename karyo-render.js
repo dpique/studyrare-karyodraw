@@ -450,9 +450,8 @@
         var mt = (!sameLength && anyCen && d.cenY != null) ? Math.max(0, maxCen - d.cenY) : 0;
         var cls = "kchrom" + (inst.kind !== "normal" ? " abn" : "");
         var sub = (inst.kind !== "normal") ? '<div class="ksub">' + esc(d.built.caption) + '</div>' : "";
-        var badge = inst.kind === "gain" ? '<div class="kbadge gain">+1</div>' : "";
         var style = mt > 0.5 ? ' style="margin-top:' + mt.toFixed(1) + 'px"' : "";
-        h2.push('<div class="' + cls + '" data-chrom="' + inst.chrom + '" data-kind="' + inst.kind + '"' + style + '>' + badge + d.svg + sub + '</div>');
+        h2.push('<div class="' + cls + '" data-chrom="' + inst.chrom + '" data-kind="' + inst.kind + '"' + style + '>' + d.svg + sub + '</div>');
       });
     }
     h2.push('</div><div class="klabel">' + esc(labelText) + '</div></div>');
