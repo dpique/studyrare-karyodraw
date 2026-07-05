@@ -1,2 +1,4 @@
 .DS_Store
 _build_inputs/*.gz
+.wrangler/
+node_modules/

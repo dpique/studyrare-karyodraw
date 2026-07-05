@@ -1,0 +1,51 @@
+name: Sync brand colors
+
+# Keeps index.html's inlined color palette in step with the canonical brand kit
+# at github.com/dpique/studyrare-brand. Runs on a schedule (nobody has to
+# remember to run the sync script) and opens a PR only when the palette drifts.
+# The token file is public, so no secrets are required — just the built-in
+# GITHUB_TOKEN to open the PR.
+
+on:
+  schedule:
+    - cron: '17 8 * * 1'   # Mondays 08:17 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Pull canonical palette into index.html
+        run: node scripts/sync-brand.mjs
+
+      - name: Open or update a PR if the palette changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet; then
+            echo "Brand colors already in sync; no PR needed."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BR="automated/brand-sync"
+          git checkout -b "$BR"
+          git commit -am "Sync brand colors from studyrare-brand tokens.json"
+          git push -f -u origin "$BR"
+          if gh pr view "$BR" --json state --jq .state 2>/dev/null | grep -q OPEN; then
+            echo "PR already open on $BR; force-push updated it."
+          else
+            gh pr create --base main --head "$BR" \
+              --title "Sync brand colors from studyrare-brand" \
+              --body "Automated by \`.github/workflows/sync-brand.yml\`. The canonical palette in [studyrare-brand](https://github.com/dpique/studyrare-brand) changed; this regenerates the inlined \`--\`color variables in \`index.html\`. Review the color diff, merge, then deploy with \`npx wrangler deploy\`."
+          fi
