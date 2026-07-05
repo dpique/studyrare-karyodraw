@@ -368,7 +368,8 @@
       <strong>KaryoDraw</strong> · <a href="https://karyodraw.com">karyodraw.com</a> · a StudyRare tool<br>
       Nomenclature follows <strong>ISCN 2024</strong> (Cytogenet Genome Res 2024;164, <a href="https://doi.org/10.1159/000538512">DOI 10.1159/000538512</a>).
       Band data: UCSC <em>cytoBandIdeo</em>, human genome build hg38 (24 chromosomes, 862 bands).
-      KaryoDraw is an <strong>educational</strong> visualizer for cytogenetic nomenclature, not a diagnostic tool.
+      KaryoDraw is an <strong>educational</strong> visualizer for cytogenetic nomenclature, not a diagnostic tool.<br>
+      Privacy: we record which karyotypes are drawn and which features are used, to improve the tool. No cookies, no IP addresses, no accounts.
     </footer>
   </div>
 </main>
@@ -660,6 +661,7 @@
     spokenText = model.clones.map(function (c) { return window.Teach.pronounce(c); }).filter(Boolean).join(". Next clone. ");
     renderWarnings(model);
     var invalid = !model.clones.length || model.clones.every(function (c) { return c.modalNumber == null; }) || !!model.suggestion;
+    beaconDraw(val, !invalid);
     if (invalid) {
       $("#summary").innerHTML = '<span class="kt">' + escapeHtml(val) + '</span><span class="sex">couldn’t read this as a karyotype yet</span>';
       $("#karyo").innerHTML = '<div class="emptystate">Fix the karyotype above and the drawing shows up here.<br>' +
@@ -901,6 +903,16 @@
     } else { window.prompt("Copy this link:", url); }
   }
 
+  // Cookieless usage beacon (no IP, no cookie, no account); recorded by worker.js.
+  var lastBeaconSig = "";
+  function beacon(payload) { try { navigator.sendBeacon("/api/collect", JSON.stringify(payload)); } catch (e) {} }
+  function beaconDraw(k, ok) {
+    var sig = k + "|" + MODE + "|" + LEVEL + "|" + SHOW + "|" + ok;
+    if (sig === lastBeaconSig) return;   // dedupe repeats and view re-renders of the same state
+    lastBeaconSig = sig;
+    beacon({ type: "draw", k: k, ok: ok, style: MODE, bands: String(LEVEL), show: SHOW });
+  }
+
   // init
   buildExamples();
   $("#draw").addEventListener("click", run);
@@ -938,6 +950,7 @@
   var initial = getParam("k") || "46,XY,t(9;22)(q34;q11.2)";
   input.value = initial;
   run();
+  try { var _ref = ""; if (document.referrer) { try { _ref = new URL(document.referrer).host; } catch (e) {} } beacon({ type: "pageview", ref: _ref }); } catch (e) {}
 })();
 </script>
 </body>

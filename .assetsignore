@@ -1,5 +1,9 @@
 .git/
 .DS_Store
+.wrangler/
+node_modules/
+worker.js
+schema.sql
 _build_inputs/
 docs/
 README.md
