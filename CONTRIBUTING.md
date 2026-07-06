@@ -7,7 +7,12 @@ renderer (`karyo-render.js`), the teaching layer (`teach.js`), and the UI
 
 ## Report a problem
 
-Open an issue at
+The easiest way, and the one that needs no account, is the **Send feedback**
+button in the footer of the site. It opens a short form and automatically attaches
+the karyotype you were viewing and a link to your exact view, so you only have to
+describe what looked wrong.
+
+If you prefer, open an issue at
 <https://github.com/dpique/studyrare-karyodraw/issues>. The fastest way to report
 a rendering or parsing problem is to include the karyotype you typed and a
 shareable link: the "Copy link to this view" button reproduces the exact state
@@ -15,8 +20,8 @@ shareable link: the "Copy link to this view" button reproduces the exact state
 
 ## Ask a question or seek support
 
-Use GitHub Issues with the "question" label. There is no account or mailing list;
-the repository is the single point of contact.
+Use the **Send feedback** form on the site, or GitHub Issues with the "question"
+label if you have a GitHub account.
 
 ## Run it locally
 

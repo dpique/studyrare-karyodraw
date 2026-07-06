@@ -1,13 +1,15 @@
 /* KaryoDraw Worker.
  *
- * Serves the static site (via the ASSETS binding) and handles two endpoints:
- * POST /api/collect records an anonymous usage event to D1, and GET /api/top
- * returns the most-drawn karyotypes for the on-page "Most-studied" panel.
+ * Serves the static site (via the ASSETS binding) and handles three endpoints:
+ * POST /api/collect records an anonymous usage event to D1, GET /api/top returns
+ * the most-drawn karyotypes for the on-page "Most-studied" panel, and POST
+ * /api/feedback receives a message from the on-site feedback form.
  *
- * Privacy: no cookies, no account, no IP address, no user-agent, no identifier
- * is stored. We keep only the karyotype drawn (capped), whether it parsed, the
- * view settings, a coarse country from Cloudflare, and the referring host. The
- * write is best-effort and never blocks or fails the user's request.
+ * Privacy: the usage analytics store no cookie, account, IP, user-agent, or
+ * identifier — only the karyotype drawn (capped), whether it parsed, the view
+ * settings, a coarse country, and the referring host. Feedback is a separate,
+ * voluntary channel: it stores what the person typed plus, if they choose to
+ * give it, an email for a reply. Feedback is kept private and never shown.
  */
 
 // Thresholds for the public "Most-studied" list. A karyotype only appears once
@@ -34,6 +36,10 @@ export default {
       if (request.method !== "GET") return new Response("method not allowed", { status: 405 });
       return topResponse(request, env, ctx);
     }
+    if (url.pathname === "/api/feedback") {
+      if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
+      return feedbackResponse(request, env, ctx);
+    }
     const res = await env.ASSETS.fetch(request);
     // Serve the branded 404 page for unknown page navigations (not missing images
     // or other assets, which should keep their plain 404). Preserves the 404 status.
@@ -53,6 +59,56 @@ export default {
 
 function cap(v, n) {
   return typeof v === "string" && v ? v.slice(0, n) : null;
+}
+
+// POST /api/feedback — a message from the on-site feedback form. Stores it in D1
+// (kept private) and, if a chat webhook is configured, pings it so the maintainer
+// sees it promptly. The insert is awaited so we can tell the user it went through.
+async function feedbackResponse(request, env, ctx) {
+  let b = null;
+  try { b = await request.json(); } catch (_) { b = null; }
+  // Honeypot: a hidden field real users never fill. If it has content, drop the
+  // submission silently (return OK so bots learn nothing).
+  if (!b || (b.hp && String(b.hp).trim())) return new Response(null, { status: 204 });
+  const message = typeof b.message === "string" ? b.message.trim() : "";
+  if (!message) return new Response("message required", { status: 400 });
+
+  const ts = Date.now();
+  const email = cap(b.email, 200);
+  const karyotype = cap(b.karyotype, 512);
+  const link = cap(b.url, 500);
+  const ua = cap(request.headers.get("user-agent"), 300);
+  const country = (request.cf && request.cf.country) || null;
+
+  let stored = false;
+  try {
+    await env.DB.prepare(
+      "INSERT INTO feedback (ts, message, email, karyotype, url, ua, country) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    ).bind(ts, message.slice(0, 4000), email, karyotype, link, ua, country).run();
+    stored = true;
+  } catch (e) {
+    console.error("feedback insert failed:", e && e.message);
+  }
+
+  if (env.FEEDBACK_WEBHOOK) {
+    const text = "New KaryoDraw feedback\n" + message.slice(0, 1500) +
+      (email ? "\nreply-to: " + email : "") +
+      (karyotype ? "\nkaryotype: " + karyotype : "") +
+      (link ? "\nview: " + link : "");
+    // Chat webhooks vary: Discord expects `content`, Slack expects `text`. Send both.
+    ctx.waitUntil(
+      fetch(env.FEEDBACK_WEBHOOK, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ content: text, text }),
+      }).catch(() => {})
+    );
+  }
+
+  if (!stored && !env.FEEDBACK_WEBHOOK) {
+    return new Response("could not save feedback", { status: 500 });
+  }
+  return new Response(null, { status: 204 });
 }
 
 // GET /api/top — the ranked "Most-studied" list. Cached at the edge for a day so

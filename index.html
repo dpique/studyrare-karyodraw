@@ -215,6 +215,28 @@
   #tooltip b { color: #9da8ef; }
   details.anatomy summary { cursor: pointer; font-weight: 600; color: var(--periwinkle); }
 
+  /* Feedback dialog (on-site, no account needed) */
+  .fbtrigger { background: none; border: none; color: var(--peri-700); cursor: pointer; font: inherit; padding: 0; text-decoration: underline; }
+  dialog#fbdialog { border: none; border-radius: 14px; padding: 0; max-width: 460px; width: calc(100% - 32px); box-shadow: var(--shadow); color: var(--ink); }
+  dialog#fbdialog::backdrop { background: rgba(36, 42, 69, .45); }
+  .fb-body { padding: 20px 22px 18px; font-family: var(--font-sans); }
+  .fb-body h2 { margin: 0 0 4px; font-family: var(--font-display); font-size: 18px; color: var(--navy); }
+  .fb-body p.fb-lead { margin: 0 0 12px; font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+  .fb-body label { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink-2); margin: 12px 0 4px; }
+  .fb-body textarea, .fb-body input[type=email] {
+    width: 100%; border: 1px solid #cdd2e1; border-radius: 9px; padding: 9px 11px;
+    font: 14px var(--font-sans); color: var(--ink); background: #fff;
+  }
+  .fb-body textarea { min-height: 92px; resize: vertical; }
+  .fb-body textarea:focus, .fb-body input[type=email]:focus { outline: 2px solid var(--periwinkle); border-color: var(--periwinkle); }
+  .fb-context { margin-top: 12px; font-size: 12px; color: var(--muted); background: var(--peri-50); border-radius: 8px; padding: 8px 10px; line-height: 1.5; }
+  .fb-context b { color: var(--ink-2); font-family: var(--font-mono); font-weight: 600; }
+  .fb-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  .fb-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  #fbstatus { margin-top: 10px; font-size: 13px; min-height: 18px; }
+  #fbstatus.ok { color: var(--sage-700); }
+  #fbstatus.err { color: var(--error-700); }
+
   .pbtn { border: 1px solid #cdd2e1; background: #fff; color: var(--ink-2); border-radius: 9px; padding: 6px 12px; font-size: 13px; cursor: pointer; font-family: inherit; }
   .pbtn:hover { background: #f0f2f7; border-color: var(--periwinkle); color: var(--peri-700); }
   .pbtn:disabled { opacity: .7; cursor: default; }
@@ -382,7 +404,7 @@
       </div>
     </section>
     <footer class="wrap">
-      <strong>KaryoDraw</strong> · <a href="https://karyodraw.com" target="_blank" rel="noopener">karyodraw.com</a> · a <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a> tool · <a href="https://github.com/dpique/studyrare-karyodraw" target="_blank" rel="noopener">open source on GitHub</a> · <a href="https://github.com/dpique/studyrare-karyodraw/issues/new/choose" target="_blank" rel="noopener">Report a problem</a><br>
+      <strong>KaryoDraw</strong> · <a href="https://karyodraw.com" target="_blank" rel="noopener">karyodraw.com</a> · a <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a> tool · <button type="button" class="fbtrigger" id="fbopen">Send feedback</button> · <a href="https://github.com/dpique/studyrare-karyodraw" target="_blank" rel="noopener">open source on GitHub</a><br>
       Nomenclature follows <strong>ISCN 2024</strong> (Cytogenet Genome Res 2024;164, <a href="https://doi.org/10.1159/000538512" target="_blank" rel="noopener">DOI 10.1159/000538512</a>).
       Band data: UCSC <em>cytoBandIdeo</em>, human genome build hg38 (24 chromosomes, 862 bands).
       KaryoDraw is an <strong>educational</strong> visualizer for cytogenetic nomenclature, not a diagnostic tool.<br>
@@ -393,6 +415,24 @@
 
 <div id="printsheet"></div>
 <div id="tooltip"></div>
+
+<dialog id="fbdialog" aria-labelledby="fbtitle">
+  <form id="fbform" class="fb-body">
+    <h2 id="fbtitle">Send feedback</h2>
+    <p class="fb-lead">Something not working, or a karyogram that did not look right? Tell us what you saw. No account needed.</p>
+    <label for="fbmsg">What happened, or what did you expect?</label>
+    <textarea id="fbmsg" name="message" required maxlength="4000" placeholder="For example: I typed 46,XX,t(2;8) and the drawing did not look right."></textarea>
+    <label for="fbemail">Your email (optional, only if you would like a reply)</label>
+    <input id="fbemail" name="email" type="email" maxlength="200" autocomplete="email" placeholder="you@example.com" />
+    <div class="fb-context">Attached to help us debug: karyotype <b id="fbkt">—</b> and a link to your exact view.</div>
+    <input class="fb-hp" id="fbhp" name="hp" tabindex="-1" autocomplete="off" aria-hidden="true" />
+    <div class="fb-actions">
+      <button type="button" class="pbtn" id="fbcancel">Cancel</button>
+      <button type="submit" class="btn" id="fbsend">Send feedback</button>
+    </div>
+    <div id="fbstatus" role="status" aria-live="polite"></div>
+  </form>
+</dialog>
 
 <script src="ideogram-data.js"></script>
 <script src="iscn-parser.js"></script>
@@ -1031,6 +1071,46 @@
     input.value = b.getAttribute("data-k"); run();
   });
   $("#speakbtn").addEventListener("click", speakKaryotype);
+
+  // Feedback dialog: a no-account way for anyone to report a problem. The current
+  // karyotype and shareable link are attached automatically so a non-technical
+  // user does not have to describe the state. Posts to the Worker (/api/feedback).
+  (function () {
+    var dlg = $("#fbdialog"); if (!dlg) return;
+    var openBtn = $("#fbopen"), form = $("#fbform"), status = $("#fbstatus");
+    if (openBtn) openBtn.addEventListener("click", function () {
+      $("#fbkt").textContent = input.value.trim() || "—";
+      status.textContent = ""; status.className = "";
+      if (typeof dlg.showModal === "function") dlg.showModal(); else dlg.setAttribute("open", "");
+    });
+    $("#fbcancel").addEventListener("click", function () { dlg.close(); });
+    form.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var msg = $("#fbmsg").value.trim();
+      if (!msg) { status.textContent = "Please tell us what happened."; status.className = "err"; return; }
+      var send = $("#fbsend"); send.disabled = true;
+      status.textContent = "Sending…"; status.className = "";
+      fetch("/api/feedback", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          message: msg, email: $("#fbemail").value.trim(),
+          karyotype: input.value.trim(), url: location.href, hp: $("#fbhp").value
+        })
+      }).then(function (r) {
+        send.disabled = false;
+        if (r.ok) {
+          status.textContent = "Thank you. Your feedback was sent."; status.className = "ok";
+          $("#fbmsg").value = ""; $("#fbemail").value = "";
+          setTimeout(function () { dlg.close(); }, 1400);
+        } else {
+          status.textContent = "Could not send. Please try again, or open an issue on GitHub."; status.className = "err";
+        }
+      }).catch(function () {
+        send.disabled = false;
+        status.textContent = "Could not send. Please check your connection and try again."; status.className = "err";
+      });
+    });
+  })();
 
   var pStyle = getParam("style"); if (pStyle && URL_TO_STYLE[pStyle]) MODE = URL_TO_STYLE[pStyle];
   var pBands = getParam("bands"); if (pBands !== null && pBands in URL_TO_BANDS) LEVEL = URL_TO_BANDS[pBands];
