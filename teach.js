@@ -254,12 +254,12 @@
       case "gain": return "gain of chromosome " + c;
       case "loss": return "loss of chromosome " + c;
       case "del": return "deletion of chromosome " + c + ((bp[0] || []).length ? " at " + bands(0, false) : "");
-      case "dup": return "duplication on chromosome " + c;
+      case "dup": return "duplication on chromosome " + c + ((bp[0] || []).length ? " of " + bands(0, false) : "");
       case "inv": return "inversion of chromosome " + c + ((bp[0] || []).length ? " between " + bands(0, false) : "");
       case "t": case "dic": return "translocation between chromosomes " + ab.chroms.join(" and ") +
         (bp.length ? ", breakpoints " + ab.chroms.map(function (cc, i) { return pronounceBand(cc, (bp[i] || [])[0], true); }).join(" and ") : "");
       case "iso": return "isochromosome " + c;
-      case "ring": return "ring chromosome " + c;
+      case "ring": return "ring chromosome " + c + ((bp[0] || []).length ? ", breaks at " + bands(0, false) : "");
       case "der": return "derivative chromosome " + c;
       case "add": return "additional material on chromosome " + c;
       case "mar": return "a marker chromosome";
