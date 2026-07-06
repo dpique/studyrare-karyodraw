@@ -20,7 +20,7 @@
 // (not necessarily consecutive) calendar days. The total draws are the anonymity
 // floor; the distinct-day rule stops one person in a single session from putting
 // something on the board. Both are tunable; raise as traffic grows.
-const TOP_MIN_DRAWS = 10;
+const TOP_MIN_DRAWS = 5;
 const TOP_MIN_DAYS = 2;
 const TOP_LIMIT = 15;
 
