@@ -19,6 +19,14 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
 - Add a "Report a problem" link on the site, plus GitHub issue and pull-request
   templates that ask for the karyotype and a shareable link.
 - Serve a branded 404 page for unknown page addresses.
+- Fit polyploid karyotypes (for example `92,XXXX`) inside the card instead of
+  letting the wide karyogram spill over the sidebar.
+- Add a "Most-studied karyotypes" panel: an aggregate, anonymous list of the
+  most-drawn karyotypes, shown as clickable chips. A karyotype appears only after
+  many draws across several distinct days, so single-session repeats cannot
+  inflate or spam the list; the panel shows rank order only, with no counts, and
+  is served from a daily-cached read endpoint. The auto-loaded demo no longer
+  counts toward usage.
 
 ## 2026-07-05
 

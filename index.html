@@ -333,6 +333,13 @@
           <h2>Band &amp; stain legend</h2>
           <div class="body"><div class="legend" id="legend"></div></div>
         </div>
+        <div class="card" id="topcard" style="display:none">
+          <h2>Most-studied karyotypes</h2>
+          <div class="body">
+            <div class="examples" id="topkaryos" role="group" aria-label="Most-studied karyotypes"></div>
+            <div class="muted" style="font-size:12px; margin-top:9px">Aggregate and anonymous: the karyotypes people draw most, refreshed daily. Click any to load it.</div>
+          </div>
+        </div>
       </section>
 
       <aside>
@@ -379,7 +386,7 @@
       Nomenclature follows <strong>ISCN 2024</strong> (Cytogenet Genome Res 2024;164, <a href="https://doi.org/10.1159/000538512" target="_blank" rel="noopener">DOI 10.1159/000538512</a>).
       Band data: UCSC <em>cytoBandIdeo</em>, human genome build hg38 (24 chromosomes, 862 bands).
       KaryoDraw is an <strong>educational</strong> visualizer for cytogenetic nomenclature, not a diagnostic tool.<br>
-      Privacy: we record which karyotypes are drawn and which features are used, to improve the tool. No cookies, no IP addresses, no accounts.
+      Privacy: we record which karyotypes are drawn and which features are used, to improve the tool and to show an aggregate list of the most-studied karyotypes. No cookies, no IP addresses, no accounts.
     </footer>
   </div>
 </main>
@@ -444,6 +451,31 @@
       var c = ev.target.closest(".chip"); if (!c) return;
       input.value = c.getAttribute("data-k"); run();
     });
+  }
+
+  // Fetch the aggregate "Most-studied" list and, if it is meaningfully populated,
+  // show it as clickable chips. The endpoint returns only karyotype strings in
+  // rank order (no counts). Stays hidden until enough distinct usage accrues.
+  function loadTopKaryotypes() {
+    if (!window.fetch) return;
+    fetch("/api/top", { headers: { accept: "application/json" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var items = (d && d.items) || [];
+        if (items.length < 3) return;
+        var box = $("#topkaryos");
+        box.innerHTML = items.map(function (k) {
+          var attr = escXml(k);
+          return '<button type="button" class="chip" data-k="' + attr +
+            '" aria-label="Draw ' + attr + '">' + escapeHtml(k) + '</button>';
+        }).join("");
+        box.addEventListener("click", function (ev) {
+          var c = ev.target.closest(".chip"); if (!c) return;
+          input.value = c.getAttribute("data-k"); run();
+        });
+        $("#topcard").style.display = "";
+      })
+      .catch(function () {});
   }
 
   function swatch(color, label) {
@@ -569,8 +601,17 @@
     Array.prototype.forEach.call(host.querySelectorAll(".karyogram"), function (kg) {
       var natural = kg.offsetWidth, naturalH = kg.offsetHeight;
       if (!natural || avail <= 0) return;
-      var scale = Math.max(0.55, Math.min(1.7, avail / natural));
-      kg.style.transform = "scale(" + scale.toFixed(3) + ")";
+      // Fit to the card width. Polyploid karyotypes (92,XXXX ... 184,XXXXXXXX) are
+      // several times wider than a normal karyogram. Anchor the scale at the
+      // top-left and re-center the scaled result with translateX; scaling around
+      // the box center instead pushes a too-wide karyogram off to the right and
+      // over the sidebar. The floor only guards a degenerate near-zero scale.
+      var scale = Math.max(0.1, Math.min(1.7, avail / natural));
+      var scaledW = scale * natural;
+      var offset = Math.max(0, (avail - scaledW) / 2);
+      kg.style.margin = "0";
+      kg.style.transformOrigin = "top left";
+      kg.style.transform = "translateX(" + offset.toFixed(1) + "px) scale(" + scale.toFixed(3) + ")";
       if (kg.parentNode) kg.parentNode.style.height = Math.ceil(naturalH * scale) + "px";
     });
   }
@@ -955,6 +996,9 @@
     var sig = k + "|" + MODE + "|" + LEVEL + "|" + SHOW + "|" + ok;
     if (sig === lastBeaconSig) return;   // dedupe repeats and view re-renders of the same state
     lastBeaconSig = sig;
+    // The auto-loaded demo (no ?k= in the URL) does not count toward usage, so the
+    // "Most-studied" list reflects karyotypes people actually chose to draw.
+    if (beaconDraw.skipOnce) { beaconDraw.skipOnce = false; return; }
     beacon({ type: "draw", k: k, ok: ok, style: MODE, bands: String(LEVEL), show: SHOW });
   }
 
@@ -992,10 +1036,13 @@
   var pBands = getParam("bands"); if (pBands !== null && pBands in URL_TO_BANDS) LEVEL = URL_TO_BANDS[pBands];
   var pShow = getParam("show"); if (pShow === "all" || pShow === "affected") SHOW = pShow;
   syncSeg();
+  var hasK = getParam("k") != null;
   var initial = getParam("k") || "46,XY,t(9;22)(q34;q11.2)";
   input.value = initial;
+  if (!hasK) beaconDraw.skipOnce = true;   // do not count the auto-loaded demo
   run();
   try { var _ref = ""; if (document.referrer) { try { _ref = new URL(document.referrer).host; } catch (e) {} } beacon({ type: "pageview", ref: _ref }); } catch (e) {}
+  loadTopKaryotypes();
 })();
 </script>
 </body>
