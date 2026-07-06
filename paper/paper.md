@@ -36,7 +36,7 @@ used, with no IP address or identifier, to guide development. Every view has a
 shareable deep-link URL and can be exported as an image or a one-page printable
 summary.
 
-![KaryoDraw rendering the reciprocal translocation `46,XY,t(9;22)(q34;q11.2)` (the Philadelphia chromosome) in "highlight" mode. Chromosomes involved in the rearrangement are colored by identity — der(9) carries the amber chromosome-22 segment and der(22) the periwinkle chromosome-9 segment, centromere-aligned against their normal homologs — while the panel at right decodes each token of the ISCN designation into plain language.\label{fig:interface}](fig1-interface.png)
+![KaryoDraw rendering the reciprocal translocation `46,XY,t(9;22)(q34;q11.2)` (the Philadelphia chromosome) in "highlight" mode. Chromosomes involved in the rearrangement are colored by identity: der(9) carries the amber chromosome-22 segment and der(22) the periwinkle chromosome-9 segment, centromere-aligned against their normal homologs, while the panel at right decodes each token of the ISCN designation into plain language.\label{fig:interface}](fig1-interface.png)
 
 # Statement of need
 
@@ -73,24 +73,33 @@ explanation layer in a single zero-install, shareable web page.
 
 **Parsing.** KaryoDraw parses ISCN designations including numerical gains and
 losses (`+21`, `-X`), terminal and interstitial deletions, duplications and
-triplications, paracentric and pericentric inversions, reciprocal *and* n-way
-(e.g. three-way) translocations, isochromosomes, ring chromosomes, derivative
-chromosomes with nested sub-operations, additions of unknown origin, marker
-chromosomes, dicentrics, and mosaic/composite karyotypes with multiple clones.
-The parser is deliberately forgiving: unrecognized input yields targeted warnings
-and "did you mean" corrections rather than a hard failure, so a learner always
-gets something drawn plus feedback on what was not understood.
+triplications, paracentric and pericentric inversions, reciprocal and n-way (for
+example three-way) translocations, isochromosomes, ring chromosomes, derivative
+chromosomes with nested sub-operations, whole-arm and Robertsonian derivatives
+(`der(13;14)`), dicentrics and isodicentrics, insertions, additions of unknown
+origin, marker chromosomes, and mosaic or composite karyotypes with multiple
+clones. The drawn chromosome count is reconciled against the stated modal number,
+including the fusion arithmetic of Robertsonian derivatives and triploid or
+tetraploid ploidy, and a mismatch is flagged. The parser is forgiving but not
+permissive: unrecognized input yields targeted warnings and "did you mean"
+corrections rather than a hard failure, and a breakpoint band that does not exist
+on its chromosome is rejected with an explanation rather than drawn, so a learner
+always gets either a faithful drawing or specific feedback on what was missed.
 
 **Rendering.** Chromosomes are drawn as SVG ideograms from UCSC hg38
 `cytoBandIdeo` data (862 bands across 24 chromosomes). Two views serve different
 learning goals: a *highlight* mode that greys out uninvolved chromosomes and
-colors the involved ones by identity — with translocation and derivative segments
-colored by their chromosome of origin, so a rearrangement is immediately legible
-— and a *realistic* mode that renders true Giemsa banding on every chromosome so
+colors the involved ones by identity, with translocation and derivative segments
+colored by their chromosome of origin so a rearrangement is immediately legible,
+and a *realistic* mode that renders true Giemsa banding on every chromosome so
 the learner can practice spotting the abnormality. Band resolution is switchable
 (~400, ~550, ~850 bands). Homologs and derivatives within a chromosome group are
-aligned on their centromere, so a p-arm deletion visibly shortens the top and a
-q-arm deletion the bottom — matching how a karyogram is compared in practice.
+centromere-aligned when their lengths differ, so a p-arm deletion visibly
+shortens the top and a q-arm deletion the bottom, while same-length
+rearrangements such as inversions are aligned flush at both ends. A ring
+chromosome is drawn as an actual ring, its retained material wrapped into an
+annulus with the centromere and the fusion point marked, which conveys the loss
+of the distal tips more directly than a linear depiction.
 
 **Explanation.** A teaching layer decodes each token of the designation into
 plain English, explains band-name structure and the biology of each Giemsa stain
@@ -100,22 +109,46 @@ pronunciation of the karyotype. n-way translocations are described with their
 explicit ISCN cycle (e.g. 2→7→5→2), which is otherwise a common source of
 confusion.
 
-**Sharing and export.** The full application state — karyotype, render mode, and
-band level — is encoded in a human-readable URL, so any view can be shared as a
+**Sharing and export.** The full application state (karyotype, render mode, and
+band level) is encoded in a human-readable URL, so any view can be shared as a
 link that reproduces it exactly; the karyogram can be copied or downloaded as a
 PNG (rasterized client-side) and printed as a one-page summary.
 
+# Scope and limitations
+
+KaryoDraw covers the constitutional and neoplastic *karyotype*, that is, the
+chromosome-band level of ISCN 2024. The microarray (`arr`), sequence-based, and
+region-specific-assay chapters of ISCN describe sub-microscopic changes that a
+banded karyogram cannot depict by construction, and they are out of scope. This
+is an inherent limit of the karyotype representation, not a missing feature: it is
+the same reason those separate nomenclatures exist.
+
+Within karyotype nomenclature, a few constructs are deliberately unsupported and
+are warned about rather than mishandled silently: the copy-number multiplication
+sign (`×n`), the clonal-evolution shorthand (`idem`, `sl`, `sdl`), and structures
+such as double minutes (`dmin`) and homogeneously staining regions (`hsr`).
+Uncertainty operators (`or`, `~`, `?`) are not evaluated; the tool draws the first
+interpretation and states that it has done so. The polyploidy heuristic infers
+ploidy from the modal number and is ambiguous for counts that fall between a
+hyperdiploid and a hypotriploid complement, an ambiguity the notation itself does
+not resolve without clinical context.
+
+KaryoDraw is an educational visualizer of nomenclature, not a diagnostic tool, and
+it does not validate a designation against a patient sample. The curated clinical
+notes are illustrative teaching content, not a comprehensive reference.
+
 # Implementation and availability
 
-KaryoDraw is implemented in dependency-free vanilla JavaScript — a nomenclature
-parser, an SVG karyogram renderer, and a teaching module — with no build step,
+KaryoDraw is implemented in dependency-free vanilla JavaScript (a nomenclature
+parser, an SVG karyogram renderer, and a teaching module) with no build step,
 and is served as static assets. It is deployed at <https://karyodraw.com> and the
 source is available at <https://github.com/dpique/studyrare-karyodraw> under the
 MIT license. Chromosome band data are
 derived from the UCSC Genome Browser `cytoBandIdeo` table (hg38). The nomenclature
 parser is validated by a dependency-free test suite (Node's built-in runner)
-covering canonical designations from aneuploidy through three-way translocations
-and mosaicism.
+covering designations from aneuploidy through three-way translocations and
+mosaicism, along with Robertsonian derivatives, isodicentrics, polyploidy, and
+the count-reconciliation and invalid-band edge cases.
 
 # Acknowledgements
 
