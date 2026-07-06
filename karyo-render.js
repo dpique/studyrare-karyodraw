@@ -490,13 +490,13 @@
     // Fusion point: the two broken ends meet at 12 o'clock (angle 0, the seam of
     // the wrap). Mark it like a clasp — a short seam plus a haloed node — so it
     // reads as the join where the ends fused into a ring.
-    var fcol = OP_COLORS.break;
+    var fcol = "#ec9b27";
+    var ay = py(0, R);   // fusion point (x = cx) at 12 o'clock
     body.push('<g><title>Ring fusion point: the broken chromosome ends joined here</title>' +
-      '<line x1="' + px(0, R + 2.5).toFixed(2) + '" y1="' + py(0, R + 2.5).toFixed(2) +
-      '" x2="' + px(0, r0 - 2).toFixed(2) + '" y2="' + py(0, r0 - 2).toFixed(2) +
+      '<line x1="' + cx.toFixed(2) + '" y1="' + (ay + 1).toFixed(2) + '" x2="' + cx.toFixed(2) + '" y2="' + py(0, r0 - 1).toFixed(2) +
       '" stroke="' + fcol + '" stroke-width="1.6"/>' +
-      '<circle cx="' + px(0, R).toFixed(2) + '" cy="' + py(0, R).toFixed(2) +
-      '" r="3.1" fill="' + fcol + '" stroke="#ffffff" stroke-width="1.3"/></g>');
+      '<path d="M' + (cx - 7.5).toFixed(2) + ' ' + (ay - 3.6).toFixed(2) + ' L' + (cx - 1.4).toFixed(2) + ' ' + ay.toFixed(2) + ' L' + (cx - 7.5).toFixed(2) + ' ' + (ay + 3.6).toFixed(2) + ' Z" fill="' + fcol + '" stroke="#ffffff" stroke-width="0.9"/>' +
+      '<path d="M' + (cx + 7.5).toFixed(2) + ' ' + (ay - 3.6).toFixed(2) + ' L' + (cx + 1.4).toFixed(2) + ' ' + ay.toFixed(2) + ' L' + (cx + 7.5).toFixed(2) + ' ' + (ay + 3.6).toFixed(2) + ' Z" fill="' + fcol + '" stroke="#ffffff" stroke-width="0.9"/></g>');
     return {
       svg: '<svg class="ideo ideo-ring" width="' + size.toFixed(1) + '" height="' + size.toFixed(1) +
         '" viewBox="0 0 ' + size.toFixed(1) + ' ' + size.toFixed(1) + '"><defs>' + defs.join("") + '</defs>' + body.join("") + '</svg>',
