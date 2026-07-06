@@ -15,12 +15,13 @@
  * inert until the RESEND_API_KEY / FEEDBACK_EMAIL_TO settings are configured.
  */
 
-// Thresholds for the public "Most-studied" list. A karyotype only appears once
-// it has been drawn many times (an anonymity floor) AND across several distinct
-// days (so one person hammering one string in a single session cannot inflate or
-// spam a result onto the board). Both are tunable; raise as traffic grows.
-const TOP_MIN_DRAWS = 20;
-const TOP_MIN_DAYS = 3;
+// Thresholds for the public "Most-studied" list. A karyotype appears once it has
+// been drawn TOP_MIN_DRAWS times in total AND on at least TOP_MIN_DAYS distinct
+// (not necessarily consecutive) calendar days. The total draws are the anonymity
+// floor; the distinct-day rule stops one person in a single session from putting
+// something on the board. Both are tunable; raise as traffic grows.
+const TOP_MIN_DRAWS = 10;
+const TOP_MIN_DAYS = 2;
 const TOP_LIMIT = 15;
 
 export default {
