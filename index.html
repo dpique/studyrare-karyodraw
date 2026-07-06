@@ -569,8 +569,17 @@
     Array.prototype.forEach.call(host.querySelectorAll(".karyogram"), function (kg) {
       var natural = kg.offsetWidth, naturalH = kg.offsetHeight;
       if (!natural || avail <= 0) return;
-      var scale = Math.max(0.55, Math.min(1.7, avail / natural));
-      kg.style.transform = "scale(" + scale.toFixed(3) + ")";
+      // Fit to the card width. Polyploid karyotypes (92,XXXX ... 184,XXXXXXXX) are
+      // several times wider than a normal karyogram. Anchor the scale at the
+      // top-left and re-center the scaled result with translateX; scaling around
+      // the box center instead pushes a too-wide karyogram off to the right and
+      // over the sidebar. The floor only guards a degenerate near-zero scale.
+      var scale = Math.max(0.1, Math.min(1.7, avail / natural));
+      var scaledW = scale * natural;
+      var offset = Math.max(0, (avail - scaledW) / 2);
+      kg.style.margin = "0";
+      kg.style.transformOrigin = "top left";
+      kg.style.transform = "translateX(" + offset.toFixed(1) + "px) scale(" + scale.toFixed(3) + ")";
       if (kg.parentNode) kg.parentNode.style.height = Math.ceil(naturalH * scale) + "px";
     });
   }
