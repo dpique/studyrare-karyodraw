@@ -491,12 +491,14 @@
     // the wrap). Mark it like a clasp — a short seam plus a haloed node — so it
     // reads as the join where the ends fused into a ring.
     var fcol = "#ec9b27";
-    var ay = py(0, R);   // fusion point (x = cx) at 12 o'clock
-    body.push('<g><title>Ring fusion point: the broken chromosome ends joined here</title>' +
-      '<line x1="' + cx.toFixed(2) + '" y1="' + (ay + 1).toFixed(2) + '" x2="' + cx.toFixed(2) + '" y2="' + py(0, r0 - 1).toFixed(2) +
-      '" stroke="' + fcol + '" stroke-width="1.6"/>' +
-      '<path d="M' + (cx - 7.5).toFixed(2) + ' ' + (ay - 3.6).toFixed(2) + ' L' + (cx - 1.4).toFixed(2) + ' ' + ay.toFixed(2) + ' L' + (cx - 7.5).toFixed(2) + ' ' + (ay + 3.6).toFixed(2) + ' Z" fill="' + fcol + '" stroke="#ffffff" stroke-width="0.9"/>' +
-      '<path d="M' + (cx + 7.5).toFixed(2) + ' ' + (ay - 3.6).toFixed(2) + ' L' + (cx + 1.4).toFixed(2) + ' ' + ay.toFixed(2) + ' L' + (cx + 7.5).toFixed(2) + ' ' + (ay + 3.6).toFixed(2) + ' Z" fill="' + fcol + '" stroke="#ffffff" stroke-width="0.9"/></g>');
+    var yO = py(0, R), yI = py(0, r0);   // outer-top and inner-top at 12 o'clock (x = cx)
+    body.push('<g style="cursor:default"><title>Ring fusion point: the broken chromosome ends joined here</title>' +
+      '<line x1="' + cx.toFixed(2) + '" y1="' + yO.toFixed(2) + '" x2="' + cx.toFixed(2) + '" y2="' + yI.toFixed(2) +
+      '" stroke="' + fcol + '" stroke-width="1.7"/>' +
+      // arrowhead just outside the ring, pointing down at the seam
+      '<path d="M' + (cx - 3.8).toFixed(2) + ' ' + (yO - 7.5).toFixed(2) + ' L' + (cx + 3.8).toFixed(2) + ' ' + (yO - 7.5).toFixed(2) + ' L' + cx.toFixed(2) + ' ' + (yO - 1.5).toFixed(2) + ' Z" fill="' + fcol + '" stroke="#ffffff" stroke-width="0.9"/>' +
+      // arrowhead inside the hole, pointing up at the seam
+      '<path d="M' + (cx - 3.8).toFixed(2) + ' ' + (yI + 7.5).toFixed(2) + ' L' + (cx + 3.8).toFixed(2) + ' ' + (yI + 7.5).toFixed(2) + ' L' + cx.toFixed(2) + ' ' + (yI + 1.5).toFixed(2) + ' Z" fill="' + fcol + '" stroke="#ffffff" stroke-width="0.9"/></g>');
     return {
       svg: '<svg class="ideo ideo-ring" width="' + size.toFixed(1) + '" height="' + size.toFixed(1) +
         '" viewBox="0 0 ' + size.toFixed(1) + ' ' + size.toFixed(1) + '"><defs>' + defs.join("") + '</defs>' + body.join("") + '</svg>',
