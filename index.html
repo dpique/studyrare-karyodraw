@@ -683,13 +683,13 @@
     var bad = invalidBands(model);
     if (bad.length) {
       model.warnings.push(bad.length === 1
-        ? "“" + bad[0] + "” isn’t a real band, so it was ignored. Check the coordinate against the band map."
-        : "These aren’t real bands and were ignored: " + bad.join(", ") + ". Check them against the band map.");
+        ? "“" + bad[0] + "” isn’t a real band on that chromosome. Check the coordinate against the band map."
+        : "These aren’t real bands: " + bad.join(", ") + ". Check them against the band map.");
     }
     AFFECTED = window.Karyo.computeAffected(model.clones);
     spokenText = model.clones.map(function (c) { return window.Teach.pronounce(c); }).filter(Boolean).join(". Next clone. ");
     renderWarnings(model);
-    var invalid = !model.clones.length || model.clones.every(function (c) { return c.modalNumber == null; }) || !!model.suggestion;
+    var invalid = !model.clones.length || model.clones.every(function (c) { return c.modalNumber == null; }) || !!model.suggestion || bad.length > 0;
     beaconDraw(val, !invalid);
     if (invalid) {
       $("#summary").innerHTML = '<span class="kt">' + escapeHtml(val) + '</span><span class="sex">couldn’t read this as a karyotype yet</span>';
