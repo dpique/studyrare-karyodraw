@@ -7,6 +7,10 @@ schema.sql
 _build_inputs/
 docs/
 README.md
+CHANGELOG.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+CITATION.cff
 start.sh
 .gitignore
 wrangler.jsonc
