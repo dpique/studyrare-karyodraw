@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS feedback (
   karyotype TEXT,               -- the karyotype they were viewing (capped 512)
   url       TEXT,               -- shareable link to that exact view (capped 500)
   ua        TEXT,               -- browser/device user-agent, for debugging (capped 300)
-  country   TEXT                -- coarse geo from Cloudflare
+  country   TEXT,               -- coarse geo from Cloudflare
+  digested  INTEGER             -- 1 once included in a daily email digest; else null
 );
 CREATE INDEX IF NOT EXISTS idx_feedback_ts ON feedback(ts);

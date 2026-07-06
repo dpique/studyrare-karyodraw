@@ -10,6 +10,9 @@
  * settings, a coarse country, and the referring host. Feedback is a separate,
  * voluntary channel: it stores what the person typed plus, if they choose to
  * give it, an email for a reply. Feedback is kept private and never shown.
+ *
+ * A daily cron (scheduled handler) emails a digest of new feedback via Resend,
+ * inert until the RESEND_API_KEY / FEEDBACK_EMAIL_TO settings are configured.
  */
 
 // Thresholds for the public "Most-studied" list. A karyotype only appears once
@@ -55,10 +58,72 @@ export default {
     }
     return res;
   },
+
+  // Scheduled (cron) handler: email a daily digest of new feedback. Registered by
+  // the cron in wrangler.jsonc. Inert until the Resend settings are configured.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(sendFeedbackDigest(env));
+  },
 };
 
 function cap(v, n) {
   return typeof v === "string" && v ? v.slice(0, n) : null;
+}
+
+// Email any not-yet-sent feedback as one digest, via Resend. Safe to deploy before
+// it is configured: it no-ops unless RESEND_API_KEY and FEEDBACK_EMAIL_TO are set.
+// Rows are marked digested only after the email is accepted, so a send failure
+// retries on the next run instead of dropping feedback.
+async function sendFeedbackDigest(env) {
+  if (!env.RESEND_API_KEY || !env.FEEDBACK_EMAIL_TO) return;
+  let rows = [];
+  try {
+    const rs = await env.DB.prepare(
+      "SELECT id, ts, message, email, karyotype, url, country FROM feedback " +
+      "WHERE digested IS NULL ORDER BY ts ASC LIMIT 200"
+    ).all();
+    rows = rs.results || [];
+  } catch (e) {
+    console.error("digest query failed:", e && e.message);
+    return;
+  }
+  if (!rows.length) return;
+
+  const from = env.FEEDBACK_EMAIL_FROM || "KaryoDraw feedback <feedback@karyodraw.com>";
+  const subject = "KaryoDraw feedback: " + rows.length + " new";
+  const body = rows.map(formatFeedback).join("\n\n----------\n\n");
+
+  let sent = false;
+  try {
+    const r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" },
+      body: JSON.stringify({ from, to: env.FEEDBACK_EMAIL_TO, subject, text: body }),
+    });
+    sent = r.ok;
+    if (!r.ok) console.error("resend returned", r.status);
+  } catch (e) {
+    console.error("resend request failed:", e && e.message);
+  }
+
+  if (sent) {
+    const ids = rows.map((x) => x.id);
+    const marks = ids.map(() => "?").join(",");
+    try {
+      await env.DB.prepare("UPDATE feedback SET digested = 1 WHERE id IN (" + marks + ")").bind(...ids).run();
+    } catch (e) {
+      console.error("digest mark failed:", e && e.message);
+    }
+  }
+}
+
+function formatFeedback(r) {
+  const when = new Date(r.ts).toISOString();
+  const lines = [when + (r.country ? "  (" + r.country + ")" : ""), r.message];
+  if (r.karyotype) lines.push("karyotype: " + r.karyotype);
+  if (r.url) lines.push("view: " + r.url);
+  if (r.email) lines.push("reply to: " + r.email);
+  return lines.join("\n");
 }
 
 // POST /api/feedback — a message from the on-site feedback form. Stores it in D1

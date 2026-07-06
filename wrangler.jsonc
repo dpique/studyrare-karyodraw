@@ -16,5 +16,10 @@
       "database_name": "karyodraw-usage",
       "database_id": "a3ffb445-1e1c-47a9-9004-4d1ed257f58e"
     }
-  ]
+  ],
+  // Daily feedback digest. 13:00 UTC is ~08:00 US Eastern. The scheduled handler
+  // no-ops until RESEND_API_KEY and FEEDBACK_EMAIL_TO are set as secrets.
+  "triggers": {
+    "crons": ["0 13 * * *"]
+  }
 }
