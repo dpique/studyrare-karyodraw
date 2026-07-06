@@ -21,6 +21,10 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
 - Serve a branded 404 page for unknown page addresses.
 - Fit polyploid karyotypes (for example `92,XXXX`) inside the card instead of
   letting the wide karyogram spill over the sidebar.
+- Add an on-site "Send feedback" form so anyone, with no account, can report a
+  problem or an unexpected drawing. It attaches the current karyotype and a link
+  to the exact view automatically, and posts to a new `/api/feedback` endpoint
+  that stores the message privately (and can ping a chat webhook if configured).
 - Add a "Most-studied karyotypes" panel: an aggregate, anonymous list of the
   most-drawn karyotypes, shown as clickable chips. A karyotype appears only after
   many draws across several distinct days, so single-session repeats cannot

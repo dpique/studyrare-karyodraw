@@ -15,3 +15,17 @@ CREATE TABLE IF NOT EXISTS usage (
 );
 CREATE INDEX IF NOT EXISTS idx_usage_ts   ON usage(ts);
 CREATE INDEX IF NOT EXISTS idx_usage_type ON usage(type);
+
+-- Feedback submitted via the on-site "Send feedback" form (worker.js
+-- POST /api/feedback). Voluntary support channel; kept private, never shown.
+CREATE TABLE IF NOT EXISTS feedback (
+  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts        INTEGER NOT NULL,   -- epoch ms, set server-side
+  message   TEXT    NOT NULL,   -- what the person reported (capped 4000)
+  email     TEXT,               -- optional, for a reply (capped 200)
+  karyotype TEXT,               -- the karyotype they were viewing (capped 512)
+  url       TEXT,               -- shareable link to that exact view (capped 500)
+  ua        TEXT,               -- browser/device user-agent, for debugging (capped 300)
+  country   TEXT                -- coarse geo from Cloudflare
+);
+CREATE INDEX IF NOT EXISTS idx_feedback_ts ON feedback(ts);
