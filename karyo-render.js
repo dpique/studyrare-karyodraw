@@ -426,7 +426,7 @@
     var Rm = Math.max(17, h(total) / (2 * Math.PI) * 1.25);   // mid-line radius
     var thick = Math.max(10, Math.min(W, Rm * 0.62));
     var R = Rm + thick / 2, r0 = Math.max(6, Rm - thick / 2);
-    var pad = 6, size = (R + pad) * 2, cx = size / 2, cy = size / 2, TAU = Math.PI * 2;
+    var pad = 11, size = (R + pad) * 2, cx = size / 2, cy = size / 2, TAU = Math.PI * 2;   // room for the fusion arrowhead above the ring
 
     function heteroColor(stain) {
       if (simple) {
