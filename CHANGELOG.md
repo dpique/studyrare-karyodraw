@@ -5,6 +5,10 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
 
 ## 2026-07-06
 
+- Consolidate the page footer into the About section: fold the ISCN citation,
+  band-data source, and StudyRare attribution ("developed and maintained by
+  StudyRare") into About in plain language, link ISCN to its DOI there, and trim
+  the footer to a single line.
 - Email a daily digest of new feedback via a scheduled cron (Resend). It is
   inert until the sending settings are configured, and marks feedback as sent
   only after the email is accepted, so nothing is dropped on a failure.
