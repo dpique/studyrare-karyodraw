@@ -693,8 +693,7 @@
     beaconDraw(val, !invalid);
     if (invalid) {
       $("#summary").innerHTML = '<span class="kt">' + escapeHtml(val) + '</span><span class="sex">couldn’t read this as a karyotype yet</span>';
-      $("#karyo").innerHTML = '<div class="emptystate">Fix the karyotype above and the drawing shows up here.<br>' +
-        'A karyotype looks like <code>46,XY</code> · <code>47,XX,+21</code> · <code>46,XY,t(9;22)(q34;q11.2)</code>.</div>';
+      $("#karyo").innerHTML = '<div class="emptystate">Fix the karyotype above and the drawing shows up here.</div>';
       $("#decode").innerHTML = '<div class="muted">…</div>';
       $("#clinical-card").style.display = "none";
       $("#printsheet").innerHTML = "";
