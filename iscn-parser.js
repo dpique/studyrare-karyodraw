@@ -135,14 +135,28 @@
         ab.kind = "unknown";
         warnings.push("Don’t recognize “" + op + "” in “" + raw + "”. Known: del, dup, inv, t, i, r, der, add, ins, dic, fra, mar.");
     }
+    // Non-der ops should consume the whole token; leftover text (an "or"
+    // alternative, an uncertainty marker, a trailing qualifier) is not modelled,
+    // so warn instead of dropping it silently.
+    if (ab.kind !== "der" && ab.kind !== "unknown" && rest && rest.trim()) {
+      warnings.push("Only the first part of “" + raw + "” was read; “" + rest.trim() + "” wasn’t understood (alternatives with “or” and uncertainty markers aren’t supported).");
+    }
     return ab;
   }
 
   // Build the per-chromosome instance list + copy-number complement.
   function buildComplement(clone, warnings) {
     var comp = {};
+    // Base ploidy from the modal number: 46 -> 2, 69 -> 3, 92 -> 4. Only accept
+    // triploid/tetraploid when the count is close to a clean multiple, so a
+    // hyperdiploid cancer karyotype is not mistaken for a polyploid.
+    var ploidy = 2;
+    if (clone.modalNumber != null) {
+      var p = Math.round(clone.modalNumber / 23);
+      if (p >= 3 && Math.abs(clone.modalNumber - 23 * p) <= 3) ploidy = p;
+    }
     ALL.forEach(function (c) { comp[c] = 0; });
-    AUTOSOMES.forEach(function (c) { comp[c] = 2; });
+    AUTOSOMES.forEach(function (c) { comp[c] = ploidy; });
     // Sex chromosomes from the sex field.
     clone.sex.tokens.forEach(function (t) { if (comp[t] !== undefined) comp[t] += 1; });
 
@@ -186,8 +200,23 @@
           var idx = firstNormal(slots[c]);
           // convention: normal homolog stays on the left, derivative on the right
           if (idx >= 0) { slots[c].splice(idx, 1); slots[c].push(mkDer(c, ab)); replacedChroms.push(c); }
-          else slots[c].push(mkDer(c, ab));
+          else { slots[c].push(mkDer(c, ab)); comp[c] += 1; }
         });
+      } else if (ab.kind === "der" && ab.chroms.length > 1) {
+        // Whole-arm / Robertsonian der: one derivative replaces one copy of each
+        // involved chromosome (e.g. der(13;14)(q10;q10) -> 45).
+        if (ab.sign === "+") {
+          var dp = ab.chroms[0];
+          if (comp[dp] !== undefined) { comp[dp] += 1; slots[dp].push(mkDer(dp, ab)); }
+        } else {
+          ab.chroms.forEach(function (c) {
+            if (comp[c] === undefined) { warnings.push("“" + c + "” isn’t a human chromosome, use 1–22, X, or Y."); return; }
+            var ridx = firstNormal(slots[c]);
+            if (ridx >= 0) { slots[c].splice(ridx, 1); comp[c] -= 1; }
+          });
+          var dc = ab.chroms[0];
+          if (comp[dc] !== undefined) { slots[dc].push(mkDer(dc, ab)); comp[dc] += 1; }
+        }
       } else if (["del", "dup", "inv", "add", "ring", "iso", "der", "fra", "trp"].indexOf(ab.kind) >= 0) {
         var c0 = ab.chroms[0];
         if (comp[c0] === undefined) { warnings.push("“" + c0 + "” isn’t a human chromosome, use 1–22, X, or Y."); return; }
@@ -199,7 +228,7 @@
         }
         var i2 = firstNormal(slots[c0]);
         if (i2 >= 0) { slots[c0].splice(i2, 1); slots[c0].push(mkDer(c0, ab)); replacedChroms.push(c0); }
-        else slots[c0].push(mkDer(c0, ab));
+        else { slots[c0].push(mkDer(c0, ab)); comp[c0] += 1; }
       }
     });
 

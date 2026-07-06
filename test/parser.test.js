@@ -97,3 +97,32 @@ test('unreadable input fails gracefully', () => {
   assert.equal(r.ok, false);
   assert.ok(r.warnings.length > 0);
 });
+
+test('Robertsonian der(13;14) counts 45', () => {
+  const c = clone0('45,XX,der(13;14)(q10;q10)');
+  assert.equal(c.counts.actual, 45);
+  assert.equal(c.counts.ok, true);
+});
+
+test('tetraploid 92,XXYY counts 92', () => {
+  const c = clone0('92,XXYY');
+  assert.equal(c.counts.actual, 92);
+  assert.equal(c.counts.ok, true);
+});
+
+test('triploid 69,XXX counts 69', () => {
+  const c = clone0('69,XXX');
+  assert.equal(c.counts.actual, 69);
+  assert.equal(c.counts.ok, true);
+});
+
+test('idic(Y) counts as a chromosome — 46,X,idic(Y)(q11)', () => {
+  const c = clone0('46,X,idic(Y)(q11)');
+  assert.equal(c.counts.actual, 46);
+  assert.equal(c.counts.ok, true);
+});
+
+test('"or" alternative warns instead of silently dropping', () => {
+  const r = ISCN.parse('46,XY,del(5)(q13q33) or del(5)(q14q34)');
+  assert.ok(r.warnings.some((w) => /only the first|not understood|wasn.t understood|extra text/i.test(w)));
+});
