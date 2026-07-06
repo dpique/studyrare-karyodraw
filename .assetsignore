@@ -1,7 +1,9 @@
 .git/
+.github/
 .DS_Store
 .wrangler/
 node_modules/
+scripts/
 worker.js
 schema.sql
 _build_inputs/

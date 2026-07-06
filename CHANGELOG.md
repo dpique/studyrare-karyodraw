@@ -12,6 +12,13 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   understood, instead of silently dropping it.
 - Speak the breakpoints for ring and duplication karyotypes.
 - Paper: expanded use cases and a new Scope and limitations section.
+- **Accessibility:** make the example karyotypes keyboard-operable buttons, add a
+  visible focus outline to every control, label the karyogram and band map for
+  screen readers, group the view controls with `aria-pressed` state, and announce
+  drawing and parse results through polite live regions.
+- Add a "Report a problem" link on the site, plus GitHub issue and pull-request
+  templates that ask for the karyotype and a shareable link.
+- Serve a branded 404 page for unknown page addresses.
 
 ## 2026-07-05
 

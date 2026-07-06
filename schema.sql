@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS usage (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   ts        INTEGER NOT NULL,   -- epoch ms, set server-side
   type      TEXT    NOT NULL,   -- 'draw' | 'pageview'
-  karyotype TEXT,               -- capped to 120 chars; null for pageview
+  karyotype TEXT,               -- capped to 512 chars; null for pageview
   parsed    INTEGER,            -- 1 = drew, 0 = parse failed; null for pageview
   style     TEXT,               -- 'simple' | 'detailed'
   bands     TEXT,               -- '0' | '1' | '99'

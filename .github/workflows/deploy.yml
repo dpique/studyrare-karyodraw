@@ -12,6 +12,7 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - '404.html'
       - '*.js'
       - 'preview.png'
       - 'robots.txt'
