@@ -1,0 +1,48 @@
+name: Rendering or parsing problem
+description: A karyotype draws wrong, will not parse, or is decoded incorrectly.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a problem. The fastest fix comes from the exact
+        karyotype and a shareable link, so please fill in the fields below.
+  - type: input
+    id: karyotype
+    attributes:
+      label: Karyotype
+      description: The ISCN designation you typed, exactly as entered.
+      placeholder: 46,XY,t(9;22)(q34;q11.2)
+    validations:
+      required: true
+  - type: input
+    id: share-link
+    attributes:
+      label: Shareable link
+      description: >-
+        Use the "Copy link to this view" button on the tool. It reproduces the
+        exact state (karyotype, style, band level, and view).
+      placeholder: https://karyodraw.com/?k=...&style=...&bands=...&show=...
+    validations:
+      required: false
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: What the drawing or the decode should have shown.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What you saw instead
+      description: What actually happened. A screenshot helps if it is a rendering issue.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and device
+      description: For example, Chrome on Windows, or Safari on iPhone.
+    validations:
+      required: false

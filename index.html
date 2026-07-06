@@ -89,11 +89,19 @@
   .btn:hover { background: var(--amber-600); }
   .examples { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
   .chip {
-    font: 12.5px var(--font-mono); padding: 5px 10px; border-radius: 999px;
+    font: 12.5px var(--font-mono); padding: 5px 10px; border-radius: 999px; margin: 0;
     background: #f0f2f7; color: var(--ink-2); border: 1px solid var(--line); cursor: pointer; white-space: nowrap;
   }
   .chip:hover { background: var(--peri-50); border-color: var(--peri-300); color: var(--peri-700); }
   .chip b { color: var(--peri-700); font-weight: 700; }
+
+  /* Visible keyboard focus on every interactive control. :focus-visible keeps the
+     ring for keyboard users while leaving mouse clicks clean. */
+  a:focus-visible, button:focus-visible, input:focus-visible,
+  .chip:focus-visible, .seg button:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--periwinkle); outline-offset: 2px;
+  }
+  .seg button:focus-visible { outline-offset: -2px; }
 
   .viewopts { display: flex; align-items: center; gap: 8px 12px; margin-top: 12px; flex-wrap: wrap; }
   .viewopts .vlabel { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
@@ -278,24 +286,25 @@
     </div>
     <div class="controls">
       <input id="kinput" type="text" spellcheck="false"
+             aria-label="Karyotype in ISCN notation"
              placeholder="e.g.  46,XY   ·   47,XX,+21   ·   46,XY,t(9;22)(q34;q11.2)" />
       <button class="btn" id="draw">Draw &amp; explain</button>
     </div>
-    <div class="examples" id="examples"></div>
+    <div class="examples" id="examples" role="group" aria-label="Example karyotypes to try"></div>
     <div class="viewopts">
-      <span class="vlabel">Style</span>
-      <div class="seg" id="modeseg">
+      <span class="vlabel" id="style-lbl">Style</span>
+      <div class="seg" id="modeseg" role="group" aria-labelledby="style-lbl">
         <button data-mode="simple" title="Colors the chromosomes involved in the abnormality; everything else stays quiet gray.">Highlight</button>
         <button data-mode="detailed" title="True-to-life Giemsa banding on every chromosome, nothing highlighted. Spot the abnormality yourself.">Realistic</button>
       </div>
-      <span class="vlabel">Bands</span>
-      <div class="seg" id="levelseg">
+      <span class="vlabel" id="bands-lbl">Bands</span>
+      <div class="seg" id="levelseg" role="group" aria-labelledby="bands-lbl">
         <button data-level="0" title="~400-band resolution: fewer, wider bands, easiest to read.">Low · ~400</button>
         <button data-level="1" title="~550-band resolution: the usual clinical level.">Std · ~550</button>
         <button data-level="99" title="~850-band resolution: maximum detail.">High · ~850</button>
       </div>
-      <span class="vlabel">Show</span>
-      <div class="seg" id="showseg">
+      <span class="vlabel" id="show-lbl">Show</span>
+      <div class="seg" id="showseg" role="group" aria-labelledby="show-lbl">
         <button data-show="all" title="The full karyogram, all 46 chromosomes.">All</button>
         <button data-show="affected" title="Only the chromosomes involved in the abnormality, each with its normal homolog.">Affected</button>
       </div>
@@ -306,11 +315,11 @@
 
 <main>
   <div class="wrap">
-    <div id="warnings"></div>
+    <div id="warnings" role="status" aria-live="polite"></div>
     <div class="grid">
       <section>
         <div class="card">
-          <div id="summary" class="summary"></div>
+          <div id="summary" class="summary" aria-live="polite"></div>
           <div class="kactions" id="kactions">
             <button class="pbtn" id="copyimg" title="Copy the karyogram as an image, ready to paste into slides, notes, or a message">⧉ Copy image</button>
             <button class="pbtn" id="dlimg" title="Download the karyogram as a PNG file">↓ PNG</button>
@@ -366,7 +375,7 @@
       </div>
     </section>
     <footer class="wrap">
-      <strong>KaryoDraw</strong> · <a href="https://karyodraw.com" target="_blank" rel="noopener">karyodraw.com</a> · a <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a> tool · <a href="https://github.com/dpique/studyrare-karyodraw" target="_blank" rel="noopener">open source on GitHub</a><br>
+      <strong>KaryoDraw</strong> · <a href="https://karyodraw.com" target="_blank" rel="noopener">karyodraw.com</a> · a <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a> tool · <a href="https://github.com/dpique/studyrare-karyodraw" target="_blank" rel="noopener">open source on GitHub</a> · <a href="https://github.com/dpique/studyrare-karyodraw/issues/new/choose" target="_blank" rel="noopener">Report a problem</a><br>
       Nomenclature follows <strong>ISCN 2024</strong> (Cytogenet Genome Res 2024;164, <a href="https://doi.org/10.1159/000538512" target="_blank" rel="noopener">DOI 10.1159/000538512</a>).
       Band data: UCSC <em>cytoBandIdeo</em>, human genome build hg38 (24 chromosomes, 862 bands).
       KaryoDraw is an <strong>educational</strong> visualizer for cytogenetic nomenclature, not a diagnostic tool.<br>
@@ -428,7 +437,8 @@
   function buildExamples() {
     var box = $("#examples");
     box.innerHTML = EXAMPLES.map(function (e) {
-      return '<span class="chip" data-k="' + e[0].replace(/"/g, "&quot;") + '"><b>' + e[0] + '</b> · ' + e[1] + '</span>';
+      return '<button type="button" class="chip" data-k="' + e[0].replace(/"/g, "&quot;") +
+        '" aria-label="Draw ' + e[0].replace(/"/g, "&quot;") + ', ' + e[1] + '"><b>' + e[0] + '</b> · ' + e[1] + '</button>';
     }).join("");
     box.addEventListener("click", function (ev) {
       var c = ev.target.closest(".chip"); if (!c) return;
@@ -542,6 +552,10 @@
       var kg = document.createElement("div");
       kg.className = "kwrap";
       window.Karyo.render(kg, clone, { theme: MODE, level: LEVEL, affected: AFFECTED, only: only });
+      // Announce the whole karyogram as a single labeled image; the plain-language
+      // "Karyotype decoded" panel carries the detail for screen-reader users.
+      kg.setAttribute("role", "img");
+      kg.setAttribute("aria-label", "Karyogram of " + (clone.raw || model.raw));
       block.appendChild(kg);
       host.appendChild(block);
     });
@@ -566,6 +580,8 @@
     detailHotBand = hotBand || null;
     $("#detail-title").textContent = "Chromosome " + chrom + ", band map";
     $("#detail-svg").innerHTML = window.Karyo.drawDetail(chrom, { height: 430, theme: MODE, level: LEVEL, hue: AFFECTED[chrom] });
+    var dsvg = $("#detail-svg").firstElementChild;
+    if (dsvg) { dsvg.setAttribute("role", "img"); dsvg.setAttribute("aria-label", "Band map of chromosome " + chrom); }
     var info = $("#detail-info"), A = window.Teach.ARM_INFO;
     if (hotBand) {
       var bi = window.Teach.bandInfo(chrom, hotBand);
@@ -796,15 +812,16 @@
     return m ? decodeURIComponent(m[1].replace(/\+/g, " ")) : null;
   }
   function syncSeg() {
-    Array.prototype.forEach.call(document.querySelectorAll("#modeseg button"), function (b) {
-      b.classList.toggle("on", b.getAttribute("data-mode") === MODE);
-    });
-    Array.prototype.forEach.call(document.querySelectorAll("#levelseg button"), function (b) {
-      b.classList.toggle("on", String(b.getAttribute("data-level")) === String(LEVEL));
-    });
-    Array.prototype.forEach.call(document.querySelectorAll("#showseg button"), function (b) {
-      b.classList.toggle("on", b.getAttribute("data-show") === SHOW);
-    });
+    function segState(sel, attr, want) {
+      Array.prototype.forEach.call(document.querySelectorAll(sel), function (b) {
+        var on = String(b.getAttribute(attr)) === String(want);
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    }
+    segState("#modeseg button", "data-mode", MODE);
+    segState("#levelseg button", "data-level", LEVEL);
+    segState("#showseg button", "data-show", SHOW);
     var vh = $("#viewhint");
     if (vh) vh.innerHTML = MODE === "simple"
       ? "<b>Highlight</b>: the chromosomes involved in the abnormality are colored; everything else stays quiet gray (a normal karyotype looks all-gray)."

@@ -1,0 +1,13 @@
+name: Question or support
+description: Ask how to use KaryoDraw, or how it interprets a piece of nomenclature.
+labels: ["question"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: >-
+        Ask anything about using the tool or how it reads a designation. If your
+        question is about a specific karyotype, include it and a shareable link.
+    validations:
+      required: true

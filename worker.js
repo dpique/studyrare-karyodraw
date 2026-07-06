@@ -20,7 +20,20 @@ export default {
       ctx.waitUntil(record(body, country, env));
       return new Response(null, { status: 204 });
     }
-    return env.ASSETS.fetch(request);
+    const res = await env.ASSETS.fetch(request);
+    // Serve the branded 404 page for unknown page navigations (not missing images
+    // or other assets, which should keep their plain 404). Preserves the 404 status.
+    if (res.status === 404 && request.method === "GET" &&
+        (request.headers.get("accept") || "").includes("text/html")) {
+      const page = await env.ASSETS.fetch(new URL("/404.html", request.url));
+      if (page.ok) {
+        return new Response(page.body, {
+          status: 404,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
+      }
+    }
+    return res;
   },
 };
 
