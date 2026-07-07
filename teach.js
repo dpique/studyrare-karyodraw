@@ -107,7 +107,19 @@
       if (b0.length >= 2) return { text: "an interstitial DELETION in chromosome " + c + ": the segment between " + bandsPhrase(c, b0) + " is missing", tag: "del" };
       return { text: "a terminal DELETION of chromosome " + c + ": everything distal to " + c + (b0[0] || "?") + " (out to the tip) is lost", tag: "del" };
     }
-    if (k === "dup") return { text: "a DUPLICATION in chromosome " + c + ": the segment " + bandsPhrase(c, bp[0] || []) + " is present twice", tag: "dup" };
+    if (k === "dup") {
+      // ISCN encodes orientation by the order of the breakpoints, and the rule
+      // differs by arm, so compare positions (resolveBand.mid), not band numbers:
+      // the distal breakpoint written first means the extra copy is inverted.
+      var dbp0 = bp[0] || [], invDup = false;
+      if (dbp0.length >= 2 && window.Karyo && window.Karyo.resolveBand) {
+        var rd0 = window.Karyo.resolveBand(c, dbp0[0]), rd1 = window.Karyo.resolveBand(c, dbp0[1]);
+        if (rd0 && rd1) invDup = rd0.mid > rd1.mid;
+      }
+      return { text: (invDup ? "an INVERTED DUPLICATION" : "a DUPLICATION") + " in chromosome " + c +
+        ": the segment " + bandsPhrase(c, dbp0) + " is present twice" +
+        (invDup ? ", with the extra copy flipped end-for-end" : ""), tag: "dup" };
+    }
     if (k === "inv") {
       var arms = (bp[0] || []).map(function (b) { return b[0]; });
       var peri = arms.indexOf("p") >= 0 && arms.indexOf("q") >= 0;

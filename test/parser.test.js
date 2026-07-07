@@ -126,3 +126,17 @@ test('"or" alternative warns instead of silently dropping', () => {
   const r = ISCN.parse('46,XY,del(5)(q13q33) or del(5)(q14q34)');
   assert.ok(r.warnings.some((w) => /only the first|not understood|wasn.t understood|extra text/i.test(w)));
 });
+
+// The renderer distinguishes a direct (tandem) duplication from an inverted one
+// by the ORDER of the two breakpoints, so the parser must preserve that order.
+test('direct duplication preserves proximal-first breakpoint order', () => {
+  const c = clone0('46,XY,dup(1)(q22q25)');
+  const dup = c.aberrations.find((a) => a.kind === 'dup');
+  assert.equal(dup.breakpoints[0].join(','), 'q22,q25');
+});
+
+test('inverted duplication preserves distal-first breakpoint order', () => {
+  const c = clone0('46,XY,dup(1)(q25q22)');
+  const dup = c.aberrations.find((a) => a.kind === 'dup');
+  assert.equal(dup.breakpoints[0].join(','), 'q25,q22');
+});

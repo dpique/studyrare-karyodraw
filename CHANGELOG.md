@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-07
+
+- Draw duplications faithfully: a `dup` now lengthens the chromosome and splices
+  the duplicated segment in tandem, instead of only shading it on a normal-length
+  chromosome. The breakpoint order sets the orientation, so a direct duplication
+  (`dup(1)(q22q25)`) shows the copy in the same orientation and an inverted one
+  (`dup(1)(q25q22)`) mirrors it end-for-end. A triplication (`trp`) adds two
+  copies. The decode now names an inverted duplication as such.
+
 ## 2026-07-06
 
 - Consolidate the page footer into the About section: fold the ISCN citation,

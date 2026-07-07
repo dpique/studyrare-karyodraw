@@ -238,7 +238,7 @@
         if (cutY != null) breakMark(cutY, OP_COLORS.del);
         return;
       }
-      var span = mapRange(segments, ov.chrom, ov.from, ov.to, pad);
+      var span = ov.segIndex != null ? segSpan(segments, ov.segIndex, pad) : mapRange(segments, ov.chrom, ov.from, ov.to, pad);
       if (!span) return;
       var hh = (span.y1 - span.y0).toFixed(2);
       if (ov.type === "del") {
@@ -301,6 +301,15 @@
     }
     return null;
   }
+  // y-span (composite space) of a specific segment by its index. Used to shade the
+  // appended duplicate copy, which shares its coordinate range with the original
+  // and so cannot be located by coordinate alone.
+  function segSpan(segments, idx, pad) {
+    var y = pad;
+    for (var i = 0; i < idx; i++) y += h(segments[i].to - segments[i].from);
+    var g = segments[idx];
+    return g ? { y0: y, y1: y + h(g.to - g.from) } : null;
+  }
   // y (in composite space) of a single bp position on a segment.
   function pointY(segments, chrom, at, pad) {
     var yOff = pad;
@@ -343,10 +352,29 @@
       return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label };
     }
     if (kind === "dup" || kind === "trp") {
-      var db = (ab.breakpoints[0] || []).map(function (x) { return resolveBand(chrom, x); }).filter(Boolean), ov2 = [];
-      if (db.length >= 2) ov2.push({ type: "dup", chrom: chrom, from: Math.min(db[0].mid, db[1].mid), to: Math.max(db[0].mid, db[1].mid) });
-      else if (db.length === 1) ov2.push({ type: "dup", chrom: chrom, from: db[0].start, to: db[0].end });
-      return { segments: [fullSeg(chrom)], overlays: ov2, caption: inst.label };
+      // A duplication adds a copy of the segment, so the chromosome is drawn
+      // LONGER, with the copy spliced in tandem right after the original. ISCN
+      // encodes orientation by breakpoint order: proximal-first (lower coordinate)
+      // is a direct/tandem dup; distal-first means the copy is inverted (the inv
+      // dup mirror). A triplication (trp) adds two copies.
+      var db = (ab.breakpoints[0] || []).map(function (x) { return resolveBand(chrom, x); }).filter(Boolean);
+      if (db.length) {
+        var dlo, dhi, dinv = false;
+        if (db.length >= 2) {
+          dlo = Math.min(db[0].mid, db[1].mid); dhi = Math.max(db[0].mid, db[1].mid);
+          dinv = db[0].mid > db[1].mid;
+        } else { dlo = db[0].start; dhi = db[0].end; }
+        var dlen = d0.length, dcen = d0.centromere;
+        var dseg = function (from, to, rev) { return { chrom: chrom, from: from, to: to, hasCen: (dcen > from && dcen < to), reversed: rev }; };
+        var dsegs = [dseg(0, dhi, false)], dov = [], nCopies = (kind === "trp") ? 2 : 1;
+        for (var dci = 0; dci < nCopies; dci++) {
+          dsegs.push(dseg(dlo, dhi, dinv));
+          dov.push({ type: "dup", chrom: chrom, segIndex: dsegs.length - 1 });
+        }
+        if (dhi < dlen) dsegs.push(dseg(dhi, dlen, false));
+        return { segments: dsegs, overlays: dov, caption: inst.label };
+      }
+      return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label };
     }
     if (kind === "inv") {
       var ib = (ab.breakpoints[0] || []).map(function (x) { return resolveBand(chrom, x); }).filter(Boolean);
