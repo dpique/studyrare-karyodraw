@@ -98,6 +98,16 @@
       ? "the end of chromosome " + partner + "’s long arm (" + partner + band + "→qter)"
       : "the end of chromosome " + partner + "’s short arm (pter→" + partner + band + ")";
   }
+  // One phrase for an extra del/dup/inv operation inside a der() chain (the t/dic
+  // join is described separately, so those return null here).
+  function subOpPhrase(s) {
+    if (!s || ["del", "dup", "inv"].indexOf(s.op) < 0) return null;
+    var sc = (s.chroms || [])[0], g = (s.breakpoints || [])[0] || [], bands = bandsPhrase(sc, g);
+    if (s.op === "del") return g.length >= 2 ? "an interstitial deletion between " + bands : "a terminal deletion at " + (bands || ("chromosome " + sc));
+    if (s.op === "dup") return "a duplication of the segment between " + bands;
+    if (s.op === "inv") return "an inversion between " + bands;
+    return null;
+  }
   function describeAberration(ab) {
     var k = ab.kind, c = ab.chroms[0], bp = ab.breakpoints;
     if (k === "gain") return { text: "an EXTRA copy of chromosome " + c + " (three copies = trisomy " + c + ")", tag: "gain" };
@@ -156,14 +166,19 @@
     if (k === "ring") return { text: "a RING chromosome r(" + c + "): the chromosome's arms break and the broken ends fuse into a circle (usually loses the distal tips)", tag: "ring" };
     if (k === "der") {
       var base = "an abnormal (“derivative”) chromosome that has chromosome " + c + "’s centromere";
-      var td = (ab.subOps || []).filter(function (s) { return s.op === "t"; })[0];
+      var subs = ab.subOps || [];
+      var td = subs.filter(function (s) { return s.op === "t"; })[0];
+      // The der can also carry del/dup/inv on its own chromosome (a chain like
+      // der(9)del(9)(p12)t(9;22)); the renderer draws them, so name them here too.
+      var extras = subs.map(subOpPhrase).filter(Boolean);
+      var extraText = extras.length ? " It also carries " + listJoin(extras) + "." : "";
       if (td && td.chroms.length >= 2) {
         var di = td.chroms.indexOf(c); if (di < 0) di = 0;
         var partner = td.chroms[1 - di];
         var bpDer = (td.breakpoints[di] || [])[0], bpPar = (td.breakpoints[1 - di] || [])[0];
-        return { text: base + ". It’s chromosome " + c + throughShort(c, bpDer) + " with " + endShort(partner, bpPar) + " attached.", tag: "der" };
+        return { text: base + ". It’s chromosome " + c + throughShort(c, bpDer) + " with " + endShort(partner, bpPar) + " attached." + extraText, tag: "der" };
       }
-      return { text: base + (ab.note ? " (" + ab.note + ")" : "") + ".", tag: "der" };
+      return { text: base + (ab.note ? " (" + ab.note + ")" : "") + "." + extraText, tag: "der" };
     }
     if (k === "ins") {
       var ic = ab.chroms;

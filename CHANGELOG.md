@@ -23,6 +23,11 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
 - **Apply the extra operations in a `der()` chain.** `der(9)del(9)(p12)t(9;22)`
   now shows the `del(9)(p12)` trim as well as the translocation, instead of
   silently dropping the deletion.
+- **Decode the whole `der()` chain in plain English.** The token-by-token
+  explanation now names the extra `del`/`dup`/`inv` on a derivative, not just the
+  translocation, so the words match the drawing (for example, `der(9)del(9)(p12)
+  t(9;22)` reads "…with the end of chromosome 22's long arm attached. It also
+  carries a terminal deletion at 9p12.").
 
 ## 2026-07-07
 
