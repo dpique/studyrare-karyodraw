@@ -3,6 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-11 (latest)
+
+- **Centromere-align isochromosomes and whole-arm derivatives on their fusion
+  seam.** These derivatives meet their two arms at the seam between their
+  segments, where the centromere(s) sit, but the renderer reported no centromere
+  y for them — so their cells bottom-aligned instead of centromere-aligning. The
+  renderer now reports that seam as the centromere y, so an `i(X)(q10)` lines up
+  its centromere with the normal X's centromere (p+q next to q+q), and a
+  Robertsonian `der` lines up on its fusion seam — the same centromere-alignment
+  every other cell uses. This supersedes the earlier bottom-align fallback for
+  these specific cases; cells that still have no centromere on any copy keep the
+  fallback.
+
 ## 2026-07-11 (later)
 
 - **Accept the standard `idem` subclone form that omits the repeated sex field.**
