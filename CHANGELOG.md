@@ -3,6 +3,18 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-11
+
+- **Fix chromosome alignment inside a cell when a copy has no centromere line.**
+  A homolog is normally centromere-aligned against its derivative. A whole-arm /
+  Robertsonian derivative (and an isochromosome) has its centromere at a segment
+  edge, so no centromere y is reported; the cell used to silently fall back to
+  top-alignment, floating the short normal homolog high while its neighbor sat on
+  the row baseline. It now bottom-aligns those cells to the same baseline the row
+  uses (`align-items: flex-end`), so the normal homolog, the derivative, and the
+  neighboring chromosomes all line up. Deletions/duplications (both copies have a
+  centromere) still centromere-align as before.
+
 ## 2026-07-10 (later)
 
 Complete the ISCN karyotype system — the last shorthand that was previously out

@@ -770,20 +770,23 @@
       // Align the copies (normal homolog, derivative, del…) by their centromere,
       // so a shortened p-arm reads as a p-arm loss and a shortened q-arm as a
       // q-arm loss — matching how a real karyogram is compared side by side.
-      // Exception: when every copy is the SAME overall length (no gain or loss —
-      // e.g. an inversion), align them flush top and bottom instead. A same-length
-      // pair should read as the same height; centromere-shifting one of them just
-      // looks off. Deletions/duplications/most translocations leave a copy
-      // genuinely shorter or longer, so those still centromere-align.
+      // Three cases, in order:
+      //  · SAME overall length (e.g. an inversion) → flush top/bottom, no shift.
+      //  · every copy has a centromere y → centromere-align (the meaningful compare
+      //    for del/dup/most translocations, which leave a copy shorter or longer).
+      //  · a copy has NO centromere y (a whole-arm/Robertsonian derivative, an
+      //    isochromosome — its centromere sits at a segment edge) → we can't
+      //    centromere-align, so BOTTOM-align to the group's baseline (align-items:
+      //    flex-end) instead of letting the short copy float at the top.
       var drawn = insts.map(function (inst) { return { inst: inst, d: drawInstance(inst, ctx) }; });
       var sameLength = drawn.every(function (x) { return Math.abs(x.d.height - drawn[0].d.height) < 0.5; });
-      var maxCen = 0, anyCen = false;
-      if (!sameLength) {
-        drawn.forEach(function (x) { if (x.d.cenY != null) { anyCen = true; if (x.d.cenY > maxCen) maxCen = x.d.cenY; } });
-      }
+      var allCen = !sameLength && drawn.every(function (x) { return x.d.cenY != null; });
+      var maxCen = 0, maxH = 0;
+      drawn.forEach(function (x) { if (x.d.cenY != null && x.d.cenY > maxCen) maxCen = x.d.cenY; if (x.d.height > maxH) maxH = x.d.height; });
       drawn.forEach(function (x) {
         var inst = x.inst, d = x.d;
-        var mt = (!sameLength && anyCen && d.cenY != null) ? Math.max(0, maxCen - d.cenY) : 0;
+        var mt = 0;
+        if (!sameLength) mt = allCen ? Math.max(0, maxCen - d.cenY) : Math.max(0, maxH - d.height);
         var cls = "kchrom" + (inst.kind !== "normal" ? " abn" : "");
         var sub = (inst.kind !== "normal") ? '<div class="ksub">' + esc(d.built.caption) + '</div>' : "";
         var style = mt > 0.5 ? ' style="margin-top:' + mt.toFixed(1) + 'px"' : "";
