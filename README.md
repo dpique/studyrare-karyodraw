@@ -68,8 +68,13 @@ the `×` copy-number sign and clonal-evolution shorthand (`idem`, `sl`, `sdl`).
 - **Normal & sex constitutions:** `46,XX`, `46,XY`, `45,X`, `47,XXY`, `47,XYY`, `47,XXX`, …
 - **Aneuploidy:** gains/losses — `+21`, `+18`, `+13`, `-7`, …
 - **Structural:** `del`, `dup`, `inv`, `t` (reciprocal **and n-way** translocations
-  → all derivatives drawn), `i` (isochromosome), `r` (ring), `der`, `add`, `dic`,
-  `ins`, `fra`, `mar`, `trp`.
+  → all derivatives drawn), `i` (isochromosome), `r` (ring), `der` (including
+  `del`/`dup`/`inv` sub-operations in the chain), `add`, `dic` (fused two-body
+  dicentric) and `idic` (mirror-image isodicentric), `ins` (inter- and
+  intrachromosomal, recipient grown and donor shortened), `rob` (Robertsonian,
+  same as the whole-arm `der`), `fra`, `mar`, `trp`.
+- **Qualifiers:** the constitutional / inheritance suffixes `c`, `mat`, `pat`, `dn`
+  are recognized and remembered (they do not break the aberration they trail).
 - **Mosaicism / composite:** `mos 45,X[12]/46,XX[18]`, `[cp20]`, multiple clones
   with cell counts and percentages.
 

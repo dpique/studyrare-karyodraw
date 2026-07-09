@@ -65,9 +65,26 @@
     trp: "triplication", unknown: "unrecognized"
   };
 
+  // Constitutional / inheritance qualifiers trail an aberration: they say where it
+  // came from, they are not part of the rearrangement itself. Strip and remember
+  // them so they don't break the token they follow (e.g. +21c, del(22)(q11.2)mat).
+  var QUAL = { c: "constitutional", mat: "maternal in origin", pat: "paternal in origin", dn: "de novo" };
+  function stripQualifier(tok) {
+    // Only after a closing paren, a digit, or a sex letter, so an op name like
+    // "inc" or a band is never mistaken for a qualifier.
+    var m = /([)\dXY])(c|mat|pat|dn)$/.exec(tok);
+    if (!m) return { tok: tok, qual: null };
+    return { tok: tok.slice(0, tok.length - m[2].length), qual: m[2] };
+  }
+
   function parseAberration(tok, warnings) {
     var raw = tok;
-    var ab = { raw: raw, kind: "unknown", sign: null, chroms: [], breakpoints: [], note: "" };
+    var ab = { raw: raw, kind: "unknown", sign: null, chroms: [], breakpoints: [], note: "", qualifier: null };
+    var sq = stripQualifier(tok); tok = sq.tok; var qual = sq.qual;
+    function finish(a) {
+      if (qual) { a.qualifier = qual; a.note = (a.note ? a.note + "; " : "") + (QUAL[qual] || qual); }
+      return a;
+    }
 
     // Leading sign (applies to numerical and to +der/+mar/-etc.)
     var signM = /^([+\-−–])/.exec(tok);
@@ -77,17 +94,17 @@
     if (ab.sign && /^(\d+|X|Y)$/.test(tok)) {
       ab.kind = ab.sign === "+" ? "gain" : "loss";
       ab.chroms = [tok];
-      return ab;
+      return finish(ab);
     }
 
     // op(chroms)(breakpoints) , op(chroms), with 1 or 2 paren groups.
     var opM = /^([a-zA-Z]+)\(([^)]*)\)(?:\(([^)]*)\))?/.exec(tok);
     if (!opM) {
       // things like "mar", "mar1", "?", "inc"
-      if (/^mar\d*$/i.test(tok)) { ab.kind = "mar"; return ab; }
+      if (/^mar\d*$/i.test(tok)) { ab.kind = "mar"; return finish(ab); }
       warnings.push("Couldn’t read “" + raw + "”. Aberrations look like +21, del(5)(p15.2), or t(9;22)(q34;q11.2).");
       ab.note = "unrecognized token";
-      return ab;
+      return finish(ab);
     }
 
     var op = opM[1].toLowerCase();
@@ -112,6 +129,9 @@
       case "add": ab.kind = "add"; break;
       case "dic": ab.kind = "dic"; break;
       case "idic": ab.kind = "dic"; ab.note = "isodicentric"; break;
+      // rob (Robertsonian) is the preferred ISCN spelling of a whole-arm fusion of
+      // two acrocentrics; it behaves exactly like der(13;14)(q10;q10).
+      case "rob": ab.kind = "der"; ab.note = "Robertsonian translocation"; break;
       case "fra": ab.kind = "fra"; break;
       case "trp": ab.kind = "trp"; break;
       case "der":
@@ -141,7 +161,7 @@
     if (ab.kind !== "der" && ab.kind !== "unknown" && rest && rest.trim()) {
       warnings.push("Only the first part of “" + raw + "” was read; “" + rest.trim() + "” wasn’t understood (alternatives with “or” and uncertainty markers aren’t supported).");
     }
-    return ab;
+    return finish(ab);
   }
 
   // Build the per-chromosome instance list + copy-number complement.
@@ -191,9 +211,10 @@
           slots["mar"] = slots["mar"] || [];
           slots["mar"].push({ chrom: "mar", kind: "mar", label: "mar", aberration: ab, primary: "mar" });
         }
-      } else if (ab.kind === "t" || ab.kind === "dic" || ab.kind === "ins") {
+      } else if (ab.kind === "t" || ab.kind === "ins" || (ab.kind === "dic" && ab.chroms.length < 2)) {
         // Multi-chromosome structural: convert one normal copy of each involved
-        // chromosome into a derivative (count unchanged unless signed).
+        // chromosome into a derivative (count unchanged unless signed). A single-
+        // chromosome idic falls here too (it replaces one homolog, count unchanged).
         ab.chroms.forEach(function (c, ci) {
           if (comp[c] === undefined) { warnings.push("“" + c + "” isn’t a human chromosome, use 1–22, X, or Y."); return; }
           if (ab.sign === "+") { comp[c] += 1; slots[c].push(mkDer(c, ab)); return; }
@@ -202,9 +223,11 @@
           if (idx >= 0) { slots[c].splice(idx, 1); slots[c].push(mkDer(c, ab)); replacedChroms.push(c); }
           else { slots[c].push(mkDer(c, ab)); comp[c] += 1; }
         });
-      } else if (ab.kind === "der" && ab.chroms.length > 1) {
-        // Whole-arm / Robertsonian der: one derivative replaces one copy of each
-        // involved chromosome (e.g. der(13;14)(q10;q10) -> 45).
+      } else if ((ab.kind === "der" || ab.kind === "dic") && ab.chroms.length > 1) {
+        // Whole-arm / Robertsonian der, and a two-chromosome dicentric: the two
+        // chromosomes fuse into ONE derivative, so one copy of each is consumed
+        // and the count drops by one (e.g. der(13;14)(q10;q10) or
+        // dic(13;14)(q13;q22) -> 45).
         if (ab.sign === "+") {
           var dp = ab.chroms[0];
           if (comp[dp] !== undefined) { comp[dp] += 1; slots[dp].push(mkDer(dp, ab)); }
@@ -262,7 +285,7 @@
       if (ab.kind === "inv") return "inv(" + c + ")";
       if (ab.kind === "add") return "add(" + c + ")";
       if (ab.kind === "der") return "der(" + c + ")";
-      if (ab.kind === "t" || ab.kind === "dic") return "der(" + c + ")";
+      if (ab.kind === "t" || ab.kind === "dic" || ab.kind === "ins") return "der(" + c + ")";
       return c;
     }
     function firstNormal(arr) { return arr.map(function (x) { return x.kind; }).indexOf("normal"); }

@@ -3,6 +3,27 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-09
+
+- **Recognize `rob`, the preferred ISCN spelling of a Robertsonian
+  translocation.** `45,XX,rob(13;14)(q10;q10)` and `46,XX,rob(14;21)(q10;q10),+21`
+  (translocation Down syndrome) now draw the whole-arm fusion and count correctly,
+  exactly like the equivalent `der(13;14)(q10;q10)`.
+- **Accept constitutional and inheritance qualifiers** (`c`, `mat`, `pat`, `dn`).
+  They are stripped and remembered instead of breaking the aberration they trail,
+  so `47,XY,+21c` stays a trisomy and `del(22)(q11.2)mat` still draws the deletion.
+- **Draw insertions faithfully.** An `ins` used to render as an untouched normal
+  chromosome; now an interchromosomal `ins(5;2)(p14;q22q32)` lengthens the
+  recipient with the donor segment spliced in and shortens the donor, and an
+  intrachromosomal `ins(2)(p13q21q31)` shows the length-preserving internal move.
+- **Draw dicentrics and isodicentrics correctly.** A two-chromosome
+  `dic(13;14)(q13;q22)` now fuses into a single body with two centromeres and
+  counts 45 (was drawn as a reciprocal translocation and miscounted); an
+  `idic(X)(q13)` renders as a mirror image about its breakpoint.
+- **Apply the extra operations in a `der()` chain.** `der(9)del(9)(p12)t(9;22)`
+  now shows the `del(9)(p12)` trim as well as the translocation, instead of
+  silently dropping the deletion.
+
 ## 2026-07-07
 
 - Draw duplications faithfully: a `dup` now lengthens the chromosome and splices

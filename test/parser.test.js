@@ -140,3 +140,53 @@ test('inverted duplication preserves distal-first breakpoint order', () => {
   const dup = c.aberrations.find((a) => a.kind === 'dup');
   assert.equal(dup.breakpoints[0].join(','), 'q25,q22');
 });
+
+// --- Robertsonian "rob" keyword (the preferred ISCN spelling) ---------------
+// rob(13;14)(q10;q10) is the standard way to write a Robertsonian translocation;
+// it must behave exactly like the whole-arm der(13;14)(q10;q10): a single fused
+// derivative that drops the count by one, with both chromosomes involved.
+test('rob(13;14) is recognized (not an unknown token)', () => {
+  const r = ISCN.parse('45,XX,rob(13;14)(q10;q10)');
+  assert.ok(!r.warnings.some((w) => /recognize .rob/i.test(w)), 'no "don\'t recognize rob" warning');
+  const ab = r.clones[0].aberrations[0];
+  assert.equal(ab.chroms.join(','), '13,14');
+});
+
+test('balanced Robertsonian rob(13;14) counts 45', () => {
+  const c = clone0('45,XX,rob(13;14)(q10;q10)');
+  assert.equal(c.counts.actual, 45);
+  assert.equal(c.counts.ok, true);
+});
+
+test('translocation Down rob(14;21)+21 counts 46', () => {
+  const c = clone0('46,XX,rob(14;21)(q10;q10),+21');
+  assert.equal(c.counts.actual, 46);
+  assert.equal(c.counts.ok, true);
+  assert.equal(c.complement['21'], 2); // one free 21 + one on the derivative
+});
+
+// --- Constitutional / inheritance qualifiers (c, mat, pat, dn) --------------
+// These are suffixes, not aberrations. They must be stripped and remembered, not
+// treated as garbage that breaks the aberration they trail.
+test('constitutional +21c stays a gain (suffix stripped, no unreadable warning)', () => {
+  const r = ISCN.parse('47,XY,+21c');
+  assert.ok(!r.warnings.some((w) => /couldn.t read|wasn.t understood/i.test(w)), 'no unreadable warning');
+  const c = r.clones[0];
+  assert.equal(c.complement['21'], 3);
+  assert.equal(c.counts.ok, true);
+});
+
+test('inheritance suffix on a del is stripped, del still drawn', () => {
+  const r = ISCN.parse('46,XY,del(22)(q11.2)mat');
+  assert.ok(!r.warnings.some((w) => /wasn.t understood|only the first/i.test(w)), 'suffix does not warn');
+  const ab = r.clones[0].aberrations.find((a) => a.kind === 'del');
+  assert.ok(ab, 'del is parsed');
+  assert.equal(ab.chroms[0], '22');
+});
+
+// --- Dicentric of two chromosomes fuses into ONE (count drops by one) --------
+test('dicentric dic(13;14) fuses to a single chromosome — counts 45', () => {
+  const c = clone0('45,XY,dic(13;14)(q13;q22)');
+  assert.equal(c.counts.actual, 45);
+  assert.equal(c.counts.ok, true);
+});

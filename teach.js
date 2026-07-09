@@ -131,6 +131,10 @@
       var ders = chroms.map(function (cc) { return "der(" + cc + ")"; });
       var nWord = DIGIT_WORDS[n] || String(n);
       if (k === "dic") {
+        if (n < 2) {
+          return { text: "an ISODICENTRIC chromosome idic(" + chroms[0] + "): chromosome " + chroms[0] + " breaks at " +
+            (breaks[0] || chroms[0]) + " and is duplicated as a mirror image, giving one chromosome with two centromeres and two copies of the retained arm", tag: "t" };
+        }
         return { text: "a DICENTRIC chromosome: chromosomes " + listJoin(chroms) + " break (at " + listJoin(breaks) +
           ") and fuse into a single chromosome that carries two centromeres", tag: "t" };
       }
@@ -160,6 +164,17 @@
         return { text: base + ". It’s chromosome " + c + throughShort(c, bpDer) + " with " + endShort(partner, bpPar) + " attached.", tag: "der" };
       }
       return { text: base + (ab.note ? " (" + ab.note + ")" : "") + ".", tag: "der" };
+    }
+    if (k === "ins") {
+      var ic = ab.chroms;
+      if (ic.length >= 2) {
+        return { text: "an INSERTION: the segment between " + bandsPhrase(ic[1], bp[1] || []) + " of chromosome " + ic[1] +
+          " is moved into chromosome " + ic[0] + " at " + ic[0] + ((bp[0] || [])[0] || "?") +
+          ". Chromosome " + ic[0] + " grows by that piece; chromosome " + ic[1] + " loses it.", tag: "add" };
+      }
+      var ig = bp[0] || [];
+      return { text: "an INSERTION within chromosome " + c + ": the segment between " + bandsPhrase(c, ig.slice(1)) +
+        " is moved to a new position (at " + c + (ig[0] || "?") + "). Nothing is gained or lost overall.", tag: "add" };
     }
     if (k === "add") return { text: "ADDITIONAL material of unknown origin attached to chromosome " + c + " at " + c + ((bp[0] || [])[0] || "?"), tag: "add" };
     if (k === "mar") return { text: "a MARKER chromosome (mar): a small extra chromosome whose origin can't be identified by banding alone", tag: "mar" };
@@ -273,6 +288,7 @@
       case "iso": return "isochromosome " + c;
       case "ring": return "ring chromosome " + c + ((bp[0] || []).length ? ", breaks at " + bands(0, false) : "");
       case "der": return "derivative chromosome " + c;
+      case "ins": return "insertion" + (ab.chroms.length >= 2 ? " of chromosome " + ab.chroms[1] + " into chromosome " + ab.chroms[0] : " within chromosome " + c);
       case "add": return "additional material on chromosome " + c;
       case "mar": return "a marker chromosome";
       case "trp": return "triplication on chromosome " + c;
@@ -309,6 +325,9 @@
       case "iso": return "Chromosome " + c + " formed as a mirror image of one of its arms (an isochromosome), so there is extra of one part and less of another.";
       case "ring": return "The ends of chromosome " + c + " joined together into a ring shape (a ring chromosome).";
       case "der": return "Chromosome " + c + " is rearranged (doctors call it a 'derivative' chromosome).";
+      case "ins": return ab.chroms.length >= 2
+        ? "A piece of chromosome " + ab.chroms[1] + " has been moved into chromosome " + c + " (an insertion)."
+        : "A piece of chromosome " + c + " has moved to a different place on the same chromosome (an insertion). Usually no genetic material is gained or lost.";
       case "add": return "Extra chromosome material of uncertain origin is attached to chromosome " + c + ".";
       case "mar": return "There is a small extra chromosome whose origin has not been identified (a 'marker' chromosome).";
       case "trp": return "A region of chromosome " + c + " is present three times (a triplication).";
