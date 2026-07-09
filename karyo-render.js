@@ -221,6 +221,17 @@
     });
     body.push('</g>');
 
+    // A whole-arm or mirror derivative (a Robertsonian der, an isochromosome) meets
+    // its arms at the seam, where the centromere(s) sit — but no centromere fell
+    // strictly inside a segment, so cenList is empty. Mark that seam as the
+    // centromere so it draws a real constriction (you can see where the centromere
+    // is) and provides the alignment y. Drop the plain fusion line there, since the
+    // centromere marker now shows the join.
+    if (!cenList.length && segments.length >= 2 && firstBoundaryY != null) {
+      cenList.push({ y: firstBoundaryY, chrom: segments[0].chrom, reversed: false });
+      junctionYs = junctionYs.filter(function (jy) { return Math.abs(jy - firstBoundaryY) > 0.5; });
+    }
+
     // centromere: hatched constriction with a guaranteed-visible height + a thin
     // dashed line at the exact p/q boundary. A texture, so it never reads as a
     // breakpoint marker.
@@ -283,18 +294,11 @@
     body.push('<rect x="' + pad + '" y="' + pad + '" width="' + W + '" height="' + H + '" rx="' + cap + '" ry="' + cap +
       '" fill="none" stroke="' + outlineFor(ctx, idChrom) + '" stroke-width="1.1"/>');
 
-    // Centromere y for aligning homologs. A normal chromosome / del / dup / most
-    // translocations put the centromere strictly inside a segment (cenList). A
-    // mirror or whole-arm fusion (an isochromosome, a Robertsonian der) instead
-    // meets its arms at the seam between its two segments, where the centromere(s)
-    // sit — so use that seam as the alignment line when no interior centromere was
-    // found. This lets those cells centromere-align like every other cell.
-    var alignCenY = cenList.length ? cenList[0].y : (firstBoundaryY != null ? firstBoundaryY : null);
     return {
       svg: '<svg class="ideo" width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '"><defs>' +
         defs.join("") + '</defs>' + body.join("") + '</svg>',
       width: svgW, height: svgH,
-      cenY: alignCenY
+      cenY: cenList.length ? cenList[0].y : null   // centromere y (for aligning homologs)
     };
   }
 
@@ -769,9 +773,23 @@
     { name: "r3", chroms: ["17", "18", "19", "20", "21", "22"], sex: true }
   ];
 
+  // The within-cell layout metrics of a chromosome cell: the y of its aligned
+  // centromere line (from the top of the copies), and the cell's drawn height.
+  // Used to line every affected chromosome's centromere up on one horizontal line.
+  function cellMetrics(insts, ctx) {
+    var drawn = insts.map(function (i) { return drawInstance(i, ctx); });
+    var sameLength = drawn.every(function (d) { return Math.abs(d.height - drawn[0].height) < 0.5; });
+    var everyCen = drawn.every(function (d) { return d.cenY != null; });
+    var maxCen = 0, maxH = 0;
+    drawn.forEach(function (d) { if (d.cenY != null && d.cenY > maxCen) maxCen = d.cenY; if (d.height > maxH) maxH = d.height; });
+    var cenLine = !everyCen ? null : (sameLength ? drawn[0].cenY : maxCen);
+    return { cenLine: cenLine, height: maxH };
+  }
+
   function cellHtml(labelText, insts, opts, ctx) {
     opts = opts || {};
-    var h2 = ['<div class="kcell' + (opts.sexcell ? " sexcell" : "") + '"><div class="kcell-copies">'];
+    var copiesStyle = (opts.cenOffset && opts.cenOffset > 0.5) ? ' style="margin-top:' + opts.cenOffset.toFixed(1) + 'px"' : "";
+    var h2 = ['<div class="kcell' + (opts.sexcell ? " sexcell" : "") + '"><div class="kcell-copies"' + copiesStyle + '>'];
     if (insts.length === 0 && opts.ghost) {
       h2.push(ghost(opts.ghostChrom || labelText, opts.ghostText || "absent"));
     } else {
@@ -832,13 +850,26 @@
     if (opts.only != null) {
       var order = window.ISCN.ALL;
       var list = opts.only.slice().sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); });
-      var oh = ['<div class="karyogram affected-only"><div class="kgroup">'];
+      // Build the focused row, then line every chromosome's centromere up on one
+      // horizontal line — the classic karyogram look (acrocentrics hang from the
+      // line, a metacentric Robertsonian sits centered on it). Cells with no
+      // centromere on any copy (a dmin fragment) bottom-align to the baseline.
+      var cells = [];
       list.forEach(function (chrom) {
         var insts = clone.slots[chrom] || [];
-        if (insts.length) oh.push(cellHtml(chrom, insts, { sexcell: (chrom === "X" || chrom === "Y") }, ctx));
+        if (insts.length) cells.push({ chrom: chrom, insts: insts, sexcell: (chrom === "X" || chrom === "Y"), m: cellMetrics(insts, ctx) });
       });
-      if ((clone.slots["mar"] || []).length) oh.push(cellHtml("mar", clone.slots["mar"], {}, ctx));
-      if ((clone.slots["dmin"] || []).length) oh.push(cellHtml("dmin", clone.slots["dmin"], {}, ctx));
+      if ((clone.slots["mar"] || []).length) cells.push({ chrom: "mar", insts: clone.slots["mar"], m: cellMetrics(clone.slots["mar"], ctx) });
+      if ((clone.slots["dmin"] || []).length) cells.push({ chrom: "dmin", insts: clone.slots["dmin"], m: cellMetrics(clone.slots["dmin"], ctx) });
+      var withCen = cells.filter(function (c) { return c.m.cenLine != null; });
+      var above = withCen.length ? Math.max.apply(null, withCen.map(function (c) { return c.m.cenLine; })) : 0;
+      var below = withCen.length ? Math.max.apply(null, withCen.map(function (c) { return c.m.height - c.m.cenLine; })) : 0;
+      var totalH = above + below;
+      var oh = ['<div class="karyogram affected-only"><div class="kgroup">'];
+      cells.forEach(function (c) {
+        var off = c.m.cenLine != null ? (above - c.m.cenLine) : Math.max(0, totalH - c.m.height);
+        oh.push(cellHtml(c.chrom, c.insts, { sexcell: c.sexcell, cenOffset: off }, ctx));
+      });
       oh.push('</div></div>');
       container.innerHTML = oh.join("");
       return;

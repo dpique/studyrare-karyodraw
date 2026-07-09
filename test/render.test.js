@@ -222,3 +222,21 @@ test('a deletion cell still centromere-aligns (not bottom-align)', () => {
   const delMt = marginTopOf(cont.innerHTML, '1', 'del');
   assert.ok(Math.abs(delMt - cenShift) < 1, 'the del copy uses the centromere shift, not the bottom shift');
 });
+
+// A whole-arm / mirror derivative now draws a real centromere at its seam, so you
+// can see where the centromere is (not just an unlabeled fusion line).
+test('a whole-arm derivative draws a centromere at its seam', () => {
+  const out = Karyo.drawInstance(derInst('45,XX,rob(13;14)(q10;q10)', '13'), { theme: 'detailed', level: 99, affected: {} });
+  assert.ok(out.cenY != null, 'reports a centromere y at the seam');
+  assert.match(out.svg, /stroke-dasharray="2\.5 2"/, 'draws the centromere p/q line (distinct from a plain fusion line)');
+});
+
+// The affected-only view lines every chromosome's centromere up on one horizontal
+// line, so the shorter homolog is offset down to meet it.
+test('affected-only view lines up centromeres across cells', () => {
+  const c = ISCN.parse('45,XX,rob(13;14)(q10;q10)').clones[0];
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, c, { theme: 'detailed', level: 99, affected: Karyo.computeAffected([c]), only: ['13', '14'] });
+  assert.match(cont.innerHTML, /affected-only/, 'is the affected-only view');
+  assert.match(cont.innerHTML, /kcell-copies" style="margin-top:[\d.]+px"/, 'a cell is offset to bring its centromere onto the shared line');
+});
