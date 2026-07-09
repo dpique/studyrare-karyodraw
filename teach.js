@@ -109,9 +109,19 @@
     return null;
   }
   function describeAberration(ab) {
-    var k = ab.kind, c = ab.chroms[0], bp = ab.breakpoints;
-    if (k === "gain") return { text: "an EXTRA copy of chromosome " + c + " (three copies = trisomy " + c + ")", tag: "gain" };
-    if (k === "loss") return { text: "LOSS of one chromosome " + c + " (one copy = monosomy " + c + ")", tag: "loss" };
+    var k = ab.kind, c = ab.chroms[0], bp = ab.breakpoints, mult = ab.multiplier || 1;
+    if (k === "idem") {
+      var refName = ab.ref === "sdl" ? "the sideline (the clone before it)" : "the stemline (the first clone)";
+      return { text: "the SAME changes as " + refName + " — this subclone carries all of them, plus whatever is listed next (clonal evolution)", tag: "count" };
+    }
+    if (k === "hsr") return { text: "a HOMOGENEOUSLY STAINING REGION on chromosome " + c + " at " + c + ((bp[0] || [])[0] || "?") + ": a block of amplified DNA (many extra copies of a gene, e.g. an oncogene) built into the chromosome", tag: "add" };
+    if (k === "dmin") return { text: "DOUBLE MINUTES: small extra circles of amplified DNA floating outside the chromosomes (acentric, so not counted in the chromosome number). A hallmark of oncogene amplification", tag: "add" };
+    if (k === "gain") return mult > 1
+      ? { text: mult + " EXTRA copies of chromosome " + c + " (so " + (2 + mult) + " copies in all)", tag: "gain" }
+      : { text: "an EXTRA copy of chromosome " + c + " (three copies = trisomy " + c + ")", tag: "gain" };
+    if (k === "loss") return mult > 1
+      ? { text: "LOSS of " + mult + " copies of chromosome " + c, tag: "loss" }
+      : { text: "LOSS of one chromosome " + c + " (one copy = monosomy " + c + ")", tag: "loss" };
     if (k === "del") {
       var b0 = (bp[0] || []);
       if (b0.length >= 2) return { text: "an interstitial DELETION in chromosome " + c + ": the segment between " + bandsPhrase(c, b0) + " is missing", tag: "del" };
@@ -201,7 +211,12 @@
   function decode(clone) {
     var rows = [];
     if (clone.modalNumber != null) {
-      rows.push({ code: String(clone.modalNumber), text: "total chromosome count" + (clone.modalNumber === 46 ? " (the normal human number)" : " (normal is 46)"), tag: "count" });
+      var range = clone.modalHigh != null;
+      var code = range ? (clone.modalNumber + "~" + clone.modalHigh) : String(clone.modalNumber);
+      var txt = range
+        ? "chromosome count varies from " + clone.modalNumber + " to " + clone.modalHigh + " across the cells counted (normal is 46)"
+        : "total chromosome count" + (clone.modalNumber === 46 ? " (the normal human number)" : " (normal is 46)");
+      rows.push({ code: code, text: txt, tag: "count" });
     }
     if (clone.sex.label) {
       rows.push({ code: clone.sex.label, text: "sex chromosomes: " + clone.sex.note, tag: "sex" });
@@ -307,6 +322,9 @@
       case "add": return "additional material on chromosome " + c;
       case "mar": return "a marker chromosome";
       case "trp": return "triplication on chromosome " + c;
+      case "hsr": return "homogeneously staining region on chromosome " + c;
+      case "dmin": return "double minutes";
+      case "idem": return ab.ref === "sdl" ? "same as the sideline" : "idem, same as the stemline";
       default: return ab.raw || "";
     }
   }
@@ -346,6 +364,9 @@
       case "add": return "Extra chromosome material of uncertain origin is attached to chromosome " + c + ".";
       case "mar": return "There is a small extra chromosome whose origin has not been identified (a 'marker' chromosome).";
       case "trp": return "A region of chromosome " + c + " is present three times (a triplication).";
+      case "hsr": return "Chromosome " + c + " carries a block of amplified DNA (many extra copies of a gene, called a homogeneously staining region).";
+      case "dmin": return "There are small extra circles of amplified DNA outside the chromosomes (called double minutes).";
+      case "idem": return "This cell line has all the same changes as the main clone, plus the change(s) listed next.";
       default: return "There is a change involving chromosome " + (c || "material") + ".";
     }
   }

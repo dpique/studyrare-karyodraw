@@ -3,6 +3,28 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-10 (later)
+
+Complete the ISCN karyotype system — the last shorthand that was previously out
+of scope now parses, draws, and decodes:
+
+- **Clonal evolution `idem` / `sl` / `sdl`.** A subclone written with `idem`
+  (or `sl`) now inherits every aberration of the stemline (the first clone), and
+  `sdl` inherits the preceding sideline. `46,XX,t(8;21)(q22;q22)/47,XX,idem,+8`
+  draws and counts correctly (47) instead of silently dropping the shared
+  `t(8;21)` from the second clone.
+- **Range modal numbers.** `47~49,XY,+8,+21` accepts any count inside the range
+  without flagging a mismatch; the decode explains the range.
+- **Copy-number multiplier `×N` / `xN`.** `+8×2` adds two copies; the decode reads
+  "2 extra copies of chromosome 8".
+- **Amplification `hsr` and `dmin`.** A homogeneously staining region draws as a
+  vivid amplified block on the chromosome; double minutes draw as small
+  extrachromosomal fragments and, being acentric, are not counted in the modal
+  number.
+- **Geometry audit.** Re-checked isochromosomes, whole-arm and reciprocal
+  translocations, rings, dicentrics, and inversions against the expected arms; all
+  land correctly (the whole-arm fix from earlier covered the one real error).
+
 ## 2026-07-10
 
 - **Fix the whole-arm / Robertsonian derivative geometry.** A whole-arm fusion

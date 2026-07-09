@@ -32,7 +32,7 @@
     gpos100: "#2e3550", gvar: "#c2caf6", stalk: "#c2caf6", acen: "#3c4463"
   };
   // Figure-level encodings (not UI chrome): error / amber / periwinkle / navy.
-  var OP_COLORS = { del: "#e0554f", dup: "#ec9b27", inv: "#5e72e4", add: "#808ba8", break: "#242a45" };
+  var OP_COLORS = { del: "#e0554f", dup: "#ec9b27", inv: "#5e72e4", add: "#808ba8", break: "#242a45", hsr: "#d6409f" };
 
   // Affected-chromosome hues. Leads with the brand pair — periwinkle "field"
   // then amber "signal" — so a 2-way rearrangement echoes StudyRare's motif.
@@ -255,6 +255,10 @@
       } else if (ov.type === "add") {
         body.push('<rect x="' + pad + '" y="' + span.y0.toFixed(2) + '" width="' + W + '" height="' + hh +
           '" fill="url(#' + hatch(OP_COLORS.add) + ')" clip-path="url(#' + uid + ')"/>');
+      } else if (ov.type === "hsr") {
+        // Amplified block: a solid vivid band (the homogeneously staining region).
+        body.push('<rect x="' + pad + '" y="' + span.y0.toFixed(2) + '" width="' + W + '" height="' + hh +
+          '" fill="' + OP_COLORS.hsr + '" clip-path="url(#' + uid + ')"/>');
       }
       var mk = simple ? "#1e293b" : OP_COLORS.break;
       [span.y0, span.y1].forEach(function (yy) { if (yy > pad + 0.5 && yy < pad + H - 0.5) breakMark(yy, mk); });
@@ -330,6 +334,7 @@
     var chrom = inst.chrom, ab = inst.aberration, kind = inst.kind;
     if (kind === "normal" || kind === "gain") return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label };
     if (kind === "mar") return { segments: [{ chrom: (chrom in IDEO.data ? chrom : "21"), from: 0, to: 24000000, hasCen: true, reversed: false }], overlays: [], caption: "mar", marker: true };
+    if (kind === "dmin") return { segments: [{ chrom: "21", from: 0, to: 6000000, hasCen: false, reversed: false }], overlays: [], caption: "dmin", dmin: true };
     var d0 = IDEO.data[chrom];
 
     if (kind === "del") {
@@ -395,6 +400,12 @@
       var abnd = resolveBand(chrom, (ab.breakpoints[0] || [])[0]), ov4 = [];
       if (abnd) ov4.push(abnd.arm === "p" ? { type: "add", chrom: chrom, from: 0, to: abnd.mid } : { type: "add", chrom: chrom, from: abnd.mid, to: d0.length });
       return { segments: [fullSeg(chrom)], overlays: ov4, caption: inst.label };
+    }
+    if (kind === "hsr") {
+      // An amplified block riding on the chromosome: mark the band as an hsr.
+      var hbnd = resolveBand(chrom, (ab.breakpoints[0] || [])[0]), ov5 = [];
+      if (hbnd) ov5.push({ type: "hsr", chrom: chrom, from: hbnd.start, to: hbnd.end });
+      return { segments: [fullSeg(chrom)], overlays: ov5, caption: inst.label };
     }
     if (kind === "ring") {
       var rb = (ab.breakpoints[0] || []).map(function (x) { return resolveBand(chrom, x); }).filter(Boolean), from = 0, to = d0.length;
@@ -712,8 +723,27 @@
     };
   }
 
+  // Double minutes: a pair of tiny acentric circles (the classic dmin look).
+  function renderDmin(ctx) {
+    var simple = ctx && ctx.theme === "simple";
+    var col = simple ? "#64748b" : "#3c4463";
+    var w = 30, ht = 26, r = 4.6, cy = 11;
+    var body = [
+      '<circle cx="10" cy="' + cy + '" r="' + r + '" fill="' + col + '"/>',
+      '<circle cx="20" cy="' + cy + '" r="' + r + '" fill="' + col + '"/>'
+    ];
+    return {
+      svg: '<svg class="ideo ideo-dmin" width="' + w + '" height="' + ht + '" viewBox="0 0 ' + w + ' ' + ht + '">' + body.join("") + '</svg>',
+      width: w, height: ht, cenY: null
+    };
+  }
+
   function drawInstance(inst, ctx) {
     var built = buildInstance(inst);
+    if (built.dmin) {
+      var dout = renderDmin(ctx);
+      return { svg: dout.svg, width: dout.width, height: dout.height, cenY: null, built: built };
+    }
     if (built.ring && built.segments && built.segments[0]) {
       var rout = renderRing(built.segments[0], ctx);
       return { svg: rout.svg, width: rout.width, height: rout.height, cenY: null, built: built };
@@ -797,6 +827,7 @@
         if (insts.length) oh.push(cellHtml(chrom, insts, { sexcell: (chrom === "X" || chrom === "Y") }, ctx));
       });
       if ((clone.slots["mar"] || []).length) oh.push(cellHtml("mar", clone.slots["mar"], {}, ctx));
+      if ((clone.slots["dmin"] || []).length) oh.push(cellHtml("dmin", clone.slots["dmin"], {}, ctx));
       oh.push('</div></div>');
       container.innerHTML = oh.join("");
       return;
@@ -816,6 +847,7 @@
         var missing = 2 - (xN + yN);
         for (var mi = 0; mi < missing; mi++) html.push(cellHtml("?", [], { ghost: true, ghostChrom: "X", ghostText: "missing", sexcell: true }, ctx));
         if ((clone.slots["mar"] || []).length) html.push(cellHtml("mar", clone.slots["mar"], {}, ctx));
+        if ((clone.slots["dmin"] || []).length) html.push(cellHtml("dmin", clone.slots["dmin"], {}, ctx));
       }
       html.push('</div>');
     });

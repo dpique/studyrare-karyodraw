@@ -62,8 +62,7 @@ Cytogenomic Nomenclature* (Cytogenet Genome Res 2024;164 suppl 1,
 and band syntax it reads are those defined there; band coordinates come from the
 current hg38 genome build. **Scope:** the constitutional and neoplastic
 *karyotype* (chromosome-level) system. The microarray (`arr`), sequence-based,
-and region-specific-assay chapters of ISCN are out of scope by design, as are
-the `×` copy-number sign and clonal-evolution shorthand (`idem`, `sl`, `sdl`).
+and region-specific-assay chapters of ISCN are out of scope by design.
 
 - **Normal & sex constitutions:** `46,XX`, `46,XY`, `45,X`, `47,XXY`, `47,XYY`, `47,XXX`, …
 - **Aneuploidy:** gains/losses — `+21`, `+18`, `+13`, `-7`, …
@@ -73,8 +72,15 @@ the `×` copy-number sign and clonal-evolution shorthand (`idem`, `sl`, `sdl`).
   dicentric) and `idic` (mirror-image isodicentric), `ins` (inter- and
   intrachromosomal, recipient grown and donor shortened), `rob` (Robertsonian,
   same as the whole-arm `der`), `fra`, `mar`, `trp`.
-- **Qualifiers:** the constitutional / inheritance suffixes `c`, `mat`, `pat`, `dn`
-  are recognized and remembered (they do not break the aberration they trail).
+- **Amplification:** `hsr` (homogeneously staining region, drawn as an amplified
+  block on the chromosome) and `dmin` (double minutes, drawn as small
+  extrachromosomal fragments and — being acentric — not counted).
+- **Copy number & qualifiers:** the `×N` multiplier (`+8×2` = two extra copies),
+  and the constitutional / inheritance suffixes `c`, `mat`, `pat`, `dn` (recognized
+  and remembered, they do not break the aberration they trail).
+- **Cancer shorthand:** range modal numbers (`47~49`, satisfied by any count in
+  range) and clonal-evolution references `idem` / `sl` (same as the stemline) and
+  `sdl` (same as the sideline), expanded to the referenced clone's aberrations.
 - **Mosaicism / composite:** `mos 45,X[12]/46,XX[18]`, `[cp20]`, multiple clones
   with cell counts and percentages.
 
