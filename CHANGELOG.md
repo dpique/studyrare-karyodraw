@@ -3,6 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-11 (evening)
+
+- **Draw a real centromere on whole-arm and mirror derivatives.** A Robertsonian
+  `der` and an isochromosome meet their arms at the seam; that seam now renders an
+  actual centromere constriction (a hatched band + the p/q line), so you can see
+  where the centromere is instead of reading an unlabeled fusion line.
+- **Line every affected chromosome's centromere up on one horizontal line.** In
+  the "affected only" view, each chromosome is offset so all centromeres (and a
+  Robertsonian's fusion seam) sit on a shared line, with the labels on a common
+  baseline below — the classic karyogram look, where the acrocentrics hang from
+  the line and the metacentric Robertsonian sits centered on it. The full
+  karyogram view is unchanged (it still bottom-aligns so the number row lines up).
+
 ## 2026-07-11 (latest)
 
 - **Centromere-align isochromosomes and whole-arm derivatives on their fusion
