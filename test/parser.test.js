@@ -217,6 +217,33 @@ test('sdl inherits the previous sideline, not the stemline', () => {
   assert.ok(third.aberrations.some((a) => a.kind === 't' && a.chroms.join(';') === '9;22'), 'inherited t(9;22)');
 });
 
+// The STANDARD ISCN form omits the repeated sex field: 47,idem,+8 (idem stands
+// in the sex-field position and means "same as the stemline, sex included").
+test('idem with no repeated sex field (standard form) inherits sex + aberrations', () => {
+  const r = ISCN.parse('46,XY,t(9;22)(q34;q11.2)[15]/47,idem,+8[5]');
+  const sub = r.clones[1];
+  assert.ok(!r.warnings.some((w) => /2nd field should be the sex/i.test(w)), 'no spurious sex-field warning');
+  assert.equal(sub.sex.label, 'XY', 'sex inherited from the stemline');
+  assert.ok(sub.aberrations.some((a) => a.kind === 't' && a.chroms.join(';') === '9;22'), 'inherited t(9;22)');
+  assert.ok(sub.aberrations.some((a) => a.kind === 'gain' && a.chroms[0] === '8'), 'plus +8');
+  assert.equal(sub.counts.actual, 47);
+  assert.equal(sub.counts.ok, true);
+});
+
+test('sl in the sex-field position also works', () => {
+  const r = ISCN.parse('46,XX,del(5)(q13)/47,sl,+21');
+  const sub = r.clones[1];
+  assert.equal(sub.sex.label, 'XX', 'sex inherited');
+  assert.ok(sub.aberrations.some((a) => a.kind === 'del' && a.chroms[0] === '5'), 'inherited del(5)');
+  assert.equal(sub.counts.ok, true);
+});
+
+// A bare chromosome number is not a valid aberration; coach toward +N / -N.
+test('a bare chromosome number is coached toward +N / -N', () => {
+  const r = ISCN.parse('47,XY,8');
+  assert.ok(r.warnings.some((w) => /\+8|−8|-8|a sign|gain or loss/i.test(w)), 'suggests +8 or -8');
+});
+
 // --- Range modal numbers (47~49) --------------------------------------------
 test('range modal number accepts a count within the range', () => {
   const c = clone0('47~49,XY,+8,+21');

@@ -117,6 +117,12 @@
     if (!opM) {
       // things like "mar", "mar1", "?", "inc"
       if (/^mar\d*$/i.test(tok)) { ab.kind = "mar"; return finish(ab); }
+      // A bare chromosome number needs a sign to say gained or lost.
+      if (/^(\d+|X|Y)$/.test(tok)) {
+        warnings.push("“" + raw + "” needs a sign: “+" + tok + "” for a gain (extra copy) or “−" + tok + "” for a loss.");
+        ab.note = "unrecognized token";
+        return finish(ab);
+      }
       warnings.push("Couldn’t read “" + raw + "”. Aberrations look like +21, del(5)(p15.2), or t(9;22)(q34;q11.2).");
       ab.note = "unrecognized token";
       return finish(ab);
@@ -393,11 +399,19 @@
       if (mn[2]) clone.modalHigh = parseInt(mn[2], 10);
     } else warnings.push("A karyotype starts with the chromosome count (a number like 46). “" + fields[0] + "” isn’t a number.");
 
-    // sex field (second)
-    if (fields.length > 1) clone.sex = parseSex(fields[1], warnings);
+    // sex field (second) — UNLESS the second field is a clonal-evolution marker
+    // (idem/sl/sdl). The standard subclone form omits the repeated sex field, e.g.
+    // 47,idem,+8: "idem" stands in for the whole stemline, sex included, so the
+    // sex is inherited during expansion rather than stated here.
+    var firstAb = 2;
+    if (fields.length > 1 && /^(idem|sl|sdl)$/i.test(fields[1])) {
+      firstAb = 1;
+    } else if (fields.length > 1) {
+      clone.sex = parseSex(fields[1], warnings);
+    }
 
-    // remaining = aberrations
-    for (var i = 2; i < fields.length; i++) {
+    // remaining = aberrations (including a leading idem/sl/sdl marker)
+    for (var i = firstAb; i < fields.length; i++) {
       clone.aberrations.push(parseAberration(fields[i], warnings));
     }
 
@@ -422,6 +436,12 @@
       }
     });
     cl.aberrations = out;
+    // The sex is constitutional and identical across clones, so inherit it from the
+    // stemline when this subclone did not repeat it (the standard 47,idem,+8 form).
+    if (cl.sex.tokens.length === 0 && clones[0] && clones[0].sex.tokens.length) {
+      var st = clones[0].sex;
+      cl.sex = { tokens: st.tokens.slice(), label: st.label, note: st.note };
+    }
     buildComplement(cl, warnings);
   }
 

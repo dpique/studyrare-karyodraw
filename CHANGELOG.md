@@ -3,6 +3,18 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-11 (later)
+
+- **Accept the standard `idem` subclone form that omits the repeated sex field.**
+  `46,XY,t(9;22)(q34;q11.2)[15]/47,idem,+8[5]` is the usual way to write clonal
+  evolution — `idem` sits in the sex-field position and stands in for the whole
+  stemline, sex included. The parser used to demand an X/Y there ("idem has no X
+  or Y") and drop the inheritance, leaving the subclone miscounted. It now reads
+  `idem` / `sl` / `sdl` in that position and inherits the stemline's sex.
+- **Coach a bare chromosome number toward a sign.** A lone `8` in the aberration
+  field now suggests "+8 for a gain or −8 for a loss" instead of the generic
+  "couldn't read" message.
+
 ## 2026-07-11
 
 - **Fix chromosome alignment inside a cell when a copy has no centromere line.**
