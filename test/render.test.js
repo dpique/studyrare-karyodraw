@@ -157,3 +157,41 @@ test('dmin draws a small acentric fragment that renders without error', () => {
   const out = Karyo.drawInstance(inst, { theme: 'detailed', level: 99, affected: {} });
   assert.match(JSON.stringify(out), /<svg/);
 });
+
+// --- Cell alignment: when a copy has no centromere y (a whole-arm derivative,
+// an isochromosome), the cell can't centromere-align, so it must fall back to
+// BOTTOM alignment (the group's baseline), not float the short copy at the top.
+const marginTopOf = (html, chrom, kind) => {
+  const re = new RegExp('data-chrom="' + chrom + '" data-kind="' + kind + '"[^>]*?(?:style="margin-top:([\\d.]+)px")?>');
+  const m = html.match(re);
+  return m && m[1] ? parseFloat(m[1]) : 0;
+};
+
+test('a whole-arm derivative cell bottom-aligns the normal homolog', () => {
+  const c = ISCN.parse('45,XX,rob(13;14)(q10;q10)').clones[0];
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, c, { theme: 'detailed', level: 99, affected: Karyo.computeAffected([c]), only: ['13', '14'] });
+  const normal13 = marginTopOf(cont.innerHTML, '13', 'normal');
+  const der13 = marginTopOf(cont.innerHTML, '13', 'dic') || marginTopOf(cont.innerHTML, '13', 'der');
+  assert.ok(normal13 > 5, 'the shorter normal 13 is pushed down to share the baseline with the tall der(13)');
+  assert.equal(der13, 0, 'the tallest copy (der) sits at the bottom with no shift');
+});
+
+test('a deletion cell still centromere-aligns (not bottom-align)', () => {
+  // A q-arm deletion leaves the centromere in place, so centromere-alignment
+  // shifts the del copy by 0 while bottom-alignment would shift it down — the two
+  // schemes diverge, which lets us confirm the centromere path is taken.
+  const c = ISCN.parse('46,XX,del(1)(q42)').clones[0];
+  const insts = c.slots['1'];
+  const drawn = insts.map((i) => Karyo.drawInstance(i, { theme: 'detailed', level: 99, affected: {} }));
+  const maxCen = Math.max(...drawn.map((d) => d.cenY));
+  const maxH = Math.max(...drawn.map((d) => d.height));
+  const di = insts.findIndex((i) => i.kind !== 'normal');
+  const cenShift = maxCen - drawn[di].cenY;      // where centromere-alignment puts the del copy
+  const botShift = maxH - drawn[di].height;       // where bottom-alignment would put it
+  assert.ok(Math.abs(cenShift - botShift) > 3, 'the two schemes give visibly different shifts here');
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, c, { theme: 'detailed', level: 99, affected: Karyo.computeAffected([c]), only: ['1'] });
+  const delMt = marginTopOf(cont.innerHTML, '1', 'del');
+  assert.ok(Math.abs(delMt - cenShift) < 1, 'the del copy uses the centromere shift, not the bottom shift');
+});
