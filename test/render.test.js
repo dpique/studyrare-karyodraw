@@ -110,6 +110,27 @@ test('dicentric dic(13;14) is a single fused chromosome with two centromeres', (
   assert.ok(b.segments.every((s) => s.hasCen), 'both centromeres are retained (dicentric)');
 });
 
+// --- Robertsonian / whole-arm fusion: joins the two LONG arms ---------------
+// rob(13;14)(q10;q10) fuses 13q + 14q and loses both short arms. The bug it
+// replaces glued a p-arm on (14p), which is biologically wrong.
+const qArmOnly = (seg, IDEO) => seg.from >= IDEO.data[seg.chrom].centromere - 1e6 && seg.to >= IDEO.data[seg.chrom].length - 1e6;
+
+test('Robertsonian rob(13;14) joins the two q arms, not a p arm', () => {
+  const b = built('45,XX,rob(13;14)(q10;q10)', '13');
+  assert.equal(b.segments.length, 2, 'two fused arms');
+  const s13 = b.segments.find((s) => s.chrom === '13');
+  const s14 = b.segments.find((s) => s.chrom === '14');
+  assert.ok(s13 && s14, 'one piece from each chromosome');
+  assert.ok(qArmOnly(s13, IDEO), 'chr13 contributes its long (q) arm');
+  assert.ok(qArmOnly(s14, IDEO), 'chr14 contributes its long (q) arm, NOT its short (p) arm');
+});
+
+test('whole-arm der(13;14)(q10;q10) also joins the two q arms', () => {
+  const b = built('45,XX,der(13;14)(q10;q10)', '13');
+  const s14 = b.segments.find((s) => s.chrom === '14');
+  assert.ok(s14 && qArmOnly(s14, IDEO), 'chr14 contributes its q arm');
+});
+
 // --- der() sub-op chains: the extra del/dup is applied, not dropped ----------
 test('der(9)del(9)(p12)t(9;22) applies the deletion to the derivative', () => {
   const b = built('46,XY,der(9)del(9)(p12)t(9;22)(q34;q11.2)', '9');

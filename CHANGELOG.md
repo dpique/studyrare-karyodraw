@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-10
+
+- **Fix the whole-arm / Robertsonian derivative geometry.** A whole-arm fusion
+  (`rob(13;14)(q10;q10)`, `der(13;14)(q10;q10)`, `dic(…)(q10;q10)`) was routed
+  through the reciprocal-translocation path, which grafted the donor's *short*
+  arm onto the derivative (`der(13)` came out as 14p + 13q). It now joins the two
+  arms named by the breakpoints — the two long arms, 13q + 14q, with both short
+  arms lost, as a Robertsonian actually looks.
+
 ## 2026-07-09
 
 - **Recognize `rob`, the preferred ISCN spelling of a Robertsonian
