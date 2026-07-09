@@ -158,23 +158,50 @@ test('dmin draws a small acentric fragment that renders without error', () => {
   assert.match(JSON.stringify(out), /<svg/);
 });
 
-// --- Cell alignment: when a copy has no centromere y (a whole-arm derivative,
-// an isochromosome), the cell can't centromere-align, so it must fall back to
-// BOTTOM alignment (the group's baseline), not float the short copy at the top.
+// --- Cell alignment ---------------------------------------------------------
+// A mirror/whole-arm derivative (isochromosome, Robertsonian der) meets its arms
+// at the seam between its two segments, and the renderer now reports that seam as
+// the centromere y — so those cells centromere-align on the seam like every other
+// cell, rather than falling back to top/bottom alignment.
 const marginTopOf = (html, chrom, kind) => {
   const re = new RegExp('data-chrom="' + chrom + '" data-kind="' + kind + '"[^>]*?(?:style="margin-top:([\\d.]+)px")?>');
   const m = html.match(re);
   return m && m[1] ? parseFloat(m[1]) : 0;
 };
+// Shift the shortest/off copy gets under centromere- vs bottom-alignment, for a cell.
+const shifts = (kar, chrom, kindPred) => {
+  const c = ISCN.parse(kar).clones[0];
+  const insts = c.slots[chrom];
+  const drawn = insts.map((i) => Karyo.drawInstance(i, { theme: 'detailed', level: 99, affected: {} }));
+  const maxCen = Math.max(...drawn.map((d) => d.cenY));
+  const maxH = Math.max(...drawn.map((d) => d.height));
+  const idx = insts.findIndex(kindPred);
+  return { allCen: drawn.every((d) => d.cenY != null), cenShift: maxCen - drawn[idx].cenY, botShift: maxH - drawn[idx].height };
+};
 
-test('a whole-arm derivative cell bottom-aligns the normal homolog', () => {
+test('a whole-arm derivative reports a fusion-seam centromere y and centromere-aligns', () => {
+  const s = shifts('45,XX,rob(13;14)(q10;q10)', '13', (i) => i.kind === 'normal');
+  assert.ok(s.allCen, 'both copies now have a centromere y (the der on its fusion seam)');
+  assert.ok(Math.abs(s.cenShift - s.botShift) > 3, 'centromere and bottom shifts differ here');
   const c = ISCN.parse('45,XX,rob(13;14)(q10;q10)').clones[0];
   const cont = { innerHTML: '' };
   Karyo.render(cont, c, { theme: 'detailed', level: 99, affected: Karyo.computeAffected([c]), only: ['13', '14'] });
   const normal13 = marginTopOf(cont.innerHTML, '13', 'normal');
-  const der13 = marginTopOf(cont.innerHTML, '13', 'dic') || marginTopOf(cont.innerHTML, '13', 'der');
-  assert.ok(normal13 > 5, 'the shorter normal 13 is pushed down to share the baseline with the tall der(13)');
-  assert.equal(der13, 0, 'the tallest copy (der) sits at the bottom with no shift');
+  assert.ok(Math.abs(normal13 - s.cenShift) < 1, 'normal 13 uses the centromere shift, not the bottom shift');
+});
+
+test('an isochromosome reports a mirror-seam centromere y and centromere-aligns', () => {
+  // NOTE: for any isochromosome the centromere shift equals the bottom shift
+  // (iso height = 2x the arm, seam at the middle), so the two schemes coincide —
+  // the meaningful assertion is that the iso now reports a centromere y at all,
+  // which forces the centromere-align code path (allCen).
+  const s = shifts('46,XX,i(13)(q10)', '13', (i) => i.kind === 'normal');
+  assert.ok(s.allCen, 'the isochromosome now reports a seam centromere y (was null before)');
+  const c = ISCN.parse('46,XX,i(13)(q10)').clones[0];
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, c, { theme: 'detailed', level: 99, affected: Karyo.computeAffected([c]), only: ['13'] });
+  const normal13 = marginTopOf(cont.innerHTML, '13', 'normal');
+  assert.ok(Math.abs(normal13 - s.cenShift) < 1, 'normal 13 is shifted to line up centromeres');
 });
 
 test('a deletion cell still centromere-aligns (not bottom-align)', () => {

@@ -193,9 +193,10 @@
     body.push('<g clip-path="url(#' + uid + ')">');
     body.push('<rect x="' + pad + '" y="' + pad + '" width="' + W + '" height="' + H + '" fill="#fff"/>');
 
-    var yOff = pad, cenList = [], junctionYs = [];
+    var yOff = pad, cenList = [], junctionYs = [], firstBoundaryY = null;
     segments.forEach(function (g, gi) {
       var d = IDEO.data[g.chrom], segTop = yOff, segH = h(g.to - g.from);
+      if (gi === 1) firstBoundaryY = segTop;   // the seam between the first two segments
       getBands(g.chrom, ctx.level).forEach(function (b) {
         var bs = Math.max(b[1], g.from), be = Math.min(b[2], g.to);
         if (be <= bs) return;
@@ -282,11 +283,18 @@
     body.push('<rect x="' + pad + '" y="' + pad + '" width="' + W + '" height="' + H + '" rx="' + cap + '" ry="' + cap +
       '" fill="none" stroke="' + outlineFor(ctx, idChrom) + '" stroke-width="1.1"/>');
 
+    // Centromere y for aligning homologs. A normal chromosome / del / dup / most
+    // translocations put the centromere strictly inside a segment (cenList). A
+    // mirror or whole-arm fusion (an isochromosome, a Robertsonian der) instead
+    // meets its arms at the seam between its two segments, where the centromere(s)
+    // sit — so use that seam as the alignment line when no interior centromere was
+    // found. This lets those cells centromere-align like every other cell.
+    var alignCenY = cenList.length ? cenList[0].y : (firstBoundaryY != null ? firstBoundaryY : null);
     return {
       svg: '<svg class="ideo" width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '"><defs>' +
         defs.join("") + '</defs>' + body.join("") + '</svg>',
       width: svgW, height: svgH,
-      cenY: cenList.length ? cenList[0].y : null   // centromere y (for aligning homologs)
+      cenY: alignCenY
     };
   }
 
