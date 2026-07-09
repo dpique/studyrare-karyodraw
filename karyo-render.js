@@ -406,12 +406,154 @@
       var af = isQ ? d0.centromere : 0, at = isQ ? d0.length : d0.centromere;
       return { segments: [{ chrom: chrom, from: af, to: at, hasCen: false, reversed: isQ }, { chrom: chrom, from: af, to: at, hasCen: false, reversed: !isQ }], overlays: [], caption: inst.label };
     }
-    if (kind === "t" || kind === "dic" || kind === "der") {
+    if (kind === "ins") {
+      var isb = buildInsertion(inst);
+      if (isb) return { segments: isb.segments, overlays: isb.overlays || [], caption: inst.label, composite: true };
+      return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label, note: "complex" };
+    }
+    if (kind === "dic") {
+      // A two-chromosome dic fuses into one body with two centromeres; a single-
+      // chromosome idic mirrors itself about the breakpoint (also dicentric).
+      var dsegs = (ab && ab.chroms && ab.chroms.length >= 2) ? dicentricSegments(inst) : isodicentricSegments(inst);
+      if (dsegs) return { segments: dsegs, overlays: [], caption: inst.label, composite: true };
+      return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label, note: "complex" };
+    }
+    if (kind === "t" || kind === "der") {
       var segs = translocationSegments(inst);
+      // A der(N) chain can carry more than the join — a del/dup/inv on its own
+      // chromosome (e.g. der(9)del(9)(p12)t(9;22)). Start from the join (or the
+      // whole chromosome if there is no join) and apply those extra ops in turn.
+      if (kind === "der" && ab && ab.subOps) {
+        if (!segs) segs = [fullSeg(chrom)];
+        segs = applyDerSubOps(inst, segs);
+      }
       if (segs) return { segments: segs, overlays: [], caption: inst.label, composite: true };
       return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label, note: "complex" };
     }
     return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label };
+  }
+
+  // An insertion moves a segment to a new site: the recipient grows, the donor
+  // shrinks. Interchromosomal ins(A;B)(siteA;segB1 segB2) makes der(A) (with B's
+  // segment spliced in) and der(B) (that segment excised); intrachromosomal
+  // ins(N)(site seg1 seg2) is a length-preserving internal move.
+  function insSeg(c, from, to, rev) { var dd = IDEO.data[c]; return { chrom: c, from: from, to: to, hasCen: (dd.centromere > from && dd.centromere < to), reversed: !!rev }; }
+  function buildInsertion(inst) {
+    var ab = inst.aberration, chroms = ab.chroms, bps = ab.breakpoints, chrom = String(inst.chrom);
+    if (!chroms || !chroms.length) return null;
+    if (chroms.length === 1) {
+      var g = bps[0] || [];
+      var site = resolveBand(chrom, g[0]), a = resolveBand(chrom, g[1]), b = resolveBand(chrom, g[2]);
+      if (!site || !a || !b) return null;
+      var d = IDEO.data[chrom], lo = Math.min(a.mid, b.mid), hi = Math.max(a.mid, b.mid), inv = a.mid > b.mid, sp = site.mid, out = [];
+      if (sp <= lo) {                              // insertion site proximal to the moved segment
+        if (sp > 0) out.push(insSeg(chrom, 0, sp));
+        out.push(insSeg(chrom, lo, hi, inv));      // the moved segment, in its new home
+        out.push(insSeg(chrom, sp, lo));           // backbone between the site and the old location
+        if (hi < d.length) out.push(insSeg(chrom, hi, d.length));
+      } else {                                     // insertion site distal to the moved segment
+        if (lo > 0) out.push(insSeg(chrom, 0, lo));
+        out.push(insSeg(chrom, hi, sp));
+        out.push(insSeg(chrom, lo, hi, inv));      // the moved segment
+        if (sp < d.length) out.push(insSeg(chrom, sp, d.length));
+      }
+      return { segments: out.filter(function (s) { return s.to > s.from; }), overlays: [] };
+    }
+    var recip = String(chroms[0]), donor = String(chroms[1]);
+    var site2 = resolveBand(recip, (bps[0] || [])[0]);
+    var sg = bps[1] || [], s1 = resolveBand(donor, sg[0]), s2 = resolveBand(donor, sg[1]);
+    if (!site2 || !s1 || !s2 || !IDEO.data[recip] || !IDEO.data[donor]) return null;
+    var dlo = Math.min(s1.mid, s2.mid), dhi = Math.max(s1.mid, s2.mid), dinv = s1.mid > s2.mid;
+    if (chrom === recip) {                         // der(recipient): grows by the donor segment
+      var dr = IDEO.data[recip], rs = [];
+      if (site2.mid > 0) rs.push(insSeg(recip, 0, site2.mid));
+      rs.push(insSeg(donor, dlo, dhi, dinv));
+      if (site2.mid < dr.length) rs.push(insSeg(recip, site2.mid, dr.length));
+      return { segments: rs, overlays: [] };
+    }
+    var dd2 = IDEO.data[donor], ds = [];           // der(donor): loses the excised segment
+    if (dlo > 0) ds.push(insSeg(donor, 0, dlo));
+    if (dhi < dd2.length) ds.push(insSeg(donor, dhi, dd2.length));
+    if (!ds.length) ds = [fullSeg(donor)];
+    return { segments: ds, overlays: [{ type: "cut", chrom: donor, at: dlo }] };
+  }
+
+  // A dicentric of two chromosomes: keep each one's centric piece and orient them
+  // so the two broken ends meet in the middle, giving one body with two centromeres.
+  function dicentricSegments(inst) {
+    var ab = inst.aberration, chroms = ab.chroms, bps = ab.breakpoints;
+    var a = String(chroms[0]), b = String(chroms[1]), ba = (bps[0] || [])[0], bb = (bps[1] || [])[0];
+    if (!IDEO.data[a] || !IDEO.data[b] || !ba || !bb) return null;
+    var sa = splitAtBreak(a, ba), sb = splitAtBreak(b, bb);
+    return [
+      { chrom: a, from: sa.centric[0], to: sa.centric[1], hasCen: true, reversed: sa.side === "p" },
+      { chrom: b, from: sb.centric[0], to: sb.centric[1], hasCen: true, reversed: sb.side === "q" }
+    ];
+  }
+
+  // An isodicentric: the centric piece mirrored about the breakpoint, so it reads
+  // as a symmetric chromosome with two copies of the retained arm and two centromeres.
+  function isodicentricSegments(inst) {
+    var ab = inst.aberration, chrom = String(inst.chrom), br = (ab.breakpoints[0] || [])[0];
+    if (!IDEO.data[chrom] || !br) return null;
+    var s = splitAtBreak(chrom, br), p = s.centric;
+    return [
+      { chrom: chrom, from: p[0], to: p[1], hasCen: true, reversed: false },
+      { chrom: chrom, from: p[0], to: p[1], hasCen: true, reversed: true }
+    ];
+  }
+
+  // Apply the trailing del/dup/inv sub-operations of a der() chain to the pieces
+  // that belong to the der's own chromosome, leaving the joined-in material alone.
+  function applyDerSubOps(inst, segs) {
+    var ab = inst.aberration, primary = String(inst.primary);
+    (ab.subOps || []).forEach(function (s) {
+      if (["del", "dup", "inv"].indexOf(s.op) < 0) return;   // t/dic joins are already in segs
+      if (String((s.chroms || [])[0]) !== primary) return;   // only ops on this der's chromosome
+      var bands = (s.breakpoints || [])[0] || [], out = [];
+      segs.forEach(function (seg) {
+        if (String(seg.chrom) !== primary) { out.push(seg); return; }
+        out = out.concat(applyOpToSeg(seg, primary, s.op, bands));
+      });
+      segs = out;
+    });
+    return segs;
+  }
+
+  // Apply one del/dup/inv, confined to a single segment's coordinate span.
+  function applyOpToSeg(seg, chrom, op, bands) {
+    var pts = bands.map(function (x) { return resolveBand(chrom, x); }).filter(Boolean);
+    var d = IDEO.data[chrom];
+    function mk(from, to, rev) { return { chrom: chrom, from: from, to: to, hasCen: (d.centromere > from && d.centromere < to), reversed: rev == null ? seg.reversed : rev }; }
+    if (!pts.length) return [seg];
+    if (op === "del") {
+      if (pts.length >= 2) {                       // interstitial: drop the middle
+        var lo = Math.min(pts[0].mid, pts[1].mid), hi = Math.max(pts[0].mid, pts[1].mid), o = [];
+        if (lo > seg.from) o.push(mk(seg.from, Math.min(lo, seg.to)));
+        if (hi < seg.to) o.push(mk(Math.max(hi, seg.from), seg.to));
+        return o.length ? o : [seg];
+      }
+      return pts[0].arm === "p" ? [mk(Math.max(seg.from, pts[0].mid), seg.to)] : [mk(seg.from, Math.min(seg.to, pts[0].mid))];
+    }
+    if (op === "dup") {
+      var dlo, dhi, dinv = false;
+      if (pts.length >= 2) { dlo = Math.min(pts[0].mid, pts[1].mid); dhi = Math.max(pts[0].mid, pts[1].mid); dinv = pts[0].mid > pts[1].mid; }
+      else { dlo = pts[0].start; dhi = pts[0].end; }
+      if (dhi <= seg.from || dlo >= seg.to) return [seg];
+      var a = Math.max(dlo, seg.from), c = Math.min(dhi, seg.to);
+      return [mk(seg.from, c), mk(a, c, dinv ? !seg.reversed : seg.reversed), mk(c, seg.to)].filter(function (x) { return x.to > x.from; });
+    }
+    if (op === "inv") {
+      if (pts.length < 2) return [seg];
+      var i0 = Math.max(Math.min(pts[0].mid, pts[1].mid), seg.from), i1 = Math.min(Math.max(pts[0].mid, pts[1].mid), seg.to);
+      if (i1 <= i0) return [seg];
+      var oo = [];
+      if (i0 > seg.from) oo.push(mk(seg.from, i0));
+      oo.push(mk(i0, i1, !seg.reversed));
+      if (i1 < seg.to) oo.push(mk(i1, seg.to));
+      return oo;
+    }
+    return [seg];
   }
 
   function translocationSegments(inst) {
