@@ -76,15 +76,30 @@
     if (!m) return { tok: tok, qual: null };
     return { tok: tok.slice(0, tok.length - m[2].length), qual: m[2] };
   }
+  // A copy-number multiplier ×N (or xN) says the aberration is present N times,
+  // e.g. +8×2 is two extra copies of chromosome 8.
+  function stripMultiplier(tok) {
+    var m = /[×x](\d+)$/.exec(tok);
+    if (!m) return { tok: tok, mult: 1 };
+    return { tok: tok.slice(0, m.index), mult: parseInt(m[1], 10) };
+  }
 
   function parseAberration(tok, warnings) {
     var raw = tok;
-    var ab = { raw: raw, kind: "unknown", sign: null, chroms: [], breakpoints: [], note: "", qualifier: null };
+    var ab = { raw: raw, kind: "unknown", sign: null, chroms: [], breakpoints: [], note: "", qualifier: null, multiplier: 1, ref: null };
     var sq = stripQualifier(tok); tok = sq.tok; var qual = sq.qual;
+    var smx = stripMultiplier(tok); tok = smx.tok; ab.multiplier = smx.mult;
     function finish(a) {
       if (qual) { a.qualifier = qual; a.note = (a.note ? a.note + "; " : "") + (QUAL[qual] || qual); }
       return a;
     }
+
+    // Clonal-evolution shorthand: idem / sl = "same as the stemline", sdl = "same
+    // as the sideline". Expanded to the referenced clone's aberrations in parse().
+    if (/^(idem|sl|sdl)$/i.test(tok)) { ab.kind = "idem"; ab.ref = tok.toLowerCase(); return finish(ab); }
+    // Double minutes: small extrachromosomal amplified fragments (may carry a count).
+    var dm = /^(\d+)?dmin$/i.exec(tok);
+    if (dm) { ab.kind = "dmin"; ab.count = dm[1] ? parseInt(dm[1], 10) : 1; return finish(ab); }
 
     // Leading sign (applies to numerical and to +der/+mar/-etc.)
     var signM = /^([+\-−–])/.exec(tok);
@@ -134,6 +149,9 @@
       case "rob": ab.kind = "der"; ab.note = "Robertsonian translocation"; break;
       case "fra": ab.kind = "fra"; break;
       case "trp": ab.kind = "trp"; break;
+      // hsr = homogeneously staining region: an amplified block riding on a
+      // chromosome. It stays on that chromosome, so the count is unchanged.
+      case "hsr": ab.kind = "hsr"; break;
       case "der":
         ab.kind = "der";
         // der(N) may be followed by t(...)/del(...) sub-ops describing its make-up.
@@ -192,24 +210,37 @@
     var replacedChroms = [];
 
     clone.aberrations.forEach(function (ab) {
-      if (ab.kind === "gain") {
+      var mult = ab.multiplier || 1;   // copy-number ×N: apply the effect N times
+      if (ab.kind === "idem") {
+        // no-op here; expanded to the referenced clone's aberrations in parse()
+        return;
+      } else if (ab.kind === "dmin") {
+        // Double minutes are extrachromosomal fragments: shown, but NOT counted in
+        // the modal number, so they live in their own slot outside comp.
+        slots["dmin"] = slots["dmin"] || [];
+        var ndm = ab.count || 1;
+        for (var dj = 0; dj < ndm; dj++) slots["dmin"].push({ chrom: "dmin", kind: "dmin", label: "dmin", aberration: ab, primary: "dmin" });
+      } else if (ab.kind === "gain") {
         var g = ab.chroms[0];
         if (comp[g] === undefined) { warnings.push("“" + g + "” isn’t a human chromosome, use 1–22, X, or Y (e.g. +21)."); return; }
-        comp[g] += 1;
-        slots[g].push({ chrom: g, kind: "gain", label: g, aberration: ab, primary: g });
+        comp[g] += mult;
+        for (var gj = 0; gj < mult; gj++) slots[g].push({ chrom: g, kind: "gain", label: g, aberration: ab, primary: g });
       } else if (ab.kind === "loss") {
         var l = ab.chroms[0];
         if (comp[l] === undefined) { warnings.push("“" + l + "” isn’t a human chromosome, use 1–22, X, or Y (e.g. -7)."); return; }
-        comp[l] -= 1;
-        // remove one normal instance if present, else record as under-count
-        var idx = slots[l].map(function (x) { return x.kind; }).indexOf("normal");
-        if (idx >= 0) slots[l].splice(idx, 1);
+        for (var lj = 0; lj < mult; lj++) {
+          comp[l] -= 1;
+          var idx = slots[l].map(function (x) { return x.kind; }).indexOf("normal");
+          if (idx >= 0) slots[l].splice(idx, 1);
+        }
       } else if (ab.kind === "mar") {
         // marker: an extra small chromosome of unknown origin
         if (ab.sign !== "-") {
-          comp["mar"] = (comp["mar"] || 0) + 1;
           slots["mar"] = slots["mar"] || [];
-          slots["mar"].push({ chrom: "mar", kind: "mar", label: "mar", aberration: ab, primary: "mar" });
+          for (var mj = 0; mj < mult; mj++) {
+            comp["mar"] = (comp["mar"] || 0) + 1;
+            slots["mar"].push({ chrom: "mar", kind: "mar", label: "mar", aberration: ab, primary: "mar" });
+          }
         }
       } else if (ab.kind === "t" || ab.kind === "ins" || (ab.kind === "dic" && ab.chroms.length < 2)) {
         // Multi-chromosome structural: convert one normal copy of each involved
@@ -217,7 +248,7 @@
         // chromosome idic falls here too (it replaces one homolog, count unchanged).
         ab.chroms.forEach(function (c, ci) {
           if (comp[c] === undefined) { warnings.push("“" + c + "” isn’t a human chromosome, use 1–22, X, or Y."); return; }
-          if (ab.sign === "+") { comp[c] += 1; slots[c].push(mkDer(c, ab)); return; }
+          if (ab.sign === "+") { for (var sj = 0; sj < mult; sj++) { comp[c] += 1; slots[c].push(mkDer(c, ab)); } return; }
           var idx = firstNormal(slots[c]);
           // convention: normal homolog stays on the left, derivative on the right
           if (idx >= 0) { slots[c].splice(idx, 1); slots[c].push(mkDer(c, ab)); replacedChroms.push(c); }
@@ -230,7 +261,7 @@
         // dic(13;14)(q13;q22) -> 45).
         if (ab.sign === "+") {
           var dp = ab.chroms[0];
-          if (comp[dp] !== undefined) { comp[dp] += 1; slots[dp].push(mkDer(dp, ab)); }
+          if (comp[dp] !== undefined) { for (var wj = 0; wj < mult; wj++) { comp[dp] += 1; slots[dp].push(mkDer(dp, ab)); } }
         } else {
           ab.chroms.forEach(function (c) {
             if (comp[c] === undefined) { warnings.push("“" + c + "” isn’t a human chromosome, use 1–22, X, or Y."); return; }
@@ -240,10 +271,10 @@
           var dc = ab.chroms[0];
           if (comp[dc] !== undefined) { slots[dc].push(mkDer(dc, ab)); comp[dc] += 1; }
         }
-      } else if (["del", "dup", "inv", "add", "ring", "iso", "der", "fra", "trp"].indexOf(ab.kind) >= 0) {
+      } else if (["del", "dup", "inv", "add", "ring", "iso", "der", "fra", "trp", "hsr"].indexOf(ab.kind) >= 0) {
         var c0 = ab.chroms[0];
         if (comp[c0] === undefined) { warnings.push("“" + c0 + "” isn’t a human chromosome, use 1–22, X, or Y."); return; }
-        if (ab.sign === "+") { comp[c0] += 1; slots[c0].push(mkDer(c0, ab)); return; }
+        if (ab.sign === "+") { for (var pj = 0; pj < mult; pj++) { comp[c0] += 1; slots[c0].push(mkDer(c0, ab)); } return; }
         if (ab.sign === "-") {
           comp[c0] -= 1;
           var ri = firstNormal(slots[c0]); if (ri >= 0) slots[c0].splice(ri, 1);
@@ -285,6 +316,7 @@
       if (ab.kind === "inv") return "inv(" + c + ")";
       if (ab.kind === "add") return "add(" + c + ")";
       if (ab.kind === "der") return "der(" + c + ")";
+      if (ab.kind === "hsr") return "hsr(" + c + ")";
       if (ab.kind === "t" || ab.kind === "dic" || ab.kind === "ins") return "der(" + c + ")";
       return c;
     }
@@ -293,16 +325,20 @@
     clone.complement = comp;
     clone.slots = slots;
 
-    // Sanity check: does the drawn count match the modal number?
+    // Sanity check: does the drawn count match the modal number? A range modal
+    // number (47~49) is satisfied by any count inside the range.
     var actual = 0;
     Object.keys(comp).forEach(function (c) { actual += comp[c]; });
+    var inRange = clone.modalHigh != null && actual >= clone.modalNumber && actual <= clone.modalHigh;
     clone.counts = {
       expected: clone.modalNumber,
+      expectedHigh: clone.modalHigh != null ? clone.modalHigh : null,
       actual: actual,
-      ok: clone.modalNumber == null || clone.modalNumber === actual
+      ok: clone.modalNumber == null || clone.modalNumber === actual || inRange
     };
-    if (clone.modalNumber != null && clone.modalNumber !== actual && clone.sex.tokens.length > 0) {
-      warnings.push("The number at the start says " + clone.modalNumber + ", but this karyotype describes " + actual + " chromosomes.");
+    if (!clone.counts.ok && clone.sex.tokens.length > 0) {
+      var want = clone.modalHigh != null ? (clone.modalNumber + "–" + clone.modalHigh) : String(clone.modalNumber);
+      warnings.push("The number at the start says " + want + ", but this karyotype describes " + actual + " chromosomes.");
     }
   }
 
@@ -333,7 +369,7 @@
   function parseClone(cloneStr, warnings) {
     var clone = {
       raw: cloneStr.trim(), cellCount: null, composite: false,
-      modalNumber: null, modalGiven: "", sex: { tokens: [], label: "", note: "" },
+      modalNumber: null, modalHigh: null, modalGiven: "", sex: { tokens: [], label: "", note: "" },
       aberrations: []
     };
     var s = clone.raw;
@@ -349,11 +385,13 @@
     var fields = splitTop(s, ",").map(function (x) { return x.trim(); }).filter(function (x) { return x.length; });
     if (!fields.length) { warnings.push("Empty karyotype."); return clone; }
 
-    // modal number
+    // modal number — may be a range like 47~49 (a cancer clone whose count varies)
     clone.modalGiven = fields[0];
-    var mn = /^(\d+)/.exec(fields[0]);
-    if (mn) clone.modalNumber = parseInt(mn[1], 10);
-    else warnings.push("A karyotype starts with the chromosome count (a number like 46). “" + fields[0] + "” isn’t a number.");
+    var mn = /^(\d+)(?:\s*[~\-–]\s*(\d+))?/.exec(fields[0]);
+    if (mn) {
+      clone.modalNumber = parseInt(mn[1], 10);
+      if (mn[2]) clone.modalHigh = parseInt(mn[2], 10);
+    } else warnings.push("A karyotype starts with the chromosome count (a number like 46). “" + fields[0] + "” isn’t a number.");
 
     // sex field (second)
     if (fields.length > 1) clone.sex = parseSex(fields[1], warnings);
@@ -363,8 +401,28 @@
       clone.aberrations.push(parseAberration(fields[i], warnings));
     }
 
-    buildComplement(clone, warnings);
+    // A clone that references another (idem/sl/sdl) is completed in parse() after
+    // every clone is known; defer its complement until the reference is resolved.
+    clone.pendingIdem = clone.aberrations.some(function (a) { return a.kind === "idem"; });
+    if (!clone.pendingIdem) buildComplement(clone, warnings);
     return clone;
+  }
+
+  // Resolve idem/sl/sdl: splice the referenced clone's aberrations in after the
+  // marker, then build this clone's complement. Clones are processed in order, so
+  // a sideline (sdl) sees the already-expanded clone before it.
+  function expandIdem(clones, ci, warnings) {
+    var cl = clones[ci];
+    var out = [];
+    cl.aberrations.forEach(function (a) {
+      out.push(a);
+      if (a.kind === "idem") {
+        var ref = clones[a.ref === "sdl" ? ci - 1 : 0];
+        (ref ? ref.aberrations : []).forEach(function (ra) { if (ra.kind !== "idem") out.push(ra); });
+      }
+    });
+    cl.aberrations = out;
+    buildComplement(cl, warnings);
   }
 
   // Spot common typos in the raw text and, where possible, build a corrected
@@ -408,6 +466,8 @@
     if (cloneStrs.length > 1) result.isMosaic = true;
 
     cloneStrs.forEach(function (cs) { result.clones.push(parseClone(cs, warnings)); });
+    // Resolve clonal-evolution references now that all clones are parsed.
+    result.clones.forEach(function (cl, ci) { if (cl.pendingIdem) expandIdem(result.clones, ci, warnings); });
     result.ok = result.clones.length > 0 && result.clones.every(function (c) { return c.modalNumber != null; });
 
     // If a single clone's stated count is off, offer the corrected count as a fix.

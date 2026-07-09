@@ -139,3 +139,21 @@ test('der(9)del(9)(p12)t(9;22) applies the deletion to the derivative', () => {
   assert.ok(nine.from > 0, 'the p12 terminal deletion trimmed the 9p end (segment no longer starts at pter)');
   assert.ok(b.segments.some((s) => s.chrom === '22'), 'the t(9;22) junction is still present');
 });
+
+// --- Amplification: hsr marks the chromosome; dmin draws tiny fragments -------
+test('hsr(11)(q13) renders chromosome 11 with an amplification overlay', () => {
+  const b = built('46,XX,hsr(11)(q13)', '11');
+  assert.ok(b.segments.some((s) => s.chrom === '11'), 'still a chromosome 11');
+  assert.ok((b.overlays || []).some((o) => o.type === 'hsr'), 'an hsr overlay marks the amplified region');
+  const out = Karyo.drawInstance(derInst('46,XX,hsr(11)(q13)', '11'), { theme: 'detailed', level: 99, affected: {} });
+  assert.match(JSON.stringify(out), /<svg/);
+});
+
+test('dmin draws a small acentric fragment that renders without error', () => {
+  const inst = (ISCN.parse('46,XX,dmin').clones[0].slots['dmin'] || [])[0];
+  assert.ok(inst, 'a dmin instance exists in its own slot');
+  const b = Karyo.buildInstance(inst);
+  assert.ok(b.segments.length >= 1, 'the fragment has geometry');
+  const out = Karyo.drawInstance(inst, { theme: 'detailed', level: 99, affected: {} });
+  assert.match(JSON.stringify(out), /<svg/);
+});

@@ -190,3 +190,69 @@ test('dicentric dic(13;14) fuses to a single chromosome — counts 45', () => {
   assert.equal(c.counts.actual, 45);
   assert.equal(c.counts.ok, true);
 });
+
+// --- Clonal evolution: idem / sl / sdl --------------------------------------
+// idem = "the same as the stemline" (the first clone). The second clone inherits
+// all of the stemline's aberrations plus whatever it lists.
+test('idem inherits the stemline aberrations', () => {
+  const r = ISCN.parse('46,XX,t(8;21)(q22;q22)/47,XX,idem,+8');
+  const sub = r.clones[1];
+  assert.ok(sub.aberrations.some((a) => a.kind === 't' && a.chroms.join(';') === '8;21'), 'inherited t(8;21)');
+  assert.ok(sub.aberrations.some((a) => a.kind === 'gain' && a.chroms[0] === '8'), 'plus its own +8');
+  assert.equal(sub.complement['8'], 3, 'trisomy 8 in the subclone');
+  assert.equal(sub.counts.ok, true, 'count reconciles to 47 after inheriting');
+});
+
+test('idem does not raise a count-mismatch warning', () => {
+  const r = ISCN.parse('46,XX,t(8;21)(q22;q22)/47,XX,idem,+8');
+  assert.ok(!r.warnings.some((w) => /number at the start/i.test(w)), 'no spurious count warning');
+  assert.ok(!r.warnings.some((w) => /couldn.t read .idem/i.test(w)), 'idem is recognized');
+});
+
+test('sdl inherits the previous sideline, not the stemline', () => {
+  const r = ISCN.parse('46,XY,t(9;22)(q34;q11.2)/47,XY,idem,+8/48,XY,sdl,+der(22)t(9;22)(q34;q11.2)');
+  const third = r.clones[2];
+  // the sideline already carries +8 from clone 2, so the third should too
+  assert.ok(third.aberrations.some((a) => a.kind === 'gain' && a.chroms[0] === '8'), 'inherited +8 from the sideline');
+  assert.ok(third.aberrations.some((a) => a.kind === 't' && a.chroms.join(';') === '9;22'), 'inherited t(9;22)');
+});
+
+// --- Range modal numbers (47~49) --------------------------------------------
+test('range modal number accepts a count within the range', () => {
+  const c = clone0('47~49,XY,+8,+21');
+  assert.equal(c.counts.actual, 48);
+  assert.equal(c.counts.ok, true, '48 is within 47–49');
+});
+
+test('range modal number does not warn when the count is in range', () => {
+  const r = ISCN.parse('47~49,XY,+8,+21');
+  assert.ok(!r.warnings.some((w) => /number at the start/i.test(w)), 'no mismatch warning for an in-range count');
+});
+
+// --- Copy-number multiplier (×N / xN) ---------------------------------------
+test('multiplier ×2 applies the gain twice', () => {
+  const c = clone0('48,XY,+8×2');
+  assert.equal(c.complement['8'], 4, 'two extra copies of 8');
+  assert.equal(c.counts.ok, true);
+});
+
+test('lowercase x multiplier also works', () => {
+  const c = clone0('48,XY,+21x2');
+  assert.equal(c.complement['21'], 4);
+  assert.equal(c.counts.ok, true);
+});
+
+// --- Amplification: hsr / dmin ----------------------------------------------
+test('hsr is recognized and does not change the chromosome count', () => {
+  const r = ISCN.parse('46,XX,hsr(11)(q13)');
+  assert.ok(!r.warnings.some((w) => /recognize .hsr|couldn.t read/i.test(w)), 'hsr is recognized');
+  assert.equal(r.clones[0].counts.actual, 46, 'hsr rides on chromosome 11, count unchanged');
+  assert.equal(r.clones[0].counts.ok, true);
+});
+
+test('dmin is recognized and is not counted in the modal number', () => {
+  const r = ISCN.parse('46,XX,dmin');
+  assert.ok(!r.warnings.some((w) => /recognize|couldn.t read/i.test(w)), 'dmin is recognized');
+  assert.equal(r.clones[0].counts.actual, 46, 'double minutes are extrachromosomal, not counted');
+  assert.equal(r.clones[0].counts.ok, true);
+});
