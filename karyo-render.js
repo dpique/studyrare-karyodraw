@@ -411,10 +411,19 @@
       if (isb) return { segments: isb.segments, overlays: isb.overlays || [], caption: inst.label, composite: true };
       return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label, note: "complex" };
     }
+    var twoChrom = ab && ab.chroms && ab.chroms.length >= 2;
+    // A whole-arm fusion (breaks at the centromere, q10/p10/cen) joins two arms —
+    // a Robertsonian rob(13;14)(q10;q10), der(13;14)(q10;q10), or dic(…)(q10;q10).
+    // These keep the WHOLE arm named by each breakpoint (13q + 14q), not a distal
+    // fragment, so they need their own geometry rather than the reciprocal path.
+    if ((kind === "der" || kind === "dic") && twoChrom && !(ab.subOps && ab.subOps.length) && isWholeArmBps(ab.breakpoints)) {
+      var wsegs = wholeArmSegments(inst);
+      if (wsegs) return { segments: wsegs, overlays: [], caption: inst.label, composite: true };
+    }
     if (kind === "dic") {
       // A two-chromosome dic fuses into one body with two centromeres; a single-
       // chromosome idic mirrors itself about the breakpoint (also dicentric).
-      var dsegs = (ab && ab.chroms && ab.chroms.length >= 2) ? dicentricSegments(inst) : isodicentricSegments(inst);
+      var dsegs = twoChrom ? dicentricSegments(inst) : isodicentricSegments(inst);
       if (dsegs) return { segments: dsegs, overlays: [], caption: inst.label, composite: true };
       return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label, note: "complex" };
     }
@@ -476,6 +485,33 @@
     if (dhi < dd2.length) ds.push(insSeg(donor, dhi, dd2.length));
     if (!ds.length) ds = [fullSeg(donor)];
     return { segments: ds, overlays: [{ type: "cut", chrom: donor, at: dlo }] };
+  }
+
+  // Whole-arm breakpoints are the centromere designations p10 / q10 / cen. When
+  // both breaks are whole-arm, the rearrangement fuses two entire arms.
+  function armOf(band) { return /^p/.test(String(band || "")) ? "p" : "q"; }
+  function isCenBand(b) { return /^[pq]10$/.test(String(b || "")) || String(b) === "cen"; }
+  function isWholeArmBps(bps) {
+    return isCenBand((bps && bps[0] || [])[0]) && isCenBand((bps && bps[1] || [])[0]);
+  }
+
+  // A whole-arm fusion (Robertsonian and other centromeric fusions): keep the
+  // ENTIRE arm named by each breakpoint (q arm for q10, p arm for p10) and orient
+  // both so their centromeres meet at the join in the middle — the two long arms
+  // of a rob(13;14)(q10;q10), with both short arms lost.
+  function wholeArmSegments(inst) {
+    var ab = inst.aberration, chroms = ab.chroms, bps = ab.breakpoints;
+    var a = String(chroms[0]), b = String(chroms[1]);
+    if (!IDEO.data[a] || !IDEO.data[b]) return null;
+    var arma = armOf((bps[0] || [])[0]), armb = armOf((bps[1] || [])[0]);
+    var da = IDEO.data[a], db = IDEO.data[b];
+    var segA = arma === "q" ? { chrom: a, from: da.centromere, to: da.length } : { chrom: a, from: 0, to: da.centromere };
+    var segB = armb === "q" ? { chrom: b, from: db.centromere, to: db.length } : { chrom: b, from: 0, to: db.centromere };
+    // Top arm: centromere at its bottom (a q arm must be flipped so qter is up);
+    // bottom arm: centromere at its top (a p arm must be flipped so pter is down).
+    segA.hasCen = true; segA.reversed = (arma === "q");
+    segB.hasCen = true; segB.reversed = (armb === "p");
+    return [segA, segB];
   }
 
   // A dicentric of two chromosomes: keep each one's centric piece and orient them
