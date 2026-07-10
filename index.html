@@ -777,7 +777,9 @@
   function run() {
     var val = input.value.trim();
     if (!val) return;
-    setHash(val);
+    // Skip the URL rewrite on the auto-loaded demo so a bare visit keeps a clean
+    // landing URL; the first real interaction (type, toggle, pick an example) writes it.
+    if (run.skipHashOnce) { run.skipHashOnce = false; } else { setHash(val); }
     var model = window.ISCN.parse(val);
     var bad = invalidBands(model);
     if (bad.length) {
@@ -972,7 +974,6 @@
       '<rect width="' + outW + '" height="' + outH + '" fill="#ffffff"/>' +
       '<text x="' + M + '" y="' + (M + 14) + '" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" font-weight="700" fill="#242a45">' + escXml(title) + '</text>' +
       '<g transform="translate(' + kgX.toFixed(1) + ',' + kgY.toFixed(1) + ')">' + pieces.join("") + '</g>' +
-      '<text x="' + M + '" y="' + (outH - M + 8) + '" font-family="system-ui, sans-serif" font-size="9" fill="#a0a8bd">Educational visualizer · not a diagnostic tool</text>' +
       '<text x="' + (outW - M) + '" y="' + (outH - M + 8) + '" text-anchor="end" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#5e72e4">karyodraw.com</text>' +
       '</svg>';
     return { svg: svg, width: outW, height: outH };
@@ -1121,7 +1122,7 @@
   var hasK = getParam("k") != null;
   var initial = getParam("k") || "46,XY,t(9;22)(q34;q11.2)";
   input.value = initial;
-  if (!hasK) beaconDraw.skipOnce = true;   // do not count the auto-loaded demo
+  if (!hasK) { beaconDraw.skipOnce = true; run.skipHashOnce = true; }   // auto-loaded demo: don't count it, and keep the landing URL clean
   run();
   try { var _ref = ""; if (document.referrer) { try { _ref = new URL(document.referrer).host; } catch (e) {} } beacon({ type: "pageview", ref: _ref }); } catch (e) {}
   loadTopKaryotypes();
