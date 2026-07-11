@@ -6,6 +6,7 @@ node_modules/
 scripts/
 worker.js
 schema.sql
+migrations/
 _build_inputs/
 docs/
 README.md
