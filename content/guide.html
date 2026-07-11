@@ -1,0 +1,68 @@
+<h1>How to read a karyotype</h1>
+<p class="lp-intro">A karyotype is a compact description of the number and structure of a person's chromosomes, written in a standardized shorthand called ISCN (the International System for Human Cytogenomic Nomenclature). This guide walks through how to read one, from the total chromosome count to the symbol for every kind of change, with a worked example you can open for each. Anything here can be typed into the <a href="/">interactive visualizer</a> to see it drawn.</p>
+
+<section class="lp-sec">
+  <h2>1. What a karyotype is</h2>
+  <p>A typical human cell carries 46 chromosomes: 22 matching pairs called autosomes, numbered 1 to 22 from largest to smallest, plus two sex chromosomes (XX in a female, XY in a male). A karyotype records how many chromosomes are present and whether any have gained, lost, or rearranged material. The simplest karyotypes are <code>46,XX</code> and <code>46,XY</code>, which are the two normal results and the baseline every abnormal karyotype is compared against.</p>
+</section>
+
+<section class="lp-sec">
+  <h2>2. How the chromosomes are arranged</h2>
+  <p>In a karyogram the chromosomes are lined up in order, largest to smallest, with the sex chromosomes placed last. Each chromosome is shown as a pair of sister chromatids with a pattern of light and dark bands produced by Giemsa staining. That banding pattern is what lets a cytogeneticist tell one chromosome from another and spot when a piece is missing, extra, or in the wrong place.</p>
+</section>
+
+<section class="lp-sec">
+  <h2>3. The parts of a chromosome</h2>
+  <p>Every chromosome has a narrow waist called the centromere. It divides the chromosome into a short arm, labeled <code>p</code> (drawn on top), and a long arm, labeled <code>q</code> (drawn on the bottom). Chromosomes 13, 14, 15, 21, and 22 are acrocentric: their centromere sits very near one end, so the short arm is tiny and carries no unique genes. Acrocentric chromosomes are the ones that take part in Robertsonian translocations, covered below.</p>
+</section>
+
+<section class="lp-sec">
+  <h2>4. Band coordinates</h2>
+  <p>A position on a chromosome is written as the chromosome number, then the arm, then a region, band, and sub-band, all counted outward from the centromere toward the tip. Read <code>5p15.2</code> as chromosome 5, short arm, region 1, band 5, sub-band 2. Higher numbers are farther from the centromere, so <code>5p15.2</code> is out near the end of the short arm. A breakpoint is just a band where a break occurred, and the coordinates in parentheses in a karyotype are these breakpoints.</p>
+</section>
+
+<section class="lp-sec">
+  <h2>5. Reading the formula left to right</h2>
+  <p>An ISCN karyotype is read in order: first the total chromosome count, then the sex chromosomes, then any abnormalities separated by commas. Within an abnormality, the operation comes first, the chromosomes involved are in the first set of parentheses, and their breakpoints are in the second. For example, <code>46,XY,t(9;22)(q34;q11.2)</code> reads as: 46 chromosomes, male, with a translocation between chromosomes 9 and 22 that breaks at bands 9q34 and 22q11.2. See it drawn on the <a href="/karyotype/philadelphia-chromosome/">Philadelphia chromosome page</a>.</p>
+</section>
+
+<section class="lp-sec">
+  <h2>6. Changes in chromosome number</h2>
+  <p>A plus or minus sign before a whole chromosome means an extra or missing copy. Three copies of a chromosome is a trisomy; a single copy is a monosomy. These change the total count, which is why the count is the first thing you read.</p>
+  <ul>
+    <li>Trisomy: <a href="/karyotype/down-syndrome/">47,XX,+21 (Down syndrome)</a>, <a href="/karyotype/edwards-syndrome/">47,XY,+18 (Edwards)</a>, <a href="/karyotype/patau-syndrome/">47,XX,+13 (Patau)</a>.</li>
+    <li>Sex chromosome aneuploidy: <a href="/karyotype/turner-syndrome/">45,X (Turner)</a>, <a href="/karyotype/klinefelter-syndrome/">47,XXY (Klinefelter)</a>, <a href="/karyotype/triple-x-syndrome/">47,XXX</a>, <a href="/karyotype/xyy-syndrome/">47,XYY</a>. A single sex chromosome is written simply as X, with no sign.</li>
+    <li>A whole extra set of chromosomes is polyploidy, such as <a href="/karyotype/triploidy/">69,XXY (triploidy)</a>.</li>
+  </ul>
+</section>
+
+<section class="lp-sec">
+  <h2>7. Changes in chromosome structure</h2>
+  <p>Structural changes rearrange material within or between chromosomes. Each has its own operator. The count may stay at 46 even when the structure is abnormal, so a normal count does not mean a normal karyotype.</p>
+  <dl class="lp-ops">
+    <dt><code>del</code></dt><dd>Deletion: a segment is lost. A single breakpoint removes everything out to the tip (<a href="/karyotype/cri-du-chat-syndrome/">cri-du-chat, del(5)(p15.2)</a>, <a href="/karyotype/chromosome-1p36-deletion/">1p36 deletion</a>); two breakpoints remove the segment between them (<a href="/karyotype/digeorge-22q11-deletion/">22q11.2 deletion / DiGeorge</a>, <a href="/karyotype/prader-willi-angelman-15q/">15q11-q13 deletion</a>).</dd>
+    <dt><code>dup</code></dt><dd>Duplication: a segment is present in an extra copy (<a href="/karyotype/chromosome-1q-duplication/">dup(1)(q22q25)</a>).</dd>
+    <dt><code>inv</code></dt><dd>Inversion: a segment is flipped end for end. It is pericentric if it spans the centromere, paracentric if it stays within one arm (<a href="/karyotype/inversion-9/">inv(9)(p11q13)</a>, a common benign variant).</dd>
+    <dt><code>t</code></dt><dd>Reciprocal translocation: two chromosomes break and swap the pieces beyond the breaks (<a href="/karyotype/philadelphia-chromosome/">t(9;22), the Philadelphia chromosome</a>).</dd>
+    <dt><code>rob</code></dt><dd>Robertsonian translocation: two acrocentric chromosomes fuse at the centromere and their short arms are lost, dropping the count to 45 (<a href="/karyotype/robertsonian-translocation-13-14/">rob(13;14)</a>, <a href="/karyotype/robertsonian-translocation-14-21/">rob(14;21)</a>).</dd>
+    <dt><code>i</code></dt><dd>Isochromosome: a mirror-image chromosome made of two copies of one arm, so the other arm is lost (<a href="/karyotype/isochromosome-xq/">i(X)(q10)</a>).</dd>
+    <dt><code>r</code></dt><dd>Ring chromosome: both arms break and the broken ends fuse into a circle (<a href="/karyotype/ring-chromosome-13/">r(13)</a>).</dd>
+    <dt><code>mar</code></dt><dd>Marker chromosome: a small extra chromosome whose origin cannot be identified by banding alone (<a href="/karyotype/marker-chromosome/">+mar</a>).</dd>
+    <dt><code>ins</code>, <code>add</code>, <code>der</code>, <code>dic</code></dt><dd>Insertion of a segment elsewhere, additional material of unknown origin, a derivative chromosome carrying more than one change, and a dicentric chromosome with two centromeres. Type any of these into the tool to see them drawn.</dd>
+  </dl>
+</section>
+
+<section class="lp-sec">
+  <h2>8. Balanced versus unbalanced</h2>
+  <p>A rearrangement is balanced when no genetic material is gained or lost overall, as in a typical reciprocal translocation carrier. Balanced carriers are usually healthy, but they can produce unbalanced eggs or sperm, which is why a balanced translocation matters for reproductive risk. An unbalanced rearrangement adds or removes material and is more likely to cause a phenotype. The same two chromosomes can give a balanced result in a parent and an unbalanced one in a child.</p>
+</section>
+
+<section class="lp-sec">
+  <h2>9. Mosaicism</h2>
+  <p>Sometimes not every cell is the same. Mosaicism is written with <code>mos</code> and the cell lines separated by a slash, each followed by the number of cells counted in square brackets. In <a href="/karyotype/mosaic-turner-syndrome/"><code>mos 45,X[12]/46,XX[18]</code></a>, twelve cells were 45,X and eighteen were 46,XX. Mosaic forms are often milder or more variable than a non-mosaic result, which is why the counts are reported.</p>
+</section>
+
+<section class="lp-sec">
+  <h2>Keep going</h2>
+  <p>Browse the full set of <a href="/karyotype/">worked karyotype examples</a>, each drawn and decoded, or open the <a href="/">interactive visualizer</a> and type a karyotype of your own.</p>
+</section>

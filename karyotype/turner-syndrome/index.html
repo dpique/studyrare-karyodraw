@@ -58,6 +58,10 @@
   .brand .tag { color: var(--muted); font-size: 13.5px; }
   .brand .byline { color: var(--periwinkle); font-weight: 700; text-decoration: none; }
   .brand a.byline:hover { text-decoration: underline; }
+  .brand .topnav { margin-left: auto; align-self: center; display: flex; gap: 2px; flex-wrap: wrap; }
+  .brand .topnav a { text-decoration: none; color: var(--ink-2); font: 600 13.5px var(--font-sans); padding: 6px 11px; border-radius: 8px; }
+  .brand .topnav a:hover { background: var(--peri-50); color: var(--peri-700); }
+  @media (max-width: 560px) { .brand .topnav { margin-left: 0; width: 100%; } }
   .wrap { max-width: 1320px; margin: 0 auto; padding: 0 24px; }
 
   .controls { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
@@ -277,6 +281,7 @@
   .faq-item .faq-a { margin: 0; color: var(--ink-2); }
   .faq-item .faq-a p { margin: 0; }
   .faq-item .faq-a i { font-style: italic; }
+  .faq-more { margin: 14px 0 0; font-weight: 700; } .faq-more a { color: var(--peri-700); text-decoration: none; } .faq-more a:hover { text-decoration: underline; }
 
   /* ---- printable 1-page summary (hidden on screen) ---- */
   #printsheet { display: none; }
@@ -342,18 +347,34 @@
   .lp-related span { color: var(--ink-2); font-size: 14px; }
   .lp-foot { margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
   .lp-foot a { color: var(--peri-700); }
+  .lp-top-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; }
+  .lp-nav { display: flex; gap: 2px; flex-wrap: wrap; }
+  .lp-nav a { text-decoration: none; color: var(--ink-2); font: 600 13.5px var(--font-sans); padding: 6px 11px; border-radius: 8px; }
+  .lp-nav a:hover { background: var(--peri-50); color: var(--peri-700); }
+  .lp-nav a[aria-current="page"] { color: var(--peri-700); background: var(--peri-50); }
+  /* prose for the guide + about pages */
+  .lp-prose h2 { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--navy); margin: 26px 0 8px; }
+  .lp-prose h3 { font-family: var(--font-display); font-weight: 700; font-size: 15.5px; color: var(--navy); margin: 16px 0 4px; }
+  .lp-prose p { font-size: 15.5px; line-height: 1.65; color: var(--ink-2); margin: 0 0 12px; }
+  .lp-prose code { font: 600 13px var(--font-mono); color: var(--peri-700); background: #f0f2f7; padding: 1px 6px; border-radius: 5px; }
+  .lp-prose a { color: var(--peri-700); }
+  .lp-prose ul { margin: 0 0 12px; padding-left: 20px; color: var(--ink-2); }
+  .lp-prose li { margin: 4px 0; line-height: 1.55; }
+  .lp-ops { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margin: 8px 0 14px; }
+  .lp-ops dt { margin: 0; } .lp-ops dt code { font-size: 13.5px; }
+  .lp-ops dd { margin: 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.5; }
 </style>
 </head>
 <body>
-<header class="lp-top">
+<header class="lp-top"><div class="lp-top-inner">
   <a class="home" href="/" aria-label="KaryoDraw home">
     <svg class="dotmark" width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><g><rect x="6" y="3" width="8" height="26" rx="4" fill="#8b97ee"/><rect x="6" y="20" width="8" height="2.6" fill="#5e72e4"/><rect x="6" y="3" width="8" height="26" rx="4" fill="none" stroke="#4a5ac8" stroke-width="1.1"/><rect x="18" y="3" width="8" height="26" rx="4" fill="#8b97ee"/><rect x="18" y="22" width="8" height="7" fill="#ec9b27"/><rect x="18" y="3" width="8" height="26" rx="4" fill="none" stroke="#4a5ac8" stroke-width="1.1"/></g></svg>
     <span class="wordmark">KaryoDraw</span>
-    <span class="tagline">a StudyRare tool</span>
   </a>
-</header>
+  <nav class="lp-nav" aria-label="Primary"><a href="/karyotype/" aria-current="page">Karyotypes</a><a href="/how-to-read-a-karyotype/">Guide</a><a href="/about/">About</a></nav>
+</div></header>
 <main class="lp-wrap">
-  <nav class="lp-crumb" aria-label="Breadcrumb"><a href="/">KaryoDraw</a> &rsaquo; Karyotypes &rsaquo; Turner syndrome</nav>
+  <nav class="lp-crumb" aria-label="Breadcrumb"><a href="/">KaryoDraw</a> &rsaquo; <a href="/karyotype/">Karyotypes</a> &rsaquo; Turner syndrome</nav>
   <article>
     <h1>Turner syndrome</h1>
     <p class="lp-kt">45,X</p>
@@ -365,9 +386,7 @@
     <section class="lp-sec"><h2>What the notation means</h2><dl class="lp-decode"><dt><code>45</code></dt><dd>total chromosome count (normal is 46)</dd><dt><code>X</code></dt><dd>sex chromosomes: a single X (monosomy X)</dd></dl></section>
     <section class="lp-sec"><h2>Clinical notes</h2><div class="lp-syn"><h3>45,X, Turner syndrome</h3><p>A single X, no second sex chromosome (monosomy X). Short stature, ovarian dysgenesis/streak gonads, webbed neck, coarctation/bicuspid aortic valve, lymphedema. Often mosaic (45,X/46,XX) or with an i(Xq).</p></div></section>
     <section class="lp-sec lp-related"><h2>Related karyotypes</h2><ul><li><a href="/karyotype/mosaic-turner-syndrome/"><code>mos 45,X[12]/46,XX[18]</code> <span>Mosaic Turner syndrome</span></a></li><li><a href="/karyotype/isochromosome-xq/"><code>46,X,i(X)(q10)</code> <span>Isochromosome Xq</span></a></li><li><a href="/karyotype/klinefelter-syndrome/"><code>47,XXY</code> <span>Klinefelter syndrome</span></a></li></ul></section>
-    <div class="lp-foot">
-      <p><a href="/">KaryoDraw</a> is a free, browser-based karyotype visualizer for <a href="https://doi.org/10.1159/000538512" target="_blank" rel="noopener">ISCN 2024</a> notation, a <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a> tool. It is an educational visualizer of cytogenetic nomenclature, not a diagnostic tool.</p>
-    </div>
+    <div class="lp-foot"><p><a href="/">KaryoDraw</a> is a free ISCN 2024 karyotype visualizer, a <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a> tool. It is an educational visualizer of cytogenetic nomenclature, not a diagnostic tool.</p></div>
   </article>
 </main>
 </body>
