@@ -24,5 +24,16 @@ export const K_TO_SLUG = {
   "69,xxy": "triploidy",
   "45,xy,rob(14;21)(q10;q10)": "robertsonian-translocation-14-21",
   "46,xx,del(1)(p36.3)": "chromosome-1p36-deletion",
-  "47,xx,+mar": "marker-chromosome"
+  "47,xx,+mar": "marker-chromosome",
+  "46,xy,t(15;17)(q24;q21)": "acute-promyelocytic-leukemia",
+  "46,xx,t(8;21)(q22;q22)": "aml-t-8-21",
+  "46,xy,inv(16)(p13q22)": "aml-inv-16",
+  "46,xx,t(8;14)(q24;q32)": "burkitt-lymphoma",
+  "46,xx,t(14;18)(q32;q21)": "follicular-lymphoma",
+  "46,xy,t(11;14)(q13;q32)": "mantle-cell-lymphoma",
+  "46,xx,t(12;21)(p13;q22)": "childhood-all-t-12-21",
+  "46,xx,del(5)(q13q33)": "mds-5q-deletion",
+  "48,xxyy": "xxyy-syndrome",
+  "46,xy,del(11)(q24.1)": "jacobsen-syndrome",
+  "46,xy,del(17)(p13.3)": "miller-dieker-syndrome"
 };
