@@ -72,19 +72,20 @@
   }
   a { color: var(--peri-700); }
   header.top {
-    padding: 20px 24px 14px; border-bottom: 1px solid var(--line);
-    background: linear-gradient(180deg, #ffffff, #f7f8fb);
+    padding: 16px 24px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel);
   }
-  .brand { display: flex; align-items: baseline; gap: 11px; flex-wrap: wrap; }
-  .brand .dotmark { flex: 0 0 auto; align-self: center; }
-  .brand h1 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 23px; letter-spacing: -.02em; color: var(--navy); }
-  .brand .tag { color: var(--muted); font-size: 13.5px; }
-  .brand .byline { color: var(--periwinkle); font-weight: 700; text-decoration: none; }
-  .brand a.byline:hover { text-decoration: underline; }
-  .brand .topnav { margin-left: auto; align-self: center; display: flex; gap: 2px; flex-wrap: wrap; }
-  .brand .topnav a { text-decoration: none; color: var(--ink-2); font: 600 13.5px var(--font-sans); padding: 6px 11px; border-radius: 8px; }
-  .brand .topnav a:hover { background: var(--peri-50); color: var(--peri-700); }
-  @media (max-width: 560px) { .brand .topnav { margin-left: 0; width: 100%; } }
+  /* Unified site header (identical on the homepage and every generated page).
+     Brand + nav are grouped on the left so home and the links sit together. */
+  .sitebar { border-bottom: 1px solid var(--line); background: linear-gradient(180deg, #ffffff, #f7f8fb); }
+  .sitebar-inner { max-width: 1320px; margin: 0 auto; padding: 11px 24px; display: flex; align-items: center; gap: 4px 16px; flex-wrap: wrap; }
+  .sitebar-brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; }
+  .sitebar .dotmark { flex: 0 0 auto; }
+  .sitebar-word { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 20px; letter-spacing: -.02em; color: var(--navy); }
+  .sitebar-nav { display: flex; gap: 2px; flex-wrap: wrap; }
+  .sitebar-nav a { text-decoration: none; color: var(--ink-2); font: 600 13.5px var(--font-sans); padding: 6px 11px; border-radius: 8px; }
+  .sitebar-nav a:hover { background: var(--peri-50); color: var(--peri-700); }
+  .sitebar-nav a[aria-current="page"] { color: var(--peri-700); background: var(--peri-50); }
   .wrap { max-width: 1320px; margin: 0 auto; padding: 0 24px; }
 
   .controls { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
@@ -340,10 +341,10 @@
 </style>
 </head>
 <body>
-<header class="top">
-  <div class="wrap">
-    <div class="brand">
-      <svg class="dotmark" width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
+<div class="sitebar">
+  <div class="sitebar-inner">
+    <a class="sitebar-brand" href="/" aria-label="KaryoDraw home">
+      <svg class="dotmark" width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
         <defs>
           <clipPath id="brand-a"><rect x="6" y="3" width="8" height="26" rx="4"/></clipPath>
           <clipPath id="brand-b"><rect x="18" y="3" width="8" height="26" rx="4"/></clipPath>
@@ -363,14 +364,17 @@
         </g>
         <rect x="18" y="3" width="8" height="26" rx="4" fill="none" stroke="#4a5ac8" stroke-width="1.1"/>
       </svg>
-      <h1>KaryoDraw</h1>
-      <div class="tag">Type a karyotype, see it drawn, and understand what every symbol means. <a class="byline" href="https://studyrare.com" target="_blank" rel="noopener">a StudyRare tool</a></div>
-      <nav class="topnav" aria-label="Primary">
-        <a href="/karyotype/">Karyotypes</a>
-        <a href="/how-to-read-a-karyotype/">Guide</a>
-        <a href="/about/">About</a>
-      </nav>
-    </div>
+      <h1 class="sitebar-word">KaryoDraw</h1>
+    </a>
+    <nav class="sitebar-nav" aria-label="Primary">
+      <a href="/karyotype/">Karyotypes</a>
+      <a href="/how-to-read-a-karyotype/">Guide</a>
+      <a href="/about/">About</a>
+    </nav>
+  </div>
+</div>
+<header class="top">
+  <div class="wrap">
     <div class="controls">
       <input id="kinput" type="text" spellcheck="false"
              aria-label="Karyotype in ISCN notation"
@@ -380,7 +384,7 @@
     <div class="examples" id="examples" role="group" aria-label="Example karyotypes to try"></div>
     <div>
       <button class="tourlaunch" id="tourlaunch" type="button" aria-label="Start the guided tour of ISCN 2024 notation">
-        🎓 Take the guided tour <span class="sub">· 12 worked examples</span>
+        🎓 Take the guided tour <span class="sub" id="tourcount">· worked examples</span>
       </button>
     </div>
     <div class="viewopts">
@@ -539,7 +543,6 @@
             <li><a href="/karyotype/turner-syndrome/"><code>45,X</code> <b>Turner syndrome</b></a></li>
             <li><a href="/karyotype/klinefelter-syndrome/"><code>47,XXY</code> <b>Klinefelter syndrome</b></a></li>
             <li><a href="/karyotype/cri-du-chat-syndrome/"><code>46,XY,del(5)(p15.2)</code> <b>Cri-du-chat syndrome</b></a></li>
-            <li><a href="/karyotype/digeorge-22q11-deletion/"><code>46,XX,del(22)(q11.21q11.23)</code> <b>22q11.2 deletion syndrome</b></a></li>
             <li><a href="/karyotype/inversion-9/"><code>46,XY,inv(9)(p11q13)</code> <b>Pericentric inversion 9</b></a></li>
             <li><a href="/karyotype/isochromosome-xq/"><code>46,X,i(X)(q10)</code> <b>Isochromosome Xq</b></a></li>
             <li><a href="/karyotype/philadelphia-chromosome/"><code>46,XY,t(9;22)(q34;q11.2)</code> <b>Philadelphia chromosome</b></a></li>
@@ -551,7 +554,6 @@
             <li><a href="/karyotype/patau-syndrome/"><code>47,XX,+13</code> <b>Patau syndrome</b></a></li>
             <li><a href="/karyotype/triple-x-syndrome/"><code>47,XXX</code> <b>Triple X syndrome</b></a></li>
             <li><a href="/karyotype/xyy-syndrome/"><code>47,XYY</code> <b>XYY syndrome</b></a></li>
-            <li><a href="/karyotype/prader-willi-angelman-15q/"><code>46,XX,del(15)(q11.2q13)</code> <b>15q11-q13 deletion</b></a></li>
             <li><a href="/karyotype/wolf-hirschhorn-syndrome/"><code>46,XX,del(4)(p16.3)</code> <b>Wolf-Hirschhorn syndrome</b></a></li>
             <li><a href="/karyotype/chromosome-1q-duplication/"><code>46,XY,dup(1)(q22q25)</code> <b>Chromosome 1q duplication</b></a></li>
             <li><a href="/karyotype/triploidy/"><code>69,XXY</code> <b>Triploidy</b></a></li>
@@ -568,7 +570,6 @@
             <li><a href="/karyotype/mds-5q-deletion/"><code>46,XX,del(5)(q13q33)</code> <b>5q minus syndrome (MDS)</b></a></li>
             <li><a href="/karyotype/xxyy-syndrome/"><code>48,XXYY</code> <b>XXYY syndrome</b></a></li>
             <li><a href="/karyotype/jacobsen-syndrome/"><code>46,XY,del(11)(q24.1)</code> <b>Jacobsen syndrome</b></a></li>
-            <li><a href="/karyotype/miller-dieker-syndrome/"><code>46,XY,del(17)(p13.3)</code> <b>Miller-Dieker syndrome</b></a></li>
           </ul>
           <!-- KD:PAGES:END -->
         </div>
@@ -1252,6 +1253,7 @@
   // init
   buildExamples();
   if (!TOUR.length) { var _tl = $("#tourlaunch"); if (_tl) _tl.style.display = "none"; }
+  else { var _tc = $("#tourcount"); if (_tc) _tc.textContent = "· " + TOUR.length + " worked examples"; }
   $("#tourlaunch").addEventListener("click", startTour);
   $("#tour-exit").addEventListener("click", exitTour);
   $("#tour-prev").addEventListener("click", function () { loadTourStep(tourIdx - 1); });

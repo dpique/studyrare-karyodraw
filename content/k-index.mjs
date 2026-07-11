@@ -6,7 +6,6 @@ export const K_TO_SLUG = {
   "45,x": "turner-syndrome",
   "47,xxy": "klinefelter-syndrome",
   "46,xy,del(5)(p15.2)": "cri-du-chat-syndrome",
-  "46,xx,del(22)(q11.21q11.23)": "digeorge-22q11-deletion",
   "46,xy,inv(9)(p11q13)": "inversion-9",
   "46,x,i(x)(q10)": "isochromosome-xq",
   "46,xy,t(9;22)(q34;q11.2)": "philadelphia-chromosome",
@@ -18,7 +17,6 @@ export const K_TO_SLUG = {
   "47,xx,+13": "patau-syndrome",
   "47,xxx": "triple-x-syndrome",
   "47,xyy": "xyy-syndrome",
-  "46,xx,del(15)(q11.2q13)": "prader-willi-angelman-15q",
   "46,xx,del(4)(p16.3)": "wolf-hirschhorn-syndrome",
   "46,xy,dup(1)(q22q25)": "chromosome-1q-duplication",
   "69,xxy": "triploidy",
@@ -34,6 +32,5 @@ export const K_TO_SLUG = {
   "46,xx,t(12;21)(p13;q22)": "childhood-all-t-12-21",
   "46,xx,del(5)(q13q33)": "mds-5q-deletion",
   "48,xxyy": "xxyy-syndrome",
-  "46,xy,del(11)(q24.1)": "jacobsen-syndrome",
-  "46,xy,del(17)(p13.3)": "miller-dieker-syndrome"
+  "46,xy,del(11)(q24.1)": "jacobsen-syndrome"
 };

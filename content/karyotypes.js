@@ -42,12 +42,7 @@
       concept: "Deletion", tour: true,
       caption: "A single breakpoint deletion removes the tip of the short arm of chromosome 5, everything distal to 5p15.2. This is cri-du-chat syndrome, named for the high-pitched cry in infancy. In highlight mode the shortened chromosome 5 is colored so you can compare it against its normal homolog.",
       intro: "46,XY,del(5)(p15.2) is the karyotype of cri-du-chat syndrome, a deletion of the tip of the short arm of chromosome 5. The name comes from the high-pitched, cat-like cry in infancy.",
-      related: ["wolf-hirschhorn-syndrome", "chromosome-1p36-deletion", "digeorge-22q11-deletion"] },
-    { slug: "digeorge-22q11-deletion", k: "46,XX,del(22)(q11.21q11.23)", name: "22q11.2 deletion syndrome", aka: ["DiGeorge syndrome", "velocardiofacial syndrome"],
-      concept: "Microdeletion", tour: true,
-      caption: "Loss of a small segment at 22q11.2 produces the 22q11.2 deletion syndrome (DiGeorge / velocardiofacial). Conotruncal heart defects, hypocalcemia, immune deficiency, and palatal anomalies follow from loss of genes including <i>TBX1</i>. Deletions this small are usually found by microarray or FISH rather than by banding alone, but the notation is the same.",
-      intro: "This karyotype shows the 22q11.2 deletion syndrome (DiGeorge / velocardiofacial syndrome), an interstitial loss on the long arm of chromosome 22 that removes genes including <i>TBX1</i>. It is one of the most common microdeletion syndromes.",
-      related: ["prader-willi-angelman-15q", "wolf-hirschhorn-syndrome", "cri-du-chat-syndrome"] },
+      related: ["wolf-hirschhorn-syndrome", "chromosome-1p36-deletion", "jacobsen-syndrome"] },
     { slug: "inversion-9", k: "46,XY,inv(9)(p11q13)", name: "Pericentric inversion 9", aka: ["inv(9)", "inversion 9 variant"],
       concept: "Inversion", tour: true,
       caption: "Two breakpoints on chromosome 9, one on each arm, with the segment between them flipped end for end. Because it spans the centromere it is a pericentric inversion. inv(9)(p11q13) is one of the most common benign variants in the human genome and is generally reported as normal.",
@@ -99,14 +94,10 @@
       concept: "Sex chromosome aneuploidy", tour: false,
       intro: "47,XYY is an extra Y chromosome in a male. Most individuals have a typical phenotype, often with tall stature.",
       related: ["klinefelter-syndrome", "triple-x-syndrome", "normal-male-karyotype"] },
-    { slug: "prader-willi-angelman-15q", k: "46,XX,del(15)(q11.2q13)", name: "15q11-q13 deletion", aka: ["Prader-Willi syndrome", "Angelman syndrome"],
-      concept: "Microdeletion", tour: false,
-      intro: "This karyotype shows a 15q11.2-q13 deletion. Depending on the parent of origin, the same interstitial deletion causes Prader-Willi syndrome (paternal) or Angelman syndrome (maternal), a classic example of genomic imprinting.",
-      related: ["digeorge-22q11-deletion", "wolf-hirschhorn-syndrome", "cri-du-chat-syndrome"] },
     { slug: "wolf-hirschhorn-syndrome", k: "46,XX,del(4)(p16.3)", name: "Wolf-Hirschhorn syndrome", aka: ["4p deletion", "4p minus"],
       concept: "Deletion", tour: false,
       intro: "46,XX,del(4)(p16.3) is the karyotype of Wolf-Hirschhorn syndrome, a deletion of the tip of the short arm of chromosome 4. It causes a distinctive facial appearance with severe growth and developmental delay.",
-      related: ["cri-du-chat-syndrome", "chromosome-1p36-deletion", "digeorge-22q11-deletion"] },
+      related: ["cri-du-chat-syndrome", "chromosome-1p36-deletion", "jacobsen-syndrome"] },
     { slug: "chromosome-1q-duplication", k: "46,XY,dup(1)(q22q25)", name: "Chromosome 1q duplication", aka: ["partial trisomy 1q", "dup(1q)"],
       concept: "Duplication", tour: false,
       intro: "46,XY,dup(1)(q22q25) shows a duplication on the long arm of chromosome 1, so that segment is present in three copies (a partial trisomy). Duplications add genetic material without losing any.",
@@ -168,11 +159,7 @@
     { slug: "jacobsen-syndrome", k: "46,XY,del(11)(q24.1)", name: "Jacobsen syndrome", aka: ["11q deletion", "11q terminal deletion"],
       concept: "Deletion", tour: false,
       intro: "46,XY,del(11)(q24.1) is the karyotype of Jacobsen syndrome, a terminal deletion of the long arm of chromosome 11. It is associated with a bleeding disorder (Paris-Trousseau thrombocytopenia), heart defects, and developmental delay.",
-      related: ["chromosome-1p36-deletion", "wolf-hirschhorn-syndrome", "miller-dieker-syndrome"] },
-    { slug: "miller-dieker-syndrome", k: "46,XY,del(17)(p13.3)", name: "Miller-Dieker syndrome", aka: ["17p13.3 deletion", "lissencephaly"],
-      concept: "Deletion", tour: false,
-      intro: "46,XY,del(17)(p13.3) is the karyotype of Miller-Dieker syndrome, a terminal deletion of the short arm of chromosome 17 that removes <i>PAFAH1B1</i> (<i>LIS1</i>) and neighboring genes. It causes lissencephaly (a smooth brain) with a distinctive facial appearance.",
-      related: ["jacobsen-syndrome", "cri-du-chat-syndrome", "digeorge-22q11-deletion"] }
+      related: ["chromosome-1p36-deletion", "wolf-hirschhorn-syndrome", "cri-du-chat-syndrome"] }
   ];
 
   var api = {
