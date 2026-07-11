@@ -14,6 +14,9 @@ on:
       - 'index.html'
       - '404.html'
       - '*.js'
+      - 'content/**'
+      - 'karyotype/**'
+      - 'scripts/**'
       - 'preview.png'
       - 'robots.txt'
       - 'sitemap.xml'
@@ -30,12 +33,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Regenerate the SEO landing pages, the homepage "Common karyotypes" list, and
+      # sitemap.xml from content/karyotypes.js so the single source of truth is always
+      # what ships, even if the committed generated files were stale.
+      - name: Build landing pages
+        run: BUILD_DATE=$(date +%F) node scripts/build-pages.mjs
       - name: Deploy with wrangler
+        id: deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
             echo "::warning::CLOUDFLARE_API_TOKEN secret not set — skipping deploy. Add it in Settings ▸ Secrets and variables ▸ Actions to enable auto-deploy."
+            echo "deployed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           npx --yes wrangler@4 deploy
+          echo "deployed=true" >> "$GITHUB_OUTPUT"
+      # Tell IndexNow (Bing, Yandex, and other participating engines) about the URL
+      # set so new/changed pages are crawled quickly. Google ignores IndexNow; it is
+      # covered by the sitemap + Search Console. Non-fatal.
+      - name: Ping IndexNow
+        if: steps.deploy.outputs.deployed == 'true'
+        run: node scripts/indexnow.mjs || true
