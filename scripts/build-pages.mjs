@@ -111,11 +111,8 @@ function relatedLinks(e) {
 }
 
 const LANDING_CSS = `
-  .lp-top { padding: 16px 24px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg,#fff,#f7f8fb); }
-  .lp-top a.home { display: inline-flex; align-items: baseline; gap: 9px; text-decoration: none; }
-  .lp-top .dotmark { align-self: center; }
-  .lp-top .wordmark { font-family: var(--font-display); font-weight: 800; font-size: 20px; letter-spacing: -.02em; color: var(--navy); }
-  .lp-top .tagline { color: var(--muted); font-size: 13px; }
+  /* The site header (.sitebar) is defined in index.html's stylesheet, which is
+     inlined into every generated page, so it stays identical to the homepage. */
   .lp-wrap { max-width: 820px; margin: 0 auto; padding: 0 24px 64px; }
   .lp-crumb { font-size: 12.5px; color: var(--muted); margin: 18px 0 6px; }
   .lp-crumb a { color: var(--peri-700); text-decoration: none; } .lp-crumb a:hover { text-decoration: underline; }
@@ -143,11 +140,6 @@ const LANDING_CSS = `
   .lp-related span { color: var(--ink-2); font-size: 14px; }
   .lp-foot { margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
   .lp-foot a { color: var(--peri-700); }
-  .lp-top-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; }
-  .lp-nav { display: flex; gap: 2px; flex-wrap: wrap; }
-  .lp-nav a { text-decoration: none; color: var(--ink-2); font: 600 13.5px var(--font-sans); padding: 6px 11px; border-radius: 8px; }
-  .lp-nav a:hover { background: var(--peri-50); color: var(--peri-700); }
-  .lp-nav a[aria-current="page"] { color: var(--peri-700); background: var(--peri-50); }
   /* prose for the guide + about pages */
   .lp-prose h2 { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--navy); margin: 26px 0 8px; }
   .lp-prose h3 { font-family: var(--font-display); font-weight: 700; font-size: 15.5px; color: var(--navy); margin: 16px 0 4px; }
@@ -161,16 +153,17 @@ const LANDING_CSS = `
   .lp-ops dd { margin: 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.5; }
 `;
 
-// Shared header with the site nav. `active` highlights the current section.
+// The site header + nav, identical to the homepage (.sitebar is styled in the
+// inlined homepage stylesheet). `active` highlights the current section.
 function siteHeader(active) {
   const link = (href, label, key) => `<a href="${href}"${active === key ? ' aria-current="page"' : ''}>${label}</a>`;
-  return `<header class="lp-top"><div class="lp-top-inner">
-  <a class="home" href="/" aria-label="KaryoDraw home">
+  return `<div class="sitebar"><div class="sitebar-inner">
+  <a class="sitebar-brand" href="/" aria-label="KaryoDraw home">
     <svg class="dotmark" width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><g><rect x="6" y="3" width="8" height="26" rx="4" fill="#8b97ee"/><rect x="6" y="20" width="8" height="2.6" fill="#5e72e4"/><rect x="6" y="3" width="8" height="26" rx="4" fill="none" stroke="#4a5ac8" stroke-width="1.1"/><rect x="18" y="3" width="8" height="26" rx="4" fill="#8b97ee"/><rect x="18" y="22" width="8" height="7" fill="#ec9b27"/><rect x="18" y="3" width="8" height="26" rx="4" fill="none" stroke="#4a5ac8" stroke-width="1.1"/></g></svg>
-    <span class="wordmark">KaryoDraw</span>
+    <span class="sitebar-word">KaryoDraw</span>
   </a>
-  <nav class="lp-nav" aria-label="Primary">${link('/karyotype/', 'Karyotypes', 'karyotypes')}${link('/how-to-read-a-karyotype/', 'Guide', 'guide')}${link('/about/', 'About', 'about')}</nav>
-</div></header>`;
+  <nav class="sitebar-nav" aria-label="Primary">${link('/karyotype/', 'Karyotypes', 'karyotypes')}${link('/how-to-read-a-karyotype/', 'Guide', 'guide')}${link('/about/', 'About', 'about')}</nav>
+</div></div>`;
 }
 
 const SITE_FOOT = `<div class="lp-foot"><p><a href="/">KaryoDraw</a> is a free ISCN 2024 karyotype visualizer, a <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a> tool. It is an educational visualizer of cytogenetic nomenclature, not a diagnostic tool.</p></div>`;
