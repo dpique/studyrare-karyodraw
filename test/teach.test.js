@@ -50,3 +50,15 @@ test('der chain with no translocation still names its sub-ops', () => {
   assert.match(txt, /1p13/, 'references the first deletion');
   assert.match(txt, /1q32/, 'references the second deletion');
 });
+
+// A Robertsonian der(13;14) lists the two chromosomes lowest-number-first by
+// convention; the notation does NOT tell us whose centromere is retained (these
+// whole-arm fusions are usually dicentric). So the decode must not claim it "has
+// chromosome 13's centromere" — it must describe the fusion of both chromosomes.
+test('Robertsonian decode does not claim a single chromosome centromere', () => {
+  const txt = decodeText('45,XX,rob(13;14)(q10;q10)');
+  assert.match(txt, /robertsonian/i, 'names it a Robertsonian translocation');
+  assert.match(txt, /13/, 'names chromosome 13');
+  assert.match(txt, /14/, 'names chromosome 14');
+  assert.doesNotMatch(txt, /chromosome 13[’']s centromere/, 'does not claim it has chromosome 13 centromere');
+});

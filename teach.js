@@ -175,6 +175,16 @@
     }
     if (k === "ring") return { text: "a RING chromosome r(" + c + "): the chromosome's arms break and the broken ends fuse into a circle (usually loses the distal tips)", tag: "ring" };
     if (k === "der") {
+      // Robertsonian / whole-arm fusion, e.g. rob(13;14)(q10;q10): two acrocentrics
+      // join at the centromere. The chromosomes are listed lowest-number-first by
+      // convention, so the notation does NOT tell us whose centromere is retained;
+      // these fusions are usually dicentric with one centromere inactivated. Do not
+      // claim a single chromosome's centromere here (that rule is only for der(N)).
+      if (/robertsonian/i.test(ab.note || "") && ab.chroms && ab.chroms.length >= 2) {
+        return { text: "a ROBERTSONIAN translocation: the long arms of chromosomes " +
+          listJoin(ab.chroms) + " are fused at the centromere into one derivative chromosome, and the two short arms are lost. " +
+          "They are written lowest-number-first by convention, not by which centromere is kept; whole-arm fusions like this are usually dicentric, with one centromere inactivated", tag: "der" };
+      }
       var base = "an abnormal (“derivative”) chromosome that has chromosome " + c + "’s centromere";
       var subs = ab.subOps || [];
       var td = subs.filter(function (s) { return s.op === "t"; })[0];
