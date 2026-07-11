@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
 <title>KaryoDraw: visualize &amp; understand any karyotype</title>
 <link rel="canonical" href="https://karyodraw.com/" />
 <meta name="description" content="Free browser tool that draws any ISCN karyotype as a correctly banded karyogram and explains every symbol in plain language — for genetics, cytogenetics, and board exam prep." />
@@ -43,7 +46,8 @@
 </script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3CclipPath id='a'%3E%3Crect x='6' y='3' width='8' height='26' rx='4'/%3E%3C/clipPath%3E%3CclipPath id='b'%3E%3Crect x='18' y='3' width='8' height='26' rx='4'/%3E%3C/clipPath%3E%3C/defs%3E%3Cg clip-path='url(%23a)'%3E%3Crect x='6' y='3' width='8' height='26' fill='%238b97ee'/%3E%3Crect x='6' y='7.5' width='8' height='2.6' fill='%235e72e4'/%3E%3Crect x='6' y='13.5' width='8' height='2.6' fill='%23eef1fd'/%3E%3Crect x='6' y='20' width='8' height='2.6' fill='%235e72e4'/%3E%3C/g%3E%3Crect x='6' y='3' width='8' height='26' rx='4' fill='none' stroke='%234a5ac8' stroke-width='1.1'/%3E%3Cg clip-path='url(%23b)'%3E%3Crect x='18' y='3' width='8' height='26' fill='%238b97ee'/%3E%3Crect x='18' y='7.5' width='8' height='2.6' fill='%235e72e4'/%3E%3Crect x='18' y='13.5' width='8' height='2.6' fill='%23eef1fd'/%3E%3Crect x='18' y='22' width='8' height='7' fill='%23ec9b27'/%3E%3C/g%3E%3Crect x='18' y='3' width='8' height='26' rx='4' fill='none' stroke='%234a5ac8' stroke-width='1.1'/%3E%3C/svg%3E" />
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  /* Fonts are loaded via <link rel="preconnect"> + <link rel="stylesheet"> in <head>
+     so they are discovered before this stylesheet parses (faster LCP than @import). */
   :root {
     /* StudyRare v3 brand tokens */
     /* >>> brand-colors: auto-synced from github.com/dpique/studyrare-brand tokens.json — do NOT hand-edit; run `node scripts/sync-brand.mjs` >>> */
@@ -68,8 +72,8 @@
     padding: 20px 24px 14px; border-bottom: 1px solid var(--line);
     background: linear-gradient(180deg, #ffffff, #f7f8fb);
   }
-  .brand { display: flex; align-items: center; gap: 11px; flex-wrap: wrap; }
-  .brand .dotmark { flex: 0 0 auto; }
+  .brand { display: flex; align-items: baseline; gap: 11px; flex-wrap: wrap; }
+  .brand .dotmark { flex: 0 0 auto; align-self: center; }
   .brand h1 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 23px; letter-spacing: -.02em; color: var(--navy); }
   .brand .tag { color: var(--muted); font-size: 13.5px; }
   .brand .byline { color: var(--periwinkle); font-weight: 700; text-decoration: none; }
@@ -251,6 +255,42 @@
   .kactions .sharelink:hover { background: var(--peri-50); text-decoration: underline; }
   .kactions .sharelink:disabled { text-decoration: none; opacity: .85; }
 
+  /* ---- guided tour ---- */
+  .tourlaunch {
+    margin-top: 10px; display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+    font: 700 13px var(--font-display); padding: 8px 14px; border-radius: 999px;
+    background: var(--peri-50); color: var(--peri-700); border: 1px solid var(--peri-300);
+  }
+  .tourlaunch:hover { background: #e4e9fc; }
+  .tourlaunch .sub { font: 600 12.5px var(--font-sans); color: var(--muted); }
+  .tourcard { border-color: var(--peri-300); }
+  .tourcard h2 { color: var(--peri-700); background: var(--peri-50); border-radius: 14px 14px 0 0; }
+  .tourexit {
+    margin-left: auto; border: 1px solid var(--peri-300); background: #fff; color: var(--peri-700);
+    border-radius: 8px; padding: 4px 10px; font: 600 11px var(--font-sans); text-transform: none;
+    letter-spacing: 0; cursor: pointer;
+  }
+  .tourexit:hover { background: var(--peri-50); }
+  .tourhead { display: flex; align-items: baseline; gap: 10px; }
+  .tourconcept { font: 700 16px var(--font-display); color: var(--ink); }
+  .tourcounter { margin-left: auto; font: 600 12px var(--font-sans); color: var(--muted); white-space: nowrap; }
+  .tourk { font: 600 14px var(--font-mono); color: var(--peri-700); margin: 5px 0 9px; }
+  .tourcaption { margin: 0 0 14px; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
+  .tourcaption i { font-style: italic; }
+  .tournav { display: flex; align-items: center; gap: 10px; }
+  .tournav .spacer { flex: 1 1 auto; }
+  .tournext { padding: 8px 16px; font-size: 14px; }
+  .pbtn:disabled { opacity: .45; cursor: default; }
+
+  /* ---- FAQ ---- */
+  .faq-item { padding: 12px 0; }
+  .faq-item:first-child { padding-top: 2px; }
+  .faq-item + .faq-item { border-top: 1px solid var(--line); }
+  .faq-item .faq-q { margin: 0 0 5px; font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--ink); }
+  .faq-item .faq-a { margin: 0; color: var(--ink-2); }
+  .faq-item .faq-a p { margin: 0; }
+  .faq-item .faq-a i { font-style: italic; }
+
   /* ---- printable 1-page summary (hidden on screen) ---- */
   #printsheet { display: none; }
   @media print {
@@ -314,10 +354,15 @@
     <div class="controls">
       <input id="kinput" type="text" spellcheck="false"
              aria-label="Karyotype in ISCN notation"
-             placeholder="e.g.  46,XY   ·   47,XX,+21   ·   46,XY,t(9;22)(q34;q11.2)" />
+             placeholder="e.g. 47,XX,+21" />
       <button class="btn" id="draw">Draw &amp; explain</button>
     </div>
     <div class="examples" id="examples" role="group" aria-label="Example karyotypes to try"></div>
+    <div>
+      <button class="tourlaunch" id="tourlaunch" type="button" aria-label="Start the guided tour of ISCN 2024 notation">
+        🎓 Take the guided tour <span class="sub">· 12 worked examples</span>
+      </button>
+    </div>
     <div class="viewopts">
       <span class="vlabel" id="style-lbl">Style</span>
       <div class="seg" id="modeseg" role="group" aria-labelledby="style-lbl">
@@ -345,6 +390,24 @@
     <div id="warnings" role="status" aria-live="polite"></div>
     <div class="grid">
       <section>
+        <div class="card tourcard" id="tourcard" style="display:none">
+          <h2 class="withaction">Guided tour · reading ISCN 2024
+            <button class="tourexit" id="tour-exit" type="button">Exit tour</button>
+          </h2>
+          <div class="body">
+            <div class="tourhead">
+              <span class="tourconcept" id="tour-concept"></span>
+              <span class="tourcounter" id="tour-counter"></span>
+            </div>
+            <div class="tourk" id="tour-k"></div>
+            <p class="tourcaption" id="tour-caption"></p>
+            <div class="tournav">
+              <button class="pbtn" id="tour-prev" type="button">← Previous</button>
+              <span class="spacer"></span>
+              <button class="btn tournext" id="tour-next" type="button">Next →</button>
+            </div>
+          </div>
+        </div>
         <div class="card">
           <div id="summary" class="summary" aria-live="polite"></div>
           <div class="kactions" id="kactions">
@@ -354,7 +417,7 @@
             <button class="sharelink" id="copyhint" type="button" title="Copy a link that reproduces this exact view. It updates as you edit.">🔗 Copy link to this view</button>
             <button class="sharelink" id="printbtn" type="button" title="Print, or save as a 1-page PDF summary for a genetic counselor">🖨 Print summary</button>
           </div>
-          <div id="karyo"></div>
+          <div id="karyo" role="img" aria-label="Karyogram"></div>
         </div>
         <div class="card">
           <h2>Band &amp; stain legend</h2>
@@ -407,6 +470,37 @@
           <p>Enter a karyotype in the box at the top of the page (or pick one of the examples), then switch between highlight and realistic banding, adjust the band resolution from roughly 400 to 850 bands, and hover any band to read its coordinate one digit at a time along with the biology of its stain. Every view has a shareable link and can be exported as an image or a one-page printable summary.</p>
           <h3>Who makes it</h3>
           <p>KaryoDraw is developed and maintained by <strong><a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a></strong>. The chromosome banding is drawn from the UCSC <code>cytoBandIdeo</code> track for the human genome, build hg38. To keep improving the tool and to show the most-studied karyotypes, we note which karyotypes people draw and which features get used. There are no cookies, no IP addresses, and no accounts.</p>
+        </div>
+      </div>
+    </section>
+    <section class="about faq" aria-labelledby="faq-h">
+      <div class="card">
+        <h2 id="faq-h">Frequently asked questions</h2>
+        <div class="body about-body" id="faqlist">
+          <div class="faq-item">
+            <h3 class="faq-q">What is a karyotype?</h3>
+            <div class="faq-a"><p>A karyotype is the complete set of chromosomes in a cell, arranged by size and banding pattern, together with the standardized notation that describes it. A normal human karyotype is written 46,XX for a female or 46,XY for a male: 46 chromosomes, with the sex chromosomes listed after the count.</p></div>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">What is ISCN 2024?</h3>
+            <div class="faq-a"><p>ISCN is the International System for Human Cytogenomic Nomenclature, the standard shorthand for chromosome number and structure, and the 2024 edition is the current revision. It defines the arm labels p and q, the band coordinates, and operators such as t for translocation, del for deletion, dup for duplication, inv for inversion, and i for isochromosome.</p></div>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">How do I read a karyotype?</h3>
+            <div class="faq-a"><p>Read it left to right: first the total chromosome count, then the sex chromosomes, then any abnormalities separated by commas, with the chromosome and band coordinates in parentheses. For example, 46,XY,t(9;22)(q34;q11.2) means 46 chromosomes, male, with a translocation between chromosomes 9 and 22 breaking at bands 9q34 and 22q11.2.</p></div>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">What does t(9;22) mean?</h3>
+            <div class="faq-a"><p>t(9;22)(q34;q11.2) is a reciprocal translocation in which chromosomes 9 and 22 break and exchange their distal segments. The small derivative chromosome 22 it produces is the Philadelphia chromosome, and the resulting <i>BCR::ABL1</i> fusion gene defines chronic myeloid leukemia.</p></div>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">What is the difference between a Robertsonian and a reciprocal translocation?</h3>
+            <div class="faq-a"><p>A reciprocal translocation is an exchange of segments between any two chromosomes. A Robertsonian translocation is a fusion of two acrocentric chromosomes (13, 14, 15, 21, or 22) at their centromeres, which lowers the chromosome count to 45. Robertsonian carriers are usually healthy but face a higher risk of miscarriage and of chromosomally unbalanced children.</p></div>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">Is KaryoDraw free, and is it a diagnostic tool?</h3>
+            <div class="faq-a"><p>KaryoDraw is free and runs entirely in your browser, with no account and nothing to install. It is an educational visualizer of cytogenetic nomenclature for learning and teaching, not a diagnostic tool, and it does not replace a clinical cytogenetics laboratory report.</p></div>
+          </div>
         </div>
       </div>
     </section>
@@ -494,6 +588,59 @@
       input.value = c.getAttribute("data-k"); run();
     });
   }
+
+  // ---- guided tour ---------------------------------------------------------
+  // A curated, ordered walk through the most common ISCN 2024 notations. Each
+  // step drives the main visualizer (highlight / ~550 bands / all) and carries a
+  // hand-written caption. Distinct from EXAMPLES above, which are quick-try chips.
+  var TOUR = [
+    { concept: "Reading a karyotype", k: "46,XX",
+      caption: "Start here: a normal female karyotype. Twenty-two pairs of autosomes are arranged largest to smallest, then the sex chromosomes. On each chromosome the short arm (p) sits on top and the long arm (q) below, divided by the centromere, and the bands are numbered outward from the centromere. Everything is gray because nothing is abnormal." },
+    { concept: "Trisomy", k: "47,XX,+21",
+      caption: "The count reads 47 because a third copy of chromosome 21 is present. This is the karyotype of Down syndrome, the most common autosomal trisomy compatible with live birth. A plus sign before a chromosome number means a whole extra copy of it, with no change to its structure." },
+    { concept: "Monosomy", k: "45,X",
+      caption: "Only one sex chromosome is present, so the count is 45 and the notation ends at X. This is Turner syndrome: short stature, ovarian insufficiency, and a webbed neck are classic, and loss of the <i>SHOX</i> gene drives much of the growth phenotype. A single X with no second sex chromosome is written simply as X, with no plus or minus." },
+    { concept: "Sex chromosome aneuploidy", k: "47,XXY",
+      caption: "An extra X in a male raises the count to 47. This is Klinefelter syndrome, the most common sex chromosome aneuploidy: tall stature, small firm testes, and infertility are typical. Aneuploidy is not limited to the autosomes, and the sex chromosomes are always listed after the count." },
+    { concept: "Deletion", k: "46,XY,del(5)(p15.2)",
+      caption: "A single breakpoint deletion removes the tip of the short arm of chromosome 5, everything distal to 5p15.2. This is cri-du-chat syndrome, named for the high-pitched cry in infancy. In highlight mode the shortened chromosome 5 is colored so you can compare it against its normal homolog." },
+    { concept: "Microdeletion", k: "46,XX,del(22)(q11.2)",
+      caption: "Loss of a small segment at 22q11.2 produces the 22q11.2 deletion syndrome (DiGeorge / velocardiofacial). Conotruncal heart defects, hypocalcemia, immune deficiency, and palatal anomalies follow from loss of genes including <i>TBX1</i>. Deletions this small are usually found by microarray or FISH rather than by banding alone, but the notation is the same." },
+    { concept: "Inversion", k: "46,XY,inv(9)(p11q13)",
+      caption: "Two breakpoints on chromosome 9, one on each arm, with the segment between them flipped end for end. Because it spans the centromere it is a pericentric inversion. inv(9)(p11q13) is one of the most common benign variants in the human genome and is generally reported as normal." },
+    { concept: "Isochromosome", k: "46,X,i(X)(q10)",
+      caption: "An isochromosome is a mirror-image chromosome made of two copies of one arm, so the other arm is lost. Here i(X)(q10) is two long arms of the X joined at the centromere, so its short arm is absent. Paired with one normal X, it leaves a single copy of Xp, a recurrent structural cause of Turner syndrome." },
+    { concept: "Reciprocal translocation", k: "46,XY,t(9;22)(q34;q11.2)",
+      caption: "Two chromosomes break and swap their distal segments. Chromosome 9 breaks at 9q34 and chromosome 22 at 22q11.2, producing two derivative chromosomes. The small der(22) is the Philadelphia chromosome, and the <i>BCR::ABL1</i> fusion it creates defines chronic myeloid leukemia. KaryoDraw draws each derivative next to its normal homolog so you can see exactly what moved." },
+    { concept: "Robertsonian translocation", k: "45,XX,rob(13;14)(q10;q10)",
+      caption: "Two acrocentric chromosomes fuse at their centromeres and their tiny short arms are lost, so the count drops to 45. rob(13;14) is the most common Robertsonian translocation in humans. Carriers are healthy but face a higher risk of miscarriage and of unbalanced offspring, including translocation trisomy 13; a Robertsonian that instead involves chromosome 21 is a familial cause of Down syndrome." },
+    { concept: "Ring chromosome", k: "46,XY,r(13)(p11q34)",
+      caption: "A chromosome whose two arms break and whose broken ends fuse into a circle, usually losing the material beyond the breakpoints. Here chromosome 13 breaks at 13p11 and 13q34 and closes into a ring. Ring chromosomes are unstable through cell division, so ring syndromes often show mosaicism and variable severity." },
+    { concept: "Mosaicism", k: "mos 45,X[12]/46,XX[18]",
+      caption: "Two cell lines in one person. The bracketed numbers are how many cells were counted in each line: twelve 45,X cells and eighteen 46,XX cells. Mosaic Turner syndrome like this often has milder or more variable features than a non-mosaic 45,X, which is why the cell counts are reported." }
+  ];
+  var tourIdx = 0;
+
+  function loadTourStep(i) {
+    tourIdx = Math.max(0, Math.min(TOUR.length - 1, i));
+    var step = TOUR[tourIdx];
+    MODE = "simple"; LEVEL = 1; SHOW = "all"; syncSeg();   // uniform teaching view
+    input.value = step.k;
+    beaconDraw.skipOnce = true;   // guided-tour navigation does not count toward usage
+    run();
+    renderTourPanel();
+  }
+  function renderTourPanel() {
+    var step = TOUR[tourIdx], atEnd = tourIdx === TOUR.length - 1;
+    $("#tour-concept").textContent = step.concept;
+    $("#tour-counter").textContent = "Step " + (tourIdx + 1) + " of " + TOUR.length;
+    $("#tour-k").textContent = step.k;
+    $("#tour-caption").innerHTML = step.caption;
+    $("#tour-prev").disabled = tourIdx === 0;
+    $("#tour-next").textContent = atEnd ? "Finish" : "Next →";
+  }
+  function startTour() { $("#tourcard").style.display = ""; loadTourStep(tourIdx); }
+  function exitTour() { $("#tourcard").style.display = "none"; }
 
   // Fetch the aggregate "Most-studied" list and, if it is meaningfully populated,
   // show it as clickable chips. The endpoint returns only karyotype strings in
@@ -795,6 +942,7 @@
     if (invalid) {
       $("#summary").innerHTML = '<span class="kt">' + escapeHtml(val) + '</span><span class="sex">couldn’t read this as a karyotype yet</span>';
       $("#karyo").innerHTML = '<div class="emptystate">Fix the karyotype above and the drawing shows up here.</div>';
+      $("#karyo").setAttribute("aria-label", "No valid karyogram to display yet");
       $("#decode").innerHTML = '<div class="muted">…</div>';
       $("#clinical-card").style.display = "none";
       $("#printsheet").innerHTML = "";
@@ -807,6 +955,7 @@
     var kaShow = $("#kactions"); if (kaShow) kaShow.style.display = "flex";
     renderSummary(model);
     renderKaryogram(model);
+    $("#karyo").setAttribute("aria-label", "Karyogram of " + (model.raw || val));
     renderDecode(model.clones);
     renderClinical(model.clones);
     renderPrintSheet(model);
@@ -1047,6 +1196,12 @@
 
   // init
   buildExamples();
+  $("#tourlaunch").addEventListener("click", startTour);
+  $("#tour-exit").addEventListener("click", exitTour);
+  $("#tour-prev").addEventListener("click", function () { loadTourStep(tourIdx - 1); });
+  $("#tour-next").addEventListener("click", function () {
+    if (tourIdx === TOUR.length - 1) exitTour(); else loadTourStep(tourIdx + 1);
+  });
   $("#draw").addEventListener("click", run);
   input.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
   $("#modeseg").addEventListener("click", function (e) {
@@ -1126,6 +1281,29 @@
   run();
   try { var _ref = ""; if (document.referrer) { try { _ref = new URL(document.referrer).host; } catch (e) {} } beacon({ type: "pageview", ref: _ref }); } catch (e) {}
   loadTopKaryotypes();
+})();
+</script>
+<script>
+// Build FAQPage structured data from the visible FAQ so the answer copy lives in
+// exactly one place (the on-page text) while staying eligible for FAQ rich results.
+// Google reads JSON-LD injected by JavaScript.
+(function () {
+  var items = document.querySelectorAll("#faqlist .faq-item");
+  if (!items.length) return;
+  var faq = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: [] };
+  items.forEach(function (it) {
+    var q = it.querySelector(".faq-q"), a = it.querySelector(".faq-a");
+    if (!q || !a) return;
+    faq.mainEntity.push({
+      "@type": "Question",
+      name: q.textContent.trim(),
+      acceptedAnswer: { "@type": "Answer", text: a.textContent.trim().replace(/\s+/g, " ") }
+    });
+  });
+  var s = document.createElement("script");
+  s.type = "application/ld+json";
+  s.textContent = JSON.stringify(faq);
+  document.head.appendChild(s);
 })();
 </script>
 </body>
