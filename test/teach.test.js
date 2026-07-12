@@ -72,6 +72,16 @@ test('Klinefelter label frames 47,XXY as a variant family, not the exact count',
   assert.doesNotMatch(kf.name, /^47,XXY,/, 'does not lead with 47,XXY as the definitive karyotype');
 });
 
+// The Turner matcher fires for any single-X complement, including 46-count variants
+// (46,X,i(X)(q10), 46,X,idic(Y)); its label and note must not assert 45,X / monosomy.
+test('Turner label frames 45,X as a variant family, not the exact count', () => {
+  const t = Teach.syndromes(ISCN.parse('46,X,i(X)(q10)').clones[0]).find((s) => /Turner/.test(s.name));
+  assert.ok(t, 'still recognized as Turner');
+  assert.match(t.name, /variant/i, 'acknowledges variants rather than labeling a 46-count as 45,X');
+  assert.doesNotMatch(t.name, /^45,X,/, 'does not lead with 45,X for a 46-count variant');
+  assert.doesNotMatch(t.note, /no second sex chromosome/i, 'note does not claim monosomy for a structural variant');
+});
+
 // Gene fusions in the clinical notes use the current ISCN double-colon form.
 test('gene fusions in clinical notes use the :: nomenclature', () => {
   const ph = Teach.syndromes(ISCN.parse('46,XY,t(9;22)(q34;q11.2)').clones[0]).find((s) => /Philadelphia/.test(s.name));
