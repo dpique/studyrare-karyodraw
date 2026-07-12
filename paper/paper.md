@@ -78,7 +78,10 @@ example three-way) translocations, isochromosomes, ring chromosomes, derivative
 chromosomes with nested sub-operations, whole-arm and Robertsonian derivatives
 (`der(13;14)`), dicentrics and isodicentrics, insertions, additions of unknown
 origin, marker chromosomes, and mosaic or composite karyotypes with multiple
-clones. The drawn chromosome count is reconciled against the stated modal number,
+clones. It also reads the copy-number multiplication sign (`×n`), the
+clonal-evolution shorthand (`idem`, `sl`, `sdl`) that inherits a stemline or
+sideline's aberrations, double minutes (`dmin`), and homogeneously staining
+regions (`hsr`). The drawn chromosome count is reconciled against the stated modal number,
 including the fusion arithmetic of Robertsonian derivatives and triploid or
 tetraploid ploidy, and a mismatch is flagged. The parser is forgiving but not
 permissive: unrecognized input yields targeted warnings and "did you mean"
@@ -123,15 +126,15 @@ banded karyogram cannot depict by construction, and they are out of scope. This
 is an inherent limit of the karyotype representation, not a missing feature: it is
 the same reason those separate nomenclatures exist.
 
-Within karyotype nomenclature, a few constructs are deliberately unsupported and
-are warned about rather than mishandled silently: the copy-number multiplication
-sign (`×n`), the clonal-evolution shorthand (`idem`, `sl`, `sdl`), and structures
-such as double minutes (`dmin`) and homogeneously staining regions (`hsr`).
-Uncertainty operators (`or`, `~`, `?`) are not evaluated; the tool draws the first
-interpretation and states that it has done so. The polyploidy heuristic infers
-ploidy from the modal number and is ambiguous for counts that fall between a
-hyperdiploid and a hypotriploid complement, an ambiguity the notation itself does
-not resolve without clinical context.
+Within karyotype nomenclature, a few operators are deliberately not resolved and
+are surfaced transparently rather than mishandled silently: the alternative and
+uncertainty markers (`or`, `?`) are not evaluated, so the tool draws the first
+interpretation and states that it has done so. A derivative chromosome carrying
+more than a single embedded rearrangement falls back to the base chromosome plus
+the written decode. The polyploidy heuristic infers ploidy from the modal number
+and is ambiguous for counts that fall between a hyperdiploid and a hypotriploid
+complement, an ambiguity the notation itself does not resolve without clinical
+context.
 
 KaryoDraw is an educational visualizer of nomenclature, not a diagnostic tool, and
 it does not validate a designation against a patient sample. The curated clinical
@@ -140,10 +143,11 @@ notes are illustrative teaching content, not a comprehensive reference.
 # Implementation and availability
 
 KaryoDraw is implemented in dependency-free vanilla JavaScript (a nomenclature
-parser, an SVG karyogram renderer, and a teaching module) with no build step,
-and is served as static assets. It is deployed at <https://karyodraw.com> and the
-source is available at <https://github.com/dpique/studyrare-karyodraw> under the
-MIT license. Chromosome band data are
+parser, an SVG karyogram renderer, and a teaching module) that requires no bundler
+or transpiler. It is served as static assets by a small Cloudflare Worker, which
+also handles an anonymous usage beacon and a feedback channel. It is deployed at
+<https://karyodraw.com> and the source is available at
+<https://github.com/dpique/studyrare-karyodraw> under the MIT license. Chromosome band data are
 derived from the UCSC Genome Browser `cytoBandIdeo` table (hg38). The nomenclature
 parser is validated by a dependency-free test suite (Node's built-in runner)
 covering designations from aneuploidy through three-way translocations and

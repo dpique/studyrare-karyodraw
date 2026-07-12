@@ -28,14 +28,17 @@ follow (fixed rows, count-fix, replace-vs-add).
 
 This starts a tiny local web server and opens the app. (Don't open `index.html`
 as a `file://` URL — browsers block the `<script src>` module files. It must be
-*served*.) Everything runs in the browser; there is no backend. Stop the server
+*served*.) The interactive tool runs entirely in the browser. Stop the server
 with `lsof -ti tcp:8770 | xargs kill`.
 
-**Hosted** — it's fully static and served at
-**[karyodraw.com](https://karyodraw.com)** via Cloudflare (any static host works —
-drop the files anywhere). Pushing a served file to `main` auto-deploys via
-`.github/workflows/deploy.yml` (needs the `CLOUDFLARE_API_TOKEN` repo secret);
-you can also deploy by hand with `npx wrangler deploy`.
+**Hosted** — served at **[karyodraw.com](https://karyodraw.com)** by a small
+Cloudflare Worker (`worker.js`). The Worker serves the otherwise-static site and a
+few tiny API endpoints — anonymous usage analytics, the "Most-studied" list,
+feedback flagging, and per-IP rate limiting — backed by a D1 database. See
+[`docs/SEO_AND_FEEDBACK.md`](docs/SEO_AND_FEEDBACK.md) for the backend details.
+Pushing a served file to `main` auto-deploys via
+`.github/workflows/deploy.yml` (needs the `CLOUDFLARE_API_TOKEN` repo secret).
+Deploys go through CI only — do not run `wrangler deploy` by hand.
 
 **Share / deep-link** — the current karyotype is stored in the URL, e.g.
 `index.html?k=47,XX,%2B21`, so any view is a shareable/bookmarkable link. (This
@@ -100,8 +103,16 @@ karyotype still draws, with the mismatch flagged.
 - `karyo-render.js` — SVG ideograms + derivative-chromosome geometry.
 - `teach.js` — plain-English decode, band nomenclature, Giemsa stain biology,
   curated syndrome/clinical notes.
+- `worker.js` — the Cloudflare Worker: serves the site and the `/api/*` endpoints
+  (analytics, most-studied, feedback, rate limiting); `schema.sql` + `migrations/`
+  define the D1 tables.
+- `content/karyotypes.js` — the single source of truth for the curated karyotypes
+  and the guided tour; `scripts/build-pages.mjs` generates the SEO landing pages
+  and sitemap from it (`npm run build`, run in CI before every deploy).
 - `start.sh` — local server launcher.
 - `_build_inputs/` — band-data source + build script (see `_build_inputs/SOURCES.md`).
+- `docs/` — backend/SEO notes (`SEO_AND_FEEDBACK.md`) and the CyDAS lineage
+  (`CYDAS.md`).
 
 ## Regenerate the band data
 

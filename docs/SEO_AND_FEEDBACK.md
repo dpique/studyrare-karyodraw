@@ -4,8 +4,8 @@ Two systems added to KaryoDraw.
 
 ## 1. SEO landing pages
 
-**Single source of truth:** `content/karyotypes.js`. It holds ~24 curated karyotypes
-(slug, notation, name, aliases, concept, intro, related links) and, for the 12 that
+**Single source of truth:** `content/karyotypes.js`. It holds ~32 curated karyotypes
+(slug, notation, name, aliases, concept, intro, related links) and, for those that
 are also tour steps, the tour caption. Both the in-page guided tour
 (`window.KDContent.tour()`) and the page generator read from it, so they never drift.
 
@@ -46,31 +46,39 @@ pings — the existing daily email digest (13:00 UTC, via Resend) is the follow-
 and it now shows the category.
 
 `worker.js` `/api/feedback` accepts three shapes: quick flag (returns `{id, token}`),
-enrich (`{id, token, ...}`), and general feedback. The insert falls back to the legacy
-columns if the migration below has not run yet, so no feedback is ever lost.
+enrich (`{id, token, ...}`), and general feedback. It keeps a legacy-column fallback
+on insert as a safety net, so feedback is never lost even mid-migration.
+
+## Usage analytics + rate limiting
+
+- `/api/collect` writes an anonymous, cookieless usage row (no IP, no identifier) to
+  the D1 `usage` table; `/api/top` returns the ranked "Most-studied" list (edge-cached
+  a day). See the privacy note atop `worker.js`.
+- Both write endpoints are per-IP rate limited via the Workers Rate Limiting binding
+  (`RL_COLLECT` 120/min, `RL_FEEDBACK` 20/min; see `wrangler.jsonc` + `overLimit` in
+  `worker.js`), so a scripted flood cannot inflate writes or spam the digest.
 
 ---
 
-## Owner action items (things I cannot do without your credentials)
+## Owner action items
 
-1. **Run the D1 migration** (adds `category` + `token` to the feedback table):
+**Done (recorded here for provenance):**
 
-   ```
-   npx wrangler d1 execute karyodraw-usage --remote --file=migrations/001_feedback_category_token.sql
-   ```
+- **D1 schema + migrations applied.** The `usage` and `feedback` tables exist in prod;
+  the feedback `category`/`token` columns are present (migration `001` was not needed —
+  they were already there), and the partial index from `002_feedback_undigested_index.sql`
+  is applied. `schema.sql` is the current full definition.
+- **Feedback digest is live.** `RESEND_API_KEY`, `FEEDBACK_EMAIL_TO`, and
+  `FEEDBACK_EMAIL_FROM` are set as Worker secrets; the daily 13:00 UTC digest emails new
+  feedback (batched, oldest-first). `FEEDBACK_WEBHOOK` is intentionally left unset (no
+  per-event pings).
+- **IndexNow** — wired. The key file `7b3f1e9c4a2d6058e1f0b9c3d5a7e2f4.txt` is served at
+  the site root and CI pings IndexNow after each deploy. Nothing to do.
 
-   Until this runs, flagging still works (it stores the message via the legacy columns);
-   afterwards the category and one-click enrich are fully captured.
+**Optional, still open:**
 
-2. **Google Search Console** (speeds up indexing; not strictly required):
-   - Add the property `karyodraw.com` at <https://search.google.com/search-console>.
-   - Verify with a **DNS TXT record via Cloudflare** (easiest, no code), or uncomment the
-     `google-site-verification` meta tag in `index.html` and paste your token.
-   - Submit `https://karyodraw.com/sitemap.xml`.
-
-3. **IndexNow** — already wired. The key file `7b3f1e9c4a2d6058e1f0b9c3d5a7e2f4.txt`
-   is served at the site root and CI pings IndexNow after each deploy. Nothing to do.
-
-4. **Secrets (optional):**
-   - `RESEND_API_KEY` + `FEEDBACK_EMAIL_TO` — enable the daily feedback digest email.
-   - `FEEDBACK_WEBHOOK` — leave **unset**; you did not want per-event pings.
+- **Google Search Console** (speeds up indexing; not required):
+  - Add the property `karyodraw.com` at <https://search.google.com/search-console>.
+  - Verify with a **DNS TXT record via Cloudflare** (easiest, no code), or uncomment the
+    `google-site-verification` meta tag in `index.html` and paste your token.
+  - Submit `https://karyodraw.com/sitemap.xml`.
