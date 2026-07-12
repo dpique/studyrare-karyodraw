@@ -835,6 +835,16 @@
       window.ISCN.ALL.forEach(function (c) {
         if ((clone.slots[c] || []).some(function (x) { return x.kind !== "normal"; })) add(c);
       });
+      // Sex-chromosome aneuploidy lives in the sex field (45,X, 47,XXY, 48,XXXX),
+      // not in an aberration, so it must be flagged here or the "affected" view
+      // wrongly reports nothing to isolate. A euploid complement has one sex
+      // chromosome per ploidy (XX/XY at 2n, XXX/XXY at 3n, ...); a different sex
+      // count means the sex chromosomes are the (or an) abnormality.
+      var sexTokens = (clone.sex && clone.sex.tokens) || [];
+      if (sexTokens.length && sexTokens.length !== (clone.ploidy || 2)) {
+        if (clone.sex.label.indexOf("X") >= 0) add("X");
+        if (clone.sex.label.indexOf("Y") >= 0) add("Y");
+      }
     });
     var map = {};
     order.forEach(function (c, i) { map[c] = AFFECTED_PALETTE[i % AFFECTED_PALETTE.length]; });
