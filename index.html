@@ -612,9 +612,16 @@
   // but the shareable query uses the words on the buttons so a shared link reads
   // like what's on screen. Old values are still accepted so existing links work.
   var STYLE_TO_URL = { simple: "highlight", detailed: "realistic" };
-  var URL_TO_STYLE = { highlight: "simple", realistic: "detailed", simple: "simple", detailed: "detailed" };
   var BANDS_TO_URL = { 0: "400", 1: "550", 99: "850" };
-  var URL_TO_BANDS = { "400": 0, "550": 1, "850": 99, "0": 0, "1": 1, "99": 99 };
+  // Reverse maps, derived from the forward ones so they can't drift. Each accepts
+  // either the URL token ("highlight") or the internal value ("simple") as input.
+  function invertMap(fwd, coerce) {
+    var out = {};
+    Object.keys(fwd).forEach(function (k) { var v = coerce ? coerce(k) : k; out[fwd[k]] = v; out[k] = v; });
+    return out;
+  }
+  var URL_TO_STYLE = invertMap(STYLE_TO_URL);
+  var URL_TO_BANDS = invertMap(BANDS_TO_URL, Number);
 
   function speakKaryotype() {
     if (!window.speechSynthesis || !spokenText) return;

@@ -225,12 +225,19 @@
 
   // Inheritance / origin suffixes on an aberration (c / mat / pat / dn). The parser
   // records these; spell out what each means so a learner sees it in the decode.
-  var QUALIFIER_PHRASE = {
-    dn: "de novo: a new change, not inherited from either parent",
-    mat: "maternal in origin: inherited from the mother",
-    pat: "paternal in origin: inherited from the father",
-    c: "constitutional: present in every cell from birth, not acquired",
+  // The short label ("maternal in origin") is the parser's, reused here so the two
+  // never drift; teach.js only adds the plain-language explanation after the colon.
+  var QUALIFIER_EXPLAIN = {
+    dn: "a new change, not inherited from either parent",
+    mat: "inherited from the mother",
+    pat: "inherited from the father",
+    c: "present in every cell from birth, not acquired",
   };
+  var QUAL = (window.ISCN && window.ISCN.QUAL) || {};
+  var QUALIFIER_PHRASE = {};
+  Object.keys(QUALIFIER_EXPLAIN).forEach(function (k) {
+    QUALIFIER_PHRASE[k] = (QUAL[k] || k) + ": " + QUALIFIER_EXPLAIN[k];
+  });
 
   // ---- token-by-token decode of a clone ------------------------------------
   function decode(clone) {
