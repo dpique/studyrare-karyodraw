@@ -247,3 +247,24 @@ test('computeAffected tolerates an empty/unparseable clone without throwing', ()
   const clones = ISCN.parse(',').clones;
   assert.doesNotThrow(() => Karyo.computeAffected(clones), 'no TypeError on clone.slots');
 });
+
+// Sex-chromosome aneuploidy is expressed in the sex field, not as an aberration,
+// so computeAffected must still flag it (otherwise the "Affected" view wrongly
+// reports nothing to isolate for 48,XXXX, 45,X, 47,XXY, ...).
+const affKeys = (k) => Object.keys(Karyo.computeAffected(ISCN.parse(k).clones)).sort();
+test('tetrasomy X (48,XXXX) isolates the X chromosomes', () => {
+  assert.deepEqual(affKeys('48,XXXX'), ['X']);
+});
+test('Turner (45,X) and Klinefelter (47,XXY) flag their sex chromosomes', () => {
+  assert.deepEqual(affKeys('45,X'), ['X']);
+  assert.deepEqual(affKeys('47,XXY'), ['X', 'Y']);
+});
+test('a normal complement flags nothing; autosomal +21 flags only 21', () => {
+  assert.deepEqual(affKeys('46,XX'), []);
+  assert.deepEqual(affKeys('46,XY'), []);
+  assert.deepEqual(affKeys('47,XX,+21'), ['21']);
+});
+test('a euploid polyploid sex complement is NOT falsely flagged', () => {
+  assert.deepEqual(affKeys('69,XXX'), [], '3n XXX is euploid for triploidy');
+  assert.deepEqual(affKeys('92,XXXX'), [], '4n XXXX is euploid for tetraploidy');
+});

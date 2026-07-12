@@ -225,6 +225,7 @@
       // speak instead of allocating p copies of every chromosome.
       if (p >= 3 && p <= 8 && Math.abs(clone.modalNumber - 23 * p) <= 3) ploidy = p;
     }
+    clone.ploidy = ploidy;   // exposed so the renderer can spot sex-chromosome aneuploidy
     ALL.forEach(function (c) { comp[c] = 0; });
     AUTOSOMES.forEach(function (c) { comp[c] = ploidy; });
     // Sex chromosomes from the sex field.

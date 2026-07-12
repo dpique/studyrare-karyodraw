@@ -3,6 +3,16 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-12 (sex-chromosome aneuploidy in the affected view)
+
+- **Isolate the sex chromosomes for a numerical sex-chromosome abnormality.** A
+  karyotype like `48,XXXX` (tetrasomy X), `45,X` (Turner), or `47,XXY`
+  (Klinefelter) carries its abnormality in the sex field rather than as an
+  aberration, so the "Affected" view wrongly said "nothing abnormal to isolate."
+  It now flags the sex chromosomes, so the affected view isolates them and
+  Highlight colors them. A euploid polyploid (e.g. `69,XXX`, `92,XXXX`) is
+  correctly left unflagged, since its sex count matches its ploidy.
+
 ## 2026-07-11 (mobile layout)
 
 - **Fix the phone layout.** The karyogram used to stretch the whole page wider than
