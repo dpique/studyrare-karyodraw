@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-12 (tolerate stray spaces)
+
+- **Ignore spaces inside a designation.** ISCN is written without internal spaces,
+  but copy-paste and typing add them. `46,XY,r(13)(p11q34) dn`, `46,XY,r(13) (p11q34)`,
+  and `47, XX, +21` now parse identically to their no-space forms, so a de-novo
+  (`dn`) or other inheritance qualifier written after a space is recognized instead
+  of reported as "not understood." The one meaningful space, after a `mos`/`chi`
+  prefix, is preserved.
+
 ## 2026-07-12 (sex-chromosome aneuploidy in the affected view)
 
 - **Isolate the sex chromosomes for a numerical sex-chromosome abnormality.** A

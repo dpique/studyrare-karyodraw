@@ -532,6 +532,11 @@
     var q = /^(mos|chi)\s+/i.exec(s);
     if (q) { result.isMosaic = true; s = s.slice(q[0].length); }
 
+    // ISCN designations carry no internal spaces, but humans and copy-paste add
+    // them ("r(13) (p11q34) dn", "47, XX, +21"). The one meaningful space — after a
+    // mos/chi prefix — is already consumed above, so treat the rest as insignificant.
+    s = s.replace(/\s+/g, "");
+
     var cloneStrs = splitTop(s, "/").map(function (x) { return x.trim(); }).filter(Boolean);
     if (cloneStrs.length > 1) result.isMosaic = true;
 
