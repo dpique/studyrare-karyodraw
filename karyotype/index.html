@@ -42,7 +42,7 @@
     --shadow: 0 1px 2px rgba(26,31,54,.06), 0 8px 24px rgba(26,31,54,.09);
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; }
+  html, body { margin: 0; overflow-x: hidden; }
   body {
     font: 15px/1.55 var(--font-sans);
     color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased;
@@ -81,7 +81,8 @@
   .examples { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
   .chip {
     font: 12.5px var(--font-mono); padding: 5px 10px; border-radius: 999px; margin: 0;
-    background: #f0f2f7; color: var(--ink-2); border: 1px solid var(--line); cursor: pointer; white-space: nowrap;
+    background: #f0f2f7; color: var(--ink-2); border: 1px solid var(--line); cursor: pointer;
+    white-space: normal; max-width: 100%;   /* wrap the label instead of clipping off-screen on mobile */
   }
   .chip:hover { background: var(--peri-50); border-color: var(--peri-300); color: var(--peri-700); }
   .chip b { color: var(--peri-700); font-weight: 700; }
@@ -94,7 +95,8 @@
   }
   .seg button:focus-visible { outline-offset: -2px; }
 
-  .viewopts { display: flex; align-items: center; gap: 8px 12px; margin-top: 12px; flex-wrap: wrap; }
+  .viewopts { display: flex; align-items: center; gap: 8px 16px; margin-top: 12px; flex-wrap: wrap; }
+  .viewopt { display: inline-flex; align-items: center; gap: 8px; }   /* keep each label with its toggle when the row wraps */
   .viewopts .vlabel { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   .viewhint { margin-top: 7px; font-size: 12.5px; color: var(--muted); }
   .viewhint b { color: var(--ink-2); font-weight: 700; }
@@ -109,7 +111,15 @@
 
   main { padding: 18px 0 60px; }
   .grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
-  @media (max-width: 1040px) { .grid { grid-template-columns: 1fr; } }
+  /* minmax(0,1fr), not 1fr: let the column shrink below its content so a wide
+     karyogram scrolls inside its card instead of stretching the whole page. */
+  @media (max-width: 1040px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .grid > * { min-width: 0; }   /* allow the columns to shrink below their content (karyogram) width */
+  /* Phones: tighter gutters so the nav, chips, and karyogram get more usable width. */
+  @media (max-width: 640px) {
+    .wrap, .sitebar-inner { padding-left: 16px; padding-right: 16px; }
+    .card .body { padding: 12px 12px; }
+  }
 
   /* Respect a reduced-motion preference: strip transitions and animations for
      users who get motion sickness or vestibular symptoms. */
@@ -122,10 +132,10 @@
     }
   }
 
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); min-width: 0; }
   .card + .card { margin-top: 16px; }
   .card h2 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 13px 16px; border-bottom: 1px solid var(--line); }
-  .card .body { padding: 14px 16px; }
+  .card .body { padding: 14px 16px; min-width: 0; }
 
   .summary { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; padding: 12px 16px; }
   .summary .kt { font: 600 17px var(--font-mono); color: var(--ink); }
@@ -145,6 +155,7 @@
   .clone-head .cc { font-size: 12.5px; color: var(--muted); }
 
   /* karyogram — 4 fixed Denver rows; rendered at natural size, then JS scales it to fill the card */
+  #karyo { overflow-x: auto; min-width: 0; }   /* scroll an over-wide karyogram inside the card instead of stretching the page */
   #karyo .kwrap { overflow: visible; }
   .karyogram { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 8px 10px; width: max-content; margin: 0 auto; transform-origin: top center; }
   .kgroup { display: flex; flex-wrap: nowrap; gap: 5px; padding: 4px 6px; border-radius: 10px; align-items: flex-end; }

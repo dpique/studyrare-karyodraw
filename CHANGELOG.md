@@ -3,6 +3,16 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-12 (declutter the homepage)
+
+- **Move the FAQ to the guide; drop the duplicate About block.** The homepage
+  bottom carried an "About KaryoDraw" section that duplicated the `/about/` page and
+  a separate FAQ. The About block is gone (the `/about/` page is canonical), and the
+  FAQ now lives on the "How to read a karyotype" guide, where those questions belong.
+  Its FAQPage structured data is now generated statically from the guide's own
+  content (more reliable for search than the previous JavaScript-built version). The
+  homepage keeps the "Common karyotypes" links and is otherwise just the tool.
+
 ## 2026-07-12 (tolerate stray spaces)
 
 - **Ignore spaces inside a designation.** ISCN is written without internal spaces,
