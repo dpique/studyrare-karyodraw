@@ -328,3 +328,36 @@ test('a first-clone idem with no stemline does not double its own aberrations', 
   assert.ok(ISCN.parse('47,XX,idem,+8').warnings.some((w) => /idem|sl|stemline|earlier clone|previous clone/i.test(w)),
     'the missing-stemline problem is surfaced');
 });
+
+// --- Marker chromosomes: numbered and ranged counts (common in Mitelman data) ---
+test('a numbered marker +2mar draws two marker chromosomes', () => {
+  const c = clone0('48,XX,+2mar');
+  assert.equal(c.complement.mar, 2, 'two markers');
+  assert.equal(slotKinds(c, 'mar').filter((k) => k === 'mar').length, 2, 'two mar slots drawn');
+  assert.equal(c.counts.ok, true, '46 + 2 markers = 48');
+});
+
+test('a ranged marker count +1~3mar is recognized, not rejected as unreadable', () => {
+  const r = ISCN.parse('47~49,XX,+1~3mar');
+  assert.ok(!r.warnings.some((w) => /Couldn.t read/i.test(w)), 'ranged marker parses');
+  assert.ok((r.clones[0].slots.mar || []).length >= 1, 'draws at least one marker');
+});
+
+test('a labeled marker +mar1 is still a single marker, not a count', () => {
+  const c = clone0('47,XX,+mar1');
+  assert.equal(c.complement.mar, 1, 'mar1 is one (labeled) marker, not "1 marker via count"');
+});
+
+// --- inc: the ISCN "incomplete karyotype" flag (frequent in cancer karyotypes) ---
+test('inc is recognized and does not read as an unknown token', () => {
+  const r = ISCN.parse('46,XX,inc');
+  assert.ok(!r.warnings.some((w) => /Couldn.t read/i.test(w)), 'inc is recognized');
+  assert.equal(r.clones[0].counts.ok, true, '46,XX with only inc still counts as 46');
+});
+
+test('inc flags the clone incomplete and suppresses the count-mismatch warning', () => {
+  const r = ISCN.parse('40,XX,inc');
+  assert.equal(r.clones[0].incomplete, true, 'clone flagged incomplete');
+  assert.ok(!r.warnings.some((w) => /number at the start says/i.test(w)),
+    'no count-mismatch warning for an explicitly incomplete karyotype');
+});
