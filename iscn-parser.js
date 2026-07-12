@@ -561,6 +561,7 @@
     parse: parse,
     splitBands: splitBands,
     KIND_LABEL: KIND_LABEL,
+    QUAL: QUAL,
     AUTOSOMES: AUTOSOMES,
     ALL: ALL
   };
