@@ -351,7 +351,7 @@ const listHtml = '\n          <ul class="kdp-list">\n' + CONTENT.map((e) =>
   `            <li><a href="/karyotype/${e.slug}/"><code>${esc(e.k)}</code> <b>${esc(e.name)}</b></a></li>`
 ).join('\n') + '\n          </ul>\n          ';
 // Nav + footer are built from the single sources above and injected into index.html
-// too, so the SPA chrome can't drift from the generated pages.
+// too, so the SPA chrome cannot drift from the generated pages.
 const navHtml = NAV_ITEMS.map(([href, label]) => `<a href="${href}">${label}</a>`).join('\n      ');
 const homeFoot = `<strong>KaryoDraw</strong> · <a href="https://karyodraw.com" target="_blank" rel="noopener">karyodraw.com</a> · a <a href="${LINKS.studyrare}" target="_blank" rel="noopener">StudyRare</a> tool · <button type="button" class="fbtrigger" id="fbopen">Send feedback</button> · <a href="${LINKS.github}" target="_blank" rel="noopener">open source on GitHub</a> · <a href="${LINKS.kofi}" target="_blank" rel="noopener">♥ Support on Ko-fi</a>`;
 const injected = indexHtml

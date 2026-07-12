@@ -32,11 +32,13 @@
     gpos100: "#2e3550", gvar: "#c2caf6", stalk: "#c2caf6", acen: "#3c4463"
   };
   // Figure-level encodings (not UI chrome): error / amber / periwinkle / navy.
-  var OP_COLORS = { del: "#e0554f", dup: "#ec9b27", inv: "#5e72e4", add: "#808ba8", break: "#242a45", hsr: "#d6409f" };
+  // The brand amber (the CTA accent) is single-sourced so its three uses stay in step.
+  var AMBER = "#ec9b27";
+  var OP_COLORS = { del: "#e0554f", dup: AMBER, inv: "#5e72e4", add: "#808ba8", break: "#242a45", hsr: "#d6409f" };
 
   // Affected-chromosome hues. Leads with the brand pair — periwinkle "field"
   // then amber "signal" — so a 2-way rearrangement echoes StudyRare's motif.
-  var AFFECTED_PALETTE = ["#5e72e4", "#ec9b27", "#6b8f55", "#e0554f", "#7c8ae9",
+  var AFFECTED_PALETTE = ["#5e72e4", AMBER, "#6b8f55", "#e0554f", "#7c8ae9",
     "#d17f18", "#4a6b3a", "#4a5375", "#c53d38", "#37428a"];
 
   // color math
@@ -719,7 +721,7 @@
     // Fusion point: the two broken ends meet at 12 o'clock (angle 0, the seam of
     // the wrap). Mark it like a clasp — a short seam plus a haloed node — so it
     // reads as the join where the ends fused into a ring.
-    var fcol = "#ec9b27";
+    var fcol = AMBER;
     var yO = py(0, R), yI = py(0, r0);   // outer-top and inner-top at 12 o'clock (x = cx)
     body.push('<g style="cursor:default"><title>Ring fusion point: the broken chromosome ends joined here</title>' +
       '<line x1="' + cx.toFixed(2) + '" y1="' + yO.toFixed(2) + '" x2="' + cx.toFixed(2) + '" y2="' + yI.toFixed(2) +
