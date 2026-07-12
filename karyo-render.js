@@ -625,7 +625,7 @@
     if (n < 2 || bps.length < n) return null;
     // Each der(Xi) keeps Xi's own centromere and receives the distal (acentric)
     // segment of the PREVIOUS chromosome in the cycle (ISCN convention). For a
-    // 2-way this is exactly the reciprocal swap; for 3+ way it's the cyclic
+    // 2-way this is exactly the reciprocal swap; for 3+ way it is the cyclic
     // exchange, so every derivative shows real material from its own chromosome.
     var pi = chroms.map(String).indexOf(String(primary));
     if (pi < 0) pi = 0;
@@ -801,7 +801,7 @@
       //  · every copy has a centromere y → centromere-align (the meaningful compare
       //    for del/dup/most translocations, which leave a copy shorter or longer).
       //  · a copy has NO centromere y (a whole-arm/Robertsonian derivative, an
-      //    isochromosome — its centromere sits at a segment edge) → we can't
+      //    isochromosome — its centromere sits at a segment edge) → we cannot
       //    centromere-align, so BOTTOM-align to the group's baseline (align-items:
       //    flex-end) instead of letting the short copy float at the top.
       var drawn = insts.map(function (inst) { return { inst: inst, d: drawInstance(inst, ctx) }; });

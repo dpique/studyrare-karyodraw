@@ -74,7 +74,7 @@
 
   // Constitutional / inheritance qualifiers trail an aberration: they say where it
   // came from, they are not part of the rearrangement itself. Strip and remember
-  // them so they don't break the token they follow (e.g. +21c, del(22)(q11.2)mat).
+  // them so they do not break the token they follow (e.g. +21c, del(22)(q11.2)mat).
   var QUAL = { c: "constitutional", mat: "maternal in origin", pat: "paternal in origin", dn: "de novo" };
   function stripQualifier(tok) {
     // Only after a closing paren, a digit, or a sex letter, so an op name like
