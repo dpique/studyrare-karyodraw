@@ -25,10 +25,13 @@ CREATE TABLE IF NOT EXISTS feedback (
   email     TEXT,               -- optional, for a reply (capped 200)
   karyotype TEXT,               -- the karyotype they were viewing (capped 512)
   url       TEXT,               -- shareable link to that exact view (capped 500)
-  ua        TEXT,               -- browser/device user-agent, for debugging (capped 300)
+  ua        TEXT,               -- deprecated: user-agent no longer stored (privacy); null on new rows
   country   TEXT,               -- coarse geo from Cloudflare
   digested  INTEGER,            -- 1 once included in a daily email digest; else null
   category  TEXT,               -- 'banding' | 'explanation' | 'parse' | 'other' | null
   token     TEXT                -- opaque id: lets a quick "Doesn't look right?" flag be enriched with detail
 );
 CREATE INDEX IF NOT EXISTS idx_feedback_ts ON feedback(ts);
+-- The daily digest reads WHERE digested IS NULL; a partial index keeps that scan
+-- off the full table as feedback grows (rows are never deleted).
+CREATE INDEX IF NOT EXISTS idx_feedback_undigested ON feedback(ts) WHERE digested IS NULL;

@@ -62,3 +62,19 @@ test('Robertsonian decode does not claim a single chromosome centromere', () => 
   assert.match(txt, /14/, 'names chromosome 14');
   assert.doesNotMatch(txt, /chromosome 13[’']s centromere/, 'does not claim it has chromosome 13 centromere');
 });
+
+// The Klinefelter matcher also fires for 48,XXXY; its label must frame 47,XXY as
+// the classic form among variants, not assert "47,XXY" as this karyotype's count.
+test('Klinefelter label frames 47,XXY as a variant family, not the exact count', () => {
+  const kf = Teach.syndromes(ISCN.parse('48,XXXY').clones[0]).find((s) => /Klinefelter/.test(s.name));
+  assert.ok(kf, 'still recognized as Klinefelter');
+  assert.match(kf.name, /variant/i, 'acknowledges variants rather than labeling a 48-count as 47,XXY');
+  assert.doesNotMatch(kf.name, /^47,XXY,/, 'does not lead with 47,XXY as the definitive karyotype');
+});
+
+// Gene fusions in the clinical notes use the current ISCN double-colon form.
+test('gene fusions in clinical notes use the :: nomenclature', () => {
+  const ph = Teach.syndromes(ISCN.parse('46,XY,t(9;22)(q34;q11.2)').clones[0]).find((s) => /Philadelphia/.test(s.name));
+  assert.ok(ph, 'recognizes the Philadelphia chromosome');
+  assert.match(ph.note, /BCR::ABL1/, 'writes BCR::ABL1, not the legacy hyphen form');
+});

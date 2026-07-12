@@ -88,6 +88,8 @@
   .sitebar-nav a[aria-current="page"] { color: var(--peri-700); background: var(--peri-50); }
   .wrap { max-width: 1320px; margin: 0 auto; padding: 0 24px; }
 
+  .controls-label { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 14px; }
+  .controls-label + .controls { margin-top: 6px; }
   .controls { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
   .controls input[type=text] {
     flex: 1 1 420px; min-width: 260px; padding: 11px 13px; font-size: 15px; font-family: var(--font-mono);
@@ -131,6 +133,17 @@
   main { padding: 18px 0 60px; }
   .grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
   @media (max-width: 1040px) { .grid { grid-template-columns: 1fr; } }
+
+  /* Respect a reduced-motion preference: strip transitions and animations for
+     users who get motion sickness or vestibular symptoms. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
   .card + .card { margin-top: 16px; }
@@ -375,9 +388,9 @@
 </div>
 <header class="top">
   <div class="wrap">
+    <label class="controls-label" for="kinput">Karyotype (ISCN notation)</label>
     <div class="controls">
       <input id="kinput" type="text" spellcheck="false"
-             aria-label="Karyotype in ISCN notation"
              placeholder="e.g. 47,XX,+21" />
       <button class="btn" id="draw">Draw &amp; explain</button>
     </div>
@@ -442,7 +455,7 @@
             <button class="sharelink" id="copyhint" type="button" title="Copy a link that reproduces this exact view. It updates as you edit.">🔗 Copy link to this view</button>
             <button class="sharelink" id="printbtn" type="button" title="Print, or save as a 1-page PDF summary for a genetic counselor">🖨 Print summary</button>
           </div>
-          <div id="karyo" role="img" aria-label="Karyogram"></div>
+          <div id="karyo" role="group" aria-label="Karyogram" aria-describedby="decode"></div>
         </div>
         <div class="card">
           <h2>Band &amp; stain legend</h2>
@@ -1039,7 +1052,10 @@
     var syn = [], seen = {};
     model.clones.forEach(function (c) { window.Teach.syndromes(c).forEach(function (s) { if (!seen[s.name]) { seen[s.name] = 1; syn.push(s); } }); });
     var synHTML = syn.length ? '<div class="ps-syn">' + syn.map(function (s) {
-      return "<p><b>" + escapeHtml(s.name) + "</b><br>" + escapeHtml(s.note) + "</p>";
+      // s.name/s.note are curated static clinical notes (teach.js), not user input,
+      // and may contain markup (e.g. italicized gene symbols), so render as HTML,
+      // matching the on-screen clinical card.
+      return "<p><b>" + s.name + "</b><br>" + s.note + "</p>";
     }).join("") + "</div>" : "";
     var meta = model.clones.map(function (c) { return c.sex.note; }).join(" · ") + (model.isMosaic ? " · mosaic (" + model.clones.length + " clones)" : "");
 

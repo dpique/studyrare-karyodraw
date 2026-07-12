@@ -99,8 +99,11 @@ function decodeList(clone) {
 function syndromeNotes(clone) {
   const syn = Teach.syndromes(clone) || [];
   if (!syn.length) return '';
+  // s.note is curated static content (teach.js) that may include markup such as
+  // italicized gene symbols, so render it as HTML (matching the on-screen clinical
+  // card and print sheet). s.name is plain text and stays escaped.
   return '<section class="lp-sec"><h2>Clinical notes</h2>' + syn.map((s) =>
-    `<div class="lp-syn"><h3>${esc(s.name)}</h3><p>${esc(s.note)}</p></div>`).join('') + '</section>';
+    `<div class="lp-syn"><h3>${esc(s.name)}</h3><p>${s.note}</p></div>`).join('') + '</section>';
 }
 
 function relatedLinks(e) {
