@@ -361,3 +361,30 @@ test('inc flags the clone incomplete and suppresses the count-mismatch warning',
   assert.ok(!r.warnings.some((w) => /number at the start says/i.test(w)),
     'no count-mismatch warning for an explicitly incomplete karyotype');
 });
+
+// --- Whitespace is insignificant (copy-paste and human typing add spaces) -----
+test('a qualifier after a space is still recognized (de novo, dn)', () => {
+  const c = clone0('46,XY,r(13)(p11q34) dn');
+  assert.equal(abKinds(c)[0], 'ring');
+  assert.equal(c.aberrations[0].qualifier, 'dn', 'the space before dn does not drop the qualifier');
+  assert.ok(!ISCN.parse('46,XY,r(13)(p11q34) dn').warnings.some((w) => /wasn.t understood|Couldn.t read/i.test(w)),
+    'no "not understood" warning');
+});
+
+test('a stray space inside an aberration is ignored (r(13) (p11q34))', () => {
+  const c = clone0('46,XY,r(13) (p11q34)');
+  assert.equal(abKinds(c)[0], 'ring');
+  assert.ok((c.aberrations[0].breakpoints[0] || []).length > 0, 'the breakpoint is still parsed');
+});
+
+test('spaces after commas and around fields are tolerated', () => {
+  const c = clone0('47, XX, +21');
+  assert.equal(c.modalNumber, 47);
+  assert.equal(c.complement['21'], 3);
+});
+
+test('the meaningful mos-prefix space is preserved (still mosaic)', () => {
+  const r = ISCN.parse('mos 45,X[12]/46,XX[18]');
+  assert.equal(r.isMosaic, true);
+  assert.equal(r.clones.length, 2);
+});
