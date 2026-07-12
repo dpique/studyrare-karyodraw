@@ -536,6 +536,8 @@
     // them ("r(13) (p11q34) dn", "47, XX, +21"). The one meaningful space — after a
     // mos/chi prefix — is already consumed above, so treat the rest as insignificant.
     s = s.replace(/\s+/g, "");
+    // The canonical, whitespace-normalized designation — for display and the URL.
+    result.normalized = (q ? q[1].toLowerCase() + " " : "") + s;
 
     var cloneStrs = splitTop(s, "/").map(function (x) { return x.trim(); }).filter(Boolean);
     if (cloneStrs.length > 1) result.isMosaic = true;
