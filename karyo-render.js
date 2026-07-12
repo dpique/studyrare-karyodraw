@@ -876,10 +876,20 @@
       var below = withCen.length ? Math.max.apply(null, withCen.map(function (c) { return c.m.height - c.m.cenLine; })) : 0;
       var totalH = above + below;
       var oh = ['<div class="karyogram affected-only"><div class="kgroup">'];
+      var sexOffset = 0;
       cells.forEach(function (c) {
         var off = c.m.cenLine != null ? (above - c.m.cenLine) : Math.max(0, totalH - c.m.height);
+        if (c.sexcell) sexOffset = off;
         oh.push(cellHtml(c.chrom, c.insts, { sexcell: c.sexcell, cenOffset: off }, ctx));
       });
+      // If an isolated sex chromosome comes from a monosomy (45,X), show the absent
+      // homolog placeholder too, so the affected view matches the full karyogram.
+      if (list.indexOf("X") >= 0 || list.indexOf("Y") >= 0) {
+        var xNo = (clone.slots["X"] || []).length, yNo = (clone.slots["Y"] || []).length;
+        for (var msi = 0, miss = 2 - (xNo + yNo); msi < miss; msi++) {
+          oh.push(cellHtml("", [], { ghost: true, ghostChrom: "X", ghostText: "missing", sexcell: true, cenOffset: sexOffset }, ctx));
+        }
+      }
       oh.push('</div></div>');
       container.innerHTML = oh.join("");
       return;
