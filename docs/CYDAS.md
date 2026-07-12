@@ -19,7 +19,7 @@ controls almost one-to-one:
 | `Resolution` (`eResolutionLevel`) | **Bands** toggle — Low ~400 / Std ~550 / High ~850 |
 | `Colored` (bool) | **Style** toggle — *Highlight* vs *Realistic* |
 | `DrawSequence` — comma list of chromosome numbers; `"BR"` = line break; `"?"` = unknown-centromere chromosome | our **fixed Denver-group rows** (we hard-code the row breaks rather than take a draw string); `?`/marker chromosomes trail the sex row |
-| `AlteredChromosomesOnly` (bool) | **not yet built** — a "show only the affected chromosomes" view. Worth adding. |
+| `AlteredChromosomesOnly` (bool) | **Show** toggle — *Affected* isolates the chromosomes involved in the abnormality (each with its normal homolog) into one focused row |
 | `optimizeISCN()` — "Corrects the chromosome count field and the sex chromosomes field" | our **count reconciliation + "Did you mean \<corrected count\>?"** fix |
 
 ### Notes worth keeping

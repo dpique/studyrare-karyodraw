@@ -1,9 +1,10 @@
 # Contributing to KaryoDraw
 
-Thank you for your interest. KaryoDraw is a small, dependency-free static site
+Thank you for your interest. KaryoDraw is a small, dependency-free browser tool
 with four parts: the nomenclature parser (`iscn-parser.js`), the SVG karyogram
 renderer (`karyo-render.js`), the teaching layer (`teach.js`), and the UI
-(`index.html`).
+(`index.html`). A small Cloudflare Worker (`worker.js`) serves the site and a few
+`/api/*` endpoints; you do not need it to work on the tool itself.
 
 ## Report a problem
 
@@ -25,12 +26,16 @@ label if you have a GitHub account.
 
 ## Run it locally
 
-There is no build step. Serve the folder with any static server and open
-`index.html`:
+The interactive tool needs no build step — serve the folder with any static
+server and open `index.html`:
 
 ```bash
 ./start.sh          # or: python3 -m http.server 8770
 ```
+
+(The SEO landing pages under `karyotype/` are generated from
+`content/karyotypes.js` by `npm run build`; CI runs it before every deploy, so
+you only need it if you edit the curated karyotypes.)
 
 Run the parser test suite (Node's built-in runner, no dependencies):
 
