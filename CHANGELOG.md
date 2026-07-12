@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-11 (mobile layout)
+
+- **Fix the phone layout.** The karyogram used to stretch the whole page wider than
+  a phone screen, which clipped the karyogram itself (chromosomes ran off the right
+  edge) and dragged the nav, example chips, and hint text off-screen with it. The
+  content column now shrinks to the screen and the karyogram scales to fit, so the
+  full karyotype is visible on a phone with no sideways scrolling. The Style / Bands
+  / Show controls keep each label attached to its toggle when the row wraps, and
+  long example chips wrap instead of clipping. The karyogram also refits on rotation
+  and resize. Desktop is unchanged.
+
 ## 2026-07-11 (broader ISCN: numbered markers + inc)
 
 - **Numbered and ranged marker chromosomes.** `+2mar` now draws two markers (and
