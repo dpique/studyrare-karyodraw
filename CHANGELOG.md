@@ -3,6 +3,13 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-12 (support link)
+
+- **Add a Ko-fi support link.** A quiet "♥ Support on Ko-fi" link in the footer
+  site-wide, and a short "KaryoDraw is free and always will be; if it helped you,
+  buy us a coffee" line on the About page. This is the only support ask — no
+  banners or modals.
+
 ## 2026-07-12 (explain qualifiers + marker count in the decode)
 
 - **Spell out the inheritance qualifiers.** `c` (constitutional), `mat` (maternal
