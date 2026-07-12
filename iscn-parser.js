@@ -131,6 +131,14 @@
     var opM = /^([a-zA-Z]+)\(([^)]*)\)(?:\(([^)]*)\))?/.exec(tok);
     if (!opM) {
       // things like "mar", "mar1", "?", "inc"
+      // "inc": the karyotype is explicitly incomplete (additional, unidentified
+      // changes exist). Recognized so it is not read as an unknown token.
+      if (/^inc$/i.test(tok)) { ab.kind = "inc"; return finish(ab); }
+      // Markers. "mar" / "mar1" is one marker (optionally labeled); a leading count
+      // — "2mar", or the ranged "1~3mar" (Mitelman also writes the range with a
+      // hyphen) — is a number of markers. Capped like any drawable copy count.
+      var marM = /^(\d+)(?:[-~]\d+)?mar\d*$/i.exec(tok);
+      if (marM) { ab.kind = "mar"; ab.count = Math.min(parseInt(marM[1], 10), MAX_COPIES); return finish(ab); }
       if (/^mar\d*$/i.test(tok)) { ab.kind = "mar"; return finish(ab); }
       // A bare chromosome number needs a sign to say gained or lost.
       if (/^(\d+|X|Y)$/.test(tok)) {
@@ -258,14 +266,19 @@
           if (idx >= 0) slots[l].splice(idx, 1);
         }
       } else if (ab.kind === "mar") {
-        // marker: an extra small chromosome of unknown origin
+        // marker: an extra small chromosome of unknown origin; "2mar" adds two, etc.
         if (ab.sign !== "-") {
           slots["mar"] = slots["mar"] || [];
-          for (var mj = 0; mj < mult; mj++) {
+          var nmar = Math.min((ab.count || 1) * mult, MAX_COPIES);
+          for (var mj = 0; mj < nmar; mj++) {
             comp["mar"] = (comp["mar"] || 0) + 1;
             slots["mar"].push({ chrom: "mar", kind: "mar", label: "mar", aberration: ab, primary: "mar" });
           }
         }
+      } else if (ab.kind === "inc") {
+        // Incomplete karyotype: unidentified additional changes exist. Nothing to
+        // draw; flag the clone so the count mismatch it implies is not warned about.
+        clone.incomplete = true;
       } else if (ab.kind === "t" || ab.kind === "ins" || (ab.kind === "dic" && ab.chroms.length < 2)) {
         // Multi-chromosome structural: convert one normal copy of each involved
         // chromosome into a derivative (count unchanged unless signed). A single-
@@ -360,7 +373,7 @@
       actual: actual,
       ok: clone.modalNumber == null || clone.modalNumber === actual || inRange
     };
-    if (!clone.counts.ok && clone.sex.tokens.length > 0) {
+    if (!clone.counts.ok && clone.sex.tokens.length > 0 && !clone.incomplete) {
       var want = clone.modalHigh != null ? (clone.modalNumber + "–" + clone.modalHigh) : String(clone.modalNumber);
       warnings.push("The number at the start says " + want + ", but this karyotype describes " + actual + " chromosomes.");
     }

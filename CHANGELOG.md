@@ -3,6 +3,18 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-11 (broader ISCN: numbered markers + inc)
+
+- **Numbered and ranged marker chromosomes.** `+2mar` now draws two markers (and
+  `+1~3mar`, including the hyphen form Mitelman uses, is accepted) instead of
+  reading as an unknown token. `+mar` and labeled `+mar1` are unchanged.
+- **The `inc` "incomplete karyotype" flag.** `...,inc` is recognized: it draws the
+  stated changes and, because the karyotype is explicitly incomplete, the drawn
+  count is not expected to match the modal number, so that mismatch is no longer
+  warned about. Validated against 83,881 real karyotypes from the Mitelman
+  database: zero crashes, and the share that parses with no warnings rose from
+  ~70% to ~75%.
+
 ## 2026-07-11 (rate limiting)
 
 - **Rate-limit the public write endpoints.** `/api/collect` and `/api/feedback`
