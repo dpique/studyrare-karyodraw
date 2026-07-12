@@ -851,6 +851,18 @@
     return map;
   }
 
+  // The absent-sex-chromosome placeholder(s) for a monosomy (e.g. 45,X), shared by
+  // the full karyogram and the affected/isolated view so the two never diverge. The
+  // karyogram shows the karyotype; it does not label the gap "?" or guess whether an
+  // X or a Y was lost. Returns [] when the sex complement is complete.
+  function missingSexCells(clone, ctx, cenOffset) {
+    var xN = (clone.slots["X"] || []).length, yN = (clone.slots["Y"] || []).length, out = [];
+    for (var i = 0, n = 2 - (xN + yN); i < n; i++) {
+      out.push(cellHtml("", [], { ghost: true, ghostChrom: "X", ghostText: "missing", sexcell: true, cenOffset: cenOffset }, ctx));
+    }
+    return out;
+  }
+
   function render(container, clone, opts) {
     opts = opts || {};
     var ctx = { theme: opts.theme || "detailed", level: opts.level == null ? 99 : opts.level, affected: opts.affected || computeAffected(clone) };
@@ -882,14 +894,9 @@
         if (c.sexcell) sexOffset = off;
         oh.push(cellHtml(c.chrom, c.insts, { sexcell: c.sexcell, cenOffset: off }, ctx));
       });
-      // If an isolated sex chromosome comes from a monosomy (45,X), show the absent
-      // homolog placeholder too, so the affected view matches the full karyogram.
-      if (list.indexOf("X") >= 0 || list.indexOf("Y") >= 0) {
-        var xNo = (clone.slots["X"] || []).length, yNo = (clone.slots["Y"] || []).length;
-        for (var msi = 0, miss = 2 - (xNo + yNo); msi < miss; msi++) {
-          oh.push(cellHtml("", [], { ghost: true, ghostChrom: "X", ghostText: "missing", sexcell: true, cenOffset: sexOffset }, ctx));
-        }
-      }
+      // Show the absent homolog for a monosomy here too, so the affected view
+      // matches the full karyogram (shared helper).
+      missingSexCells(clone, ctx, sexOffset).forEach(function (h) { oh.push(h); });
       oh.push('</div></div>');
       container.innerHTML = oh.join("");
       return;
@@ -906,11 +913,7 @@
         var xN = (clone.slots["X"] || []).length, yN = (clone.slots["Y"] || []).length;
         if (xN) html.push(cellHtml("X", clone.slots["X"], { sexcell: true }, ctx));
         if (yN) html.push(cellHtml("Y", clone.slots["Y"], { sexcell: true }, ctx));
-        var missing = 2 - (xN + yN);
-        // Draw an empty "missing" placeholder for an absent sex chromosome, but
-        // do not label it "?" — the karyogram shows the karyotype, it does not
-        // speculate about which chromosome (X or Y) was lost.
-        for (var mi = 0; mi < missing; mi++) html.push(cellHtml("", [], { ghost: true, ghostChrom: "X", ghostText: "missing", sexcell: true }, ctx));
+        missingSexCells(clone, ctx).forEach(function (h) { html.push(h); });
         if ((clone.slots["mar"] || []).length) html.push(cellHtml("mar", clone.slots["mar"], {}, ctx));
         if ((clone.slots["dmin"] || []).length) html.push(cellHtml("dmin", clone.slots["dmin"], {}, ctx));
       }
