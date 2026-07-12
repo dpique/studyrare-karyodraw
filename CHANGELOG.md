@@ -3,6 +3,14 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-12 (affected view shows the missing sex chromosome)
+
+- **The "Affected" view now shows the missing sex chromosome, like the full view.**
+  For a monosomy (45,X, including a 45,X clone in a mosaic), the isolated view drew
+  only the lone X while the full karyogram showed the "missing" placeholder. The
+  two views now agree — the affected view shows the absent homolog too, aligned
+  with the X.
+
 ## 2026-07-12 (tour view, spoken mosaics, missing-chromosome placeholder)
 
 - **The guided tour keeps your view settings.** Style / Bands / Show no longer

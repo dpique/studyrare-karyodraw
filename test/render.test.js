@@ -277,3 +277,19 @@ test('the missing sex-chromosome placeholder is not labeled "?"', () => {
   assert.match(cont.innerHTML, /missing/, 'shows the missing placeholder');
   assert.doesNotMatch(cont.innerHTML, /klabel">\?</, 'no "?" label under the placeholder');
 });
+
+// The affected/isolated view must agree with the full view: a monosomy shows the
+// absent homolog placeholder there too.
+const affKaryogram = (k) => {
+  const c = ISCN.parse(k).clones[0];
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, c, { theme: 'detailed', level: 1, affected: Karyo.computeAffected([c]), only: Object.keys(Karyo.computeAffected([c])) });
+  return cont.innerHTML;
+};
+test('the affected view shows the missing homolog for a monosomy (45,X)', () => {
+  assert.match(affKaryogram('45,X'), /missing/, 'consistent with the full karyogram');
+});
+test('the affected view shows no missing homolog when there is no monosomy', () => {
+  assert.doesNotMatch(affKaryogram('47,XXX'), /missing/, '47,XXX has three X, none missing');
+  assert.doesNotMatch(affKaryogram('46,X,i(X)(q10)'), /missing/, 'X + i(X) is two sex chromosomes');
+});
