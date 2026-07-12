@@ -24,7 +24,7 @@
 <meta name="twitter:description" content="A plain-language guide to reading a karyotype in ISCN 2024 notation: the chromosome count, arms and bands, and every symbol for numerical and structural changes, with a worked example for each." />
 <meta name="twitter:image" content="https://karyodraw.com/preview.png" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3CclipPath id='a'%3E%3Crect x='6' y='3' width='8' height='26' rx='4'/%3E%3C/clipPath%3E%3CclipPath id='b'%3E%3Crect x='18' y='3' width='8' height='26' rx='4'/%3E%3C/clipPath%3E%3C/defs%3E%3Cg clip-path='url(%23a)'%3E%3Crect x='6' y='3' width='8' height='26' fill='%238b97ee'/%3E%3Crect x='6' y='7.5' width='8' height='2.6' fill='%235e72e4'/%3E%3Crect x='6' y='13.5' width='8' height='2.6' fill='%23eef1fd'/%3E%3Crect x='6' y='20' width='8' height='2.6' fill='%235e72e4'/%3E%3C/g%3E%3Crect x='6' y='3' width='8' height='26' rx='4' fill='none' stroke='%234a5ac8' stroke-width='1.1'/%3E%3Cg clip-path='url(%23b)'%3E%3Crect x='18' y='3' width='8' height='26' fill='%238b97ee'/%3E%3Crect x='18' y='7.5' width='8' height='2.6' fill='%235e72e4'/%3E%3Crect x='18' y='13.5' width='8' height='2.6' fill='%23eef1fd'/%3E%3Crect x='18' y='22' width='8' height='7' fill='%23ec9b27'/%3E%3C/g%3E%3Crect x='18' y='3' width='8' height='26' rx='4' fill='none' stroke='%234a5ac8' stroke-width='1.1'/%3E%3C/svg%3E" />
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","name":"How to read a karyotype: ISCN notation explained | KaryoDraw","headline":"How to read a karyotype: ISCN notation explained | KaryoDraw","description":"A plain-language guide to reading a karyotype in ISCN 2024 notation: the chromosome count, arms and bands, and every symbol for numerical and structural changes, with a worked example for each.","url":"https://karyodraw.com/how-to-read-a-karyotype/","inLanguage":"en","isPartOf":{"@type":"WebSite","name":"KaryoDraw","url":"https://karyodraw.com/"},"author":{"@type":"Person","name":"Daniel Pique","url":"https://orcid.org/0000-0003-0074-3974"},"publisher":{"@type":"Organization","name":"StudyRare","url":"https://studyrare.com/"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Article","name":"How to read a karyotype: ISCN notation explained | KaryoDraw","headline":"How to read a karyotype: ISCN notation explained | KaryoDraw","description":"A plain-language guide to reading a karyotype in ISCN 2024 notation: the chromosome count, arms and bands, and every symbol for numerical and structural changes, with a worked example for each.","url":"https://karyodraw.com/how-to-read-a-karyotype/","inLanguage":"en","isPartOf":{"@type":"WebSite","name":"KaryoDraw","url":"https://karyodraw.com/"},"author":{"@type":"Person","name":"Daniel Pique","url":"https://orcid.org/0000-0003-0074-3974"},"publisher":{"@type":"Organization","name":"StudyRare","url":"https://studyrare.com/"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is a karyotype?","acceptedAnswer":{"@type":"Answer","text":"A karyotype is the complete set of chromosomes in a cell, arranged by size and banding pattern, together with the standardized notation that describes it. A normal human karyotype is written 46,XX for a female or 46,XY for a male: 46 chromosomes, with the sex chromosomes listed after the count."}},{"@type":"Question","name":"What is ISCN 2024?","acceptedAnswer":{"@type":"Answer","text":"ISCN is the International System for Human Cytogenomic Nomenclature, the standard shorthand for chromosome number and structure, and the 2024 edition is the current revision. It defines the arm labels p and q, the band coordinates, and operators such as t for translocation, del for deletion, dup for duplication, inv for inversion, and i for isochromosome."}},{"@type":"Question","name":"How do I read a karyotype?","acceptedAnswer":{"@type":"Answer","text":"Read it left to right: first the total chromosome count, then the sex chromosomes, then any abnormalities separated by commas, with the chromosome and band coordinates in parentheses. For example, 46,XY,t(9;22)(q34;q11.2) means 46 chromosomes, male, with a translocation between chromosomes 9 and 22 breaking at bands 9q34 and 22q11.2."}},{"@type":"Question","name":"What does t(9;22) mean?","acceptedAnswer":{"@type":"Answer","text":"t(9;22)(q34;q11.2) is a reciprocal translocation in which chromosomes 9 and 22 break and exchange their distal segments. The small derivative chromosome 22 it produces is the Philadelphia chromosome, and the resulting BCR::ABL1 fusion gene defines chronic myeloid leukemia."}},{"@type":"Question","name":"What is the difference between a Robertsonian and a reciprocal translocation?","acceptedAnswer":{"@type":"Answer","text":"A reciprocal translocation is an exchange of segments between any two chromosomes. A Robertsonian translocation is a fusion of two acrocentric chromosomes (13, 14, 15, 21, or 22) at their centromeres, which lowers the chromosome count to 45. Robertsonian carriers are usually healthy but face a higher risk of miscarriage and of chromosomally unbalanced children."}},{"@type":"Question","name":"Is KaryoDraw free, and is it a diagnostic tool?","acceptedAnswer":{"@type":"Answer","text":"KaryoDraw is free and runs entirely in your browser, with no account and nothing to install. It is an educational visualizer of cytogenetic nomenclature for learning and teaching, not a diagnostic tool, and it does not replace a clinical cytogenetics laboratory report."}}]}]}</script>
 <style>
   /* Fonts are loaded via <link rel="preconnect"> + <link rel="stylesheet"> in <head>
      so they are discovered before this stylesheet parses (faster LCP than @import). */
@@ -42,7 +42,7 @@
     --shadow: 0 1px 2px rgba(26,31,54,.06), 0 8px 24px rgba(26,31,54,.09);
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; }
+  html, body { margin: 0; overflow-x: hidden; }
   body {
     font: 15px/1.55 var(--font-sans);
     color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased;
@@ -81,7 +81,8 @@
   .examples { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
   .chip {
     font: 12.5px var(--font-mono); padding: 5px 10px; border-radius: 999px; margin: 0;
-    background: #f0f2f7; color: var(--ink-2); border: 1px solid var(--line); cursor: pointer; white-space: nowrap;
+    background: #f0f2f7; color: var(--ink-2); border: 1px solid var(--line); cursor: pointer;
+    white-space: normal; max-width: 100%;   /* wrap the label instead of clipping off-screen on mobile */
   }
   .chip:hover { background: var(--peri-50); border-color: var(--peri-300); color: var(--peri-700); }
   .chip b { color: var(--peri-700); font-weight: 700; }
@@ -94,7 +95,8 @@
   }
   .seg button:focus-visible { outline-offset: -2px; }
 
-  .viewopts { display: flex; align-items: center; gap: 8px 12px; margin-top: 12px; flex-wrap: wrap; }
+  .viewopts { display: flex; align-items: center; gap: 8px 16px; margin-top: 12px; flex-wrap: wrap; }
+  .viewopt { display: inline-flex; align-items: center; gap: 8px; }   /* keep each label with its toggle when the row wraps */
   .viewopts .vlabel { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   .viewhint { margin-top: 7px; font-size: 12.5px; color: var(--muted); }
   .viewhint b { color: var(--ink-2); font-weight: 700; }
@@ -109,7 +111,15 @@
 
   main { padding: 18px 0 60px; }
   .grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
-  @media (max-width: 1040px) { .grid { grid-template-columns: 1fr; } }
+  /* minmax(0,1fr), not 1fr: let the column shrink below its content so a wide
+     karyogram scrolls inside its card instead of stretching the whole page. */
+  @media (max-width: 1040px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .grid > * { min-width: 0; }   /* allow the columns to shrink below their content (karyogram) width */
+  /* Phones: tighter gutters so the nav, chips, and karyogram get more usable width. */
+  @media (max-width: 640px) {
+    .wrap, .sitebar-inner { padding-left: 16px; padding-right: 16px; }
+    .card .body { padding: 12px 12px; }
+  }
 
   /* Respect a reduced-motion preference: strip transitions and animations for
      users who get motion sickness or vestibular symptoms. */
@@ -122,10 +132,10 @@
     }
   }
 
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); min-width: 0; }
   .card + .card { margin-top: 16px; }
   .card h2 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 13px 16px; border-bottom: 1px solid var(--line); }
-  .card .body { padding: 14px 16px; }
+  .card .body { padding: 14px 16px; min-width: 0; }
 
   .summary { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; padding: 12px 16px; }
   .summary .kt { font: 600 17px var(--font-mono); color: var(--ink); }
@@ -145,6 +155,7 @@
   .clone-head .cc { font-size: 12.5px; color: var(--muted); }
 
   /* karyogram — 4 fixed Denver rows; rendered at natural size, then JS scales it to fill the card */
+  #karyo { overflow-x: auto; min-width: 0; }   /* scroll an over-wide karyogram inside the card instead of stretching the page */
   #karyo .kwrap { overflow: visible; }
   .karyogram { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 8px 10px; width: max-content; margin: 0 auto; transform-origin: top center; }
   .kgroup { display: flex; flex-wrap: nowrap; gap: 5px; padding: 4px 6px; border-radius: 10px; align-items: flex-end; }
@@ -449,6 +460,34 @@
 <section class="lp-sec">
   <h2>10. Acquired changes: cancer cytogenetics</h2>
   <p>The changes above are usually constitutional, present from birth in every cell. Tumors instead acquire chromosome changes in the cancer cells alone, and specific recurrent rearrangements define particular leukemias and lymphomas. They are read with the same notation. Examples include <a href="/karyotype/philadelphia-chromosome/">t(9;22), the Philadelphia chromosome of chronic myeloid leukemia</a>, <a href="/karyotype/burkitt-lymphoma/">t(8;14) in Burkitt lymphoma</a>, <a href="/karyotype/acute-promyelocytic-leukemia/">t(15;17) in acute promyelocytic leukemia</a>, and <a href="/karyotype/aml-inv-16/">inv(16) in acute myeloid leukemia</a>.</p>
+</section>
+
+<section class="lp-sec faq" aria-labelledby="faq-h">
+  <h2 id="faq-h">Frequently asked questions</h2>
+  <div class="faq-item">
+    <h3 class="faq-q">What is a karyotype?</h3>
+    <div class="faq-a"><p>A karyotype is the complete set of chromosomes in a cell, arranged by size and banding pattern, together with the standardized notation that describes it. A normal human karyotype is written 46,XX for a female or 46,XY for a male: 46 chromosomes, with the sex chromosomes listed after the count.</p></div>
+  </div>
+  <div class="faq-item">
+    <h3 class="faq-q">What is ISCN 2024?</h3>
+    <div class="faq-a"><p>ISCN is the International System for Human Cytogenomic Nomenclature, the standard shorthand for chromosome number and structure, and the 2024 edition is the current revision. It defines the arm labels p and q, the band coordinates, and operators such as t for translocation, del for deletion, dup for duplication, inv for inversion, and i for isochromosome.</p></div>
+  </div>
+  <div class="faq-item">
+    <h3 class="faq-q">How do I read a karyotype?</h3>
+    <div class="faq-a"><p>Read it left to right: first the total chromosome count, then the sex chromosomes, then any abnormalities separated by commas, with the chromosome and band coordinates in parentheses. For example, 46,XY,t(9;22)(q34;q11.2) means 46 chromosomes, male, with a translocation between chromosomes 9 and 22 breaking at bands 9q34 and 22q11.2.</p></div>
+  </div>
+  <div class="faq-item">
+    <h3 class="faq-q">What does t(9;22) mean?</h3>
+    <div class="faq-a"><p>t(9;22)(q34;q11.2) is a reciprocal translocation in which chromosomes 9 and 22 break and exchange their distal segments. The small derivative chromosome 22 it produces is the Philadelphia chromosome, and the resulting <i>BCR::ABL1</i> fusion gene defines chronic myeloid leukemia.</p></div>
+  </div>
+  <div class="faq-item">
+    <h3 class="faq-q">What is the difference between a Robertsonian and a reciprocal translocation?</h3>
+    <div class="faq-a"><p>A reciprocal translocation is an exchange of segments between any two chromosomes. A Robertsonian translocation is a fusion of two acrocentric chromosomes (13, 14, 15, 21, or 22) at their centromeres, which lowers the chromosome count to 45. Robertsonian carriers are usually healthy but face a higher risk of miscarriage and of chromosomally unbalanced children.</p></div>
+  </div>
+  <div class="faq-item">
+    <h3 class="faq-q">Is KaryoDraw free, and is it a diagnostic tool?</h3>
+    <div class="faq-a"><p>KaryoDraw is free and runs entirely in your browser, with no account and nothing to install. It is an educational visualizer of cytogenetic nomenclature for learning and teaching, not a diagnostic tool, and it does not replace a clinical cytogenetics laboratory report.</p></div>
+  </div>
 </section>
 
 <section class="lp-sec">

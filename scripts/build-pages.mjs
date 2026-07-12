@@ -295,11 +295,19 @@ const STATIC_PAGES = [
 function staticPageHtml(p) {
   const inner = fs.readFileSync(path.join(ROOT, p.file), 'utf8').trim();
   const url = `${SITE}/${p.slug}/`;
-  const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@type': p.ldType,
+  const base = { '@type': p.ldType,
     name: p.title, headline: p.title, description: p.description, url, inLanguage: 'en',
     isPartOf: { '@type': 'WebSite', name: 'KaryoDraw', url: SITE + '/' },
     author: { '@type': 'Person', name: 'Daniel Pique', url: 'https://orcid.org/0000-0003-0074-3974' },
-    publisher: { '@type': 'Organization', name: 'StudyRare', url: 'https://studyrare.com/' } });
+    publisher: { '@type': 'Organization', name: 'StudyRare', url: 'https://studyrare.com/' } };
+  // Derive FAQPage structured data from any FAQ authored in the page, so the Q&A
+  // lives in exactly one place (the visible content) and stays eligible for search.
+  const qs = [...inner.matchAll(/<h3 class="faq-q">([\s\S]*?)<\/h3>/g)].map((m) => stripTags(m[1]).replace(/\s+/g, ' ').trim());
+  const as = [...inner.matchAll(/<div class="faq-a">([\s\S]*?)<\/div>/g)].map((m) => stripTags(m[1]).replace(/\s+/g, ' ').trim());
+  const jsonLd = (qs.length && qs.length === as.length)
+    ? JSON.stringify({ '@context': 'https://schema.org', '@graph': [base,
+        { '@type': 'FAQPage', mainEntity: qs.map((q, i) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: as[i] } })) }] })
+    : JSON.stringify({ '@context': 'https://schema.org', ...base });
   return pageShell({
     title: p.title, description: p.description, canonicalPath: `/${p.slug}/`, ogType: p.ldType === 'Article' ? 'article' : 'website',
     jsonLd, active: p.active, crumb: p.crumb, articleClass: 'lp-prose', body: `${inner}\n    ${SITE_FOOT}`,
