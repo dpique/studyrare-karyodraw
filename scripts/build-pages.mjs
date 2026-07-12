@@ -365,7 +365,13 @@ const injected = indexHtml
 fs.writeFileSync(path.join(ROOT, 'index.html'), injected);
 
 // ---- sitemap.xml --------------------------------------------------------------
-const lastmod = process.env.BUILD_DATE || '2026-07-11';
+// Content revision date for <lastmod>. Bump this by hand only when the curated
+// content actually changes (an entry in content/karyotypes.js, the guide, or the
+// about page). It is deliberately NOT the build date: the site deploys many times
+// a day, and restamping every page's lastmod to "today" on each deploy trains
+// search engines to distrust the signal and deprioritize the landing pages. A
+// stable, honest date is what earns and keeps their crawl priority.
+const lastmod = '2026-07-12';
 const urls = [
   { loc: SITE + '/', priority: '1.0', changefreq: 'monthly' },
   { loc: SITE + '/how-to-read-a-karyotype/', priority: '0.9', changefreq: 'monthly' },

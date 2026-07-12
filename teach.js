@@ -217,7 +217,7 @@
       return { text: (nmar > 1
         ? nmar + " MARKER chromosomes (mar): small extra chromosomes"
         : "a MARKER chromosome (mar): a small extra chromosome") +
-        " whose origin can't be identified by banding alone", tag: "mar" };
+        " whose origin cannot be identified by banding alone", tag: "mar" };
     }
     if (k === "trp") return { text: "a TRIPLICATION in chromosome " + c + ": the segment " + bandsPhrase(c, bp[0] || []) + " is present three times", tag: "dup" };
     return { text: "an aberration (" + (ab.raw || k) + ") that KaryoDraw drew as best it could", tag: "unknown" };
@@ -328,7 +328,7 @@
     q: "The LONG arm. 'q' simply follows 'p' in the alphabet. Always drawn on the BOTTOM. Bands numbered from the centromere (q1…) out to the telomere.",
     centromere: "The primary constriction that joins the two arms. The kinetochore assembles here and spindle fibres attach during cell division. Its position (metacentric / submetacentric / acrocentric) helps identify a chromosome.",
     telomere: "The very tip of each arm ('ter' = pter / qter). Repetitive TTAGGG caps that protect chromosome ends and shorten with each division.",
-    band: "A stretch of chromosome that stains light or dark with Giemsa (G-banding). The reproducible pattern of bands is a chromosome's 'barcode', it's how each one is identified and how breakpoints are pinpointed."
+    band: "A stretch of chromosome that stains light or dark with Giemsa (G-banding). The reproducible pattern of bands is a chromosome's 'barcode', it is how each one is identified and how breakpoints are pinpointed."
   };
 
   // ---- spoken pronunciation (fed to the browser's free Web Speech API) -----

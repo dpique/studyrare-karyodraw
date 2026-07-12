@@ -1077,7 +1077,7 @@
     if (!w.length && !fix) { box.innerHTML = ""; return; }
     var parts = ['<div class="warnbox">'];
     if (fix && fix !== model.raw) {
-      parts.push('<div class="dym-row">Did you mean <button class="dym" data-k="' + escapeHtml(fix) + '">' + escapeHtml(fix) + '</button>?</div>');
+      parts.push('<div class="dym-row">Did you mean <button class="dym" data-k="' + escXml(fix) + '">' + escapeHtml(fix) + '</button>?</div>');
     }
     if (w.length) {
       parts.push('<div class="warn-title">' + (fix ? "A couple of things to check:" : "Let’s sort this out:") + '</div>');

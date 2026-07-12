@@ -40,7 +40,7 @@ jobs:
       # sitemap.xml from content/karyotypes.js so the single source of truth is always
       # what ships, even if the committed generated files were stale.
       - name: Build landing pages
-        run: BUILD_DATE=$(date +%F) node scripts/build-pages.mjs
+        run: node scripts/build-pages.mjs
       - name: Deploy with wrangler
         id: deploy
         env:
