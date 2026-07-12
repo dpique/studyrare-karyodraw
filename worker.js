@@ -34,6 +34,9 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/api/collect") {
       if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
+      // Per-IP rate limit. On limit, silently drop (204, same as success) so a
+      // legitimate user is never disrupted — the analytics beacon ignores the body.
+      if (await overLimit(env.RL_COLLECT, request)) return new Response(null, { status: 204 });
       // Read the body here, before returning; it is not reliably readable inside waitUntil.
       let body = null;
       try { body = await request.json(); } catch (_) { body = null; }
@@ -47,6 +50,9 @@ export default {
     }
     if (url.pathname === "/api/feedback") {
       if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
+      // Per-IP rate limit. Feedback is low-frequency for a real person, so a tight
+      // cap stops a flood into the inbox/webhook without affecting normal use.
+      if (await overLimit(env.RL_FEEDBACK, request)) return new Response("slow down", { status: 429 });
       return feedbackResponse(request, env, ctx);
     }
     // /k/<notation> is a short, notation-based link. Redirect to the canonical
@@ -85,6 +91,23 @@ export default {
 
 function cap(v, n) {
   return typeof v === "string" && v ? v.slice(0, n) : null;
+}
+
+// Best-effort per-IP rate limit via a Workers Rate Limiting binding. Returns true
+// when the caller should be throttled. No-ops (returns false) when the binding is
+// absent — local dev, or before the binding is deployed — and never throws, since
+// a limiter hiccup must not take the endpoint down. Counting is per Cloudflare
+// location and approximate, which is the right trade for cheap abuse protection.
+async function overLimit(limiter, request) {
+  if (!limiter) return false;
+  const ip = request.headers.get("cf-connecting-ip") || "unknown";
+  try {
+    const { success } = await limiter.limit({ key: ip });
+    return !success;
+  } catch (e) {
+    console.error("rate limit check failed:", e && e.message);
+    return false;
+  }
 }
 
 // Email any not-yet-sent feedback as one digest, via Resend. Safe to deploy before

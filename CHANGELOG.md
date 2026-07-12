@@ -3,6 +3,16 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-11 (rate limiting)
+
+- **Rate-limit the public write endpoints.** `/api/collect` and `/api/feedback`
+  now enforce a per-IP cap via the Workers Rate Limiting binding, so a scripted
+  flood can no longer inflate D1 writes, poison the "Most-studied" board, or spam
+  the feedback inbox. `/api/collect` is generous (120/min) so a classroom behind
+  one NAT IP is never blocked and silently drops over-limit beacons; `/api/feedback`
+  is tight (20/min) and returns 429. The check no-ops if the binding is missing and
+  never throws, so it cannot take an endpoint down.
+
 ## 2026-07-11 (audit follow-ups: a11y, backend, content)
 
 - **Accessibility.** The karyogram no longer nests two `role="img"` layers (screen
