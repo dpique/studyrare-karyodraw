@@ -8,8 +8,9 @@
  * Privacy: the usage analytics store no cookie, account, IP, user-agent, or
  * identifier — only the karyotype drawn (capped), whether it parsed, the view
  * settings, a coarse country, and the referring host. Feedback is a separate,
- * voluntary channel: it stores what the person typed plus, if they choose to
- * give it, an email for a reply. Feedback is kept private and never shown.
+ * voluntary channel: it stores what the person typed, a coarse country, and, if
+ * they choose to give it, an email for a reply. No user-agent, IP, or cookie is
+ * stored on feedback either. Feedback is kept private and never shown.
  *
  * A daily cron (scheduled handler) emails a digest of new feedback via Resend,
  * inert until the RESEND_API_KEY / FEEDBACK_EMAIL_TO settings are configured.
@@ -90,52 +91,68 @@ function cap(v, n) {
 // it is configured: it no-ops unless RESEND_API_KEY and FEEDBACK_EMAIL_TO are set.
 // Rows are marked digested only after the email is accepted, so a send failure
 // retries on the next run instead of dropping feedback.
-async function sendFeedbackDigest(env) {
-  if (!env.RESEND_API_KEY || !env.FEEDBACK_EMAIL_TO) return;
-  let rows = [];
+// Fetch up to 200 not-yet-digested rows, oldest first. Prefers the richer columns
+// and falls back if the category migration has not run. Returns null on query
+// failure so the caller can stop cleanly.
+async function fetchUndigestedFeedback(env) {
   const tail = "WHERE digested IS NULL ORDER BY ts ASC LIMIT 200";
   try {
-    // Prefer the richer columns; fall back if the category migration has not run.
-    rows = (await env.DB.prepare(
+    return (await env.DB.prepare(
       "SELECT id, ts, message, email, karyotype, url, country, category FROM feedback " + tail
     ).all()).results || [];
   } catch (e) {
     try {
-      rows = (await env.DB.prepare(
+      return (await env.DB.prepare(
         "SELECT id, ts, message, email, karyotype, url, country FROM feedback " + tail
       ).all()).results || [];
     } catch (e2) {
       console.error("digest query failed:", e2 && e2.message);
-      return;
+      return null;
     }
   }
-  if (!rows.length) return;
+}
 
+async function sendFeedbackDigest(env) {
+  if (!env.RESEND_API_KEY || !env.FEEDBACK_EMAIL_TO) return;
   const from = env.FEEDBACK_EMAIL_FROM || "KaryoDraw feedback <feedback@karyodraw.com>";
-  const subject = "KaryoDraw feedback: " + rows.length + " new";
-  const body = rows.map(formatFeedback).join("\n\n----------\n\n");
 
-  let sent = false;
-  try {
-    const r = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" },
-      body: JSON.stringify({ from, to: env.FEEDBACK_EMAIL_TO, subject, text: body }),
-    });
-    sent = r.ok;
-    if (!r.ok) console.error("resend returned", r.status);
-  } catch (e) {
-    console.error("resend request failed:", e && e.message);
-  }
+  // Drain the queue in batches of 200, oldest first, so a backlog (or a spam
+  // burst) cannot leave genuine feedback undigested for days. Bounded at 20
+  // batches (4000 rows) per run so one invocation can never loop unbounded.
+  for (let batch = 0; batch < 20; batch++) {
+    const rows = await fetchUndigestedFeedback(env);
+    if (!rows || !rows.length) return;
 
-  if (sent) {
+    const subject = "KaryoDraw feedback: " + rows.length + " new";
+    const body = rows.map(formatFeedback).join("\n\n----------\n\n");
+
+    let sent = false;
+    try {
+      const r = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" },
+        body: JSON.stringify({ from, to: env.FEEDBACK_EMAIL_TO, subject, text: body }),
+      });
+      sent = r.ok;
+      if (!r.ok) console.error("resend returned", r.status);
+    } catch (e) {
+      console.error("resend request failed:", e && e.message);
+    }
+    // On a send failure, stop and leave the rows undigested so the next run retries
+    // them instead of dropping feedback.
+    if (!sent) return;
+
     const ids = rows.map((x) => x.id);
     const marks = ids.map(() => "?").join(",");
     try {
       await env.DB.prepare("UPDATE feedback SET digested = 1 WHERE id IN (" + marks + ")").bind(...ids).run();
     } catch (e) {
+      // If marking fails, stop rather than re-send the same rows on the next loop.
       console.error("digest mark failed:", e && e.message);
+      return;
     }
+    // A short (partial) batch means the queue is drained.
+    if (rows.length < 200) return;
   }
 }
 
@@ -193,7 +210,10 @@ async function feedbackResponse(request, env, ctx) {
   const email = cap(b.email, 200);
   const karyotype = cap(b.karyotype, 512);
   const link = cap(b.url, 500);
-  const ua = cap(request.headers.get("user-agent"), 300);
+  // User-agent intentionally not stored. It was only ever written, never shown in
+  // the digest, so it added identifying data with no support value. The column is
+  // kept for schema compatibility; new rows leave it null.
+  const ua = null;
   const country = (request.cf && request.cf.country) || null;
   const token = crypto.randomUUID();
 

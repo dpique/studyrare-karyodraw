@@ -3,6 +3,25 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-11 (audit follow-ups: a11y, backend, content)
+
+- **Accessibility.** The karyogram no longer nests two `role="img"` layers (screen
+  readers announced it twice or dropped the label); the container is now a labeled
+  group described by the decode panel. Added a visible label on the karyotype
+  input and a `prefers-reduced-motion` block that strips transitions and
+  animations for users who need it.
+- **Feedback digest drains in batches.** A backlog (or a spam burst) can no longer
+  leave genuine feedback undigested for days: the daily email now sends in batches
+  of 200 until the queue is clear, bounded per run. Added a partial index on
+  unsent feedback so the query stays off the full table as it grows.
+- **Privacy.** Stopped storing the user-agent on feedback submissions (it was
+  written but never shown), and aligned the privacy comments with what is actually
+  stored.
+- **Clinical notes.** Gene symbols are now italicized and gene fusions use the
+  current ISCN double-colon form (BCR::ABL1, PML::RARA, RUNX1::RUNX1T1) across the
+  clinical card, the print sheet, and the landing pages. The Klinefelter label no
+  longer reads "47,XXY" for a 48,XXXY karyotype.
+
 ## 2026-07-11 (crash hardening)
 
 - **Never let a typed karyotype freeze the browser.** Three inputs could crash or
