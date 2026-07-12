@@ -359,7 +359,13 @@
     if (clone.modalNumber != null) parts.push(String(clone.modalNumber));
     if (clone.sex.tokens.length) parts.push(clone.sex.tokens.join(" "));
     clone.aberrations.forEach(function (ab) { parts.push(pronounceAb(ab)); });
-    return parts.filter(Boolean).join(". ");
+    var out = parts.filter(Boolean).join(". ");
+    // Speak the cell count when present — the proportions are the point of a mosaic.
+    if (clone.cellCount != null) {
+      out += (out ? ", " : "") + (clone.composite ? "composite of " : "in ") +
+        clone.cellCount + " cell" + (clone.cellCount === 1 ? "" : "s");
+    }
+    return out;
   }
 
   // ---- plain-language summary (for the printable patient sheet) ------------

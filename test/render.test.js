@@ -268,3 +268,12 @@ test('a euploid polyploid sex complement is NOT falsely flagged', () => {
   assert.deepEqual(affKeys('69,XXX'), [], '3n XXX is euploid for triploidy');
   assert.deepEqual(affKeys('92,XXXX'), [], '4n XXXX is euploid for tetraploidy');
 });
+
+// The absent-sex-chromosome placeholder shows "missing" but is not labeled "?"
+// (the karyogram shows the karyotype, it does not speculate what was lost).
+test('the missing sex-chromosome placeholder is not labeled "?"', () => {
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, ISCN.parse('45,X').clones[0], { theme: 'detailed', level: 1, affected: {} });
+  assert.match(cont.innerHTML, /missing/, 'shows the missing placeholder');
+  assert.doesNotMatch(cont.innerHTML, /klabel">\?</, 'no "?" label under the placeholder');
+});

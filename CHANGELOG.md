@@ -3,6 +3,18 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-12 (tour view, spoken mosaics, missing-chromosome placeholder)
+
+- **The guided tour keeps your view settings.** Style / Bands / Show no longer
+  reset between tour steps, so switching to the Affected view (or any toggle)
+  carries across the examples instead of snapping back to the default each step.
+- **"Hear it" announces a mosaic and its cell counts.** A mosaic now reads
+  "Mosaic. 45, X, in 12 cells. Next clone. 46, X X, in 18 cells" instead of
+  dropping both the mosaic designation and the proportions.
+- **The absent sex chromosome is no longer labeled "?".** For 45,X the placeholder
+  still shows "missing," but without the "?" — the karyogram shows the karyotype,
+  it does not speculate about whether an X or a Y was lost.
+
 ## 2026-07-12 (normalize whitespace in the drawn karyotype)
 
 - **Trim stray spaces once drawn.** A karyotype typed or pasted with spaces (for
