@@ -3,6 +3,25 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-11 (crash hardening)
+
+- **Never let a typed karyotype freeze the browser.** Three inputs could crash or
+  hang the tab instead of drawing a warning: an unbounded copy multiplier
+  (`+21×100000000`), an absurd modal number read as a huge ploidy (`46000000,XY`),
+  and a large `dmin` count. Each allocated one object per copy. Copy counts are now
+  capped at 50 (with a warning) and ploidy is capped at octaploid, so these render
+  instantly with a clear message.
+- **Empty or comma-only input no longer throws.** A field-less clone (for example
+  `,`) now returns the full model shape, so the invalid-state message shows instead
+  of a `TypeError` from the downstream renderer.
+- **A first-clone `idem` with no stemline no longer doubles its own aberrations.**
+  `47,XX,idem,+8` used to resolve `idem` to itself and apply `+8` twice; it now
+  flags the missing stemline and counts the change once.
+- **Copy-link fallback is non-blocking.** When the async clipboard API is
+  unavailable (older browsers, non-secure contexts, or a permission rejection), the
+  link now copies via a hidden field or shows a "press Cmd/Ctrl+C" hint, instead of
+  a blocking `prompt()` dialog.
+
 ## 2026-07-11 (evening)
 
 - **Draw a real centromere on whole-arm and mirror derivatives.** A Robertsonian

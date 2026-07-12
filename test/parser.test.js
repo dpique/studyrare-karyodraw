@@ -283,3 +283,48 @@ test('dmin is recognized and is not counted in the modal number', () => {
   assert.equal(r.clones[0].counts.actual, 46, 'double minutes are extrachromosomal, not counted');
   assert.equal(r.clones[0].counts.ok, true);
 });
+
+// --- Hostile / malformed input must degrade gracefully, never crash -----------
+// A user typing garbage must get a warning, not a frozen tab. Values here are kept
+// modest so they prove the bound cheaply; the real-world crash triggers were much
+// larger (a huge multiplier or modal number allocating one object per copy).
+
+test('a copy-number multiplier is capped so a huge xN cannot exhaust memory', () => {
+  const c = clone0('46,XX,+8×1000');
+  assert.ok(c.complement['8'] <= 52, 'gain multiplier is bounded (2 homologs + at most 50 copies), got ' + c.complement['8']);
+  assert.ok(ISCN.parse('46,XX,+8×1000').warnings.some((w) => /50|most|cap/i.test(w)), 'the cap is surfaced as a warning');
+});
+
+test('a dmin count is capped so a huge NdmIn cannot exhaust memory', () => {
+  const c = clone0('46,XX,1000dmin');
+  assert.ok((c.slots.dmin || []).length <= 50, 'double-minute count is bounded, got ' + (c.slots.dmin || []).length);
+});
+
+test('an absurd modal number does not create a giant complement', () => {
+  // 230 = 10x23; the old code read that as decaploid and allocated 10 copies of
+  // every chromosome. Ploidy is only meaningful up to ~octaploid; beyond that,
+  // fall back to diploid and let the count-mismatch warning speak.
+  const c = clone0('230,XY');
+  assert.ok(c.complement['1'] <= 8, 'chromosome 1 copy count stays bounded, got ' + c.complement['1']);
+  assert.equal(c.counts.ok, false, 'the impossible count is flagged, not silently drawn');
+});
+
+test('empty / comma-only input yields a full clone shape (no undefined slots)', () => {
+  // Regression for a TypeError: an empty field list returned a clone with no
+  // slots/complement/counts, which crashed computeAffected/teach downstream.
+  const c = clone0(',');
+  assert.equal(typeof c.slots, 'object', 'slots is always present');
+  assert.equal(typeof c.complement, 'object', 'complement is always present');
+  assert.ok(c.counts && c.counts.ok === false, 'counts is present and not ok');
+  assert.ok((c.slots['1'] || []).length === 0 || Array.isArray(c.slots['1']), 'per-chromosome slot access is safe');
+});
+
+test('a first-clone idem with no stemline does not double its own aberrations', () => {
+  // 47,XX,idem,+8 is malformed (idem needs a preceding stemline). The old code
+  // let the clone reference itself, applying +8 twice -> phantom 48,+8x2.
+  const c = clone0('47,XX,idem,+8');
+  assert.equal(c.complement['8'], 3, '+8 is applied once, not doubled');
+  assert.equal(c.counts.actual, 47, 'count reflects a single +8');
+  assert.ok(ISCN.parse('47,XX,idem,+8').warnings.some((w) => /idem|sl|stemline|earlier clone|previous clone/i.test(w)),
+    'the missing-stemline problem is surfaced');
+});

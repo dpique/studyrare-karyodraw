@@ -32,6 +32,13 @@
   for (var i = 1; i <= 22; i++) AUTOSOMES.push(String(i));
   var ALL = AUTOSOMES.concat(["X", "Y"]);
 
+  // Upper bound on any drawable copy count (×N multiplier, dmin count). The
+  // renderer allocates one object per copy, so an unbounded N (a typo or paste
+  // like +8×1000000) would exhaust memory and freeze the tab. No real karyotype
+  // needs more than a handful; 50 is far past any legitimate use and still cheap
+  // to draw. Counts above this are capped with a warning rather than honored.
+  var MAX_COPIES = 50;
+
   // Split a breakpoint group like "p11q13" or "q34" or "p15.2" into bands.
   function splitBands(s) {
     if (!s) return [];
@@ -81,7 +88,8 @@
   function stripMultiplier(tok) {
     var m = /[×x](\d+)$/.exec(tok);
     if (!m) return { tok: tok, mult: 1 };
-    return { tok: tok.slice(0, m.index), mult: parseInt(m[1], 10) };
+    var n = parseInt(m[1], 10);
+    return { tok: tok.slice(0, m.index), mult: Math.min(n, MAX_COPIES), capped: n > MAX_COPIES };
   }
 
   function parseAberration(tok, warnings) {
@@ -89,6 +97,7 @@
     var ab = { raw: raw, kind: "unknown", sign: null, chroms: [], breakpoints: [], note: "", qualifier: null, multiplier: 1, ref: null };
     var sq = stripQualifier(tok); tok = sq.tok; var qual = sq.qual;
     var smx = stripMultiplier(tok); tok = smx.tok; ab.multiplier = smx.mult;
+    if (smx.capped) warnings.push("A copy count above " + MAX_COPIES + " is capped at " + MAX_COPIES + " for drawing (“" + raw + "”).");
     function finish(a) {
       if (qual) { a.qualifier = qual; a.note = (a.note ? a.note + "; " : "") + (QUAL[qual] || qual); }
       return a;
@@ -99,7 +108,13 @@
     if (/^(idem|sl|sdl)$/i.test(tok)) { ab.kind = "idem"; ab.ref = tok.toLowerCase(); return finish(ab); }
     // Double minutes: small extrachromosomal amplified fragments (may carry a count).
     var dm = /^(\d+)?dmin$/i.exec(tok);
-    if (dm) { ab.kind = "dmin"; ab.count = dm[1] ? parseInt(dm[1], 10) : 1; return finish(ab); }
+    if (dm) {
+      ab.kind = "dmin";
+      var dcount = dm[1] ? parseInt(dm[1], 10) : 1;
+      if (dcount > MAX_COPIES) { warnings.push("A double-minute count above " + MAX_COPIES + " is capped at " + MAX_COPIES + " for drawing."); dcount = MAX_COPIES; }
+      ab.count = dcount;
+      return finish(ab);
+    }
 
     // Leading sign (applies to numerical and to +der/+mar/-etc.)
     var signM = /^([+\-−–])/.exec(tok);
@@ -197,7 +212,10 @@
     var ploidy = 2;
     if (clone.modalNumber != null) {
       var p = Math.round(clone.modalNumber / 23);
-      if (p >= 3 && Math.abs(clone.modalNumber - 23 * p) <= 3) ploidy = p;
+      // Accept triploid through octaploid; a larger p is not a real ploidy but a
+      // huge or mistyped count, so stay diploid and let the count-mismatch warning
+      // speak instead of allocating p copies of every chromosome.
+      if (p >= 3 && p <= 8 && Math.abs(clone.modalNumber - 23 * p) <= 3) ploidy = p;
     }
     ALL.forEach(function (c) { comp[c] = 0; });
     AUTOSOMES.forEach(function (c) { comp[c] = ploidy; });
@@ -389,7 +407,16 @@
     }
 
     var fields = splitTop(s, ",").map(function (x) { return x.trim(); }).filter(function (x) { return x.length; });
-    if (!fields.length) { warnings.push("Empty karyotype."); return clone; }
+    if (!fields.length) {
+      warnings.push("Empty karyotype.");
+      // Return the full clone shape anyway: render/teach rely on complement, slots,
+      // and counts always existing. Omitting them here crashed computeAffected
+      // (clone.slots[c]) and teach before the invalid-state message could show.
+      clone.complement = {};
+      clone.slots = {};
+      clone.counts = { expected: null, expectedHigh: null, actual: 0, ok: false };
+      return clone;
+    }
 
     // modal number — may be a range like 47~49 (a cancer clone whose count varies)
     clone.modalGiven = fields[0];
@@ -431,8 +458,17 @@
     cl.aberrations.forEach(function (a) {
       out.push(a);
       if (a.kind === "idem") {
-        var ref = clones[a.ref === "sdl" ? ci - 1 : 0];
-        (ref ? ref.aberrations : []).forEach(function (ra) { if (ra.kind !== "idem") out.push(ra); });
+        var refIdx = a.ref === "sdl" ? ci - 1 : 0;
+        var ref = clones[refIdx];
+        if (!ref || refIdx === ci) {
+          // idem/sl/sdl means "the same changes as an EARLIER clone". With no earlier
+          // clone to copy (a first-clone idem resolves to itself), expanding would
+          // splice this clone's own aberrations back in and apply them twice. Skip
+          // the copy and flag the missing stemline instead of silently doubling.
+          warnings.push("“" + a.ref + "” means “the same changes as the previous clone”, but there is no earlier clone here. Write the full stemline before the “/” subclone, e.g. 46,XX,+8/47,idem,+9.");
+        } else {
+          ref.aberrations.forEach(function (ra) { if (ra.kind !== "idem") out.push(ra); });
+        }
       }
     });
     cl.aberrations = out;

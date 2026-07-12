@@ -240,3 +240,10 @@ test('affected-only view lines up centromeres across cells', () => {
   assert.match(cont.innerHTML, /affected-only/, 'is the affected-only view');
   assert.match(cont.innerHTML, /kcell-copies" style="margin-top:[\d.]+px"/, 'a cell is offset to bring its centromere onto the shared line');
 });
+
+// Regression: an unparseable clone (empty field list) reaches computeAffected on
+// the way to the invalid-state message. It must not throw on the missing slots.
+test('computeAffected tolerates an empty/unparseable clone without throwing', () => {
+  const clones = ISCN.parse(',').clones;
+  assert.doesNotThrow(() => Karyo.computeAffected(clones), 'no TypeError on clone.slots');
+});

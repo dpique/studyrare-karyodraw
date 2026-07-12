@@ -1233,8 +1233,27 @@
     var url = location.href;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(function () { flash(btn, "✓ Link copied!"); })
-        .catch(function () { window.prompt("Copy this link:", url); });
-    } else { window.prompt("Copy this link:", url); }
+        .catch(function () { legacyCopy(url, btn); });
+    } else { legacyCopy(url, btn); }
+  }
+
+  // Non-blocking clipboard fallback for older browsers / non-secure contexts and
+  // permission rejections: copy via a hidden field + execCommand, and if even that
+  // is unavailable, tell the user to press Cmd/Ctrl+C. Never a blocking prompt().
+  function legacyCopy(text, btn) {
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.cssText = "position:fixed;top:-1000px;left:-1000px;opacity:0";
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand && document.execCommand("copy");
+      document.body.removeChild(ta);
+      flash(btn, ok ? "✓ Link copied!" : "Press " + (navigator.platform.indexOf("Mac") >= 0 ? "⌘C" : "Ctrl+C") + " to copy");
+    } catch (e) {
+      flash(btn, "Press " + (navigator.platform.indexOf("Mac") >= 0 ? "⌘C" : "Ctrl+C") + " to copy");
+    }
   }
 
   // Cookieless usage beacon (no IP, no cookie, no account); recorded by worker.js.
