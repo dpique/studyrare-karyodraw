@@ -88,3 +88,17 @@ test('gene fusions in clinical notes use the :: nomenclature', () => {
   assert.ok(ph, 'recognizes the Philadelphia chromosome');
   assert.match(ph.note, /BCR::ABL1/, 'writes BCR::ABL1, not the legacy hyphen form');
 });
+
+// Inheritance/origin qualifiers (c/mat/pat/dn) are spelled out in the decode.
+test('inheritance qualifiers are explained, not just shown in the code', () => {
+  assert.match(decodeText('46,XX,del(7)(q22)mat'), /mat = maternal in origin/i);
+  assert.match(decodeText('47,XX,+21c'), /c = constitutional/i);
+  assert.match(decodeText('46,XY,r(13)(p11q34) dn'), /dn = de novo/i);
+  assert.match(decodeText('46,XX,del(5)(q31)pat'), /pat = paternal in origin/i);
+});
+
+// A numbered marker decodes with its count; a single marker stays singular.
+test('a numbered marker decodes as the right count', () => {
+  assert.match(decodeText('48,XX,+2mar'), /2 MARKER chromosomes/);
+  assert.match(decodeText('47,XY,+mar'), /a MARKER chromosome/);
+});
