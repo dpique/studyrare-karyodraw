@@ -3,6 +3,14 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-12 (normalize whitespace in the drawn karyotype)
+
+- **Trim stray spaces once drawn.** A karyotype typed or pasted with spaces (for
+  example `46,XY,r(13)(p11q34) dn`) is now shown in its canonical, space-free form
+  after Draw, so the extra space no longer lingers in the input box, the drawn
+  heading, or the shareable link. The one meaningful space, after a `mos`/`chi`
+  prefix, is kept.
+
 ## 2026-07-12 (support link)
 
 - **Add a Ko-fi support link.** A quiet "♥ Support on Ko-fi" link in the footer

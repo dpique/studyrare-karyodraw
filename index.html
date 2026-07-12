@@ -773,7 +773,7 @@
 
   function renderSummary(model) {
     var box = $("#summary");
-    var kt = model.raw;
+    var kt = model.normalized || model.raw;
     var pill = model.clones.every(function (c) { return c.counts.ok; })
       ? ''
       : '<span class="pill warn">count doesn’t add up</span>';
@@ -967,10 +967,13 @@
   function run() {
     var val = input.value.trim();
     if (!val) return;
+    var model = window.ISCN.parse(val);
+    // Show the canonical, whitespace-normalized form so a stray space (typed or
+    // pasted) does not linger in the input box, the drawing, or the share URL.
+    if (model.normalized && model.normalized !== val) { val = model.normalized; input.value = val; }
     // Skip the URL rewrite on the auto-loaded demo so a bare visit keeps a clean
     // landing URL; the first real interaction (type, toggle, pick an example) writes it.
     if (run.skipHashOnce) { run.skipHashOnce = false; } else { setHash(val); }
-    var model = window.ISCN.parse(val);
     var bad = invalidBands(model);
     if (bad.length) {
       model.warnings.push(bad.length === 1
@@ -998,7 +1001,7 @@
     var kaShow = $("#kactions"); if (kaShow) kaShow.style.display = "flex";
     renderSummary(model);
     renderKaryogram(model);
-    $("#karyo").setAttribute("aria-label", "Karyogram of " + (model.raw || val));
+    $("#karyo").setAttribute("aria-label", "Karyogram of " + (model.normalized || model.raw || val));
     renderDecode(model.clones);
     renderClinical(model.clones);
     renderPrintSheet(model);

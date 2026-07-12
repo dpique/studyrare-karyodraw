@@ -388,3 +388,10 @@ test('the meaningful mos-prefix space is preserved (still mosaic)', () => {
   assert.equal(r.isMosaic, true);
   assert.equal(r.clones.length, 2);
 });
+
+test('result.normalized gives the canonical, whitespace-free designation', () => {
+  assert.equal(ISCN.parse('46,XY,r(13)(p11q34) dn').normalized, '46,XY,r(13)(p11q34)dn');
+  assert.equal(ISCN.parse('46,XY,r(13)  (p11q34)').normalized, '46,XY,r(13)(p11q34)');
+  assert.equal(ISCN.parse('47, XX, +21').normalized, '47,XX,+21');
+  assert.equal(ISCN.parse('mos 45,X[12]/46,XX[18]').normalized, 'mos 45,X[12]/46,XX[18]', 'the mos space stays');
+});

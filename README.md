@@ -125,19 +125,11 @@ python3 build_ideogram.py       # writes ../ideogram-data.js
 
 ## Rendering conventions
 
-- **StudyRare brand** — colors, type (Schibsted Grotesk / Nunito Sans / IBM Plex
-  Mono) and the dot-motif follow the canonical brand kit at
-  [dpique/studyrare-brand](https://github.com/dpique/studyrare-brand)
-  (`tokens.json`, v3). Amber is the single CTA accent; periwinkle is structural
-  (never a button); navy is ink; sage = success. Affected chromosomes lead
-  periwinkle → amber, echoing the "signal in the noise" motif.
-  - The color variables in `index.html` are **generated**, not hand-picked:
-    everything between the `brand-colors` markers in the `:root` block is written
-    by `scripts/sync-brand.mjs` from the canonical `tokens.json`. **Don't edit
-    those lines by hand.** `.github/workflows/sync-brand.yml` re-runs the sync
-    weekly and opens a PR whenever the palette drifts, so a brand retune
-    propagates here without anyone remembering to do it. Run it locally with
-    `node scripts/sync-brand.mjs` (or `--check` to fail on drift).
+- **Palette & type** — Schibsted Grotesk / Nunito Sans / IBM Plex Mono; amber is
+  the single call-to-action accent, periwinkle is structural, navy is ink. Affected
+  chromosomes lead periwinkle → amber, the "signal in the noise" idea. The color
+  variables between the `brand-colors` markers in the `:root` block of `index.html`
+  are **generated** by `scripts/sync-brand.mjs` — do not edit them by hand.
 - **Karyogram layout**: fixed **Denver-group rows** (1–3 / 4–5 / 6–12 / 13–15 /
   16–18 / 19–20 / 21–22), one per line (not width-wrapped); sex chromosomes get
   their own row at the end. Within a pair, the **normal homolog is on the left,
