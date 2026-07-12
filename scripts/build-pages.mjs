@@ -169,7 +169,7 @@ function siteHeader(active) {
 </div></div>`;
 }
 
-const SITE_FOOT = `<div class="lp-foot"><p><a href="/">KaryoDraw</a> is a free ISCN 2024 karyotype visualizer, a <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a> tool. It is an educational visualizer of cytogenetic nomenclature, not a diagnostic tool.</p></div>`;
+const SITE_FOOT = `<div class="lp-foot"><p><a href="/">KaryoDraw</a> is a free ISCN 2024 karyotype visualizer, a <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a> tool. It is an educational visualizer of cytogenetic nomenclature, not a diagnostic tool. It is <a href="https://github.com/dpique/studyrare-karyodraw" target="_blank" rel="noopener">open source</a>; if it helped you, you can <a href="https://ko-fi.com/studyrare" target="_blank" rel="noopener">support it on Ko-fi</a>.</p></div>`;
 
 // One page skeleton for every generated page (landing, hub, about, guide).
 function pageShell({ title, description, canonicalPath, ogType = 'website', ogTitle, jsonLd, extraCss = '', active = '', crumb = '', articleClass = '', body }) {
