@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-12 (Turner label for variants)
+
+- **Do not label a 46-count Turner variant "45,X."** A single-X complement with a
+  structural variant — `46,X,i(X)(q10)`, `46,X,idic(Y)`, `46,X,r(X)` — was labeled
+  "45,X, Turner syndrome" with a note claiming monosomy X and no second sex
+  chromosome, which is wrong for those variants. The clinical note now reads
+  "Turner syndrome (45,X and variants)" and describes the spectrum (monosomy X,
+  isochromosome, ring, idic(Y), mosaicism). Mirrors the earlier Klinefelter fix.
+
 ## 2026-07-12 (declutter the homepage)
 
 - **Move the FAQ to the guide; drop the duplicate About block.** The homepage
