@@ -3,7 +3,7 @@
  * window.ISCN.parse(str) turns an ISCN karyotype designation into a structured,
  * render-ready model. It is deliberately forgiving: unrecognized tokens produce
  * a warning rather than a hard failure, so a student always gets *something*
- * drawn plus feedback on what wasn't understood.
+ * drawn plus feedback on what was not understood.
  *
  * Model returned:
  *   {

@@ -614,10 +614,10 @@
 
   // URL <-> UI vocabulary. Internally MODE stays simple/detailed and LEVEL 0/1/99,
   // but the shareable query uses the words on the buttons so a shared link reads
-  // like what's on screen. Old values are still accepted so existing links work.
+  // like what is on screen. Old values are still accepted so existing links work.
   var STYLE_TO_URL = { simple: "highlight", detailed: "realistic" };
   var BANDS_TO_URL = { 0: "400", 1: "550", 99: "850" };
-  // Reverse maps, derived from the forward ones so they can't drift. Each accepts
+  // Reverse maps, derived from the forward ones so they cannot drift. Each accepts
   // either the URL token ("highlight") or the internal value ("simple") as input.
   function invertMap(fwd, coerce) {
     var out = {};
@@ -1030,7 +1030,7 @@
     var clone = model.clones[0];
     var affKeys = Object.keys(AFFECTED);
     var hasMar = model.clones.some(function (c) { return (c.slots.mar || []).length; });
-    var only = (affKeys.length || hasMar) ? affKeys : null;   // affected-only picture when there's an abnormality
+    var only = (affKeys.length || hasMar) ? affKeys : null;   // affected-only picture when there is an abnormality
     var picDiv = document.createElement("div");
     window.Karyo.render(picDiv, clone, { theme: "simple", level: 1, affected: AFFECTED, only: only });
 
@@ -1089,16 +1089,17 @@
 
   function escapeHtml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
   function cssEsc(s) { return String(s).replace(/["\\]/g, "\\$&"); }
-  // Keep punctuation that's legal in a query value readable (46,XY,t(9;22)…)
+  // Keep punctuation that is legal in a query value readable (46,XY,t(9;22)…)
   // instead of a wall of %2C/%3B, so the shared URL mirrors the input box.
   function prettyEncode(s) {
     return encodeURIComponent(s)
       .replace(/%2C/g, ",").replace(/%3B/g, ";").replace(/%2F/g, "/")
       .replace(/%5B/g, "[").replace(/%5D/g, "]");
   }
-  function setHash() {
+  function setHash(val) {
     try {
-      history.replaceState(null, "", "?k=" + prettyEncode(input.value.trim()) +
+      var k = (val != null ? String(val) : input.value).trim();
+      history.replaceState(null, "", "?k=" + prettyEncode(k) +
         "&style=" + STYLE_TO_URL[MODE] + "&bands=" + BANDS_TO_URL[LEVEL] + "&show=" + SHOW);
     } catch (e) {}
   }
@@ -1428,7 +1429,7 @@
     var _can = document.querySelector('link[rel="canonical"]');
     if (_pg && _can) _can.setAttribute("href", "https://karyodraw.com/karyotype/" + _pg.slug + "/");
   } catch (e) {} }
-  if (!hasK) { beaconDraw.skipOnce = true; run.skipHashOnce = true; }   // auto-loaded demo: don't count it, and keep the landing URL clean
+  if (!hasK) { beaconDraw.skipOnce = true; run.skipHashOnce = true; }   // auto-loaded demo: do not count it, and keep the landing URL clean
   run();
   try { var _ref = ""; if (document.referrer) { try { _ref = new URL(document.referrer).host; } catch (e) {} } beacon({ type: "pageview", ref: _ref }); } catch (e) {}
   loadTopKaryotypes();
