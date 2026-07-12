@@ -102,3 +102,10 @@ test('a numbered marker decodes as the right count', () => {
   assert.match(decodeText('48,XX,+2mar'), /2 MARKER chromosomes/);
   assert.match(decodeText('47,XY,+mar'), /a MARKER chromosome/);
 });
+
+// The spoken text includes the cell count (the proportions matter for a mosaic).
+test('pronounce speaks the cell count when present', () => {
+  assert.match(Teach.pronounce(ISCN.parse('45,X[12]').clones[0]), /in 12 cells/);
+  assert.match(Teach.pronounce(ISCN.parse('46,XX[cp20]').clones[0]), /composite of 20 cells/);
+  assert.doesNotMatch(Teach.pronounce(ISCN.parse('46,XX').clones[0]), /cell/);
+});

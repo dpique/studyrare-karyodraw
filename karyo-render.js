@@ -897,7 +897,10 @@
         if (xN) html.push(cellHtml("X", clone.slots["X"], { sexcell: true }, ctx));
         if (yN) html.push(cellHtml("Y", clone.slots["Y"], { sexcell: true }, ctx));
         var missing = 2 - (xN + yN);
-        for (var mi = 0; mi < missing; mi++) html.push(cellHtml("?", [], { ghost: true, ghostChrom: "X", ghostText: "missing", sexcell: true }, ctx));
+        // Draw an empty "missing" placeholder for an absent sex chromosome, but
+        // do not label it "?" — the karyogram shows the karyotype, it does not
+        // speculate about which chromosome (X or Y) was lost.
+        for (var mi = 0; mi < missing; mi++) html.push(cellHtml("", [], { ghost: true, ghostChrom: "X", ghostText: "missing", sexcell: true }, ctx));
         if ((clone.slots["mar"] || []).length) html.push(cellHtml("mar", clone.slots["mar"], {}, ctx));
         if ((clone.slots["dmin"] || []).length) html.push(cellHtml("dmin", clone.slots["dmin"], {}, ctx));
       }

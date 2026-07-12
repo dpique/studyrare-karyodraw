@@ -659,7 +659,8 @@
   function loadTourStep(i) {
     tourIdx = Math.max(0, Math.min(TOUR.length - 1, i));
     var step = TOUR[tourIdx];
-    MODE = "simple"; LEVEL = 1; SHOW = "all"; syncSeg();   // uniform teaching view
+    // Keep whatever Style/Bands/Show the viewer has set, so their choice (e.g.
+    // "Affected") carries across tour steps instead of resetting each time.
     input.value = step.k;
     beaconDraw.skipOnce = true;   // guided-tour navigation does not count toward usage
     run();
@@ -981,7 +982,7 @@
         : "These aren’t real bands: " + bad.join(", ") + ". Check them against the band map.");
     }
     AFFECTED = window.Karyo.computeAffected(model.clones);
-    spokenText = model.clones.map(function (c) { return window.Teach.pronounce(c); }).filter(Boolean).join(". Next clone. ");
+    spokenText = (model.isMosaic ? "Mosaic. " : "") + model.clones.map(function (c) { return window.Teach.pronounce(c); }).filter(Boolean).join(". Next clone. ");
     renderWarnings(model);
     var invalid = !model.clones.length || model.clones.every(function (c) { return c.modalNumber == null; }) || !!model.suggestion || bad.length > 0;
     beaconDraw(val, !invalid);
