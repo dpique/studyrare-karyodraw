@@ -3,6 +3,16 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-12 (explain qualifiers + marker count in the decode)
+
+- **Spell out the inheritance qualifiers.** `c` (constitutional), `mat` (maternal
+  in origin), `pat` (paternal in origin), and `dn` (de novo) were parsed and shown
+  in the code column but never explained. The decode now spells each out, e.g.
+  `46,XX,del(7)(q22)mat` reads "…is lost (mat = maternal in origin: inherited from
+  the mother)," and `…dn` now says "de novo: a new change, not inherited."
+- **Decode a numbered marker with its count.** `+2mar` now reads "2 marker
+  chromosomes," not "a marker chromosome." A single `+mar` is unchanged.
+
 ## 2026-07-12 (Turner label for variants)
 
 - **Do not label a 46-count Turner variant "45,X."** A single-X complement with a

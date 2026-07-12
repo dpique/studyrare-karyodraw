@@ -198,7 +198,7 @@
         var bpDer = (td.breakpoints[di] || [])[0], bpPar = (td.breakpoints[1 - di] || [])[0];
         return { text: base + ". It’s chromosome " + c + throughShort(c, bpDer) + " with " + endShort(partner, bpPar) + " attached." + extraText, tag: "der" };
       }
-      return { text: base + (ab.note ? " (" + ab.note + ")" : "") + "." + extraText, tag: "der" };
+      return { text: base + "." + extraText, tag: "der" };
     }
     if (k === "ins") {
       var ic = ab.chroms;
@@ -212,10 +212,25 @@
         " is moved to a new position (at " + c + (ig[0] || "?") + "). Nothing is gained or lost overall.", tag: "add" };
     }
     if (k === "add") return { text: "ADDITIONAL material of unknown origin attached to chromosome " + c + " at " + c + ((bp[0] || [])[0] || "?"), tag: "add" };
-    if (k === "mar") return { text: "a MARKER chromosome (mar): a small extra chromosome whose origin can't be identified by banding alone", tag: "mar" };
+    if (k === "mar") {
+      var nmar = ab.count || 1;
+      return { text: (nmar > 1
+        ? nmar + " MARKER chromosomes (mar): small extra chromosomes"
+        : "a MARKER chromosome (mar): a small extra chromosome") +
+        " whose origin can't be identified by banding alone", tag: "mar" };
+    }
     if (k === "trp") return { text: "a TRIPLICATION in chromosome " + c + ": the segment " + bandsPhrase(c, bp[0] || []) + " is present three times", tag: "dup" };
     return { text: "an aberration (" + (ab.raw || k) + ") that KaryoDraw drew as best it could", tag: "unknown" };
   }
+
+  // Inheritance / origin suffixes on an aberration (c / mat / pat / dn). The parser
+  // records these; spell out what each means so a learner sees it in the decode.
+  var QUALIFIER_PHRASE = {
+    dn: "de novo: a new change, not inherited from either parent",
+    mat: "maternal in origin: inherited from the mother",
+    pat: "paternal in origin: inherited from the father",
+    c: "constitutional: present in every cell from birth, not acquired",
+  };
 
   // ---- token-by-token decode of a clone ------------------------------------
   function decode(clone) {
@@ -233,7 +248,8 @@
     }
     clone.aberrations.forEach(function (ab) {
       var d = describeAberration(ab);
-      rows.push({ code: ab.raw, text: d.text, tag: d.tag });
+      var q = ab.qualifier && QUALIFIER_PHRASE[ab.qualifier];
+      rows.push({ code: ab.raw, text: d.text + (q ? " (" + ab.qualifier + " = " + q + ")" : ""), tag: d.tag });
     });
     if (clone.cellCount != null) {
       rows.push({ code: "[" + (clone.composite ? "cp" : "") + clone.cellCount + "]", text: (clone.composite ? "composite of " : "seen in ") + clone.cellCount + " cells counted for this clone", tag: "cells" });
