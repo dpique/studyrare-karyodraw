@@ -156,3 +156,41 @@ test('render carries no caveat paragraph (the panel is suppressed for somatic ca
   // so the panel that does render is always the constitutional case and needs no caveat.
   assert.doesNotMatch(Seg.render(model('46,XX,t(2;5)(q21;q31)')), /seg-caveat/);
 });
+
+// ---- the segregation scenes: the reason for the names is drawn --------------
+test('each mode draws its own division scene (an svg per mode)', () => {
+  const html = Seg.render(model('46,XX,t(2;5)(q21;q31)'));
+  // pairing figure + one scene per mode (4) = 5 scene svgs
+  assert.equal((html.match(/class="seg-scene-svg"/g) || []).length, 5);
+  assert.match(html, /class="seg-scene"/);
+});
+test('the captions spell out why the modes are named alternate vs adjacent', () => {
+  const html = Seg.render(model('46,XX,t(2;5)(q21;q31)'));
+  assert.match(html, /opposite corners/);       // alternate: crossing, every other one
+  assert.match(html, /neighbours/);              // adjacent: side-by-side
+  assert.match(html, /matching centromeres/);    // adjacent-2: homologous centromeres together
+});
+test('the reading key names both encodings (chromosome of origin and pole destination)', () => {
+  const html = Seg.render(model('46,XX,t(2;5)(q21;q31)'));
+  assert.match(html, /Chromosome of origin/);
+  assert.match(html, /travels to pole 1/);
+  assert.match(html, /travels to pole 2/);
+});
+test('an anaphase-pull animation toggle is offered', () => {
+  assert.match(Seg.render(model('46,XX,t(2;5)(q21;q31)')), /id="seg-anim"/);
+});
+test('centromere dots are coloured by the chromosome the centromere belongs to', () => {
+  // A and its own der share a centromere colour (homologous centromeres); B differs.
+  const b = model('46,XX,t(2;5)(q21;q31)').bodies;
+  assert.equal(b.A.cen, b.dA.cen);
+  assert.equal(b.B.cen, b.dB.cen);
+  assert.notEqual(b.A.cen, b.B.cen);
+});
+test('2:2 gametes are keyed to their pole colour; the 3:1 gametes are left neutral', () => {
+  const html = Seg.render(model('46,XX,t(2;5)(q21;q31)'));
+  assert.match(html, /seg-g-teal/);   // one pole
+  assert.match(html, /seg-g-rose/);   // the other
+  // A 3:1 conception spans both poles, so its cards carry no single-pole tint. Count the
+  // tinted cards: the three 2:2 modes contribute two each (6), 3:1 contributes none.
+  assert.equal((html.match(/seg-g-(teal|rose)/g) || []).length, 6);
+});

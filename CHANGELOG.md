@@ -3,6 +3,32 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-13 (segregation: draw the ring and the plane it divides along)
+
+- **Show why the modes are named alternate and adjacent.** The segregation panel used
+  to list each mode with a small stack of chromosome glyphs and text. It now draws, for
+  every mode, the ring of chromosomes and the anaphase-I division that produces it, so
+  the naming is visible rather than asserted. The four bodies sit at the corners of a
+  square that mirrors the pachytene ring; **alternate** takes the two **opposite**
+  corners (its spindle fibres cross), while **adjacent-1** (a vertical division plane)
+  and **adjacent-2** (a horizontal plane) each take two **neighbours**. **3:1** sends
+  three chromosomes to one pole and one to the other. Each scene marks the two spindle
+  poles, counts the chromosomes each receives (2:2, 3:1, 2:1), and draws the dashed
+  division plane; a short caption states the reason for the name.
+- **Two encodings, kept apart.** Chromosome colour still means chromosome of origin, and
+  the centromere dot now takes the colour of the chromosome the centromere belongs to,
+  so a chromosome and its own derivative (homologous centromeres) share a dot colour and
+  can be tracked. A separate teal/rose accent marks which pole a chromosome travels to;
+  each gamete card carries the accent of the pole it leaves from, for the clean 2:2 and
+  2:1 divisions. A reading key explains both.
+- **Watch them separate.** An "Animate the pull to the poles" toggle slides each
+  chromosome along its spindle fibre toward its pole and back, so anaphase I is
+  something you watch rather than infer. It is CSS only and honours
+  `prefers-reduced-motion`.
+- The enumerated gametes, conceptus karyotypes, and viability calls are unchanged (still
+  ISCN 2024, Table 5); only the drawing changed. `test/segregation.test.js` gained
+  coverage for the scenes, the naming captions, the reading key, and the pole keying.
+
 ## 2026-07-13 (segregation: meiosis I framing + somatic caveat)
 
 - **Say when the multivalent forms and separates.** The segregation panel now states
