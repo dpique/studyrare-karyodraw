@@ -164,8 +164,7 @@
   /* Meiotic segregation panel */
   #segregation-card { margin-top: 16px; }
   .seg-head h2 { margin: 0 0 4px; font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--ink); text-transform: none; letter-spacing: 0; padding: 0; border: 0; }
-  .seg-lead { margin: 0 0 8px; font-size: 13.5px; color: var(--ink-2); max-width: 72ch; }
-  .seg-caveat { margin: 0 0 14px; font-size: 12px; color: var(--muted); max-width: 72ch; padding-left: 10px; border-left: 2px solid var(--line); }
+  .seg-lead { margin: 0 0 14px; font-size: 13.5px; color: var(--ink-2); max-width: 72ch; }
   .seg-config { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; padding: 4px 0 16px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
   .seg-config-fig { display: flex; flex-direction: column; align-items: center; gap: 7px; }
   .seg-config-cap { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
@@ -817,21 +816,22 @@
     }).join("");
   }
 
-  // Meiotic segregation: only for a single (non-mosaic) balanced translocation carrier.
+  // Meiotic segregation: only for a single (non-mosaic) CONSTITUTIONAL balanced carrier.
+  // Segregation is a germline event, so the panel is suppressed for a recognized
+  // acquired (somatic) cancer translocation — the clinical notes cover that context.
+  function isAcquired(clone) {
+    if (!window.Teach || !window.Teach.syndromes) return false;
+    var syns = window.Teach.syndromes(clone);
+    for (var i = 0; i < syns.length; i++) { if (syns[i].acquired) return true; }
+    return false;
+  }
   function renderSegregation(clones) {
     var card = $("#segregation-card"), host = $("#segregation");
     var clone = (clones && clones.length === 1) ? clones[0] : null;
-    if (!window.Segregation || !clone || !window.Segregation.eligible(clone)) {
+    if (!window.Segregation || !clone || !window.Segregation.eligible(clone) || isAcquired(clone)) {
       card.style.display = "none"; host.innerHTML = ""; return;
     }
-    // If this translocation is a known acquired (cancer) change, tell the panel so it
-    // can say the rearrangement is somatic, not transmitted.
-    var acquired = false;
-    if (window.Teach && window.Teach.syndromes) {
-      var syns = window.Teach.syndromes(clone);
-      for (var i = 0; i < syns.length; i++) { if (syns[i].acquired) { acquired = true; break; } }
-    }
-    host.innerHTML = window.Segregation.render(window.Segregation.compute(clone), { acquired: acquired });
+    host.innerHTML = window.Segregation.render(window.Segregation.compute(clone));
     card.style.display = "";
   }
 

@@ -105,11 +105,13 @@ test('a numbered marker decodes as the right count', () => {
 
 // A cancer translocation is flagged acquired (somatic) so the segregation panel can
 // say it is not transmitted; a constitutional rearrangement is not flagged.
-test('a cancer translocation is flagged acquired; a constitutional one is not', () => {
-  const phil = Teach.syndromes(ISCN.parse('46,XY,t(9;22)(q34;q11.2)').clones[0]).find((s) => /Philadelphia/.test(s.name));
-  assert.ok(phil && phil.acquired === true, 't(9;22) flagged acquired');
-  const recip = Teach.syndromes(ISCN.parse('46,XX,t(2;5)(q21;q31)').clones[0]);
-  assert.ok(recip.every((s) => !s.acquired), 'a generic reciprocal is not flagged acquired');
+test('cancer translocations are flagged acquired; constitutional carriers are not', () => {
+  const acq = (k) => Teach.syndromes(ISCN.parse(k).clones[0]).some((s) => s.acquired);
+  assert.equal(acq('46,XY,t(9;22)(q34;q11.2)'), true, 't(9;22) Philadelphia');
+  assert.equal(acq('46,XY,t(11;14)(q13;q32)'), true, 't(11;14) mantle cell');
+  assert.equal(acq('46,XX,t(12;21)(p13;q22)'), true, 't(12;21) childhood ALL');
+  assert.equal(acq('46,XX,t(2;5)(q21;q31)'), false, 'a generic reciprocal is not acquired');
+  assert.equal(acq('45,XX,der(14;21)(q10;q10)'), false, 'a Robertsonian carrier is not acquired');
 });
 
 // The spoken text includes the cell count (the proportions matter for a mosaic).
