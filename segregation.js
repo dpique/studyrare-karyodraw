@@ -271,23 +271,17 @@
     return '<span class="seg-chip seg-' + v.tag + '">' + esc(v.text) + '</span>';
   }
 
-  function render(model, opts) {
+  // Only shown for a constitutional (germline) balanced carrier. The caller suppresses
+  // the panel for a recognized acquired/somatic cancer translocation, where meiotic
+  // segregation does not apply, so no somatic caveat is needed here.
+  function render(model) {
     if (!model) return "";
-    opts = opts || {};
     var b = model.bodies;
     var typeLabel = model.type === "robertsonian" ? "Robertsonian" : "reciprocal";
-    // When the drawn karyotype is a known acquired (cancer) translocation, swap the
-    // generic constitutional note for one that flags it as somatic and points to the
-    // clinical notes (which name it), rather than inserting the name here (the names
-    // are inconsistent, e.g. "Philadelphia chromosome" vs "AML").
-    var caveat = opts.acquired
-      ? '<p class="seg-caveat">Here this translocation is an <b>acquired</b>, somatic change that arises in the tumour cells (see the clinical notes), not an inherited one. A somatic rearrangement is not passed to eggs or sperm, so it does not segregate. The patterns below are the germline case: what a <b>constitutional</b> carrier of the same translocation would transmit.</p>'
-      : '<p class="seg-caveat">This assumes a <b>constitutional</b> (inherited) carrier. An acquired translocation in a tumour is somatic and is not passed to gametes, so segregation does not apply to it.</p>';
     var head = '<div class="seg-head"><h2>Meiotic segregation</h2>' +
       '<p class="seg-lead">At meiosis, the chromosomes of this balanced ' + typeLabel + ' translocation carrier pair into a <b>' + model.valent +
       '</b> (' + model.valentN + ' chromosomes) as the homologs line up in <b>prophase I</b>. How that ' + model.valent +
-      ' separates at <b>anaphase I</b> (meiosis I) is shown below, one column per pattern. Only <b>alternate</b> segregation gives balanced gametes.</p>' +
-      caveat + '</div>';
+      ' separates at <b>anaphase I</b> (meiosis I) is shown below, one column per pattern. Only <b>alternate</b> segregation gives balanced gametes.</p></div>';
 
     var config = '<div class="seg-config"><div class="seg-config-fig">' +
       '<div class="seg-config-cap">Pairing in prophase I (pachytene)</div>' + configSvg(model) + '</div>' +
