@@ -3,6 +3,24 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-12 (meiotic segregation of translocation carriers)
+
+- **Draw the meiotic segregation of a balanced translocation carrier.** When you
+  draw a balanced reciprocal or Robertsonian translocation, a new "Meiotic
+  segregation" panel shows how the chromosomes separate at meiosis and what each
+  gamete produces. A reciprocal carrier is drawn as a four-body **quadrivalent**
+  with its alternate, adjacent-1, adjacent-2, and 3:1 modes; a Robertsonian carrier
+  as a three-body **trivalent** with its 2:1 modes. Each mode lists its gametes and
+  the resulting conception in ISCN, the partial or whole-chromosome imbalance in
+  plain language, and whether it is balanced, unbalanced, or a recognized liveborn
+  outcome (for example the translocation form of Down syndrome from a rob(14;21)
+  carrier, or Emanuel syndrome from the 3:1 der(22) of a t(11;22) carrier). The
+  enumerated segregants follow ISCN 2024, Table 5, and every conception the model
+  writes re-parses cleanly. The panel states that it assumes a constitutional
+  (inherited) carrier, since an acquired translocation in a tumour is somatic and is
+  not transmitted. The chromosomes are colored by origin, the same convention the
+  karyogram uses. New module `segregation.js`, covered by `test/segregation.test.js`.
+
 ## 2026-07-12 (affected view shows the missing sex chromosome)
 
 - **The "Affected" view now shows the missing sex chromosome, like the full view.**
