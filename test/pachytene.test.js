@@ -3,7 +3,7 @@
 // IIFE loaded into a window shim via vm. These pin that the cross/trivalent geometry is
 // derived from real hg38 breakpoints (so a different t() draws a different figure), that
 // every figure is well-formed and in-bounds, and — the property the figure exists to teach —
-// that no spindle fibre ever crosses the division plane it is sorted by.
+// that no spindle fiber ever crosses the division plane it is sorted by.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -42,7 +42,7 @@ function allLines(svg) {
 const PLATE = '#aeb6d6', TEAL = '#1f9e8f', ROSE = '#c0568a';
 const planeSegs = (svg) => allLines(svg).filter((l) => l.stroke === PLATE);
 // Fibres are the full-length pole lines (width 1.4, no dash); aster spokes are width 1.
-const fibreSegs = (svg) => allLines(svg).filter((l) => (l.stroke === TEAL || l.stroke === ROSE) && l.width === 1.4 && !l.dash);
+const fiberSegs = (svg) => allLines(svg).filter((l) => (l.stroke === TEAL || l.stroke === ROSE) && l.width === 1.4 && !l.dash);
 
 // Proper segment intersection: interiors cross (shared endpoints / collinear touches do not count).
 function properCross(p, q) {
@@ -125,38 +125,38 @@ for (const k of ['46,XX,t(11;22)(q23;q11.2)', '46,XY,t(2;5)(q21;q31)', '46,XX,t(
   });
 }
 
-// ---- the invariant: no spindle fibre crosses a division plane ---------------
+// ---- the invariant: no spindle fiber crosses a division plane ---------------
 for (const k of ['46,XX,t(11;22)(q23;q11.2)', '46,XY,t(2;5)(q21;q31)', '46,XX,t(4;8)(p13;q22)']) {
-  test('no fibre crosses a plane for reciprocal ' + k, () => {
+  test('no fiber crosses a plane for reciprocal ' + k, () => {
     const m = model(k);
     RECIP_MODES.forEach((mode) => {
       const svg = P.scene(m, mode);
-      const planes = planeSegs(svg), fibres = fibreSegs(svg);
+      const planes = planeSegs(svg), fibers = fiberSegs(svg);
       // Alternate has diagonal partners, so it draws no straight plane; the others each draw one.
       if (mode === 'Alternate') assert.equal(planes.length, 0, 'alternate has no straight plane');
       else assert.ok(planes.length >= 1, mode + ' draws a plane');
-      fibres.forEach((f) => planes.forEach((pl) => {
-        assert.ok(!properCross(f, pl), mode + ': a fibre crosses its division plane');
+      fibers.forEach((f) => planes.forEach((pl) => {
+        assert.ok(!properCross(f, pl), mode + ': a fiber crosses its division plane');
       }));
     });
   });
 }
-test('no fibre crosses a plane for the robertsonian trivalent', () => {
+test('no fiber crosses a plane for the robertsonian trivalent', () => {
   const m = model('45,XX,rob(13;14)(q10;q10)');
   ROB_MODES.forEach((mode) => {
     const svg = P.scene(m, mode);
-    const planes = planeSegs(svg), fibres = fibreSegs(svg);
+    const planes = planeSegs(svg), fibers = fiberSegs(svg);
     assert.ok(planes.length >= 1, mode + ' draws a plane');
-    fibres.forEach((f) => planes.forEach((pl) => {
-      assert.ok(!properCross(f, pl), mode + ': a fibre crosses its division plane');
+    fibers.forEach((f) => planes.forEach((pl) => {
+      assert.ok(!properCross(f, pl), mode + ': a fiber crosses its division plane');
     }));
   });
 });
 
-// ---- pole counts read off the fibres ----------------------------------------
+// ---- pole counts read off the fibers ----------------------------------------
 test('each mode sends the right number of chromosomes to each pole', () => {
   const m = model('46,XY,t(2;5)(q21;q31)');
-  const count = (svg) => ({ teal: fibreSegs(svg).filter((f) => f.stroke === TEAL).length, rose: fibreSegs(svg).filter((f) => f.stroke === ROSE).length });
+  const count = (svg) => ({ teal: fiberSegs(svg).filter((f) => f.stroke === TEAL).length, rose: fiberSegs(svg).filter((f) => f.stroke === ROSE).length });
   assert.deepEqual(count(P.scene(m, 'Alternate')), { teal: 2, rose: 2 });
   assert.deepEqual(count(P.scene(m, 'Adjacent-1')), { teal: 2, rose: 2 });
   assert.deepEqual(count(P.scene(m, 'Adjacent-2')), { teal: 2, rose: 2 });

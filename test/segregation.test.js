@@ -167,7 +167,7 @@ test('each mode draws its own division scene (an svg per mode)', () => {
 test('the captions spell out why the modes are named alternate vs adjacent', () => {
   const html = Seg.render(model('46,XX,t(2;5)(q21;q31)'));
   assert.match(html, /opposite corners/);       // alternate: crossing, every other one
-  assert.match(html, /neighbours/);              // adjacent: side-by-side
+  assert.match(html, /neighbors/);              // adjacent: side-by-side
   assert.match(html, /matching centromeres/);    // adjacent-2: homologous centromeres together
 });
 test('the reading key names both encodings (chromosome of origin and pole destination)', () => {
@@ -179,14 +179,14 @@ test('the reading key names both encodings (chromosome of origin and pole destin
 test('an anaphase-pull animation toggle is offered', () => {
   assert.match(Seg.render(model('46,XX,t(2;5)(q21;q31)')), /id="seg-anim"/);
 });
-test('centromere dots are coloured by the chromosome the centromere belongs to', () => {
-  // A and its own der share a centromere colour (homologous centromeres); B differs.
+test('centromere dots are colored by the chromosome the centromere belongs to', () => {
+  // A and its own der share a centromere color (homologous centromeres); B differs.
   const b = model('46,XX,t(2;5)(q21;q31)').bodies;
   assert.equal(b.A.cen, b.dA.cen);
   assert.equal(b.B.cen, b.dB.cen);
   assert.notEqual(b.A.cen, b.B.cen);
 });
-test('2:2 gametes are keyed to their pole colour; the 3:1 gametes are left neutral', () => {
+test('2:2 gametes are keyed to their pole color; the 3:1 gametes are left neutral', () => {
   const html = Seg.render(model('46,XX,t(2;5)(q21;q31)'));
   assert.match(html, /seg-g-teal/);   // one pole
   assert.match(html, /seg-g-rose/);   // the other

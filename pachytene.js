@@ -24,7 +24,7 @@
  *   East (right)  = B-distal (the exchanged B tip)
  * The four units sit at the corners: NW = normal A, NE = der(A), SE = normal B, SW = der(B).
  * A division plane sorts them; the rule enforced everywhere is that a chromosome travels to
- * the pole on ITS OWN side of the plane, so no fibre ever crosses a plane it is sorted by.
+ * the pole on ITS OWN side of the plane, so no fiber ever crosses a plane it is sorted by.
  */
 (function () {
   "use strict";
@@ -69,7 +69,7 @@
     return {
       type: "cross",
       N: a.mbProx, W: a.mbDist, S: b.mbProx, E: b.mbDist,   // arm lengths, Mb
-      cenA: a.mbCenOff, cenB: b.mbCenOff                     // centromere offset from centre, Mb
+      cenA: a.mbCenOff, cenB: b.mbCenOff                     // centromere offset from center, Mb
     };
   }
   function robertsonianGeom(model) {
@@ -107,7 +107,7 @@
       '" font-size="' + (size || 8) + '" font-family="ui-sans-serif,system-ui,sans-serif"' +
       (weight ? ' font-weight="' + weight + '"' : '') + ' fill="' + (color || LINE) + '">' + esc(s) + '</text>';
   }
-  // Centromere marker: matches segregation.js (white bead, coloured core = its own chromosome).
+  // Centromere marker: matches segregation.js (white bead, colored core = its own chromosome).
   function cenDot(x, y, color) {
     return '<circle cx="' + num(x) + '" cy="' + num(y) + '" r="3.5" fill="#fff"/>' +
       '<circle cx="' + num(x) + '" cy="' + num(y) + '" r="2.6" fill="' + color + '"/>';
@@ -152,7 +152,7 @@
     var A = model.A, B = model.B;
 
     // Each unit is one L-shaped chromosome: a vertical (proximal) bar carrying its centromere
-    // and a horizontal (distal) bar. Offset O from centre so the two chromosomes sharing an arm
+    // and a horizontal (distal) bar. Offset O from center so the two chromosomes sharing an arm
     // sit side by side; the four interlock into the cross. Each is its own group so the
     // anaphase-pull animation slides it whole toward its pole. Tip labels are drawn only in the
     // resting pairing figure (the key); the mode scenes stay clean, so poles never collide with a
@@ -170,43 +170,43 @@
         label: txt(cx - O - W - 5, cy + O + 11, "der(" + B + ")", "end", 9, LINE) }
     };
 
-    if (!modeName) {   // resting pairing figure: interlocking labelled cross, no plane or poles
+    if (!modeName) {   // resting pairing figure: interlocking labeled cross, no plane or poles
       var rest = ["NW", "NE", "SE", "SW"].map(function (k) { return unit(U[k].body + U[k].label, U[k].cen[0], U[k].cen[1], null); }).join("");
       return svg('<g class="stage">' + rest + "</g>", w, h, "quadrivalent cross for " + model.carrier);
     }
 
-    // ---- mode: plane + poles, honouring the no-fibre-crosses-a-plane rule -----
+    // ---- mode: plane + poles, honouring the no-fiber-crosses-a-plane rule -----
     var pTop = [cx, Math.max(mT - 8, 6)], pBot = [cx, h - 6];
     var pLeft = [Math.max(mL - W - 8, 7), cy], pRight = [w - 7, cy];
     var planeSvg = "", assign, badges;
 
     if (modeName === "Alternate") {
-      // NW+SE -> top, NE+SW -> bottom. Diagonal pairs: no straight plane, fibres cross the centre.
+      // NW+SE -> top, NE+SW -> bottom. Diagonal pairs: no straight plane, fibers cross the center.
       assign = { NW: [pTop, TEAL], SE: [pTop, TEAL], NE: [pBot, ROSE], SW: [pBot, ROSE] };
       badges = badge(pTop[0] + 15, pTop[1] + 1, "2", TEAL.ink) + badge(pBot[0] + 15, pBot[1] - 1, "2", ROSE.ink);
     } else if (modeName === "Adjacent-1") {
-      // left {NW, SW} vs right {NE, SE}: vertical plane at centre.
+      // left {NW, SW} vs right {NE, SE}: vertical plane at center.
       planeSvg = plate(cx, Math.max(cy - N - 4, 6), cx, Math.min(cy + S + 4, h - 6));
       assign = { NW: [pLeft, TEAL], SW: [pLeft, TEAL], NE: [pRight, ROSE], SE: [pRight, ROSE] };
       badges = badge(pLeft[0], pLeft[1] - 14, "2", TEAL.ink) + badge(pRight[0], pRight[1] - 14, "2", ROSE.ink);
     } else if (modeName === "Adjacent-2") {
-      // top {NW, NE} vs bottom {SE, SW}: horizontal plane at centre.
+      // top {NW, NE} vs bottom {SE, SW}: horizontal plane at center.
       planeSvg = plate(Math.max(cx - W - 4, 6), cy, Math.min(cx + E + 4, w - 6), cy);
       assign = { NW: [pTop, TEAL], NE: [pTop, TEAL], SE: [pBot, ROSE], SW: [pBot, ROSE] };
       badges = badge(pTop[0] + 15, pTop[1] + 1, "2", TEAL.ink) + badge(pBot[0] + 15, pBot[1] - 1, "2", ROSE.ink);
     } else {
       // 3:1 — isolate der(A) (NE) with an L-plane bracketing the upper-right; its pole sits inside
-      // the L (upper-right), the other three go to the lower-left pole. No fibre crosses the L.
+      // the L (upper-right), the other three go to the lower-left pole. No fiber crosses the L.
       planeSvg = plate(cx, Math.max(cy - N - 4, 6), cx, cy) + plate(cx, cy, Math.min(w - 6, cx + E + 6), cy);
       var pOne = [w - 7, Math.max(mT - 6, 6)], pThree = [pLeft[0], h - 6];
       assign = { NE: [pOne, ROSE], NW: [pThree, TEAL], SE: [pThree, TEAL], SW: [pThree, TEAL] };
       badges = badge(pOne[0] - 14, pOne[1] + 1, "1", ROSE.ink) + badge(pThree[0] + 14, pThree[1] - 1, "3", TEAL.ink);
     }
 
-    var fibres = "", units = "", poleSet = {};
+    var fibers = "", units = "", poleSet = {};
     ["NW", "NE", "SE", "SW"].forEach(function (k) {
       var pole = assign[k][0], acc = assign[k][1];
-      fibres += line(U[k].cen[0], U[k].cen[1], pole[0], pole[1], acc.stroke, 1.4);
+      fibers += line(U[k].cen[0], U[k].cen[1], pole[0], pole[1], acc.stroke, 1.4);
       units += unit(U[k].body, U[k].cen[0], U[k].cen[1], pole);
       poleSet[pole[0] + "," + pole[1]] = acc;
     });
@@ -214,7 +214,7 @@
       var p = key.split(","); return aster(+p[0], +p[1], poleSet[key].stroke);
     }).join("");
 
-    return svg('<g class="seg-fibres">' + fibres + "</g>" + planeSvg + '<g class="stage">' + units + "</g>" + poles + badges,
+    return svg('<g class="seg-fibers">' + fibers + "</g>" + planeSvg + '<g class="stage">' + units + "</g>" + poles + badges,
       w, h, "quadrivalent dividing by " + modeName + " segregation");
   }
 
@@ -248,7 +248,7 @@
     var planeSvg = "", assign, badges;
     if (modeName === "Alternate") {
       // fusion isolated by the L (only an L can pick the middle chromosome); fusion pole inside
-      // the L (lower-left), both normals outside (upper-right). No fibre crosses the L.
+      // the L (lower-left), both normals outside (upper-right). No fiber crosses the L.
       planeSvg = plate(6, Cy - O, Cx + O, Cy - O) + plate(Cx + O, Cy - O, Cx + O, h - 6);
       var pF = [Math.max(mL * 0.32, 9), h - 10], pN = [w - 9, mT - 2];
       assign = { F: [pF, ROSE], A: [pN, TEAL], B: [pN, TEAL] };
@@ -276,10 +276,10 @@
         aster(p0[0], p0[1], ROSE.stroke);
     }
 
-    var fibres = "", units = "", poleSet = {};
+    var fibers = "", units = "", poleSet = {};
     ["A", "F", "B"].forEach(function (k) {
       var pole = assign[k][0], acc = assign[k][1];
-      fibres += line(U[k].cen[0], U[k].cen[1], pole[0], pole[1], acc.stroke, 1.4);
+      fibers += line(U[k].cen[0], U[k].cen[1], pole[0], pole[1], acc.stroke, 1.4);
       units += unit(U[k].body, U[k].cen[0], U[k].cen[1], pole);
       poleSet[pole[0] + "," + pole[1]] = acc;
     });
@@ -287,7 +287,7 @@
       var p = key.split(","); return aster(+p[0], +p[1], poleSet[key].stroke);
     }).join("");
 
-    return svg('<g class="seg-fibres">' + fibres + "</g>" + planeSvg + '<g class="stage">' + rib + units + "</g>" + poles + badges,
+    return svg('<g class="seg-fibers">' + fibers + "</g>" + planeSvg + '<g class="stage">' + rib + units + "</g>" + poles + badges,
       w, h, "trivalent dividing by " + modeName.toLowerCase() + " segregation");
   }
 
