@@ -17,13 +17,13 @@
  *   NW = A(normal)   NE = der(A)   SE = B(normal)   SW = der(B)
  * Going round the ring, each edge is held together by shared (homologous) material, so
  * the three ways to divide the ring read off geometrically and give the modes their
- * names: ALTERNATE takes the two OPPOSITE corners (its spindle fibres cross), while
+ * names: ALTERNATE takes the two OPPOSITE corners (its spindle fibers cross), while
  * ADJACENT-1 (vertical cut) and ADJACENT-2 (horizontal cut) each take two NEIGHBOURS.
  */
 (function () {
   "use strict";
 
-  // Figure-level colours, by chromosome of origin (mirror the renderer's encodings:
+  // Figure-level colors, by chromosome of origin (mirror the renderer's encodings:
   // periwinkle "field", amber "signal"). Not UI chrome, so kept local to this module.
   var PERI = "#5e72e4";   // chromosome A material
   var AMBER = "#ec9b27";  // chromosome B material
@@ -206,9 +206,9 @@
   }
 
   // ---- schematic bodies -----------------------------------------------------
-  // A body is a stack of coloured blocks (pter at top). The centromere is a pinch whose
-  // dot is coloured by the chromosome the centromere belongs to (cen), so "homologous
-  // centromeres" (a chromosome and its own derivative share one colour) are trackable.
+  // A body is a stack of colored blocks (pter at top). The centromere is a pinch whose
+  // dot is colored by the chromosome the centromere belongs to (cen), so "homologous
+  // centromeres" (a chromosome and its own derivative share one color) are trackable.
   // Blocks are schematic lengths, not to scale.
   function reciprocalBodies(A, B, bandA, bandB) {
     return {
@@ -252,9 +252,9 @@
       '<text x="' + x + '" y="' + (y + 3.2) + '" text-anchor="middle" font-size="9" font-weight="700" fill="' + color + '">' + n + '</text>';
   }
 
-  // One chromosome as a compact vertical glyph centred at (cx,cy), wrapped in a group that
+  // One chromosome as a compact vertical glyph centered at (cx,cy), wrapped in a group that
   // can slide toward its pole (the --tx/--ty animation vector). Returns the group markup
-  // plus the resting centromere point, so a spindle fibre can be anchored to it.
+  // plus the resting centromere point, so a spindle fiber can be anchored to it.
   function bodyHeight(body) { var h = 0; body.blocks.forEach(function (bk) { if (!bk.cen) h += bk.h; }); return h; }
   function miniGlyph(body, cx, cy, pole, acc, showName) {
     var barW = 12, H = bodyHeight(body), top = cy - H / 2;
@@ -349,11 +349,11 @@
   }
 
   function buildScene(bodies, ids, P, CFG, label) {
-    var fibres = "", glyphs = "";
+    var fibers = "", glyphs = "";
     ids.forEach(function (id) {
       var poleKey = CFG.assign[id], pole = CFG.poles[poleKey], acc = CFG.acc[poleKey];
       var m = miniGlyph(bodies[id], P[id][0], P[id][1], pole, acc, true);
-      fibres += line(m.cenX, m.cenY, pole[0], pole[1], acc.stroke, 1.4, "");
+      fibers += line(m.cenX, m.cenY, pole[0], pole[1], acc.stroke, 1.4, "");
       glyphs += m.svg;
     });
     var poles = "";
@@ -365,7 +365,7 @@
       var by = p[1] < 40 ? p[1] + 1 : (p[1] > 160 ? p[1] - 1 : p[1] - 12);
       poles += poleCount(bx, by, CFG.counts[k], acc.ink);
     });
-    return svgScene('<g class="seg-fibres">' + fibres + '</g>' + plateSvg(CFG.plate) + glyphs + poles, 212, 200, label);
+    return svgScene('<g class="seg-fibers">' + fibers + '</g>' + plateSvg(CFG.plate) + glyphs + poles, 212, 200, label);
   }
 
   function scene(model, modeName) {
@@ -400,8 +400,8 @@
       if (modeName === "Alternate") return "The fusion travels to one pole and both normal homologues to the other, so each gamete carries one full dose of every long arm. Both are balanced: one is chromosomally normal, the other a balanced carrier like the parent.";
       return "The fusion travels with one normal homologue and the other normal goes alone. One pole then carries two copies of a long arm, the other none, which reads out after fertilisation as a whole-chromosome trisomy or monosomy. Shown here the fusion goes with " + model.A + "; the mirror, the fusion with " + model.B + ", is also adjacent.";
     }
-    if (modeName === "Alternate") return "Both chromosomes bound for one pole sit at <b>opposite corners</b> of the ring, so the spindle fibres cross. Taking every other one always pairs a normal with a normal and a derivative with a derivative, so each pole gets a complete set. This is the only balanced pattern.";
-    if (modeName === "Adjacent-1") return "The two that travel together are <b>neighbours</b> in the ring, and their centromeres come from different chromosomes. The two matching (homologous) centromeres are therefore pulled apart. Each gamete keeps one normal chromosome and one non-matching derivative: one exchanged segment is duplicated, the other deleted.";
+    if (modeName === "Alternate") return "Both chromosomes bound for one pole sit at <b>opposite corners</b> of the ring, so the spindle fibers cross. Taking every other one always pairs a normal with a normal and a derivative with a derivative, so each pole gets a complete set. This is the only balanced pattern.";
+    if (modeName === "Adjacent-1") return "The two that travel together are <b>neighbors</b> in the ring, and their centromeres come from different chromosomes. The two matching (homologous) centromeres are therefore pulled apart. Each gamete keeps one normal chromosome and one non-matching derivative: one exchanged segment is duplicated, the other deleted.";
     if (modeName === "Adjacent-2") return "Neighbours again, but here the two <b>matching centromeres</b> (a chromosome and its own derivative) go to the same pole. That is a meiosis I non-disjunction, so it is rarer. The imbalance falls on the proximal, centromere-bearing segments.";
     return "Here the quadrivalent splits three-to-one instead of two-and-two: three chromosomes travel to one pole and the fourth to the other. The gamete then carries an extra or a missing chromosome, so the conceptus has 47 or 45. Interstitial crossing-over adds further combinations.";
   }
@@ -445,7 +445,7 @@
       '<div class="seg-key-row"><span class="seg-key-h">Chromosome of origin</span>' +
       '<span><i style="background:' + PERI + '"></i>chromosome ' + esc(model.A) + ' material</span>' +
       '<span><i style="background:' + AMBER + '"></i>chromosome ' + esc(model.B) + ' material</span>' +
-      '<span class="seg-key-sub">Centromere dots take the colour of the chromosome they belong to, so a chromosome and its own derivative (homologous centromeres) share a dot colour.</span></div>' +
+      '<span class="seg-key-sub">Centromere dots take the color of the chromosome they belong to, so a chromosome and its own derivative (homologous centromeres) share a dot color.</span></div>' +
       '<div class="seg-key-row"><span class="seg-key-h">Destination at anaphase I</span>' +
       '<span><i class="seg-swatch" style="background:' + TEAL.bg + ';border-color:' + TEAL.stroke + '"></i>travels to pole 1</span>' +
       '<span><i class="seg-swatch" style="background:' + ROSE.bg + ';border-color:' + ROSE.stroke + '"></i>travels to pole 2</span>' +
@@ -458,7 +458,7 @@
       '<div class="seg-controls"><label for="seg-anim" class="seg-anim-toggle"><span class="seg-switch"></span>Animate the pull to the poles</label></div>';
 
     var modes = model.modes.map(function (m) {
-      // Key gametes to their pole colour only for a clean single division (two gametes).
+      // Key gametes to their pole color only for a clean single division (two gametes).
       // 3:1 and Robertsonian adjacent draw one representative split of several, so tinting
       // all their gametes to it would overclaim; leave those neutral.
       var accentOf = m.gametes.length === 2 ? gameteAccent(model, m.name) : function () { return null; };
@@ -480,7 +480,7 @@
         '<div class="seg-gametes">' + gametes + '</div></div>';
     }).join("");
 
-    var note = '<p class="seg-note">Segregants follow ISCN 2024, Table 5. The diagrams are schematic: chromosome lengths and pole positions are not to scale, and the fibre paths illustrate which chromosomes co-segregate, not the physical spindle. This is a teaching model of segregation, not a recurrence-risk estimate: real risks depend on the specific chromosomes, segment sizes, and ascertainment, and are set by a genetic counsellor.</p>';
+    var note = '<p class="seg-note">Segregants follow ISCN 2024, Table 5. The diagrams are schematic: chromosome lengths and pole positions are not to scale, and the fiber paths illustrate which chromosomes co-segregate, not the physical spindle. This is a teaching model of segregation, not a recurrence-risk estimate: real risks depend on the specific chromosomes, segment sizes, and ascertainment, and are set by a genetic counselor.</p>';
 
     return head + config + controls + '<div class="seg-modes">' + modes + '</div>' + note;
   }

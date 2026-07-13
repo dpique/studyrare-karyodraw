@@ -80,7 +80,7 @@
     gpos50: { name: "G-positive (medium)", bio: "Medium-dark band: AT-rich, gene-poorer, later-replicating." },
     gpos75: { name: "G-positive (dark)", bio: "Dark band: AT-rich, gene-poor, late-replicating heterochromatin-like." },
     gpos100: { name: "G-positive (darkest)", bio: "Darkest band: very AT-rich, gene-poor, latest-replicating." },
-    acen: { name: "Centromere", bio: "The centromere (α-satellite heterochromatin) where the kinetochore assembles and spindle fibres attach at cell division." },
+    acen: { name: "Centromere", bio: "The centromere (α-satellite heterochromatin) where the kinetochore assembles and spindle fibers attach at cell division." },
     gvar: { name: "Variable region", bio: "Polymorphic heterochromatin whose size varies normally between people (e.g. 1q, 9q, 16q, Yq), usually not pathogenic." },
     stalk: { name: "Acrocentric stalk", bio: "The stalk of an acrocentric short arm (chr 13,14,15,21,22): houses the ribosomal RNA genes (NOR). Losing it is generally harmless." }
   };
@@ -330,7 +330,7 @@
   var ARM_INFO = {
     p: "The SHORT arm. 'p' is for petit (French for small). Always drawn on TOP. Bands are numbered starting from the centromere (p1…) outward to the telomere.",
     q: "The LONG arm. 'q' simply follows 'p' in the alphabet. Always drawn on the BOTTOM. Bands numbered from the centromere (q1…) out to the telomere.",
-    centromere: "The primary constriction that joins the two arms. The kinetochore assembles here and spindle fibres attach during cell division. Its position (metacentric / submetacentric / acrocentric) helps identify a chromosome.",
+    centromere: "The primary constriction that joins the two arms. The kinetochore assembles here and spindle fibers attach during cell division. Its position (metacentric / submetacentric / acrocentric) helps identify a chromosome.",
     telomere: "The very tip of each arm ('ter' = pter / qter). Repetitive TTAGGG caps that protect chromosome ends and shorten with each division.",
     band: "A stretch of chromosome that stains light or dark with Giemsa (G-banding). The reproducible pattern of bands is a chromosome's 'barcode', it is how each one is identified and how breakpoints are pinpointed."
   };

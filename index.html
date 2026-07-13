@@ -215,7 +215,7 @@
   .seg-note { margin: 16px 0 0; font-size: 11.5px; color: var(--muted); max-width: 80ch; }
   /* Anaphase-I pull: the checkbox slides each chromosome group toward its pole (CSS only). */
   .seg-scene .seg-chrom { transform: translate(0, 0); }
-  .seg-scene .seg-fibres { transition: opacity .3s; }
+  .seg-scene .seg-fibers { transition: opacity .3s; }
   @keyframes seg-pull { from { transform: translate(0, 0); } to { transform: translate(var(--tx, 0), var(--ty, 0)); } }
   #seg-anim:checked ~ .seg-modes .seg-scene .seg-chrom { animation: seg-pull 2.4s ease-in-out infinite alternate; }
   @media (prefers-reduced-motion: reduce) { #seg-anim:checked ~ .seg-modes .seg-scene .seg-chrom { animation: none; } }

@@ -14,9 +14,9 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   is drawn as the **trivalent** folded ninety degrees at its centromere, the fusion long
   arms lying beside the two normal acrocentrics.
 - **One division plane, moved to a new position, names each mode.** Every mode draws the
-  same shape with the plane where it cuts: alternate crosses its fibres with no straight
+  same shape with the plane where it cuts: alternate crosses its fibers with no straight
   plane, adjacent-1 cuts vertically, adjacent-2 horizontally, and 3:1 brackets the lone
-  chromosome with a right-angled plane. A spindle fibre never crosses the plane it is
+  chromosome with a right-angled plane. A spindle fiber never crosses the plane it is
   sorted by; `test/pachytene.test.js` asserts this as a geometric invariant, along with the
   arm lengths, the pole counts, and that a different translocation makes a different cross.
 - **Kept as a second system.** The schematic figures remain in `segregation.js` and are
@@ -34,19 +34,19 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   every mode, the ring of chromosomes and the anaphase-I division that produces it, so
   the naming is visible rather than asserted. The four bodies sit at the corners of a
   square that mirrors the pachytene ring; **alternate** takes the two **opposite**
-  corners (its spindle fibres cross), while **adjacent-1** (a vertical division plane)
-  and **adjacent-2** (a horizontal plane) each take two **neighbours**. **3:1** sends
+  corners (its spindle fibers cross), while **adjacent-1** (a vertical division plane)
+  and **adjacent-2** (a horizontal plane) each take two **neighbors**. **3:1** sends
   three chromosomes to one pole and one to the other. Each scene marks the two spindle
   poles, counts the chromosomes each receives (2:2, 3:1, 2:1), and draws the dashed
   division plane; a short caption states the reason for the name.
-- **Two encodings, kept apart.** Chromosome colour still means chromosome of origin, and
-  the centromere dot now takes the colour of the chromosome the centromere belongs to,
-  so a chromosome and its own derivative (homologous centromeres) share a dot colour and
+- **Two encodings, kept apart.** Chromosome color still means chromosome of origin, and
+  the centromere dot now takes the color of the chromosome the centromere belongs to,
+  so a chromosome and its own derivative (homologous centromeres) share a dot color and
   can be tracked. A separate teal/rose accent marks which pole a chromosome travels to;
   each gamete card carries the accent of the pole it leaves from, for the clean 2:2 and
   2:1 divisions. A reading key explains both.
 - **Watch them separate.** An "Animate the pull to the poles" toggle slides each
-  chromosome along its spindle fibre toward its pole and back, so anaphase I is
+  chromosome along its spindle fiber toward its pole and back, so anaphase I is
   something you watch rather than infer. It is CSS only and honours
   `prefers-reduced-motion`.
 - The enumerated gametes, conceptus karyotypes, and viability calls are unchanged (still
@@ -57,7 +57,7 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
 
 - **Say when the multivalent forms and separates.** The segregation panel now states
   that the chromosomes pair into the quadrivalent/trivalent as the homologs line up in
-  **prophase I** (labelled on the pairing diagram as the pachytene configuration), and
+  **prophase I** (labeled on the pairing diagram as the pachytene configuration), and
   that the alternate / adjacent / 3:1 patterns are how it separates at **anaphase I**
   (meiosis I). Adjacent-2 is named as a meiosis I nondisjunction of the homologous
   centromeres.
