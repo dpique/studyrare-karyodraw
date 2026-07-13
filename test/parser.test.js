@@ -395,3 +395,38 @@ test('result.normalized gives the canonical, whitespace-free designation', () =>
   assert.equal(ISCN.parse('47, XX, +21').normalized, '47,XX,+21');
   assert.equal(ISCN.parse('mos 45,X[12]/46,XX[18]').normalized, 'mos 45,X[12]/46,XX[18]', 'the mos space stays');
 });
+
+// A bare rearrangement (no leading count + sex) gets a "did you mean" fix that
+// prepends a normal constitution, with the correct count for the aberration.
+test('a bare balanced translocation suggests the 46,XX, prefix', () => {
+  assert.equal(ISCN.parse('t(2;5)(q21;q31)').suggestion, '46,XX,t(2;5)(q21;q31)');
+});
+test('a bare deletion keeps the 46 count', () => {
+  assert.equal(ISCN.parse('del(5)(p15.2)').suggestion, '46,XX,del(5)(p15.2)');
+});
+test('a bare gain corrects the count to 47', () => {
+  assert.equal(ISCN.parse('+21').suggestion, '47,XX,+21');
+});
+test('a bare loss corrects the count to 45', () => {
+  assert.equal(ISCN.parse('-7').suggestion, '45,XX,-7');
+});
+test('a bare Robertsonian corrects the count to 45', () => {
+  assert.equal(ISCN.parse('rob(13;14)(q10;q10)').suggestion, '45,XX,rob(13;14)(q10;q10)');
+});
+test('a bare Y-involving rearrangement guesses XY, not XX', () => {
+  assert.equal(ISCN.parse('idic(Y)(q11.2)').suggestion, '46,XY,idic(Y)(q11.2)');
+});
+test('the "starts with a number" note is replaced by a clearer one when a fix is offered', () => {
+  const m = ISCN.parse('t(9;22)(q34;q11.2)');
+  assert.equal(m.suggestion, '46,XX,t(9;22)(q34;q11.2)');
+  assert.ok(m.warnings.some((w) => /typed only the rearrangement/.test(w)), 'friendly note present');
+  assert.ok(!m.warnings.some((w) => /isn’t a number/.test(w)), 'raw "isn\'t a number" note removed');
+});
+test('genuine garbage does NOT get a bare-aberration suggestion', () => {
+  assert.equal(ISCN.parse('hello there').suggestion, null);
+  assert.equal(ISCN.parse('banana(9;22)').suggestion, null);
+});
+test('a complete karyotype is untouched (no bare-aberration suggestion)', () => {
+  assert.equal(ISCN.parse('46,XX,t(2;5)(q21;q31)').suggestion, null);
+  assert.equal(ISCN.parse('46,XY').suggestion, null);
+});

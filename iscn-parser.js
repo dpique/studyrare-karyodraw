@@ -554,6 +554,28 @@
         result.countFix = raw.replace(/\d+/, String(cl0.counts.actual));
       }
     }
+
+    // The user may have typed only the rearrangement, dropping the leading count and
+    // sex ("t(9;22)(q34;q11.2)" instead of "46,XY,t(9;22)(q34;q11.2)"). If prefixing a
+    // normal constitution parses as a real karyotype, offer that as a one-click fix,
+    // with the correct count for a gain, loss, or Robertsonian. Sex is guessed from
+    // whether a Y is mentioned; the fix is editable if the guess is wrong.
+    if (!result.suggestion && result.clones.length === 1 &&
+        result.clones[0].modalNumber == null && s && !/^\d/.test(s)) {
+      var sexGuess = /y/i.test(s) ? "XY" : "XX";
+      var trial = parse("46," + sexGuess + "," + s);
+      var tc = trial.clones[0];
+      if (tc && tc.modalNumber != null && tc.aberrations.length &&
+          tc.aberrations.every(function (a) { return a.kind && a.kind !== "unknown"; })) {
+        result.suggestion = trial.countFix || ("46," + sexGuess + "," + s);
+        for (var wi = 0; wi < warnings.length; wi++) {
+          if (/^A karyotype starts with the chromosome count/.test(warnings[wi])) {
+            warnings[wi] = "It looks like you typed only the rearrangement. A karyotype begins with the chromosome count and sex chromosomes, for example 46,XX. The fix below adds them.";
+            break;
+          }
+        }
+      }
+    }
     return result;
   }
 
