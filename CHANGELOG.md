@@ -3,6 +3,22 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-13 (segregation: meiosis I framing + somatic caveat)
+
+- **Say when the multivalent forms and separates.** The segregation panel now states
+  that the chromosomes pair into the quadrivalent/trivalent as the homologs line up in
+  **prophase I** (labelled on the pairing diagram as the pachytene configuration), and
+  that the alternate / adjacent / 3:1 patterns are how it separates at **anaphase I**
+  (meiosis I). Adjacent-2 is named as a meiosis I nondisjunction of the homologous
+  centromeres.
+- **A sharper caveat for an acquired (cancer) translocation.** When the drawn
+  translocation is a recognized somatic change (for example the Philadelphia
+  chromosome, or the t(8;21) / t(15;17) / t(8;14) / t(14;18) leukemia and lymphoma
+  translocations), the panel now says it is an acquired, somatic event that arises in
+  the tumour cells and is not transmitted, and frames the patterns as the germline
+  case (what a constitutional carrier would pass on). A constitutional carrier still
+  gets the plain inherited-carrier note. `teach.js` flags those notes `acquired`.
+
 ## 2026-07-12 (meiotic segregation of translocation carriers)
 
 - **Draw the meiotic segregation of a balanced translocation carrier.** When you

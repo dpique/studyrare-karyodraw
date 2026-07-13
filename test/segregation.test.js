@@ -146,3 +146,20 @@ test('render returns HTML containing the mode names and an SVG', () => {
   assert.match(html, /<svg/);
   assert.match(html, /Meiotic segregation/);
 });
+test('render states the meiosis I timing (prophase I pairing, anaphase I separation)', () => {
+  const html = Seg.render(model('46,XX,t(2;5)(q21;q31)'));
+  assert.match(html, /prophase I/);
+  assert.match(html, /anaphase I/);
+});
+test('the default caveat is the constitutional note', () => {
+  const html = Seg.render(model('46,XX,t(2;5)(q21;q31)'));
+  assert.match(html, /constitutional/);
+  assert.doesNotMatch(html, /acquired change seen in/);
+});
+test('an acquired context swaps in the somatic caveat (germline case framing)', () => {
+  const html = Seg.render(model('46,XY,t(9;22)(q34;q11.2)'), { acquired: true });
+  assert.match(html, /acquired<\/b>, somatic change/);
+  assert.match(html, /does not segregate/);
+  assert.match(html, /germline case/);
+  assert.doesNotMatch(html, /This assumes a <b>constitutional/);
+});

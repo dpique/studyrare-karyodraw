@@ -129,7 +129,7 @@
           g(["B", "dA"], "46," + sex + ",der(" + A + ")" + T, recipUnbalanced, "")
         ] },
       { name: "Adjacent-2", sub: "2:2", balanced: false,
-        blurb: "Homologous centromeres travel together (rarer). Duplication and deletion of the proximal, centromere-bearing segments.",
+        blurb: "Homologous centromeres travel to the same pole, a meiosis I nondisjunction (rarer). Duplication and deletion of the proximal, centromere-bearing segments.",
         gametes: [
           g(["A", "dA"], "46," + sex + ",+der(" + A + ")" + T + ",-" + B, recipUnbalanced, ""),
           g(["B", "dB"], "46," + sex + ",+der(" + B + ")" + T + ",-" + A, recipUnbalanced, "")
@@ -271,16 +271,26 @@
     return '<span class="seg-chip seg-' + v.tag + '">' + esc(v.text) + '</span>';
   }
 
-  function render(model) {
+  function render(model, opts) {
     if (!model) return "";
+    opts = opts || {};
     var b = model.bodies;
     var typeLabel = model.type === "robertsonian" ? "Robertsonian" : "reciprocal";
+    // When the drawn karyotype is a known acquired (cancer) translocation, swap the
+    // generic constitutional note for one that flags it as somatic and points to the
+    // clinical notes (which name it), rather than inserting the name here (the names
+    // are inconsistent, e.g. "Philadelphia chromosome" vs "AML").
+    var caveat = opts.acquired
+      ? '<p class="seg-caveat">Here this translocation is an <b>acquired</b>, somatic change that arises in the tumour cells (see the clinical notes), not an inherited one. A somatic rearrangement is not passed to eggs or sperm, so it does not segregate. The patterns below are the germline case: what a <b>constitutional</b> carrier of the same translocation would transmit.</p>'
+      : '<p class="seg-caveat">This assumes a <b>constitutional</b> (inherited) carrier. An acquired translocation in a tumour is somatic and is not passed to gametes, so segregation does not apply to it.</p>';
     var head = '<div class="seg-head"><h2>Meiotic segregation</h2>' +
-      '<p class="seg-lead">At meiosis this balanced ' + typeLabel + ' translocation carrier forms a <b>' + model.valent +
-      '</b> (' + model.valentN + ' chromosomes). Each way the ' + model.valentN + ' chromosomes distribute to the two gametes is shown below, with the resulting conception. Only <b>alternate</b> segregation gives balanced gametes.</p>' +
-      '<p class="seg-caveat">This assumes a <b>constitutional</b> (inherited) carrier. An acquired translocation in a tumour is somatic and is not passed to gametes, so segregation does not apply to it.</p></div>';
+      '<p class="seg-lead">At meiosis, the chromosomes of this balanced ' + typeLabel + ' translocation carrier pair into a <b>' + model.valent +
+      '</b> (' + model.valentN + ' chromosomes) as the homologs line up in <b>prophase I</b>. How that ' + model.valent +
+      ' separates at <b>anaphase I</b> (meiosis I) is shown below, one column per pattern. Only <b>alternate</b> segregation gives balanced gametes.</p>' +
+      caveat + '</div>';
 
-    var config = '<div class="seg-config">' + configSvg(model) +
+    var config = '<div class="seg-config"><div class="seg-config-fig">' +
+      '<div class="seg-config-cap">Pairing in prophase I (pachytene)</div>' + configSvg(model) + '</div>' +
       '<div class="seg-legend"><span><i style="background:' + PERI + '"></i>chromosome ' + esc(model.A) + ' material</span>' +
       '<span><i style="background:' + AMBER + '"></i>chromosome ' + esc(model.B) + ' material</span></div></div>';
 

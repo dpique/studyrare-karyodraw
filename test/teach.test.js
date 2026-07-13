@@ -103,6 +103,15 @@ test('a numbered marker decodes as the right count', () => {
   assert.match(decodeText('47,XY,+mar'), /a MARKER chromosome/);
 });
 
+// A cancer translocation is flagged acquired (somatic) so the segregation panel can
+// say it is not transmitted; a constitutional rearrangement is not flagged.
+test('a cancer translocation is flagged acquired; a constitutional one is not', () => {
+  const phil = Teach.syndromes(ISCN.parse('46,XY,t(9;22)(q34;q11.2)').clones[0]).find((s) => /Philadelphia/.test(s.name));
+  assert.ok(phil && phil.acquired === true, 't(9;22) flagged acquired');
+  const recip = Teach.syndromes(ISCN.parse('46,XX,t(2;5)(q21;q31)').clones[0]);
+  assert.ok(recip.every((s) => !s.acquired), 'a generic reciprocal is not flagged acquired');
+});
+
 // The spoken text includes the cell count (the proportions matter for a mosaic).
 test('pronounce speaks the cell count when present', () => {
   assert.match(Teach.pronounce(ISCN.parse('45,X[12]').clones[0]), /in 12 cells/);
