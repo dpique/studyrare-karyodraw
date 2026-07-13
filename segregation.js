@@ -13,9 +13,12 @@
  * set (noted, not enumerated). This is a teaching visualizer of segregation, not a
  * recurrence-risk calculator. Pure logic + schematic SVG strings; no DOM, no deps.
  *
- * Layout convention that makes the modes read positionally in the cross:
- *   top = A(normal)   right = der(A)   bottom = B(normal)   left = der(B)
- * so alternate takes opposite corners, adjacent-1/-2 take neighbours.
+ * The four chromosomes sit at the corners of a square that mirrors the pachytene ring:
+ *   NW = A(normal)   NE = der(A)   SE = B(normal)   SW = der(B)
+ * Going round the ring, each edge is held together by shared (homologous) material, so
+ * the three ways to divide the ring read off geometrically and give the modes their
+ * names: ALTERNATE takes the two OPPOSITE corners (its spindle fibres cross), while
+ * ADJACENT-1 (vertical cut) and ADJACENT-2 (horizontal cut) each take two NEIGHBOURS.
  */
 (function () {
   "use strict";
@@ -25,6 +28,11 @@
   var PERI = "#5e72e4";   // chromosome A material
   var AMBER = "#ec9b27";  // chromosome B material
   var INK = "#1a1f36", LINE = "#3c4463", STALK = "#c2caf6";
+  // Destination accents: which pole a chromosome travels to. Deliberately NOT peri/amber
+  // (those already encode chromosome of origin) so "where it goes" reads apart from
+  // "what it is". Teal = pole 1, rose = pole 2.
+  var TEAL = { stroke: "#1f9e8f", bg: "#e2f3f0", ink: "#116d62" };
+  var ROSE = { stroke: "#c0568a", bg: "#f8e7ef", ink: "#8f3466" };
 
   var ACRO = { "13": 1, "14": 1, "15": 1, "21": 1, "22": 1 };
   // Autosomal whole-chromosome trisomies compatible with live birth (syndromic).
@@ -197,78 +205,217 @@
     return null;
   }
 
-  // ---- schematic glyphs -----------------------------------------------------
-  // A body is a stack of coloured blocks (pter at top). The centromere is a pinch.
-  // Blocks are schematic lengths, not to scale; colour = chromosome of origin.
+  // ---- schematic bodies -----------------------------------------------------
+  // A body is a stack of coloured blocks (pter at top). The centromere is a pinch whose
+  // dot is coloured by the chromosome the centromere belongs to (cen), so "homologous
+  // centromeres" (a chromosome and its own derivative share one colour) are trackable.
+  // Blocks are schematic lengths, not to scale.
   function reciprocalBodies(A, B, bandA, bandB) {
-    // p short, then centromere, then q (proximal + distal). q-arm breakpoints are the
-    // common teaching case; a p-arm break still reads as a two-tone exchange.
     return {
-      A: { id: "A", name: A, blocks: [{ c: PERI, h: 10, arm: "p" }, { cen: true }, { c: PERI, h: 30, arm: "q" }] },
-      B: { id: "B", name: B, blocks: [{ c: AMBER, h: 10, arm: "p" }, { cen: true }, { c: AMBER, h: 30, arm: "q" }] },
-      dA: { id: "dA", name: "der(" + A + ")", blocks: [{ c: PERI, h: 10, arm: "p" }, { cen: true }, { c: PERI, h: 18, arm: "q" }, { c: AMBER, h: 16, arm: "q" }] },
-      dB: { id: "dB", name: "der(" + B + ")", blocks: [{ c: AMBER, h: 10, arm: "p" }, { cen: true }, { c: AMBER, h: 18, arm: "q" }, { c: PERI, h: 16, arm: "q" }] }
+      A: { id: "A", name: A, cen: PERI, blocks: [{ c: PERI, h: 10, arm: "p" }, { cen: true }, { c: PERI, h: 30, arm: "q" }] },
+      B: { id: "B", name: B, cen: AMBER, blocks: [{ c: AMBER, h: 10, arm: "p" }, { cen: true }, { c: AMBER, h: 30, arm: "q" }] },
+      dA: { id: "dA", name: "der(" + A + ")", cen: PERI, blocks: [{ c: PERI, h: 10, arm: "p" }, { cen: true }, { c: PERI, h: 18, arm: "q" }, { c: AMBER, h: 16, arm: "q" }] },
+      dB: { id: "dB", name: "der(" + B + ")", cen: AMBER, blocks: [{ c: AMBER, h: 10, arm: "p" }, { cen: true }, { c: AMBER, h: 18, arm: "q" }, { c: PERI, h: 16, arm: "q" }] }
     };
   }
   function robertsonianBodies(A, B) {
     return {
-      A: { id: "A", name: A, blocks: [{ c: STALK, h: 5, arm: "p" }, { cen: true }, { c: PERI, h: 34, arm: "q" }] },
-      B: { id: "B", name: B, blocks: [{ c: STALK, h: 5, arm: "p" }, { cen: true }, { c: AMBER, h: 34, arm: "q" }] },
-      dF: { id: "dF", name: "der(" + A + ";" + B + ")", blocks: [{ c: PERI, h: 30, arm: "q" }, { cen: true }, { c: AMBER, h: 30, arm: "q" }] }
+      A: { id: "A", name: A, cen: PERI, blocks: [{ c: STALK, h: 5, arm: "p" }, { cen: true }, { c: PERI, h: 34, arm: "q" }] },
+      B: { id: "B", name: B, cen: AMBER, blocks: [{ c: STALK, h: 5, arm: "p" }, { cen: true }, { c: AMBER, h: 34, arm: "q" }] },
+      dF: { id: "dF", name: "der(" + A + ";" + B + ")", cen: INK, blocks: [{ c: PERI, h: 30, arm: "q" }, { cen: true }, { c: AMBER, h: 30, arm: "q" }] }
     };
   }
 
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
-  // One chromosome glyph as an <svg>: a slim stacked bar with a centromere pinch,
-  // coloured by origin. The svg widens to fit the label (a fixed width clips names
-  // like "der(14;21)"); the bar stays slim and centred.
-  function glyphSvg(body, opts) {
-    opts = opts || {};
-    var barW = 14, pad = 3, showLabel = opts.label !== false, name = body.name;
-    var W = Math.max(barW + pad * 2, showLabel ? name.length * 4.3 + 4 : 0);
-    var bx = (W - barW) / 2;
-    var y = 4, parts = [], cenY = null;
+  // ---- SVG primitives -------------------------------------------------------
+  function rect(x, y, w, h, r, fill) {
+    return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="' + r + '" fill="' + fill + '"/>';
+  }
+  function line(x1, y1, x2, y2, stroke, w, dash) {
+    return '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) +
+      '" stroke="' + stroke + '" stroke-width="' + w + '" stroke-linecap="round"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>';
+  }
+  // A spindle pole: a small aster with a few short radiating microtubules.
+  function aster(x, y, color) {
+    var s = '<g class="seg-pole">';
+    for (var i = 0; i < 6; i++) {
+      var a = (Math.PI / 3) * i, r0 = 3.2, r1 = 7.5;
+      s += line(x + Math.cos(a) * r0, y + Math.sin(a) * r0, x + Math.cos(a) * r1, y + Math.sin(a) * r1, color, 1, "");
+    }
+    return s + '<circle cx="' + x + '" cy="' + y + '" r="3.1" fill="' + color + '"/></g>';
+  }
+  // Ratio badge next to a pole (how many chromosomes it receives): reinforces 2:2 / 3:1 / 2:1.
+  function poleCount(x, y, n, color) {
+    return '<circle cx="' + x + '" cy="' + y + '" r="6.6" fill="#fff" stroke="' + color + '" stroke-width="1.3"/>' +
+      '<text x="' + x + '" y="' + (y + 3.2) + '" text-anchor="middle" font-size="9" font-weight="700" fill="' + color + '">' + n + '</text>';
+  }
+
+  // One chromosome as a compact vertical glyph centred at (cx,cy), wrapped in a group that
+  // can slide toward its pole (the --tx/--ty animation vector). Returns the group markup
+  // plus the resting centromere point, so a spindle fibre can be anchored to it.
+  function bodyHeight(body) { var h = 0; body.blocks.forEach(function (bk) { if (!bk.cen) h += bk.h; }); return h; }
+  function miniGlyph(body, cx, cy, pole, acc, showName) {
+    var barW = 12, H = bodyHeight(body), top = cy - H / 2;
+    var y = top, blocks = "", cenY = null;
     body.blocks.forEach(function (bk) {
       if (bk.cen) { cenY = y; return; }
-      parts.push('<rect x="' + bx.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW + '" height="' + bk.h +
-        '" rx="3" fill="' + bk.c + '"/>');
+      blocks += rect(cx - barW / 2, y, barW, bk.h, 3, bk.c);
       y += bk.h;
     });
-    var H = y + 4;
-    var cen = cenY == null ? "" :
-      '<rect x="' + (bx + 2).toFixed(1) + '" y="' + (cenY - 2) + '" width="' + (barW - 4) + '" height="4" fill="#fff"/>' +
-      '<circle cx="' + (bx + barW / 2).toFixed(1) + '" cy="' + cenY + '" r="2.4" fill="' + INK + '"/>';
-    var label = !showLabel ? "" :
-      '<text x="' + (W / 2).toFixed(1) + '" y="' + (H + 9) + '" text-anchor="middle" font-size="7.5" fill="' + LINE + '">' + esc(name) + '</text>';
-    var totalH = showLabel ? H + 13 : H + 2;
-    return '<svg class="seg-glyph" width="' + W.toFixed(1) + '" height="' + totalH + '" viewBox="0 0 ' + W.toFixed(1) + ' ' + totalH +
-      '" role="img" aria-label="' + esc(name) + '">' + parts.join("") + cen + label + '</svg>';
+    if (cenY == null) cenY = cy;
+    var halo = '<rect x="' + (cx - barW / 2 - 5).toFixed(1) + '" y="' + (top - 5).toFixed(1) + '" width="' + (barW + 10) +
+      '" height="' + (H + 10) + '" rx="6" fill="' + acc.bg + '" stroke="' + acc.stroke + '" stroke-width="1.3"/>';
+    var cen = rect(cx - barW / 2 + 1.5, cenY - 1.8, barW - 3, 3.6, 0, "#fff") +
+      '<circle cx="' + cx + '" cy="' + cenY.toFixed(1) + '" r="2.7" fill="' + (body.cen || INK) + '" stroke="#fff" stroke-width="0.9"/>';
+    var name = showName ? '<text x="' + cx + '" y="' + (top + H + 10).toFixed(1) + '" text-anchor="middle" font-size="7" fill="' + LINE + '">' + esc(body.name) + '</text>' : "";
+    var tx = clamp((pole[0] - cx) * 0.34, -22, 22), ty = clamp((pole[1] - cy) * 0.34, -22, 22);
+    var svg = '<g class="seg-chrom" style="--tx:' + tx.toFixed(1) + 'px;--ty:' + ty.toFixed(1) + 'px">' +
+      halo + blocks + cen + name + '</g>';
+    return { svg: svg, cenX: cx, cenY: cenY };
   }
 
-  function glyphRow(bodies, ids) {
-    return '<span class="seg-row">' + ids.map(function (id) { return glyphSvg(bodies[id]); }).join("") + '</span>';
+  function svgScene(inner, w, h, label) {
+    return '<svg class="seg-scene-svg" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + esc(label) + '">' + inner + '</svg>';
   }
 
-  // The pairing configuration: cross (quadrivalent) or trivalent, labelled.
-  function configSvg(model) {
+  // Dashed division plane (metaphase plate). Adjacent modes cut cleanly with one line;
+  // alternate cannot (its pairs are diagonal), so it passes plate=null.
+  function plateSvg(p) {
+    if (!p) return "";
+    if (p.type === "v") return line(p.x, p.y1, p.x, p.y2, "#aeb6d6", 1.4, "4 4");
+    return line(p.x1, p.y, p.x2, p.y, "#aeb6d6", 1.4, "4 4");
+  }
+
+  // ---- pairing figure (the ring in prophase I) ------------------------------
+  // Faint ribbon along a ring edge, tinted by the chromosome material the two bodies
+  // share there — this is what physically holds the multivalent together.
+  function ribbon(p1, p2, color) {
+    return line(p1[0], p1[1], p2[0], p2[1], color, 7, "") ;
+  }
+  function pairingSvg(model) {
     var b = model.bodies;
     if (model.type === "reciprocal") {
-      // top A, right der(A), bottom B, left der(B).
-      return '<div class="seg-cross" aria-label="quadrivalent pairing cross">' +
-        '<div class="seg-cross-cell seg-top">' + glyphSvg(b.A) + '</div>' +
-        '<div class="seg-cross-cell seg-left">' + glyphSvg(b.dB) + '</div>' +
-        '<div class="seg-cross-hub">✚</div>' +
-        '<div class="seg-cross-cell seg-right">' + glyphSvg(b.dA) + '</div>' +
-        '<div class="seg-cross-cell seg-bottom">' + glyphSvg(b.B) + '</div>' +
-        '</div>';
+      var P = { A: [56, 62], dA: [156, 62], B: [156, 138], dB: [56, 138] };
+      var ribbons = '<g opacity="0.28">' +
+        ribbon(P.A, P.dA, PERI) +   // top edge: shared A-proximal
+        ribbon(P.dA, P.B, AMBER) +  // right edge: shared B-distal
+        ribbon(P.B, P.dB, AMBER) +  // bottom edge: shared B-proximal
+        ribbon(P.dB, P.A, PERI) +   // left edge: shared A-distal
+        '</g>';
+      var acc = { stroke: "#c7ccdd", bg: "#fbfbfe" };
+      var glyphs = ["A", "dA", "B", "dB"].map(function (id) {
+        return miniGlyph(b[id], P[id][0], P[id][1], P[id], acc, true).svg;
+      }).join("");
+      return svgScene(ribbons + glyphs, 212, 196, "quadrivalent ring: four chromosomes paired at pachytene");
     }
-    return '<div class="seg-trivalent" aria-label="trivalent pairing">' +
-      glyphSvg(b.A) + glyphSvg(b.dF) + glyphSvg(b.B) + '</div>';
+    var Q = { dF: [106, 52], A: [56, 140], B: [156, 140] };
+    var rib = '<g opacity="0.28">' + ribbon(Q.dF, Q.A, PERI) + ribbon(Q.dF, Q.B, AMBER) + '</g>';
+    var accT = { stroke: "#c7ccdd", bg: "#fbfbfe" };
+    var gl = ["dF", "A", "B"].map(function (id) { return miniGlyph(b[id], Q[id][0], Q[id][1], Q[id], accT, true).svg; }).join("");
+    return svgScene(rib + gl, 212, 190, "trivalent: fusion chromosome paired with two normal homologues");
+  }
+
+  // ---- per-mode segregation scenes ------------------------------------------
+  // Layout + pole assignment for the reciprocal quadrivalent. accByPole names each pole's
+  // destination accent so gametes below can be keyed to the pole they leave from.
+  function recipScene(model, modeName) {
+    var b = model.bodies;
+    var P = { A: [56, 64], dA: [156, 64], B: [156, 138], dB: [56, 138] };
+    var CFG = {
+      "Alternate": { poles: { t: [106, 18], bo: [106, 180] }, acc: { t: TEAL, bo: ROSE },
+        assign: { A: "t", B: "t", dA: "bo", dB: "bo" }, plate: null, counts: { t: 2, bo: 2 } },
+      "Adjacent-1": { poles: { l: [16, 101], r: [196, 101] }, acc: { l: TEAL, r: ROSE },
+        assign: { A: "l", dB: "l", B: "r", dA: "r" }, plate: { type: "v", x: 106, y1: 34, y2: 168 }, counts: { l: 2, r: 2 } },
+      "Adjacent-2": { poles: { t: [106, 18], bo: [106, 180] }, acc: { t: TEAL, bo: ROSE },
+        assign: { A: "t", dA: "t", B: "bo", dB: "bo" }, plate: { type: "h", y: 101, x1: 30, x2: 182 }, counts: { t: 2, bo: 2 } },
+      "3:1": { poles: { t: [106, 18], bo: [106, 182] }, acc: { t: ROSE, bo: TEAL },
+        assign: { A: "bo", B: "bo", dA: "bo", dB: "t" }, plate: null, counts: { t: 1, bo: 3 } }
+    }[modeName];
+    return buildScene(b, ["A", "dA", "B", "dB"], P, CFG, "quadrivalent dividing by " + modeName + " segregation");
+  }
+
+  function robScene(model, modeName) {
+    var b = model.bodies;
+    var P = { dF: [106, 54], A: [56, 140], B: [156, 140] };
+    var CFG = {
+      "Alternate": { poles: { t: [106, 18], bo: [106, 182] }, acc: { t: TEAL, bo: ROSE },
+        assign: { dF: "t", A: "bo", B: "bo" }, plate: { type: "h", y: 100, x1: 30, x2: 182 }, counts: { t: 1, bo: 2 } },
+      "Adjacent": { poles: { l: [16, 96], r: [198, 96] }, acc: { l: TEAL, r: ROSE },
+        assign: { dF: "l", A: "l", B: "r" }, plate: { type: "v", x: 126, y1: 34, y2: 170 }, counts: { l: 2, r: 1 } }
+    }[modeName];
+    return buildScene(b, ["dF", "A", "B"], P, CFG, "trivalent dividing by " + modeName.toLowerCase() + " segregation");
+  }
+
+  function buildScene(bodies, ids, P, CFG, label) {
+    var fibres = "", glyphs = "";
+    ids.forEach(function (id) {
+      var poleKey = CFG.assign[id], pole = CFG.poles[poleKey], acc = CFG.acc[poleKey];
+      var m = miniGlyph(bodies[id], P[id][0], P[id][1], pole, acc, true);
+      fibres += line(m.cenX, m.cenY, pole[0], pole[1], acc.stroke, 1.4, "");
+      glyphs += m.svg;
+    });
+    var poles = "";
+    Object.keys(CFG.poles).forEach(function (k) {
+      var p = CFG.poles[k], acc = CFG.acc[k];
+      poles += aster(p[0], p[1], acc.stroke);
+      // ratio badge tucked toward the frame edge
+      var bx = p[0] < 40 ? p[0] + 13 : (p[0] > 172 ? p[0] - 13 : p[0] + 15);
+      var by = p[1] < 40 ? p[1] + 1 : (p[1] > 160 ? p[1] - 1 : p[1] - 12);
+      poles += poleCount(bx, by, CFG.counts[k], acc.ink);
+    });
+    return svgScene('<g class="seg-fibres">' + fibres + '</g>' + plateSvg(CFG.plate) + glyphs + poles, 212, 200, label);
+  }
+
+  function scene(model, modeName) {
+    return model.type === "robertsonian" ? robScene(model, modeName) : recipScene(model, modeName);
+  }
+
+  // Which pole a gamete leaves from, if all its chromosomes share one — used to tint the
+  // gamete card to match the scene. Mixed-pole gametes (3:1 combinations) get no accent.
+  function gameteAccent(model, modeName) {
+    var CFG = model.type === "robertsonian"
+      ? { "Alternate": { assign: { dF: "t", A: "bo", B: "bo" }, acc: { t: TEAL, bo: ROSE } },
+          "Adjacent": { assign: { dF: "l", A: "l", B: "r" }, acc: { l: TEAL, r: ROSE } } }[modeName]
+      : { "Alternate": { assign: { A: "t", B: "t", dA: "bo", dB: "bo" }, acc: { t: TEAL, bo: ROSE } },
+          "Adjacent-1": { assign: { A: "l", dB: "l", B: "r", dA: "r" }, acc: { l: TEAL, r: ROSE } },
+          "Adjacent-2": { assign: { A: "t", dA: "t", B: "bo", dB: "bo" }, acc: { t: TEAL, bo: ROSE } },
+          "3:1": { assign: { A: "bo", B: "bo", dA: "bo", dB: "t" }, acc: { t: ROSE, bo: TEAL } } }[modeName];
+    return function (gm) {
+      var poleKey = null;
+      for (var i = 0; i < gm.bodies.length; i++) {
+        var k = CFG.assign[gm.bodies[i]];
+        if (poleKey == null) poleKey = k;
+        else if (poleKey !== k) return null;   // gamete spans both poles (3:1): no single origin
+      }
+      if (poleKey == null) return null;
+      return CFG.acc[poleKey] === TEAL ? "teal" : "rose";
+    };
+  }
+
+  // The plain-language reason each mode carries its name (this is the teaching point).
+  function whyCaption(model, modeName) {
+    if (model.type === "robertsonian") {
+      if (modeName === "Alternate") return "The fusion travels to one pole and both normal homologues to the other, so each gamete carries one full dose of every long arm. Both are balanced: one is chromosomally normal, the other a balanced carrier like the parent.";
+      return "The fusion travels with one normal homologue and the other normal goes alone. One pole then carries two copies of a long arm, the other none, which reads out after fertilisation as a whole-chromosome trisomy or monosomy. Shown here the fusion goes with " + model.A + "; the mirror, the fusion with " + model.B + ", is also adjacent.";
+    }
+    if (modeName === "Alternate") return "Both chromosomes bound for one pole sit at <b>opposite corners</b> of the ring, so the spindle fibres cross. Taking every other one always pairs a normal with a normal and a derivative with a derivative, so each pole gets a complete set. This is the only balanced pattern.";
+    if (modeName === "Adjacent-1") return "The two that travel together are <b>neighbours</b> in the ring, and their centromeres come from different chromosomes. The two matching (homologous) centromeres are therefore pulled apart. Each gamete keeps one normal chromosome and one non-matching derivative: one exchanged segment is duplicated, the other deleted.";
+    if (modeName === "Adjacent-2") return "Neighbours again, but here the two <b>matching centromeres</b> (a chromosome and its own derivative) go to the same pole. That is a meiosis I non-disjunction, so it is rarer. The imbalance falls on the proximal, centromere-bearing segments.";
+    return "The plate cuts three chromosomes to one pole and one to the other, leaving the gamete with an extra or a missing chromosome, so the conception carries 47 or 45 chromosomes. Interstitial crossing-over adds further combinations.";
   }
 
   function viabChip(v) {
     return '<span class="seg-chip seg-' + v.tag + '">' + esc(v.text) + '</span>';
+  }
+  function glyphRow(bodies, ids) {
+    // Resting gamete glyphs (no pole pull, neutral halo) drawn small under each outcome.
+    var neutral = { stroke: "#dfe3ee", bg: "#ffffff" };
+    return '<span class="seg-row">' + ids.map(function (id) {
+      return '<svg class="seg-gglyph" viewBox="0 0 30 64" role="img" aria-label="' + esc(bodies[id].name) + '">' +
+        miniGlyph(bodies[id], 15, 26, [15, 26], neutral, true).svg + '</svg>';
+    }).join("") + '</span>';
   }
 
   // Only shown for a constitutional (germline) balanced carrier. The caller suppresses
@@ -281,19 +428,37 @@
     var head = '<div class="seg-head"><h2>Meiotic segregation</h2>' +
       '<p class="seg-lead">At meiosis, the chromosomes of this balanced ' + typeLabel + ' translocation carrier pair into a <b>' + model.valent +
       '</b> (' + model.valentN + ' chromosomes) as the homologs line up in <b>prophase I</b>. How that ' + model.valent +
-      ' separates at <b>anaphase I</b> (meiosis I) is shown below, one column per pattern. Only <b>alternate</b> segregation gives balanced gametes.</p></div>';
+      ' separates at <b>anaphase I</b> (meiosis I) is shown below, one column per pattern. Each panel draws the ring and the plane it divides along, so the reason for the names alternate and adjacent is visible. Only <b>alternate</b> segregation gives balanced gametes.</p></div>';
 
-    var config = '<div class="seg-config"><div class="seg-config-fig">' +
-      '<div class="seg-config-cap">Pairing in prophase I (pachytene)</div>' + configSvg(model) + '</div>' +
-      '<div class="seg-legend"><span><i style="background:' + PERI + '"></i>chromosome ' + esc(model.A) + ' material</span>' +
-      '<span><i style="background:' + AMBER + '"></i>chromosome ' + esc(model.B) + ' material</span></div></div>';
+    var config = '<div class="seg-config">' +
+      '<div class="seg-config-fig"><div class="seg-config-cap">Pairing in prophase I (pachytene)</div>' + pairingSvg(model) + '</div>' +
+      '<div class="seg-key">' +
+      '<div class="seg-key-row"><span class="seg-key-h">Chromosome of origin</span>' +
+      '<span><i style="background:' + PERI + '"></i>chromosome ' + esc(model.A) + ' material</span>' +
+      '<span><i style="background:' + AMBER + '"></i>chromosome ' + esc(model.B) + ' material</span>' +
+      '<span class="seg-key-sub">Centromere dots take the colour of the chromosome they belong to, so a chromosome and its own derivative (homologous centromeres) share a dot colour.</span></div>' +
+      '<div class="seg-key-row"><span class="seg-key-h">Destination at anaphase I</span>' +
+      '<span><i class="seg-swatch" style="background:' + TEAL.bg + ';border-color:' + TEAL.stroke + '"></i>travels to pole 1</span>' +
+      '<span><i class="seg-swatch" style="background:' + ROSE.bg + ';border-color:' + ROSE.stroke + '"></i>travels to pole 2</span>' +
+      '<span class="seg-key-sub">The dashed line is the division plane; the small numbers count the chromosomes each pole receives.</span></div>' +
+      '</div></div>';
+
+    // Visually-hidden checkbox drives the anaphase-pull animation for every scene (pure
+    // CSS, so the module stays DOM-free). Kept a sibling of .seg-modes for the ~ selector.
+    var controls = '<input type="checkbox" id="seg-anim" class="seg-anim-cb">' +
+      '<div class="seg-controls"><label for="seg-anim" class="seg-anim-toggle"><span class="seg-switch"></span>Animate the pull to the poles</label></div>';
 
     var modes = model.modes.map(function (m) {
+      // Key gametes to their pole colour only for a clean single division (two gametes).
+      // 3:1 and Robertsonian adjacent draw one representative split of several, so tinting
+      // all their gametes to it would overclaim; leave those neutral.
+      var accentOf = m.gametes.length === 2 ? gameteAccent(model, m.name) : function () { return null; };
       var gametes = m.gametes.map(function (gm) {
+        var acc = accentOf(gm);
         var lab = gm.label ? '<span class="seg-glabel">' + esc(gm.label) + '</span>' : "";
         var imb = (gm.imbalance && gm.imbalance !== "balanced")
           ? '<div class="seg-imb">' + esc(gm.imbalance) + '</div>' : "";
-        return '<div class="seg-gamete">' +
+        return '<div class="seg-gamete' + (acc ? " seg-g-" + acc : "") + '">' +
           '<div class="seg-gpoles">' + glyphRow(b, gm.bodies) + '</div>' +
           '<div class="seg-gout"><code>' + esc(gm.zygote) + '</code>' + lab + imb +
           '<div class="seg-viab">' + viabChip(gm.viability) + '</div></div></div>';
@@ -301,13 +466,14 @@
       return '<div class="seg-mode' + (m.balanced ? " seg-balanced" : "") + '">' +
         '<div class="seg-mode-h"><b>' + esc(m.name) + '</b> <span class="seg-sub">' + esc(m.sub) + '</span>' +
         (m.balanced ? '<span class="seg-ok">balanced</span>' : '<span class="seg-bad">unbalanced</span>') + '</div>' +
-        '<p class="seg-blurb">' + esc(m.blurb) + '</p>' +
+        '<div class="seg-scene">' + scene(model, m.name) + '</div>' +
+        '<p class="seg-why">' + whyCaption(model, m.name) + '</p>' +
         '<div class="seg-gametes">' + gametes + '</div></div>';
     }).join("");
 
-    var note = '<p class="seg-note">Segregants follow ISCN 2024, Table 5. This is a teaching model of segregation, not a recurrence-risk estimate: real risks depend on the specific chromosomes, segment sizes, and ascertainment, and are set by a genetic counsellor.</p>';
+    var note = '<p class="seg-note">Segregants follow ISCN 2024, Table 5. The diagrams are schematic: chromosome lengths and pole positions are not to scale, and the fibre paths illustrate which chromosomes co-segregate, not the physical spindle. This is a teaching model of segregation, not a recurrence-risk estimate: real risks depend on the specific chromosomes, segment sizes, and ascertainment, and are set by a genetic counsellor.</p>';
 
-    return head + config + '<div class="seg-modes">' + modes + '</div>' + note;
+    return head + config + controls + '<div class="seg-modes">' + modes + '</div>' + note;
   }
 
   window.Segregation = { eligible: eligible, compute: compute, render: render };
