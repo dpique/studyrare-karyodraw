@@ -403,7 +403,7 @@
     if (modeName === "Alternate") return "Both chromosomes bound for one pole sit at <b>opposite corners</b> of the ring, so the spindle fibres cross. Taking every other one always pairs a normal with a normal and a derivative with a derivative, so each pole gets a complete set. This is the only balanced pattern.";
     if (modeName === "Adjacent-1") return "The two that travel together are <b>neighbours</b> in the ring, and their centromeres come from different chromosomes. The two matching (homologous) centromeres are therefore pulled apart. Each gamete keeps one normal chromosome and one non-matching derivative: one exchanged segment is duplicated, the other deleted.";
     if (modeName === "Adjacent-2") return "Neighbours again, but here the two <b>matching centromeres</b> (a chromosome and its own derivative) go to the same pole. That is a meiosis I non-disjunction, so it is rarer. The imbalance falls on the proximal, centromere-bearing segments.";
-    return "The plate cuts three chromosomes to one pole and one to the other, leaving the gamete with an extra or a missing chromosome, so the conception carries 47 or 45 chromosomes. Interstitial crossing-over adds further combinations.";
+    return "Here the quadrivalent splits three-to-one instead of two-and-two: three chromosomes travel to one pole and the fourth to the other. The gamete then carries an extra or a missing chromosome, so the conceptus has 47 or 45. Interstitial crossing-over adds further combinations.";
   }
 
   function viabChip(v) {
@@ -425,13 +425,22 @@
     if (!model) return "";
     var b = model.bodies;
     var typeLabel = model.type === "robertsonian" ? "Robertsonian" : "reciprocal";
+    // Prefer the to-scale pachytene figures (real breakpoint geometry) when the ideogram has
+    // both chromosomes; otherwise keep the schematic figures below as a second system. The
+    // shape word in the lead follows suit: a "cross"/"trivalent" to scale, else a schematic ring.
+    var toScale = !!(typeof window !== "undefined" && window.Pachytene && window.Pachytene.available(model));
+    var pairingFig = toScale ? window.Pachytene.pairing(model) : pairingSvg(model);
+    var sceneOf = toScale
+      ? function (n) { return window.Pachytene.scene(model, n); }
+      : function (n) { return scene(model, n); };
+    var shapeWord = toScale ? (model.type === "robertsonian" ? "trivalent" : "cross") : "ring";
     var head = '<div class="seg-head"><h2>Meiotic segregation</h2>' +
       '<p class="seg-lead">At meiosis, the chromosomes of this balanced ' + typeLabel + ' translocation carrier pair into a <b>' + model.valent +
       '</b> (' + model.valentN + ' chromosomes) as the homologs line up in <b>prophase I</b>. How that ' + model.valent +
-      ' separates at <b>anaphase I</b> (meiosis I) is shown below, one column per pattern. Each panel draws the ring and the plane it divides along, so the reason for the names alternate and adjacent is visible. Only <b>alternate</b> segregation gives balanced gametes.</p></div>';
+      ' separates at <b>anaphase I</b> (meiosis I) is shown below, one column per pattern. Each panel draws the ' + shapeWord + ' and the plane it divides along, so the reason for the names alternate and adjacent is visible. Only <b>alternate</b> segregation gives balanced gametes.</p></div>';
 
     var config = '<div class="seg-config">' +
-      '<div class="seg-config-fig"><div class="seg-config-cap">Pairing in prophase I (pachytene)</div>' + pairingSvg(model) + '</div>' +
+      '<div class="seg-config-fig"><div class="seg-config-cap">Pairing in prophase I (pachytene)</div>' + pairingFig + '</div>' +
       '<div class="seg-key">' +
       '<div class="seg-key-row"><span class="seg-key-h">Chromosome of origin</span>' +
       '<span><i style="background:' + PERI + '"></i>chromosome ' + esc(model.A) + ' material</span>' +
@@ -466,7 +475,7 @@
       return '<div class="seg-mode' + (m.balanced ? " seg-balanced" : "") + '">' +
         '<div class="seg-mode-h"><b>' + esc(m.name) + '</b> <span class="seg-sub">' + esc(m.sub) + '</span>' +
         (m.balanced ? '<span class="seg-ok">balanced</span>' : '<span class="seg-bad">unbalanced</span>') + '</div>' +
-        '<div class="seg-scene">' + scene(model, m.name) + '</div>' +
+        '<div class="seg-scene">' + sceneOf(m.name) + '</div>' +
         '<p class="seg-why">' + whyCaption(model, m.name) + '</p>' +
         '<div class="seg-gametes">' + gametes + '</div></div>';
     }).join("");
