@@ -281,15 +281,15 @@
       note: "An extra Y. Usually tall stature; typically normal fertility and intelligence within the normal range. Often incidental." },
     { test: function (c) { return c.sex.label === "XXX"; }, name: "47,XXX, Triple X",
       note: "An extra X in a female. Often mild/absent phenotype; tall stature, sometimes learning difficulties. Two Barr bodies." },
-    { test: function (c) { return hasT(c, "9", "22"); }, name: "t(9;22), Philadelphia chromosome",
+    { test: function (c) { return hasT(c, "9", "22"); }, acquired: true, name: "t(9;22), Philadelphia chromosome",
       note: "The reciprocal t(9;22)(q34;q11.2) fuses <i>BCR</i> (22) with <i>ABL1</i> (9), creating <i>BCR::ABL1</i>, the hallmark of chronic myeloid leukemia (also some ALL). Target of imatinib and other tyrosine-kinase inhibitors." },
-    { test: function (c) { return hasT(c, "15", "17"); }, name: "t(15;17), Acute promyelocytic leukemia",
+    { test: function (c) { return hasT(c, "15", "17"); }, acquired: true, name: "t(15;17), Acute promyelocytic leukemia",
       note: "t(15;17)(q24;q21) fuses <i>PML::RARA</i>. APL (formerly FAB AML-M3); responsive to all-trans retinoic acid (ATRA) and arsenic. A medical emergency due to DIC." },
-    { test: function (c) { return hasT(c, "8", "14"); }, name: "t(8;14), Burkitt lymphoma",
+    { test: function (c) { return hasT(c, "8", "14"); }, acquired: true, name: "t(8;14), Burkitt lymphoma",
       note: "t(8;14)(q24;q32) places <i>MYC</i> next to the <i>IGH</i> enhancer → <i>MYC</i> overexpression. Classic 'starry-sky' Burkitt lymphoma." },
-    { test: function (c) { return hasT(c, "8", "21"); }, name: "t(8;21), AML",
+    { test: function (c) { return hasT(c, "8", "21"); }, acquired: true, name: "t(8;21), AML",
       note: "t(8;21)(q22;q22) <i>RUNX1::RUNX1T1</i>; a core-binding-factor AML with generally favorable prognosis." },
-    { test: function (c) { return hasT(c, "14", "18"); }, name: "t(14;18), Follicular lymphoma",
+    { test: function (c) { return hasT(c, "14", "18"); }, acquired: true, name: "t(14;18), Follicular lymphoma",
       note: "t(14;18)(q32;q21) juxtaposes <i>BCL2</i> with <i>IGH</i> → anti-apoptotic <i>BCL2</i> overexpression." },
     { test: function (c) { return hasDel(c, "5", "p"); }, name: "del(5p), Cri-du-chat syndrome",
       note: "Terminal deletion of 5p ('5p−'). High-pitched cat-like cry in infancy, microcephaly, hypotonia, intellectual disability." },
@@ -319,7 +319,7 @@
   }
   function syndromes(clone) {
     var out = [];
-    SYNDROMES.forEach(function (s) { try { if (s.test(clone)) out.push({ name: s.name, note: s.note }); } catch (e) {} });
+    SYNDROMES.forEach(function (s) { try { if (s.test(clone)) out.push({ name: s.name, note: s.note, acquired: !!s.acquired }); } catch (e) {} });
     return out;
   }
 
