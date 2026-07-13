@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-13 (segregation: draw the quadrivalent to the real breakpoints)
+
+- **The figure now shows the actual shape of the rearrangement.** The segregation panel
+  used to draw every reciprocal translocation as the same schematic square. A new module,
+  `pachytene.js`, draws the true pachytene **cross** instead, with each of the four arms
+  sized from the real hg38 band positions (`ideogram-data.js`) of the loaded karyotype, so
+  a `t(11;22)(q23;q11.2)` comes out lopsided (chromosome 11 large, chromosome 22 small) and
+  a `t(2;5)(q21;q31)` comes out nearly symmetric. A Robertsonian fusion has no cross, so it
+  is drawn as the **trivalent** folded ninety degrees at its centromere, the fusion long
+  arms lying beside the two normal acrocentrics.
+- **One division plane, moved to a new position, names each mode.** Every mode draws the
+  same shape with the plane where it cuts: alternate crosses its fibres with no straight
+  plane, adjacent-1 cuts vertically, adjacent-2 horizontally, and 3:1 brackets the lone
+  chromosome with a right-angled plane. A spindle fibre never crosses the plane it is
+  sorted by; `test/pachytene.test.js` asserts this as a geometric invariant, along with the
+  arm lengths, the pole counts, and that a different translocation makes a different cross.
+- **Kept as a second system.** The schematic figures remain in `segregation.js` and are
+  used as a fallback when the ideogram lacks a chromosome; nothing was deleted. The gamete
+  cards, conceptus karyotypes, viability calls, captions, and the animation toggle are
+  unchanged. The four cross units are still individual groups, so the pull animation slides
+  each chromosome whole toward its pole.
+- Reworded the 3:1 caption so it no longer says "the plate cuts three chromosomes"; it now
+  reads that the quadrivalent splits three-to-one instead of two-and-two.
+
 ## 2026-07-13 (segregation: draw the ring and the plane it divides along)
 
 - **Show why the modes are named alternate and adjacent.** The segregation panel used
