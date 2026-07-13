@@ -13,6 +13,11 @@ International System for Human Cytogenomic Nomenclature). Type an ISCN karyotype
    1-page summary** (plain-language explanation + clinical details, affected-only
    picture) for a genetic counselor.
 
+For a balanced translocation carrier it also draws the **meiotic segregation**: the
+quadrivalent (reciprocal) or trivalent (Robertsonian) and every alternate / adjacent /
+3:1 outcome, each with the resulting conception, its imbalance, and whether it is
+balanced — the ISCN 2024 Table 5 picture, generated for any carrier you type.
+
 Built as a spiritual successor to the old CyDAS *WebExample4* static-image
 generator — but with a clean palette and an actual teaching layer. See
 [`docs/CYDAS.md`](docs/CYDAS.md) for the lineage and which CyDAS conventions we
@@ -103,6 +108,9 @@ karyotype still draws, with the mismatch flagged.
 - `karyo-render.js` — SVG ideograms + derivative-chromosome geometry.
 - `teach.js` — plain-English decode, band nomenclature, Giemsa stain biology,
   curated syndrome/clinical notes.
+- `segregation.js` — meiotic segregation of a balanced translocation carrier: the
+  quadrivalent/trivalent model, the gametes and conceptions per segregation mode
+  (ISCN 2024, Table 5), and the schematic SVG. Pure logic; covered by `test/`.
 - `worker.js` — the Cloudflare Worker: serves the site and the `/api/*` endpoints
   (analytics, most-studied, feedback, rate limiting); `schema.sql` + `migrations/`
   define the D1 tables.
