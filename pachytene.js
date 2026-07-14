@@ -181,9 +181,11 @@
     var planeSvg = "", assign, badges;
 
     if (modeName === "Alternate") {
-      // NW+SE -> top, NE+SW -> bottom. Diagonal pairs: no straight plane, fibers cross the center.
-      assign = { NW: [pTop, TEAL], SE: [pTop, TEAL], NE: [pBot, ROSE], SW: [pBot, ROSE] };
-      badges = badge(pTop[0] + 15, pTop[1] + 1, "2", TEAL.ink) + badge(pBot[0] + 15, pBot[1] - 1, "2", ROSE.ink);
+      // The two balanced pairs sit at opposite corners (NW+SE, NE+SW), so the poles go on a
+      // diagonal (like 3:1) and the fibers cross through the center. No straight plane.
+      var pUL = [pLeft[0], Math.max(mT - 6, 6)], pLR = [w - 7, h - 6];
+      assign = { NW: [pUL, TEAL], SE: [pUL, TEAL], NE: [pLR, ROSE], SW: [pLR, ROSE] };
+      badges = badge(pUL[0] + 14, pUL[1] + 1, "2", TEAL.ink) + badge(pLR[0] - 14, pLR[1] - 1, "2", ROSE.ink);
     } else if (modeName === "Adjacent-1") {
       // left {NW, SW} vs right {NE, SE}: vertical plane at center.
       planeSvg = plate(cx, Math.max(cy - N - 4, 6), cx, Math.min(cy + S + 4, h - 6));
