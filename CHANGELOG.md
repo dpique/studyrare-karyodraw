@@ -3,6 +3,14 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-15 (segregation: tune the pull distance and stagger the motion)
+
+- **Set the pull distance and stagger the chromosomes.** Each chromosome now slides 0.30 of the
+  way from its centromere to the pole (tuned by eye), straight along its fiber. Each of the four
+  also gets a slightly different animation duration, so they drift out of lockstep and the two
+  heading to the same pole no longer move as a single blob. Pure fraction, no cap: the pole sits
+  inside the frame, so a fraction under one never overflows.
+
 ## 2026-07-15 (segregation: slide each chromosome along its spindle fiber)
 
 - **Fix a chromosome drifting off its fiber when pulled.** The "animate the pull to the poles"

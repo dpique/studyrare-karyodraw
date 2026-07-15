@@ -134,13 +134,16 @@
   // travel by scaling the whole vector, so the chromosome slides ALONG its spindle fiber. Clamping
   // tx and ty independently would bend the slide off the fiber for a steep diagonal pull (e.g.
   // der(22) heading to the upper-right pole), which reads as the chromosome coming off its track.
-  function unit(inner, cenX, cenY, pole) {
+  function unit(inner, cenX, cenY, pole, idx) {
     var style = "";
     if (pole) {
-      var dx = (pole[0] - cenX) * 0.32, dy = (pole[1] - cenY) * 0.32;
-      var len = Math.hypot(dx, dy), max = 26;
-      if (len > max) { dx *= max / len; dy *= max / len; }
-      style = ' style="--tx:' + num(dx) + 'px;--ty:' + num(dy) + 'px"';
+      // Slide 0.30 of the way from the centromere to the pole, straight along the fiber (the pole
+      // sits inside the frame, so a fraction under 1 never overflows). Give each chromosome a
+      // slightly different animation duration (--seg-dur) so the four drift out of lockstep and
+      // the two heading to the same pole never move as one blob.
+      var dx = (pole[0] - cenX) * 0.30, dy = (pole[1] - cenY) * 0.30;
+      var dur = (2.4 + (idx || 0) * 0.07).toFixed(2);
+      style = ' style="--tx:' + num(dx) + 'px;--ty:' + num(dy) + 'px;--seg-dur:' + dur + 's"';
     }
     return '<g class="seg-chrom"' + style + '>' + inner + "</g>";
   }
@@ -220,10 +223,10 @@
     }
 
     var fibers = "", units = "", poleSet = {};
-    ["NW", "NE", "SE", "SW"].forEach(function (k) {
+    ["NW", "NE", "SE", "SW"].forEach(function (k, i) {
       var pole = assign[k][0], acc = assign[k][1];
       fibers += line(U[k].cen[0], U[k].cen[1], pole[0], pole[1], acc.stroke, 1.4);
-      units += unit(U[k].body, U[k].cen[0], U[k].cen[1], pole);
+      units += unit(U[k].body, U[k].cen[0], U[k].cen[1], pole, i);
       poleSet[pole[0] + "," + pole[1]] = acc;
     });
     var poles = Object.keys(poleSet).map(function (key) {
@@ -293,10 +296,10 @@
     }
 
     var fibers = "", units = "", poleSet = {};
-    ["A", "F", "B"].forEach(function (k) {
+    ["A", "F", "B"].forEach(function (k, i) {
       var pole = assign[k][0], acc = assign[k][1];
       fibers += line(U[k].cen[0], U[k].cen[1], pole[0], pole[1], acc.stroke, 1.4);
-      units += unit(U[k].body, U[k].cen[0], U[k].cen[1], pole);
+      units += unit(U[k].body, U[k].cen[0], U[k].cen[1], pole, i);
       poleSet[pole[0] + "," + pole[1]] = acc;
     });
     var poles = Object.keys(poleSet).map(function (key) {
