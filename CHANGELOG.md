@@ -6,10 +6,10 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
 ## 2026-07-14 (segregation: alternate poles on a diagonal)
 
 - **Tilt the alternate spindle.** In the to-scale cross, alternate segregation now places its
-  two poles on a diagonal (upper-left and lower-right) instead of straight top and bottom, so
-  the spindle fibers cross clearly through the center and the figure echoes the diagonal 3:1
-  layout. The two balanced pairs sit at opposite corners, so the diagonal reads truer to the
-  caption. Only the pole positions changed; the segregation is the same.
+  two poles on the same diagonal as 3:1 (upper-right and lower-left) instead of straight top and
+  bottom, so the spindle fibers cross clearly through the center and the two diagonal cards line
+  up. The two balanced pairs sit at opposite corners, so the diagonal reads truer to the caption.
+  Only the pole positions changed; the segregation is the same.
 
 ## 2026-07-13 (segregation: draw the quadrivalent to the real breakpoints)
 
