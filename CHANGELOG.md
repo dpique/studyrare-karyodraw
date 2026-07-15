@@ -3,6 +3,29 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-15 (segregation: add 4:0 and complete the 3:1 outcomes)
+
+- **Enumerate every 3:1 gamete.** The 3:1 mode listed only the tertiary outcomes (an extra or
+  missing derivative). It now also lists the interchange outcomes, where the extra or missing
+  chromosome is a whole normal chromosome, so all four ways to split three-to-one appear: two
+  interchange trisomies (conceptus `47,+2` / `47,+5` on the translocation background) and their two
+  complementary monosomies (`45,-2` / `45,-5`). Each interchange product reads out as a whole
+  chromosome trisomy or monosomy, so its viability follows that chromosome (lethal unless it is 13,
+  18, or 21). The caption now names tertiary versus interchange instead of attributing the extra
+  outcomes only to crossing-over.
+
+- **Add 4:0 segregation.** A fifth mode covers the rarest split, where all four chromosomes travel
+  to one pole and none to the other. It draws a to-scale cross with every chromosome pulled to a
+  single pole (badge 4) and an empty pole (badge 0), then the two gametes: one disomic for the
+  whole quadrivalent (conceptus 48, trisomy for both chromosomes) and one nullisomic (conceptus 44,
+  monosomy for both). Both are lost very early. The schematic fallback and the pole-color keying of
+  the disomic gamete match the to-scale figure.
+
+- **Tests.** The segregation and pachytene suites now pin the eight 3:1 gametes, the two 4:0
+  conceptions, the interchange whole-chromosome imbalance, and the 4:0 cross (four fibers to one
+  pole, zero to the other, no fiber crossing the plane). Every emitted karyotype still re-parses
+  with no warnings.
+
 ## 2026-07-15 (segregation: tune the pull distance and stagger the motion)
 
 - **Say "constitutional" out loud.** The panel is already suppressed for recognized acquired

@@ -54,11 +54,11 @@ test('an unbalanced translocation (with a +/- partner) is not treated as a carri
 });
 
 // ---- reciprocal: matches ISCN 2024 Table 5 (t(2;5)(q21;q31)) ----------------
-test('reciprocal forms a quadrivalent with four modes', () => {
+test('reciprocal forms a quadrivalent with five segregation modes', () => {
   const m = model('46,XX,t(2;5)(q21;q31)');
   assert.equal(m.type, 'reciprocal');
   assert.equal(m.valent, 'quadrivalent');
-  eq(m.modes.map((x) => x.name), ['Alternate', 'Adjacent-1', 'Adjacent-2', '3:1']);
+  eq(m.modes.map((x) => x.name), ['Alternate', 'Adjacent-1', 'Adjacent-2', '3:1', '4:0']);
 });
 test('alternate yields the normal and the balanced-carrier conceptions', () => {
   const alt = model('46,XX,t(2;5)(q21;q31)').modes[0];
@@ -75,15 +75,41 @@ test('adjacent-2 gives +der,-partner conceptions (Table 5)', () => {
   eq(adj2.gametes.map((g) => g.zygote),
     ['46,XX,+der(2)t(2;5)(q21;q31),-5', '46,XX,+der(5)t(2;5)(q21;q31),-2']);
 });
-test('3:1 gives the 47 tertiary-trisomy and 45 tertiary-monosomy conceptions (Table 5)', () => {
+test('3:1 gives the tertiary and interchange conceptions (all four ways to split three-to-one)', () => {
   const t31 = model('46,XX,t(2;5)(q21;q31)').modes[3];
-  // order: +der(A), +der(B), der(A)-B, der(B)-A
+  // tertiary (extra/missing derivative): +der(A), +der(B), der(A)-B, der(B)-A
+  // then interchange (extra/missing whole normal chromosome): +2, +5, -2, -5
   eq(t31.gametes.map((g) => g.zygote), [
     '47,XX,+der(2)t(2;5)(q21;q31)',
     '47,XX,+der(5)t(2;5)(q21;q31)',
     '45,XX,der(2)t(2;5)(q21;q31),-5',
-    '45,XX,der(5)t(2;5)(q21;q31),-2'
+    '45,XX,der(5)t(2;5)(q21;q31),-2',
+    '47,XX,+2,t(2;5)(q21;q31)',
+    '47,XX,+5,t(2;5)(q21;q31)',
+    '45,XX,-2',
+    '45,XX,-5'
   ]);
+});
+test('4:0 gives the disomic (48) and nullisomic (44) conceptions, both lethal', () => {
+  const four = model('46,XX,t(2;5)(q21;q31)').modes[4];
+  assert.equal(four.name, '4:0');
+  eq(four.gametes.map((g) => g.zygote), [
+    '48,XX,+der(2)t(2;5)(q21;q31),+der(5)t(2;5)(q21;q31)',
+    '44,XX,-2,-5'
+  ]);
+  eq(four.gametes.map((g) => g.viability.tag), ['lethal', 'lethal']);
+});
+test('interchange 3:1 reads out as a whole-chromosome trisomy/monosomy (lethal for chr 2 and 5)', () => {
+  const m = model('46,XX,t(2;5)(q21;q31)');
+  const triA = gameteBy(m, '47,XX,+2,t(2;5)(q21;q31)');
+  assert.equal(triA.label, 'interchange trisomy');
+  assert.equal(triA.viability.tag, 'lethal');
+  // the extra chromosome is a whole normal 2, so the conceptus is fully trisomic for chromosome 2
+  assert.equal(triA.imbalance, 'partial trisomy 2pter→q21, partial trisomy 2q21→qter');
+  const monoA = gameteBy(m, '45,XX,-2');
+  assert.equal(monoA.label, 'interchange monosomy');
+  assert.equal(monoA.viability.tag, 'lethal');
+  assert.equal(monoA.imbalance, 'partial monosomy 2pter→q21, partial monosomy 2q21→qter');
 });
 test('adjacent-1 imbalance names the duplicated and deleted segments', () => {
   const g = gameteBy(model('46,XX,t(2;5)(q21;q31)'), '46,XX,der(5)t(2;5)(q21;q31)');
@@ -91,7 +117,7 @@ test('adjacent-1 imbalance names the duplicated and deleted segments', () => {
 });
 test('only alternate is flagged balanced; the rest unbalanced', () => {
   const m = model('46,XX,t(2;5)(q21;q31)');
-  eq(m.modes.map((x) => x.balanced), [true, false, false, false]);
+  eq(m.modes.map((x) => x.balanced), [true, false, false, false, false]);
 });
 
 // ---- Robertsonian: translocation Down syndrome ------------------------------
@@ -160,8 +186,8 @@ test('render carries no caveat paragraph (the panel is suppressed for somatic ca
 // ---- the segregation scenes: the reason for the names is drawn --------------
 test('each mode draws its own division scene (an svg per mode)', () => {
   const html = Seg.render(model('46,XX,t(2;5)(q21;q31)'));
-  // pairing figure + one scene per mode (4) = 5 scene svgs
-  assert.equal((html.match(/class="seg-scene-svg"/g) || []).length, 5);
+  // pairing figure + one scene per mode (5) = 6 scene svgs
+  assert.equal((html.match(/class="seg-scene-svg"/g) || []).length, 6);
   assert.match(html, /class="seg-scene"/);
 });
 test('the captions spell out why the modes are named alternate vs adjacent', () => {
@@ -186,11 +212,12 @@ test('centromere dots are colored by the chromosome the centromere belongs to', 
   assert.equal(b.B.cen, b.dB.cen);
   assert.notEqual(b.A.cen, b.B.cen);
 });
-test('2:2 gametes are keyed to their pole color; the 3:1 gametes are left neutral', () => {
+test('2:2 and the 4:0 disomic gamete are keyed to their pole; the 3:1 gametes stay neutral', () => {
   const html = Seg.render(model('46,XX,t(2;5)(q21;q31)'));
   assert.match(html, /seg-g-teal/);   // one pole
   assert.match(html, /seg-g-rose/);   // the other
-  // A 3:1 conception spans both poles, so its cards carry no single-pole tint. Count the
-  // tinted cards: the three 2:2 modes contribute two each (6), 3:1 contributes none.
-  assert.equal((html.match(/seg-g-(teal|rose)/g) || []).length, 6);
+  // A single-division outcome (two gametes) is tinted to its pole; a 3:1 gamete spans both poles
+  // (eight gametes, left neutral). Tinted cards: three 2:2 modes give two each (6), plus the 4:0
+  // disomic gamete (1) whose four chromosomes all leave one pole = 7. The empty 4:0 gamete has none.
+  assert.equal((html.match(/seg-g-(teal|rose)/g) || []).length, 7);
 });

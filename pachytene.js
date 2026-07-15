@@ -216,6 +216,17 @@
       planeSvg = plate(Math.max(cx - W - 4, 6), cy, Math.min(cx + E + 4, w - 6), cy);
       assign = { NW: [pTop, TEAL], NE: [pTop, TEAL], SE: [pBot, ROSE], SW: [pBot, ROSE] };
       badges = badge(pTop[0] + 15, pTop[1] + 1, "2", TEAL.ink) + badge(pBot[0] + 15, pBot[1] - 1, "2", ROSE.ink);
+    } else if (modeName === "4:0") {
+      // 4:0 — all four chromosomes to one pole, none to the other. A single 45-degree plane above
+      // and right of every centromere puts all four on the lower-left side; the upper-right pole
+      // gets nothing. No fiber crosses it: both endpoints of every fiber lie lower-left of the plane.
+      var ax4 = cx + O + 12, ay4 = cy - cenAy;
+      var t4lo = Math.max(2 - ax4, 2 - ay4), t4hi = Math.min((w - 2) - ax4, (h - 2) - ay4);
+      planeSvg = plate(ax4 + t4lo, ay4 + t4lo, ax4 + t4hi, ay4 + t4hi);
+      var pAll = [pLeft[0], h - 6], pNone = [w - 7, Math.max(mT - 6, 6)];
+      assign = { NW: [pAll, TEAL], NE: [pAll, TEAL], SE: [pAll, TEAL], SW: [pAll, TEAL] };
+      badges = badge(pAll[0] + 14, pAll[1] - 1, "4", TEAL.ink) + badge(pNone[0] - 14, pNone[1] + 1, "0", ROSE.ink) +
+        aster(pNone[0], pNone[1], ROSE.stroke);
     } else {
       // 3:1 — isolate der(A) (NE) with an L-plane bracketing the upper-right; its pole sits inside
       // the L (upper-right), the other three go to the lower-left pole. No fiber crosses the L.
@@ -314,7 +325,7 @@
   }
 
   // ---- public entry points --------------------------------------------------
-  // segregation.js names reciprocal modes Alternate / Adjacent-1 / Adjacent-2 / 3:1 and
+  // segregation.js names reciprocal modes Alternate / Adjacent-1 / Adjacent-2 / 3:1 / 4:0 and
   // Robertsonian modes Alternate / Adjacent. The single Robertsonian "Adjacent" mode is drawn
   // as one representative fold (fusion with A); segregation.js's caption already says so, and its
   // four gametes below enumerate both directions.
