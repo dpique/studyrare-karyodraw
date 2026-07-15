@@ -134,16 +134,19 @@
   // travel by scaling the whole vector, so the chromosome slides ALONG its spindle fiber. Clamping
   // tx and ty independently would bend the slide off the fiber for a steep diagonal pull (e.g.
   // der(22) heading to the upper-right pole), which reads as the chromosome coming off its track.
+  // Four easing curves, all running 0 -> 1 over the same 2.4s period. They begin the pull together
+  // and reach the pole together (endpoints stay in sync forever, so nothing drifts across cycles),
+  // but they take different paths in between (at mid-motion they sit at ~32/50/68/80% of travel), so
+  // two chromosomes heading to the same pole never move as one blob.
+  var PULL_EASE = ["cubic-bezier(.42,0,.58,1)", "cubic-bezier(.42,0,1,1)", "cubic-bezier(0,0,.58,1)", "cubic-bezier(.25,.1,.25,1)"];
   function unit(inner, cenX, cenY, pole, idx) {
     var style = "";
     if (pole) {
       // Slide 0.30 of the way from the centromere to the pole, straight along the fiber (the pole
-      // sits inside the frame, so a fraction under 1 never overflows). Give each chromosome a
-      // slightly different animation duration (--seg-dur) so the four drift out of lockstep and
-      // the two heading to the same pole never move as one blob.
+      // sits inside the frame, so a fraction under 1 never overflows).
       var dx = (pole[0] - cenX) * 0.30, dy = (pole[1] - cenY) * 0.30;
-      var dur = (2.4 + (idx || 0) * 0.07).toFixed(2);
-      style = ' style="--tx:' + num(dx) + 'px;--ty:' + num(dy) + 'px;--seg-dur:' + dur + 's"';
+      var ease = PULL_EASE[(idx || 0) % PULL_EASE.length];
+      style = ' style="--tx:' + num(dx) + 'px;--ty:' + num(dy) + 'px;--seg-ease:' + ease + '"';
     }
     return '<g class="seg-chrom"' + style + '>' + inner + "</g>";
   }
