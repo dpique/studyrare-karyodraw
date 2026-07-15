@@ -217,7 +217,7 @@
   .seg-scene .seg-chrom { transform: translate(0, 0); }
   .seg-scene .seg-fibers { transition: opacity .3s; }
   @keyframes seg-pull { from { transform: translate(0, 0); } to { transform: translate(var(--tx, 0), var(--ty, 0)); } }
-  #seg-anim:checked ~ .seg-modes .seg-scene .seg-chrom { animation: seg-pull 2.4s ease-in-out infinite alternate; }
+  #seg-anim:checked ~ .seg-modes .seg-scene .seg-chrom { animation: seg-pull var(--seg-dur, 2.4s) ease-in-out infinite alternate; }
   @media (prefers-reduced-motion: reduce) { #seg-anim:checked ~ .seg-modes .seg-scene .seg-chrom { animation: none; } }
   .speak { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; border: 1px solid #cdd2e1; background: #fff; color: var(--peri-700); border-radius: 8px; padding: 4px 9px; font: 600 11px var(--font-sans); text-transform: none; letter-spacing: 0; cursor: pointer; }
   .speak:hover { background: var(--peri-50); border-color: var(--peri-300); }
