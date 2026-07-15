@@ -21,7 +21,7 @@ const win = loadAll();
 const P = win.Pachytene, ISCN = win.ISCN, Seg = win.Segregation;
 const model = (k) => Seg.compute(ISCN.parse(k).clones[0]);
 
-const RECIP_MODES = ['Alternate', 'Adjacent-1', 'Adjacent-2', '3:1'];
+const RECIP_MODES = ['Alternate', 'Adjacent-1', 'Adjacent-2', '3:1', '4:0'];
 const ROB_MODES = ['Alternate', 'Adjacent'];
 
 // ---- svg parsing helpers ----------------------------------------------------
@@ -234,6 +234,7 @@ test('each mode sends the right number of chromosomes to each pole', () => {
   assert.deepEqual(count(P.scene(m, 'Adjacent-1')), { teal: 2, rose: 2 });
   assert.deepEqual(count(P.scene(m, 'Adjacent-2')), { teal: 2, rose: 2 });
   assert.deepEqual(count(P.scene(m, '3:1')), { teal: 3, rose: 1 });   // three to one pole, one to the other
+  assert.deepEqual(count(P.scene(m, '4:0')), { teal: 4, rose: 0 });   // all four to one pole, none to the other
 });
 
 // ---- the anaphase-pull animation still drives these figures -----------------
@@ -250,8 +251,8 @@ test('with pachytene loaded, the segregation panel uses the to-scale figures', (
   const html = Seg.render(model('46,XY,t(2;5)(q21;q31)'));
   assert.match(html, /quadrivalent cross/);   // Pachytene aria-labels
   assert.match(html, /draws the cross and the plane/);
-  // still five scene svgs (1 pairing + 4 modes) and the animation toggle
-  assert.equal((html.match(/class="seg-scene-svg"/g) || []).length, 5);
+  // six scene svgs (1 pairing + 5 modes) and the animation toggle
+  assert.equal((html.match(/class="seg-scene-svg"/g) || []).length, 6);
   assert.match(html, /id="seg-anim"/);
 });
 test('the robertsonian panel uses the folded trivalent figure and label', () => {

@@ -5,13 +5,13 @@
  *   window.Segregation.render(model)   -> HTML string (panel body)
  *
  * Given a balanced RECIPROCAL translocation carrier the parser produced, this models
- * the pachytene QUADRIVALENT and its 2:2 segregation (alternate / adjacent-1 /
- * adjacent-2) plus 3:1, and for a ROBERTSONIAN carrier the TRIVALENT and its 2:1
- * segregation. For each mode it lists the gametes, the conceptus karyotype in ISCN,
- * the resulting imbalance in plain language, and a rough viability. The canonical
- * segregants follow ISCN 2024, Table 5; interstitial crossing-over expands the 3:1
- * set (noted, not enumerated). This is a teaching visualizer of segregation, not a
- * recurrence-risk calculator. Pure logic + schematic SVG strings; no DOM, no deps.
+ * the pachytene QUADRIVALENT and its segregation modes: 2:2 (alternate / adjacent-1 /
+ * adjacent-2), 3:1 (tertiary and interchange), and 4:0. For a ROBERTSONIAN carrier it
+ * models the TRIVALENT and its 2:1 segregation. For each mode it lists the gametes, the
+ * conceptus karyotype in ISCN, the resulting imbalance in plain language, and a rough
+ * viability. The canonical segregants follow ISCN 2024, Table 5; interstitial crossing-over
+ * adds still more 3:1 combinations (noted, not enumerated). This is a teaching visualizer of
+ * segregation, not a recurrence-risk calculator. Pure logic + schematic SVG strings; no DOM.
  *
  * The four chromosomes sit at the corners of a square that mirrors the pachytene ring:
  *   NW = A(normal)   NE = der(A)   SE = B(normal)   SW = der(B)
@@ -143,12 +143,22 @@
           g(["B", "dB"], "46," + sex + ",+der(" + B + ")" + T + ",-" + A, recipUnbalanced, "")
         ] },
       { name: "3:1", sub: "3:1", balanced: false,
-        blurb: "Three chromosomes go to one pole, one to the other, giving 47- or 45-chromosome conceptions (tertiary trisomy / monosomy). Interstitial crossing-over expands this set further.",
+        blurb: "Three chromosomes go to one pole, one to the other, giving 47- or 45-chromosome conceptions. The odd chromosome may be a derivative (tertiary trisomy / monosomy) or a whole normal chromosome (interchange trisomy / monosomy). Interstitial crossing-over expands the set further.",
         gametes: [
           g(["A", "B", "dA"], "47," + sex + ",+der(" + A + ")" + T, isEmanuel && A === "22" ? emanuel : t31, "tertiary trisomy"),
           g(["A", "B", "dB"], "47," + sex + ",+der(" + B + ")" + T, isEmanuel && B === "22" ? emanuel : t31, "tertiary trisomy"),
           g(["dA"], "45," + sex + ",der(" + A + ")" + T + ",-" + B, { tag: "lethal", text: "Usually lost in early pregnancy (tertiary monosomy)" }, "tertiary monosomy"),
-          g(["dB"], "45," + sex + ",der(" + B + ")" + T + ",-" + A, { tag: "lethal", text: "Usually lost in early pregnancy (tertiary monosomy)" }, "tertiary monosomy")
+          g(["dB"], "45," + sex + ",der(" + B + ")" + T + ",-" + A, { tag: "lethal", text: "Usually lost in early pregnancy (tertiary monosomy)" }, "tertiary monosomy"),
+          g(["A", "dA", "dB"], "47," + sex + ",+" + A + "," + T, trisomyViability(A), "interchange trisomy"),
+          g(["B", "dA", "dB"], "47," + sex + ",+" + B + "," + T, trisomyViability(B), "interchange trisomy"),
+          g(["B"], "45," + sex + ",-" + A, monosomyViability(A), "interchange monosomy"),
+          g(["A"], "45," + sex + ",-" + B, monosomyViability(B), "interchange monosomy")
+        ] },
+      { name: "4:0", sub: "4:0", balanced: false,
+        blurb: "All four chromosomes travel to one pole and none to the other, the rarest outcome (two nondisjunctions at once). One gamete is disomic for the whole quadrivalent, the other nullisomic; both conceptions are grossly imbalanced.",
+        gametes: [
+          g(["A", "B", "dA", "dB"], "48," + sex + ",+der(" + A + ")" + T + ",+der(" + B + ")" + T, { tag: "lethal", text: "Usually lost in early pregnancy (trisomy for both chromosomes)" }, "double trisomy"),
+          g([], "44," + sex + ",-" + A + ",-" + B, { tag: "lethal", text: "Usually lost in early pregnancy (monosomy for both chromosomes)" }, "double monosomy")
         ] }
     ];
 
@@ -331,7 +341,9 @@
       "Adjacent-2": { poles: { t: [106, 18], bo: [106, 180] }, acc: { t: TEAL, bo: ROSE },
         assign: { A: "t", dA: "t", B: "bo", dB: "bo" }, plate: { type: "h", y: 101, x1: 30, x2: 182 }, counts: { t: 2, bo: 2 } },
       "3:1": { poles: { t: [106, 18], bo: [106, 182] }, acc: { t: ROSE, bo: TEAL },
-        assign: { A: "bo", B: "bo", dA: "bo", dB: "t" }, plate: null, counts: { t: 1, bo: 3 } }
+        assign: { A: "bo", B: "bo", dA: "bo", dB: "t" }, plate: null, counts: { t: 1, bo: 3 } },
+      "4:0": { poles: { bo: [106, 182], t: [106, 18] }, acc: { bo: TEAL, t: ROSE },
+        assign: { A: "bo", B: "bo", dA: "bo", dB: "bo" }, plate: null, counts: { bo: 4, t: 0 } }
     }[modeName];
     return buildScene(b, ["A", "dA", "B", "dB"], P, CFG, "quadrivalent dividing by " + modeName + " segregation");
   }
@@ -381,7 +393,8 @@
       : { "Alternate": { assign: { A: "t", B: "t", dA: "bo", dB: "bo" }, acc: { t: TEAL, bo: ROSE } },
           "Adjacent-1": { assign: { A: "l", dB: "l", B: "r", dA: "r" }, acc: { l: TEAL, r: ROSE } },
           "Adjacent-2": { assign: { A: "t", dA: "t", B: "bo", dB: "bo" }, acc: { t: TEAL, bo: ROSE } },
-          "3:1": { assign: { A: "bo", B: "bo", dA: "bo", dB: "t" }, acc: { t: ROSE, bo: TEAL } } }[modeName];
+          "3:1": { assign: { A: "bo", B: "bo", dA: "bo", dB: "t" }, acc: { t: ROSE, bo: TEAL } },
+          "4:0": { assign: { A: "bo", B: "bo", dA: "bo", dB: "bo" }, acc: { bo: TEAL, t: ROSE } } }[modeName];
     return function (gm) {
       var poleKey = null;
       for (var i = 0; i < gm.bodies.length; i++) {
@@ -403,7 +416,8 @@
     if (modeName === "Alternate") return "Both chromosomes bound for one pole sit at <b>opposite corners</b> of the ring, so the spindle fibers cross. Taking every other one always pairs a normal with a normal and a derivative with a derivative, so each pole gets a complete set. This is the only balanced pattern.";
     if (modeName === "Adjacent-1") return "The two that travel together are <b>neighbors</b> in the ring, and their centromeres come from different chromosomes. The two matching (homologous) centromeres are therefore pulled apart. Each gamete keeps one normal chromosome and one non-matching derivative: one exchanged segment is duplicated, the other deleted.";
     if (modeName === "Adjacent-2") return "Neighbours again, but here the two <b>matching centromeres</b> (a chromosome and its own derivative) go to the same pole. That is a meiosis I non-disjunction, so it is rarer. The imbalance falls on the proximal, centromere-bearing segments.";
-    return "Here the quadrivalent splits three-to-one instead of two-and-two: three chromosomes travel to one pole and the fourth to the other. The gamete then carries an extra or a missing chromosome, so the conceptus has 47 or 45. Interstitial crossing-over adds further combinations.";
+    if (modeName === "4:0") return "All four chromosomes are pulled to the <b>same pole</b>, leaving the other empty. This needs two non-disjunctions at once, so it is the rarest pattern. One gamete is disomic for the whole quadrivalent, the other nullisomic; both conceptions are grossly imbalanced and lost very early.";
+    return "Here the quadrivalent splits three-to-one instead of two-and-two: the odd chromosome may be a <b>derivative</b> (tertiary trisomy or monosomy) or a <b>whole normal chromosome</b> (interchange trisomy or monosomy), so all four single-chromosome gametes and their three-chromosome complements occur. The conceptus then has 47 or 45. Interstitial crossing-over adds still more combinations.";
   }
 
   function viabChip(v) {
