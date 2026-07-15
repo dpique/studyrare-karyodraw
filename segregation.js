@@ -435,9 +435,9 @@
       : function (n) { return scene(model, n); };
     var shapeWord = toScale ? (model.type === "robertsonian" ? "trivalent" : "cross") : "ring";
     var head = '<div class="seg-head"><h2>Meiotic segregation</h2>' +
-      '<p class="seg-lead">At meiosis, the chromosomes of this balanced ' + typeLabel + ' translocation carrier pair into a <b>' + model.valent +
+      '<p class="seg-lead">At meiosis, the chromosomes of this <b>constitutional</b> balanced ' + typeLabel + ' translocation carrier pair into a <b>' + model.valent +
       '</b> (' + model.valentN + ' chromosomes) as the homologs line up in <b>prophase I</b>. How that ' + model.valent +
-      ' separates at <b>anaphase I</b> (meiosis I) is shown below, one column per pattern. Each panel draws the ' + shapeWord + ' and the plane it divides along, so the reason for the names alternate and adjacent is visible. Only <b>alternate</b> segregation gives balanced gametes.</p></div>';
+      ' separates at <b>anaphase I</b> (meiosis I) is shown below, one column per pattern. Each panel draws the ' + shapeWord + ' and the plane it divides along, so the reason for the names alternate and adjacent is visible. Only <b>alternate</b> segregation gives balanced gametes. This panel assumes a germline carrier; an acquired, somatic rearrangement does not segregate at meiosis.</p></div>';
 
     var config = '<div class="seg-config">' +
       '<div class="seg-config-fig"><div class="seg-config-cap">Pairing in prophase I (pachytene)</div>' + pairingFig + '</div>' +

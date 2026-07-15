@@ -5,6 +5,12 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
 
 ## 2026-07-15 (segregation: tune the pull distance and stagger the motion)
 
+- **Say "constitutional" out loud.** The panel is already suppressed for recognized acquired
+  (cancer) rearrangements, but the framing now states the assumption plainly: the lead calls the
+  carrier constitutional and adds that meiotic segregation applies to a germline carrier, not to
+  an acquired, somatic rearrangement. ISCN cannot distinguish the two, so the honest move is to
+  name the assumption.
+
 - **Set the pull distance and stagger the chromosomes.** Each chromosome now slides 0.30 of the
   way from its centromere to the pole (tuned by eye), straight along its fiber. Each of the four
   also gets a slightly different animation duration, so they drift out of lockstep and the two
