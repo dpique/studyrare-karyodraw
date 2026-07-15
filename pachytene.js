@@ -157,12 +157,13 @@
     // anaphase-pull animation slides it whole toward its pole. Tip labels are drawn only in the
     // resting pairing figure (the key); the mode scenes stay clean, so poles never collide with a
     // label, and identity is read from the pairing figure, the caption, and the gamete cards.
-    // Seat each centromere on its proximal arm. The bar starts at the elbow (O from center) and
-    // the distal bar crosses the elbow row, so a centromere whose true offset is smaller than
-    // O + BAR/2 would float in the synapsis gap, off the bar — most visible once the animation
-    // pulls the chromosomes apart. Clamp the drawn offset to keep the bead on the bar; the shift
-    // is at most a few px and only for a centromere sitting right at the breakpoint.
-    var seat = O + BAR / 2 + 1;
+    // Seat each centromere fully on its proximal shaft. The distal bar crosses the elbow row and
+    // reaches O + BAR/2 from center, so a bead nearer than that (plus its own radius) overlaps the
+    // distal bar and looks off its track — most visible once the animation pulls the chromosomes
+    // apart. Clamp the drawn offset so the whole bead clears the distal bar onto the vertical arm;
+    // the shift only touches a centromere sitting right at the breakpoint.
+    var CENR = 3.5;                          // centromere bead radius (matches cenDot)
+    var seat = O + BAR / 2 + CENR + 1.5;     // clear the gap, the distal bar, and the bead radius
     var cenAy = Math.max(cenA, seat), cenBy = Math.max(cenB, seat);
     var cenNW = [cx - O, cy - cenAy], cenNE = [cx + O, cy - cenAy];
     var cenSE = [cx + O, cy + cenBy], cenSW = [cx - O, cy + cenBy];
