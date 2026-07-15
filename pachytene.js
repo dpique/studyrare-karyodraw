@@ -130,12 +130,17 @@
       esc(label) + '">' + inner + '</svg>';
   }
   // A segregation unit wrapped so the existing anaphase-pull animation (--tx/--ty on .seg-chrom)
-  // can slide it toward its pole. pole is null in the resting pairing figure (no pull).
+  // can slide it toward its pole. pole is null in the resting pairing figure (no pull). Cap the
+  // travel by scaling the whole vector, so the chromosome slides ALONG its spindle fiber. Clamping
+  // tx and ty independently would bend the slide off the fiber for a steep diagonal pull (e.g.
+  // der(22) heading to the upper-right pole), which reads as the chromosome coming off its track.
   function unit(inner, cenX, cenY, pole) {
     var style = "";
     if (pole) {
-      var tx = clamp((pole[0] - cenX) * 0.32, -26, 26), ty = clamp((pole[1] - cenY) * 0.32, -26, 26);
-      style = ' style="--tx:' + num(tx) + 'px;--ty:' + num(ty) + 'px"';
+      var dx = (pole[0] - cenX) * 0.32, dy = (pole[1] - cenY) * 0.32;
+      var len = Math.hypot(dx, dy), max = 26;
+      if (len > max) { dx *= max / len; dy *= max / len; }
+      style = ' style="--tx:' + num(dx) + 'px;--ty:' + num(dy) + 'px"';
     }
     return '<g class="seg-chrom"' + style + '>' + inner + "</g>";
   }

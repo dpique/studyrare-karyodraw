@@ -154,6 +154,34 @@ for (const k of ['46,XX,t(11;22)(q23;q11.2)', '46,XX,t(11;22)(q23;q11)', '46,XY,
   });
 }
 
+// ---- the invariant: the pull slides each chromosome ALONG its fiber ----------
+// The animation moves each unit by its --tx/--ty vector. That vector must stay parallel to the
+// unit's spindle fiber, or the chromosome drifts off its track when pulled (worst for a steep
+// diagonal pull like der(22) to the upper-right pole, which is where capping tx and ty
+// independently bends the slide). Assert every pull vector is parallel to some fiber.
+function pullVectors(svg) {
+  return [...svg.matchAll(/class="seg-chrom" style="--tx:(-?[\d.]+)px;--ty:(-?[\d.]+)px"/g)]
+    .map((m) => ({ x: +m[1], y: +m[2] })).filter((v) => Math.hypot(v.x, v.y) > 0.01);
+}
+for (const k of ['46,XX,t(11;22)(q23;q11.2)', '46,XX,t(11;22)(q23;q11)', '46,XY,t(2;5)(q21;q31)', '46,XX,t(4;8)(p13;q22)']) {
+  test('the pull slides each chromosome along its fiber for ' + k, () => {
+    const m = model(k);
+    RECIP_MODES.forEach((mode) => {
+      const svg = P.scene(m, mode);
+      const pulls = pullVectors(svg), fibers = fiberSegs(svg).map((f) => ({ x: f.x2 - f.x1, y: f.y2 - f.y1 }));
+      assert.equal(pulls.length, 4, mode + ': four pulled units');
+      pulls.forEach((p) => {
+        const aligned = fibers.some((d) => {
+          const cross = p.x * d.y - p.y * d.x, dot = p.x * d.x + p.y * d.y;
+          const sinTheta = Math.abs(cross) / (Math.hypot(p.x, p.y) * Math.hypot(d.x, d.y));
+          return sinTheta < 0.05 && dot > 0;   // within ~3 degrees of a fiber, pointing toward the pole
+        });
+        assert.ok(aligned, k + ' ' + mode + ': pull ' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ' is not along any fiber');
+      });
+    });
+  });
+}
+
 // ---- the invariant: no spindle fiber crosses a division plane ---------------
 for (const k of ['46,XX,t(11;22)(q23;q11.2)', '46,XY,t(2;5)(q21;q31)', '46,XX,t(4;8)(p13;q22)']) {
   test('no fiber crosses a plane for reciprocal ' + k, () => {
