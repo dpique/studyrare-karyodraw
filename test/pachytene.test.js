@@ -125,6 +125,35 @@ for (const k of ['46,XX,t(11;22)(q23;q11.2)', '46,XY,t(2;5)(q21;q31)', '46,XX,t(
   });
 }
 
+// ---- the invariant: every centromere bead sits on its proximal shaft --------
+// A centromere whose true offset is smaller than the synapsis gap plus the distal bar used to
+// float off the vertical proximal arm (worst for a break near the centromere: t(4;8) chr4 at
+// p13 lands in the gap; t(11;22) chr22 lands on the distal bar). Once the animation pulls the
+// chromosomes apart that bead visibly leaves its track. The cross center sits midway between the
+// horizontal distal bars (at center +/- O), so derive O and the center from them, then assert
+// every bead clears the gap and the distal bar (offset >= O + BAR/2) onto the vertical shaft.
+function centromereBeads(svg) {
+  // cenDot draws a white r=3.5 bead then a colored r=2.6 core; the white bead marks the point.
+  return [...svg.matchAll(/<circle cx="([\d.-]+)" cy="([\d.-]+)" r="3\.5"/g)].map((m) => ({ x: +m[1], y: +m[2] }));
+}
+const chromBars = (svg) => allLines(svg).filter((l) => l.width === 8);   // BAR width (8)
+for (const k of ['46,XX,t(11;22)(q23;q11.2)', '46,XX,t(11;22)(q23;q11)', '46,XY,t(2;5)(q21;q31)', '46,XX,t(4;8)(p13;q22)']) {
+  test('every centromere bead sits on its proximal shaft for ' + k, () => {
+    const m = model(k);
+    RECIP_MODES.forEach((mode) => {
+      const svg = P.scene(m, mode);
+      const beads = centromereBeads(svg);
+      assert.equal(beads.length, 4, mode + ': four centromere beads');
+      const hy = chromBars(svg).filter((b) => Math.abs(b.y1 - b.y2) < 0.5).map((b) => b.y1);  // distal bars
+      const cy = (Math.min(...hy) + Math.max(...hy)) / 2, O = (Math.max(...hy) - Math.min(...hy)) / 2;
+      const minClear = O + 8 / 2 - 0.5;   // clear the gap (O) and the distal bar (BAR/2)
+      beads.forEach((b) => assert.ok(Math.abs(b.y - cy) >= minClear,
+        k + ' ' + mode + ': a centromere bead is only ' + Math.abs(b.y - cy).toFixed(1) +
+        'px from center (need >= ' + minClear.toFixed(1) + '), floating off its shaft'));
+    });
+  });
+}
+
 // ---- the invariant: no spindle fiber crosses a division plane ---------------
 for (const k of ['46,XX,t(11;22)(q23;q11.2)', '46,XY,t(2;5)(q21;q31)', '46,XX,t(4;8)(p13;q22)']) {
   test('no fiber crosses a plane for reciprocal ' + k, () => {

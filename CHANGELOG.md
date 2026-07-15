@@ -3,6 +3,16 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-15 (segregation: keep the centromere on its arm during the animation)
+
+- **Fix a centromere floating off its chromosome.** In the to-scale cross, a centromere whose
+  breakpoint sits very close to it (a small offset) was drawn inside the synapsis gap or on the
+  distal bar, off the vertical proximal arm. At rest this was easy to miss, but the "animate the
+  pull to the poles" animation slid the chromosome away and left the bead floating. The bead now
+  seats on the proximal shaft, clear of the gap and the distal bar. Worst cases were a
+  centromere-adjacent break such as `t(11;22)(q23;q11)` (chromosome 22) and `t(4;8)(p13;q22)`
+  (chromosome 4); a new test asserts every centromere bead sits on its shaft.
+
 ## 2026-07-14 (segregation: alternate poles on a diagonal)
 
 - **Tilt the alternate spindle.** In the to-scale cross, alternate segregation now places its
