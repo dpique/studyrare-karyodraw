@@ -16,8 +16,9 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   cap: the pole sits inside the frame, so a fraction under one never overflows. To keep the four
   from moving as a single blob without letting them drift apart, they share one animation duration
   (so they begin the pull together and reach the pole together, every cycle, with no drift) but
-  each follows a different easing curve, so at mid-motion they sit at roughly 32, 50, 68, and 80
-  percent of their travel. Endpoints stay in sync; only the path between them varies.
+  each follows a slightly different easing curve, so at mid-motion they sit at roughly 46, 48, 52,
+  and 54 percent of their travel. The difference is deliberately subtle. Endpoints stay in sync;
+  only the path between them varies.
 
 ## 2026-07-15 (segregation: slide each chromosome along its spindle fiber)
 
