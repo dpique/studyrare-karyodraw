@@ -146,7 +146,7 @@ for (const k of ['46,XX,t(11;22)(q23;q11.2)', '46,XX,t(11;22)(q23;q11)', '46,XY,
       assert.equal(beads.length, 4, mode + ': four centromere beads');
       const hy = chromBars(svg).filter((b) => Math.abs(b.y1 - b.y2) < 0.5).map((b) => b.y1);  // distal bars
       const cy = (Math.min(...hy) + Math.max(...hy)) / 2, O = (Math.max(...hy) - Math.min(...hy)) / 2;
-      const minClear = O + 8 / 2 - 0.5;   // clear the gap (O) and the distal bar (BAR/2)
+      const minClear = O + 8 / 2 + 3.5 - 0.5;   // clear the gap (O), the distal bar (BAR/2), and the bead radius (3.5)
       beads.forEach((b) => assert.ok(Math.abs(b.y - cy) >= minClear,
         k + ' ' + mode + ': a centromere bead is only ' + Math.abs(b.y - cy).toFixed(1) +
         'px from center (need >= ' + minClear.toFixed(1) + '), floating off its shaft'));
