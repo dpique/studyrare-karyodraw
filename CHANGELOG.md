@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-15 (segregation: slide each chromosome along its spindle fiber)
+
+- **Fix a chromosome drifting off its fiber when pulled.** The "animate the pull to the poles"
+  animation moves each chromosome by a capped vector. The cap was applied to the x and y parts
+  separately, which bent the slide off the spindle fiber for a steep diagonal pull, so a
+  chromosome (for example der(22) heading to the upper-right pole) visibly left its track. The
+  cap now scales the whole vector, so every chromosome slides straight along its own fiber toward
+  its pole. A new test asserts each pull vector stays parallel to a fiber.
+
 ## 2026-07-15 (segregation: keep the centromere on its arm during the animation)
 
 - **Fix a centromere floating off its chromosome.** In the to-scale cross, a centromere whose
