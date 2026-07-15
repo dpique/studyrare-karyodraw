@@ -163,7 +163,7 @@ function pullVectors(svg) {
   return [...svg.matchAll(/class="seg-chrom" style="--tx:(-?[\d.]+)px;--ty:(-?[\d.]+)px/g)]
     .map((m) => ({ x: +m[1], y: +m[2] })).filter((v) => Math.hypot(v.x, v.y) > 0.01);
 }
-const pullDurations = (svg) => [...svg.matchAll(/--seg-dur:([\d.]+)s/g)].map((m) => m[1]);
+const pullEases = (svg) => [...svg.matchAll(/--seg-ease:(cubic-bezier\([^)]*\))/g)].map((m) => m[1]);
 for (const k of ['46,XX,t(11;22)(q23;q11.2)', '46,XX,t(11;22)(q23;q11)', '46,XY,t(2;5)(q21;q31)', '46,XX,t(4;8)(p13;q22)']) {
   test('the pull slides each chromosome along its fiber for ' + k, () => {
     const m = model(k);
@@ -183,13 +183,18 @@ for (const k of ['46,XX,t(11;22)(q23;q11.2)', '46,XX,t(11;22)(q23;q11)', '46,XY,
   });
 }
 
-// ---- the chromosomes are staggered so they do not animate in lockstep --------
-test('each mode staggers the per-chromosome animation duration', () => {
+// ---- the chromosomes stagger by easing, not duration, so endpoints stay in sync -----
+// Different animation durations would drift the chromosomes ever further apart over many cycles.
+// Instead they share one duration (endpoints stay locked) and vary the easing curve, so they
+// spread out only in mid-motion. Assert each mode gives a distinct easing per chromosome.
+test('each mode staggers the chromosomes by easing curve, not duration', () => {
   const m = model('46,XY,t(2;5)(q21;q31)');
   RECIP_MODES.forEach((mode) => {
-    const durs = pullDurations(P.scene(m, mode));
-    assert.equal(durs.length, 4, mode + ': a duration per chromosome');
-    assert.ok(new Set(durs).size >= 3, mode + ': durations should differ, got ' + durs.join(','));
+    const svg = P.scene(m, mode);
+    assert.doesNotMatch(svg, /--seg-dur:/, mode + ': must not vary duration (that drifts)');
+    const eases = pullEases(svg);
+    assert.equal(eases.length, 4, mode + ': an easing per chromosome');
+    assert.ok(new Set(eases).size >= 3, mode + ': easings should differ, got ' + eases.join(' | '));
   });
 });
 

@@ -12,10 +12,12 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   name the assumption.
 
 - **Set the pull distance and stagger the chromosomes.** Each chromosome now slides 0.30 of the
-  way from its centromere to the pole (tuned by eye), straight along its fiber. Each of the four
-  also gets a slightly different animation duration, so they drift out of lockstep and the two
-  heading to the same pole no longer move as a single blob. Pure fraction, no cap: the pole sits
-  inside the frame, so a fraction under one never overflows.
+  way from its centromere to the pole (tuned by eye), straight along its fiber. Pure fraction, no
+  cap: the pole sits inside the frame, so a fraction under one never overflows. To keep the four
+  from moving as a single blob without letting them drift apart, they share one animation duration
+  (so they begin the pull together and reach the pole together, every cycle, with no drift) but
+  each follows a different easing curve, so at mid-motion they sit at roughly 32, 50, 68, and 80
+  percent of their travel. Endpoints stay in sync; only the path between them varies.
 
 ## 2026-07-15 (segregation: slide each chromosome along its spindle fiber)
 
