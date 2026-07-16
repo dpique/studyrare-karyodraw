@@ -33,7 +33,7 @@ const { CONTENT } = require(path.join(ROOT, 'content/karyotypes.js'));
 const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const appCss = indexHtml.match(/<style>([\s\S]*?)<\/style>/)[1];
 const pickLine = (re) => (indexHtml.match(re) || [])[0] || '';
-const favicon = pickLine(/<link rel="icon"[^>]*>/);
+const favicon = (indexHtml.match(/<link rel="(?:icon|apple-touch-icon)"[^>]*>/g) || []).join('\n');
 const fontPreconnect = (indexHtml.match(/<link rel="preconnect"[^>]*>/g) || []).join('\n');
 const fontStylesheet = pickLine(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis[^>]*>/);
 
