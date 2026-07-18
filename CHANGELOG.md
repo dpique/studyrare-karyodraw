@@ -3,6 +3,14 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-18 (SEO: keep crawlers off the API)
+
+- **Disallow `/api/` in robots.txt.** Googlebot was crawling the backend endpoints
+  (`/api/collect`, `/api/feedback`, `/api/top`). Those are POST-only machine endpoints, so a
+  crawler GET returns 405, which Search Console reports as "Blocked due to other 4xx issue." Adding
+  `Disallow: /api/` tells crawlers to skip them, since they are endpoints, not pages. The frontend
+  still calls them normally.
+
 ## 2026-07-16 (SEO: ship real favicon files)
 
 - **Serve real icon files.** Google was not showing a site icon in search results because the
