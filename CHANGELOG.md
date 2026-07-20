@@ -25,6 +25,11 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   nobody searches); it is now "Karyotype diagram maker" (brand demoted to a `<span>`), and the
   `<title>` is front-loaded with the keyword. The hub page targets "karyotype examples".
 
+- **Trim the homepage hero.** Brought the `<h1>` down a step (34px → 28px cap) so it reads as a
+  confident label rather than a marketing shout on the tool-first page, and cut the redundant
+  subhead clause ("A free karyotype generator that runs entirely in your browser") down to
+  "Free, no install."
+
 ## 2026-07-18 (SEO: keep crawlers off the API)
 
 - **Disallow `/api/` in robots.txt.** Googlebot was crawling the backend endpoints
