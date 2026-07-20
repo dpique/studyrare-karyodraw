@@ -18,7 +18,7 @@
  * Going round the ring, each edge is held together by shared (homologous) material, so
  * the three ways to divide the ring read off geometrically and give the modes their
  * names: ALTERNATE takes the two OPPOSITE corners (its spindle fibers cross), while
- * ADJACENT-1 (vertical cut) and ADJACENT-2 (horizontal cut) each take two NEIGHBOURS.
+ * ADJACENT-1 (vertical cut) and ADJACENT-2 (horizontal cut) each take two NEIGHBORS.
  */
 (function () {
   "use strict";
@@ -415,7 +415,7 @@
     }
     if (modeName === "Alternate") return "Both chromosomes bound for one pole sit at <b>opposite corners</b> of the ring, so the spindle fibers cross. Taking every other one always pairs a normal with a normal and a derivative with a derivative, so each pole gets a complete set. This is the only balanced pattern.";
     if (modeName === "Adjacent-1") return "The two that travel together are <b>neighbors</b> in the ring, and their centromeres come from different chromosomes. The two matching (homologous) centromeres are therefore pulled apart. Each gamete keeps one normal chromosome and one non-matching derivative: one exchanged segment is duplicated, the other deleted.";
-    if (modeName === "Adjacent-2") return "Neighbours again, but here the two <b>matching centromeres</b> (a chromosome and its own derivative) go to the same pole. That is a meiosis I non-disjunction, so it is rarer. The imbalance falls on the proximal, centromere-bearing segments.";
+    if (modeName === "Adjacent-2") return "Neighbors again, but here the two <b>matching centromeres</b> (a chromosome and its own derivative) go to the same pole. That is a meiosis I non-disjunction, so it is rarer. The imbalance falls on the proximal, centromere-bearing segments.";
     if (modeName === "4:0") return "All four chromosomes are pulled to the <b>same pole</b>, leaving the other empty. This needs two non-disjunctions at once, so it is the rarest pattern. One gamete is disomic for the whole quadrivalent, the other nullisomic; both conceptions are grossly imbalanced and lost very early.";
     return "Here the quadrivalent splits three-to-one instead of two-and-two: the odd chromosome may be a <b>derivative</b> (tertiary trisomy or monosomy) or a <b>whole normal chromosome</b> (interchange trisomy or monosomy), so all four single-chromosome gametes and their three-chromosome complements occur. The conceptus then has 47 or 45. Interstitial crossing-over adds still more combinations.";
   }

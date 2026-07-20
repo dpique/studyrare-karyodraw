@@ -3,6 +3,22 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-19 (polish: print, spelling, tour UX)
+
+- **Fix the doubled wordmark when printing.** The print stylesheet hid `header.top` and `main` but
+  not `.sitebar`, so the site-header "KaryoDraw" printed alongside the print sheet's own wordmark.
+  Print now hides `.sitebar` too, leaving a single wordmark.
+
+- **American spelling throughout.** "Neighbours" → "Neighbors" (the Adjacent-2 segregation
+  explanation, plus a comment), "Colours" → "Colors", "modelled" → "modeled".
+
+- **Guided tour UX.** The tour no longer strands the viewer on a mismatched karyotype: choosing your
+  own karyotype (an example chip, or Draw/Enter) now exits the tour so the panel never shows a
+  different karyotype than the one on screen. The "Take the guided tour" button toggles (click again
+  to close), and the "Exit tour" button is larger.
+
+- **Trim the hero subhead** to just the one-line description (dropped "Free, no install.").
+
 ## 2026-07-19 (SEO: rank in Google Images + keyword-align headings)
 
 - **Serve an indexable karyogram image on every karyotype page.** Each landing page rendered its

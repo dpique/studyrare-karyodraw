@@ -29,7 +29,7 @@
 (function () {
   "use strict";
 
-  // Colours mirror segregation.js (periwinkle = chromosome A, amber = chromosome B; teal /
+  // Colors mirror segregation.js (periwinkle = chromosome A, amber = chromosome B; teal /
   // rose = the two spindle poles). Kept local so the two modules stay independent.
   var PERI = "#5e72e4", AMBER = "#ec9b27", INK = "#1a1f36", LINE = "#3c4463", STALK = "#c2caf6";
   var TEAL = { stroke: "#1f9e8f", bg: "#e2f3f0", ink: "#116d62" };

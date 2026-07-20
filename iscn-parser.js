@@ -203,7 +203,7 @@
         warnings.push("Don’t recognize “" + op + "” in “" + raw + "”. Known: del, dup, inv, t, i, r, der, add, ins, dic, fra, mar.");
     }
     // Non-der ops should consume the whole token; leftover text (an "or"
-    // alternative, an uncertainty marker, a trailing qualifier) is not modelled,
+    // alternative, an uncertainty marker, a trailing qualifier) is not modeled,
     // so warn instead of dropping it silently.
     if (ab.kind !== "der" && ab.kind !== "unknown" && rest && rest.trim()) {
       warnings.push("Only the first part of “" + raw + "” was read; “" + rest.trim() + "” wasn’t understood (alternatives with “or” and uncertainty markers aren’t supported).");

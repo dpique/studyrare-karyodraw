@@ -349,10 +349,10 @@
   .tourcard h2 { color: var(--peri-700); background: var(--peri-50); border-radius: 14px 14px 0 0; }
   .tourexit {
     margin-left: auto; border: 1px solid var(--peri-300); background: #fff; color: var(--peri-700);
-    border-radius: 8px; padding: 4px 10px; font: 600 11px var(--font-sans); text-transform: none;
+    border-radius: 9px; padding: 7px 15px; font: 700 13px var(--font-sans); text-transform: none;
     letter-spacing: 0; cursor: pointer;
   }
-  .tourexit:hover { background: var(--peri-50); }
+  .tourexit:hover { background: var(--peri-50); border-color: var(--periwinkle); }
   .tourhead { display: flex; align-items: baseline; gap: 10px; }
   .tourconcept { font: 700 16px var(--font-display); color: var(--ink); }
   .tourcounter { margin-left: auto; font: 600 12px var(--font-sans); color: var(--muted); white-space: nowrap; }
@@ -377,7 +377,7 @@
   /* ---- printable 1-page summary (hidden on screen) ---- */
   #printsheet { display: none; }
   @media print {
-    header.top, main, #tooltip { display: none !important; }
+    header.top, main, #tooltip, .sitebar { display: none !important; }
     body { background: #fff; }
     @page { margin: 13mm; }
     #printsheet {
