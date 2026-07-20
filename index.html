@@ -367,10 +367,10 @@
   .tourcard h2 { color: var(--peri-700); background: var(--peri-50); border-radius: 14px 14px 0 0; }
   .tourexit {
     margin-left: auto; border: 1px solid var(--peri-300); background: #fff; color: var(--peri-700);
-    border-radius: 8px; padding: 4px 10px; font: 600 11px var(--font-sans); text-transform: none;
+    border-radius: 9px; padding: 7px 15px; font: 700 13px var(--font-sans); text-transform: none;
     letter-spacing: 0; cursor: pointer;
   }
-  .tourexit:hover { background: var(--peri-50); }
+  .tourexit:hover { background: var(--peri-50); border-color: var(--periwinkle); }
   .tourhead { display: flex; align-items: baseline; gap: 10px; }
   .tourconcept { font: 700 16px var(--font-display); color: var(--ink); }
   .tourcounter { margin-left: auto; font: 600 12px var(--font-sans); color: var(--muted); white-space: nowrap; }
@@ -395,7 +395,7 @@
   /* ---- printable 1-page summary (hidden on screen) ---- */
   #printsheet { display: none; }
   @media print {
-    header.top, main, #tooltip { display: none !important; }
+    header.top, main, #tooltip, .sitebar { display: none !important; }
     body { background: #fff; }
     @page { margin: 13mm; }
     #printsheet {
@@ -464,7 +464,7 @@
   <div class="wrap">
     <div class="hero">
       <h1 class="hero-title">Karyotype diagram maker</h1>
-      <p class="hero-sub">Type any ISCN karyotype and see it drawn as a correctly banded karyogram, with every symbol explained in plain language. Free, no install.</p>
+      <p class="hero-sub">Type any ISCN karyotype and see it drawn as a correctly banded karyogram, with every symbol explained in plain language.</p>
     </div>
     <label class="controls-label" for="kinput">Karyotype (ISCN notation)</label>
     <div class="controls">
@@ -730,6 +730,7 @@
     }).join("");
     box.addEventListener("click", function (ev) {
       var c = ev.target.closest(".chip"); if (!c) return;
+      leaveTourIfActive();
       input.value = c.getAttribute("data-k"); run();
     });
   }
@@ -763,6 +764,13 @@
   }
   function startTour() { if (!TOUR.length) return; $("#tourcard").style.display = ""; loadTourStep(tourIdx); }
   function exitTour() { $("#tourcard").style.display = "none"; }
+  function tourActive() { return $("#tourcard").style.display !== "none"; }
+  function toggleTour() { tourActive() ? exitTour() : startTour(); }
+  // Leave the tour when the viewer draws their own karyotype (an example chip, or
+  // Draw/Enter), so the tour panel never shows a different karyotype than the one
+  // on screen. Style/Bands/Show toggles deliberately do NOT exit — they carry
+  // across tour steps.
+  function leaveTourIfActive() { if (tourActive()) exitTour(); }
 
   // Fetch the aggregate "Most-studied" list and, if it is meaningfully populated,
   // show it as clickable chips. The endpoint returns only karyotype strings in
@@ -782,6 +790,7 @@
         }).join("");
         box.addEventListener("click", function (ev) {
           var c = ev.target.closest(".chip"); if (!c) return;
+          leaveTourIfActive();
           input.value = c.getAttribute("data-k"); run();
         });
         $("#topcard").style.display = "";
@@ -1374,14 +1383,14 @@
   buildExamples();
   if (!TOUR.length) { var _tl = $("#tourlaunch"); if (_tl) _tl.style.display = "none"; }
   else { var _tc = $("#tourcount"); if (_tc) _tc.textContent = "· " + TOUR.length + " worked examples"; }
-  $("#tourlaunch").addEventListener("click", startTour);
+  $("#tourlaunch").addEventListener("click", toggleTour);
   $("#tour-exit").addEventListener("click", exitTour);
   $("#tour-prev").addEventListener("click", function () { loadTourStep(tourIdx - 1); });
   $("#tour-next").addEventListener("click", function () {
     if (tourIdx === TOUR.length - 1) exitTour(); else loadTourStep(tourIdx + 1);
   });
-  $("#draw").addEventListener("click", run);
-  input.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
+  $("#draw").addEventListener("click", function () { leaveTourIfActive(); run(); });
+  input.addEventListener("keydown", function (e) { if (e.key === "Enter") { leaveTourIfActive(); run(); } });
   $("#modeseg").addEventListener("click", function (e) {
     var b = e.target.closest ? e.target.closest("button") : null; if (!b) return;
     MODE = b.getAttribute("data-mode"); syncSeg(); run();
@@ -1416,6 +1425,7 @@
   }
   $("#warnings").addEventListener("click", function (e) {
     var b = e.target.closest ? e.target.closest(".dym") : null; if (!b) return;
+    leaveTourIfActive();
     input.value = b.getAttribute("data-k"); run();
   });
   $("#speakbtn").addEventListener("click", speakKaryotype);
