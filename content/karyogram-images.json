@@ -1,0 +1,258 @@
+{
+  "acute-promyelocytic-leukemia": {
+    "w": 235,
+    "h": 237,
+    "pw": 705,
+    "ph": 711,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "aml-inv-16": {
+    "w": 145,
+    "h": 206,
+    "pw": 435,
+    "ph": 618,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "aml-t-8-21": {
+    "w": 229,
+    "h": 253,
+    "pw": 687,
+    "ph": 759,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "burkitt-lymphoma": {
+    "w": 229,
+    "h": 262,
+    "pw": 687,
+    "ph": 786,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "childhood-all-t-12-21": {
+    "w": 235,
+    "h": 255,
+    "pw": 705,
+    "ph": 765,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "chromosome-1p36-deletion": {
+    "w": 139,
+    "h": 384,
+    "pw": 417,
+    "ph": 1152,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "chromosome-1q-duplication": {
+    "w": 139,
+    "h": 410,
+    "pw": 417,
+    "ph": 1230,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "cri-du-chat-syndrome": {
+    "w": 139,
+    "h": 308,
+    "pw": 417,
+    "ph": 924,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "down-syndrome": {
+    "w": 180,
+    "h": 157,
+    "pw": 540,
+    "ph": 471,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "edwards-syndrome": {
+    "w": 180,
+    "h": 194,
+    "pw": 540,
+    "ph": 582,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "follicular-lymphoma": {
+    "w": 235,
+    "h": 245,
+    "pw": 705,
+    "ph": 735,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "inversion-9": {
+    "w": 139,
+    "h": 260,
+    "pw": 417,
+    "ph": 780,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "isochromosome-xq": {
+    "w": 139,
+    "h": 318,
+    "pw": 417,
+    "ph": 954,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "jacobsen-syndrome": {
+    "w": 145,
+    "h": 242,
+    "pw": 435,
+    "ph": 726,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "klinefelter-syndrome": {
+    "w": 182,
+    "h": 265,
+    "pw": 546,
+    "ph": 795,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "mantle-cell-lymphoma": {
+    "w": 235,
+    "h": 328,
+    "pw": 705,
+    "ph": 984,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "marker-chromosome": {
+    "w": 98,
+    "h": 131,
+    "pw": 294,
+    "ph": 393,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "mds-5q-deletion": {
+    "w": 139,
+    "h": 294,
+    "pw": 417,
+    "ph": 882,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "mosaic-turner-syndrome": {
+    "w": 147,
+    "h": 265,
+    "pw": 441,
+    "ph": 795,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "normal-female-karyotype": {
+    "w": 727,
+    "h": 797,
+    "pw": 2181,
+    "ph": 2391,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "normal-male-karyotype": {
+    "w": 727,
+    "h": 797,
+    "pw": 2181,
+    "ph": 2391,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "patau-syndrome": {
+    "w": 180,
+    "h": 233,
+    "pw": 540,
+    "ph": 699,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "philadelphia-chromosome": {
+    "w": 229,
+    "h": 287,
+    "pw": 687,
+    "ph": 861,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "ring-chromosome-13": {
+    "w": 185,
+    "h": 233,
+    "pw": 555,
+    "ph": 699,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "robertsonian-translocation-13-14": {
+    "w": 188,
+    "h": 314,
+    "pw": 564,
+    "ph": 942,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "robertsonian-translocation-14-21": {
+    "w": 188,
+    "h": 292,
+    "pw": 564,
+    "ph": 876,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "triple-x-syndrome": {
+    "w": 180,
+    "h": 265,
+    "pw": 540,
+    "ph": 795,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "triploidy": {
+    "w": 1055,
+    "h": 797,
+    "pw": 3165,
+    "ph": 2391,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "turner-syndrome": {
+    "w": 147,
+    "h": 265,
+    "pw": 441,
+    "ph": 795,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "wolf-hirschhorn-syndrome": {
+    "w": 139,
+    "h": 318,
+    "pw": 417,
+    "ph": 954,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "xxyy-syndrome": {
+    "w": 223,
+    "h": 265,
+    "pw": 669,
+    "ph": 795,
+    "cw": 2400,
+    "ch": 1260
+  },
+  "xyy-syndrome": {
+    "w": 182,
+    "h": 265,
+    "pw": 546,
+    "ph": 795,
+    "cw": 2400,
+    "ch": 1260
+  }
+}

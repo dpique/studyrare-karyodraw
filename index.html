@@ -6,9 +6,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
-<title>KaryoDraw: visualize &amp; understand any karyotype</title>
+<title>Karyotype Diagram Maker: Draw Any ISCN Karyotype Online | KaryoDraw</title>
 <link rel="canonical" href="https://karyodraw.com/" />
-<meta name="description" content="Free browser tool that draws any ISCN karyotype as a correctly banded karyogram and explains every symbol in plain language — for genetics, cytogenetics, and board exam prep." />
+<meta name="description" content="Free browser tool that draws any ISCN karyotype as a correctly banded karyogram and explains every symbol in plain language. Built for genetics, cytogenetics, and board exam prep." />
 <meta name="keywords" content="ISCN karyotype, karyotype visualizer, karyotype interpreter, cytogenetics, chromosome nomenclature, karyogram, genetic counseling, medical genetics board prep" />
 <meta name="author" content="Daniel Pique, StudyRare" />
 <meta name="robots" content="index, follow" />
@@ -87,6 +87,8 @@
   .sitebar-nav a:hover { background: var(--peri-50); color: var(--peri-700); }
   .sitebar-nav a[aria-current="page"] { color: var(--peri-700); background: var(--peri-50); }
   .wrap { max-width: 1320px; margin: 0 auto; padding: 0 24px; }
+  .hero-title { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(26px, 4vw, 34px); line-height: 1.08; letter-spacing: -.02em; color: var(--navy); }
+  .hero-sub { margin: 8px 0 0; max-width: 62ch; font-size: 15px; line-height: 1.5; color: var(--ink-2); }
 
   .controls-label { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 14px; }
   .controls-label + .controls { margin-top: 6px; }
@@ -447,7 +449,7 @@
         </g>
         <rect x="18" y="3" width="8" height="26" rx="4" fill="none" stroke="#4a5ac8" stroke-width="1.1"/>
       </svg>
-      <h1 class="sitebar-word">KaryoDraw</h1>
+      <span class="sitebar-word">KaryoDraw</span>
     </a>
     <nav class="sitebar-nav" aria-label="Primary">
       <!-- KD:NAV:START -->
@@ -460,6 +462,10 @@
 </div>
 <header class="top">
   <div class="wrap">
+    <div class="hero">
+      <h1 class="hero-title">Karyotype diagram maker</h1>
+      <p class="hero-sub">Type any ISCN karyotype and see it drawn as a correctly banded karyogram, with every symbol explained in plain language. A free karyotype generator that runs entirely in your browser.</p>
+    </div>
     <label class="controls-label" for="kinput">Karyotype (ISCN notation)</label>
     <div class="controls">
       <input id="kinput" type="text" spellcheck="false"

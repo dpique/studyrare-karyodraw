@@ -11,23 +11,27 @@
 //   node scripts/build-pages.mjs
 import fs from 'node:fs';
 import path from 'node:path';
-import vm from 'node:vm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
+import { ISCN, Karyo, Teach, renderKaryogram } from './lib/render.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const SITE = 'https://karyodraw.com';
 const require = createRequire(import.meta.url);
 
-// ---- load the render modules into a shared shim (same approach as test/*) -----
-const win = {};
-const ctx = vm.createContext({ window: win });
-for (const f of ['ideogram-data.js', 'iscn-parser.js', 'karyo-render.js', 'teach.js']) {
-  vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);
-}
-const { ISCN, Karyo, Teach } = win;
+// Render modules (ISCN, Karyo, Teach) and renderKaryogram come from the shared
+// lib/render.mjs so the build and the image rasterizer stay in lockstep.
 const { CONTENT } = require(path.join(ROOT, 'content/karyotypes.js'));
+
+// Per-slug karyogram image dimensions, written by scripts/render-images.mjs. When a
+// slug is missing (image step not re-run after adding a karyotype) the build falls
+// back to the inline SVG figure and the shared preview.png card, and warns.
+const imgManifest = (() => {
+  try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'karyogram-images.json'), 'utf8')); }
+  catch { return {}; }
+})();
+let missingImg = 0;
 
 // ---- shared bits pulled out of index.html so they never drift -----------------
 const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
@@ -43,18 +47,6 @@ const esc = (s) => String(s == null ? '' : s)
 const attr = (s) => esc(s).replace(/"/g, '&quot;');
 const stripTags = (s) => String(s).replace(/<[^>]+>/g, '');
 const bySlug = Object.fromEntries(CONTENT.map((e) => [e.slug, e]));
-
-function renderKaryogram(k) {
-  const model = ISCN.parse(k);
-  const clone = model.clones[0];
-  const affected = Karyo.computeAffected(model.clones);
-  const affKeys = Object.keys(affected);
-  const hasMar = model.clones.some((c) => (c.slots.mar || []).length);
-  const only = (affKeys.length || hasMar) ? affKeys : null;
-  const container = {};
-  Karyo.render(container, clone, { theme: 'simple', level: 1, affected, only });
-  return { html: container.innerHTML, clone, affectedOnly: !!only };
-}
 
 function pageTitle(e) { return `${e.name} karyotype (${e.k}) explained | KaryoDraw`; }
 function pageDesc(e) {
@@ -125,9 +117,10 @@ const LANDING_CSS = `
   .lp-intro { font-size: 16px; line-height: 1.6; color: var(--ink-2); margin: 0 0 18px; }
   .lp-cta { margin: 0 0 20px; }
   .lp-cta .btn { display: inline-block; text-decoration: none; }
-  .lp-fig { margin: 0 0 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); box-shadow: var(--shadow); padding: 12px; overflow-x: auto; }
+  .lp-fig { margin: 0 0 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); box-shadow: var(--shadow); padding: 12px; overflow-x: auto; }
   .lp-fig .karyogram { transform: none !important; }
-  .lp-figcap { font-size: 12.5px; color: var(--muted); margin: 4px 0 22px; }
+  .lp-karyo-img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+  .lp-figcap { font-size: 12.5px; color: var(--muted); margin: 8px 4px 0; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
@@ -177,8 +170,10 @@ function siteHeader(active) {
 const SITE_FOOT = `<div class="lp-foot"><p><a href="/">KaryoDraw</a> is a free ISCN 2024 karyotype visualizer, a <a href="${LINKS.studyrare}" target="_blank" rel="noopener">StudyRare</a> tool. It is an educational visualizer of cytogenetic nomenclature, not a diagnostic tool. It is <a href="${LINKS.github}" target="_blank" rel="noopener">open source</a>; if it helped you, you can <a href="${LINKS.kofi}" target="_blank" rel="noopener">support it on Ko-fi</a>.</p></div>`;
 
 // One page skeleton for every generated page (landing, hub, about, guide).
-function pageShell({ title, description, canonicalPath, ogType = 'website', ogTitle, jsonLd, extraCss = '', active = '', crumb = '', articleClass = '', body }) {
+function pageShell({ title, description, canonicalPath, ogType = 'website', ogTitle, jsonLd, extraCss = '', active = '', crumb = '', articleClass = '', body, ogImage = `${SITE}/preview.png`, ogImageW, ogImageH }) {
   const url = SITE + canonicalPath;
+  const ogDims = (ogImageW && ogImageH)
+    ? `<meta property="og:image:width" content="${ogImageW}" />\n<meta property="og:image:height" content="${ogImageH}" />\n` : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -197,11 +192,11 @@ ${fontStylesheet}
 <meta property="og:title" content="${attr(ogTitle || title)}" />
 <meta property="og:description" content="${attr(description)}" />
 <meta property="og:url" content="${url}" />
-<meta property="og:image" content="${SITE}/preview.png" />
-<meta name="twitter:card" content="summary_large_image" />
+<meta property="og:image" content="${ogImage}" />
+${ogDims}<meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${attr(ogTitle || title)}" />
 <meta name="twitter:description" content="${attr(description)}" />
-<meta name="twitter:image" content="${SITE}/preview.png" />
+<meta name="twitter:image" content="${ogImage}" />
 ${favicon}
 ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>\n` : ''}<style>${appCss}${LANDING_CSS}${extraCss}</style>
 </head>
@@ -222,19 +217,33 @@ function karyoNote(e) {
   return affectedOnly ? ', showing the involved chromosomes with their normal homolog' : '';
 }
 
+// The karyogram figure: a pre-rendered PNG (indexable in Google Images, with alt
+// text and intrinsic dimensions) when render-images.mjs has produced one, else the
+// inline SVG as a fallback so a page is never figure-less.
+function karyoFigure(e) {
+  const dim = imgManifest[e.slug];
+  const png = path.join(ROOT, 'karyotype', e.slug, 'karyogram.png');
+  if (dim && fs.existsSync(png)) {
+    return `<img class="lp-karyo-img" src="karyogram.png" alt="Karyotype of ${attr(e.name)} (${attr(e.k)})" width="${dim.w}" height="${dim.h}" decoding="async" />`;
+  }
+  missingImg++;
+  console.warn(`  [images] no karyogram.png for ${e.slug} — run "npm run images"; using inline SVG`);
+  return renderKaryogram(e.k).html;
+}
+
 function pageHtml(e) {
-  const { html: karyo } = renderKaryogram(e.k);
   const toolLink = `/?k=${encodeURIComponent(e.k)}&style=highlight&bands=550&show=all`;
   const desc = pageDesc(e);
   const aka = (e.aka && e.aka.length) ? `<p class="lp-aka">Also known as: ${esc(e.aka.join(', '))}</p>` : '';
   const model = ISCN.parse(e.k);
+  const dim = imgManifest[e.slug];
+  const hasCard = dim && fs.existsSync(path.join(ROOT, 'karyotype', e.slug, 'card.png'));
   const body = `    <h1>${esc(e.name)}</h1>
     <p class="lp-kt">${esc(e.k)}</p>
     ${aka}
     <p class="lp-intro">${e.intro}</p>
     <p class="lp-cta"><a class="btn" href="${attr(toolLink)}">Open in the interactive visualizer &rarr;</a></p>
-    <figure class="lp-fig">${karyo}</figure>
-    <figcaption class="lp-figcap">${esc(e.name)} (${esc(e.k)}) drawn by KaryoDraw${karyoNote(e)}.</figcaption>
+    <figure class="lp-fig">${karyoFigure(e)}<figcaption class="lp-figcap">${esc(e.name)} (${esc(e.k)}) drawn by KaryoDraw${karyoNote(e)}.</figcaption></figure>
     <section class="lp-sec"><h2>What the notation means</h2>${decodeList(model.clones[0])}</section>
     ${syndromeNotes(model.clones[0])}
     ${relatedLinks(e)}
@@ -245,6 +254,9 @@ function pageHtml(e) {
     description: desc,
     canonicalPath: `/karyotype/${e.slug}/`,
     ogType: 'article',
+    ogImage: hasCard ? `${SITE}/karyotype/${e.slug}/card.png` : `${SITE}/preview.png`,
+    ogImageW: hasCard ? dim.cw : undefined,
+    ogImageH: hasCard ? dim.ch : undefined,
     jsonLd: jsonLd(e),
     active: 'karyotypes',
     crumb: `<a href="/">KaryoDraw</a> &rsaquo; <a href="/karyotype/">Karyotypes</a> &rsaquo; ${esc(e.name)}`,
@@ -267,16 +279,16 @@ function hubHtml() {
   .lp-related-inline a:hover { border-color: var(--peri-300); background: var(--peri-50); }
   .lp-related-inline code { font: 600 12.5px var(--font-mono); color: var(--peri-700); white-space: nowrap; }
   .lp-related-inline span { color: var(--ink-2); font-size: 13.5px; }`;
-  const body = `    <h1>Karyotypes, explained</h1>
+  const body = `    <h1>Karyotype examples, explained</h1>
     <p class="lp-intro">${esc(desc)} Every example is drawn by KaryoDraw and decoded symbol by symbol. New to the notation? Start with the <a href="/how-to-read-a-karyotype/">guide on how to read a karyotype</a>, or type any karyotype into the <a href="/">interactive visualizer</a>.</p>
     ${sections}
     ${SITE_FOOT}`;
   return pageShell({
-    title: 'Karyotypes explained: common ISCN examples drawn and decoded | KaryoDraw',
-    ogTitle: 'Karyotypes explained | KaryoDraw',
+    title: 'Karyotype examples: common ISCN karyotypes drawn and explained | KaryoDraw',
+    ogTitle: 'Karyotype examples | KaryoDraw',
     description: desc,
     canonicalPath: '/karyotype/',
-    jsonLd: JSON.stringify({ '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'Karyotypes explained', description: desc,
+    jsonLd: JSON.stringify({ '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'Karyotype examples', description: desc,
       url: SITE + '/karyotype/', isPartOf: { '@type': 'WebSite', name: 'KaryoDraw', url: SITE + '/' } }),
     active: 'karyotypes',
     crumb: `<a href="/">KaryoDraw</a> &rsaquo; Karyotypes`,

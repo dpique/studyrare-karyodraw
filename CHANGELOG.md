@@ -3,6 +3,28 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-19 (SEO: rank in Google Images + keyword-align headings)
+
+- **Serve an indexable karyogram image on every karyotype page.** Each landing page rendered its
+  karyogram as inline `<svg>` with no alt text, so the pages could not surface in Google Images for
+  the highest-intent queries ("karyotype of / image of `<condition>`"). Pages now embed the karyogram
+  as an `<img class="lp-karyo-img">` with descriptive alt (`Karyotype of <name> (<iscn>)`) and
+  intrinsic `width`/`height`, falling back to the inline SVG when an image is missing.
+
+- **Per-page social cards.** Every page shared one generic `og:image` (`preview.png`), so a shared
+  link showed the wrong karyotype. Each page now sets its own `og:image`/`twitter:image` to a branded
+  1200×630 `card.png` (with `og:image:width`/`height`).
+
+- **New image tool `npm run images`.** `scripts/render-images.mjs` (headless Chrome via
+  `puppeteer-core`, a dev-only dependency) rasterizes each karyogram to `karyogram.png` (3×) and a
+  `card.png`, writing `content/karyogram-images.json`. It is a local step, not run in CI; re-run it
+  after adding or changing a karyotype. `renderKaryogram` moved to `scripts/lib/render.mjs` so the
+  build and the rasterizer share one renderer.
+
+- **Keyword-aligned headings.** The homepage `<h1>` was the brand wordmark ("KaryoDraw", a term
+  nobody searches); it is now "Karyotype diagram maker" (brand demoted to a `<span>`), and the
+  `<title>` is front-loaded with the keyword. The hub page targets "karyotype examples".
+
 ## 2026-07-18 (SEO: keep crawlers off the API)
 
 - **Disallow `/api/` in robots.txt.** Googlebot was crawling the backend endpoints
