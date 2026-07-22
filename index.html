@@ -331,7 +331,16 @@
   .about-body h3 { margin: 18px 0 6px; font-family: var(--font-display); font-weight: 700; font-size: 14.5px; color: var(--navy); }
   .about-body strong { color: var(--navy); font-weight: 700; }
   .about-body code { font: 500 12.5px var(--font-mono); background: var(--peri-50); color: var(--peri-700); padding: 1px 5px; border-radius: 5px; white-space: nowrap; }
-  footer { color: var(--muted); font-size: 12.5px; padding: 22px 0 40px; border-top: 1px solid var(--line); margin-top: 30px; }
+  footer.wrap { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+    gap: 10px 28px; padding: 24px 24px 48px; margin-top: 34px; border-top: 1px solid var(--line); color: var(--muted); }
+  footer .foot-brand { display: flex; flex-direction: column; gap: 2px; }
+  footer .foot-brand strong { color: var(--ink); font: 800 15px var(--font-display); letter-spacing: -.01em; }
+  footer .foot-brand span { font-size: 12.5px; color: var(--muted); }
+  footer .foot-brand a { color: var(--peri-700); text-decoration: none; }
+  footer .foot-brand a:hover { text-decoration: underline; }
+  footer .foot-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
+  footer .foot-links a, footer .foot-links .fbtrigger { color: var(--ink-2); font-size: 13px; text-decoration: none; }
+  footer .foot-links a:hover, footer .foot-links .fbtrigger:hover { color: var(--peri-700); }
 
   #tooltip {
     position: fixed; z-index: 50; pointer-events: none; display: none;
@@ -567,13 +576,6 @@
           <h2>Band &amp; stain legend</h2>
           <div class="body"><div class="legend" id="legend"></div></div>
         </div>
-        <div class="card" id="topcard" style="display:none">
-          <h2>Most-studied karyotypes</h2>
-          <div class="body">
-            <div class="examples" id="topkaryos" role="group" aria-label="Most-studied karyotypes"></div>
-            <div class="muted" style="font-size:12px; margin-top:9px">Aggregate and anonymous: the karyotypes people draw most, refreshed daily. Click any to load it.</div>
-          </div>
-        </div>
       </section>
 
       <aside>
@@ -655,7 +657,8 @@
     </div>
     <footer class="wrap">
       <!-- KD:FOOT:START -->
-      <strong>KaryoDraw</strong> · <a href="https://karyodraw.com" target="_blank" rel="noopener">karyodraw.com</a> · a <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a> tool · <button type="button" class="fbtrigger" id="fbopen">Send feedback</button> · <a href="https://github.com/dpique/studyrare-karyodraw" target="_blank" rel="noopener">open source on GitHub</a> · <a href="https://ko-fi.com/studyrare" target="_blank" rel="noopener">♥ Support on Ko-fi</a>
+      <div class="foot-brand"><strong>KaryoDraw</strong><span>A free ISCN karyotype tool by <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a></span></div>
+      <nav class="foot-links" aria-label="Footer"><button type="button" class="fbtrigger" id="fbopen">Send feedback</button><a href="https://github.com/dpique/studyrare-karyodraw" target="_blank" rel="noopener">Open source</a><a href="https://ko-fi.com/studyrare" target="_blank" rel="noopener">&#9829; Support on Ko-fi</a></nav>
       <!-- KD:FOOT:END -->
     </footer>
   </div>
@@ -794,32 +797,6 @@
   // on screen. Style/Bands/Show toggles deliberately do NOT exit — they carry
   // across tour steps.
   function leaveTourIfActive() { if (tourActive()) exitTour(); }
-
-  // Fetch the aggregate "Most-studied" list and, if it is meaningfully populated,
-  // show it as clickable chips. The endpoint returns only karyotype strings in
-  // rank order (no counts). Stays hidden until enough distinct usage accrues.
-  function loadTopKaryotypes() {
-    if (!window.fetch) return;
-    fetch("/api/top", { headers: { accept: "application/json" } })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) {
-        var items = (d && d.items) || [];
-        if (items.length < 3) return;
-        var box = $("#topkaryos");
-        box.innerHTML = items.map(function (k) {
-          var attr = escXml(k);
-          return '<button type="button" class="chip" data-k="' + attr +
-            '" aria-label="Draw ' + attr + '">' + escapeHtml(k) + '</button>';
-        }).join("");
-        box.addEventListener("click", function (ev) {
-          var c = ev.target.closest(".chip"); if (!c) return;
-          leaveTourIfActive();
-          input.value = c.getAttribute("data-k"); run();
-        });
-        $("#topcard").style.display = "";
-      })
-      .catch(function () {});
-  }
 
   function swatch(color, label) {
     return '<span class="item"><span class="sw" style="background:' + color + '"></span>' + label + '</span>';
@@ -1397,7 +1374,7 @@
     if (sig === lastBeaconSig) return;   // dedupe repeats and view re-renders of the same state
     lastBeaconSig = sig;
     // The auto-loaded demo (no ?k= in the URL) does not count toward usage, so the
-    // "Most-studied" list reflects karyotypes people actually chose to draw.
+    // draw analytics reflect karyotypes people actually chose to draw.
     if (beaconDraw.skipOnce) { beaconDraw.skipOnce = false; return; }
     beacon({ type: "draw", k: k, ok: ok, style: MODE, bands: String(LEVEL), show: SHOW });
   }
@@ -1559,7 +1536,6 @@
   if (!hasK) { beaconDraw.skipOnce = true; run.skipHashOnce = true; }   // auto-loaded demo: do not count it, and keep the landing URL clean
   run();
   try { var _ref = ""; if (document.referrer) { try { _ref = new URL(document.referrer).host; } catch (e) {} } beacon({ type: "pageview", ref: _ref }); } catch (e) {}
-  loadTopKaryotypes();
 })();
 </script>
 </body>
