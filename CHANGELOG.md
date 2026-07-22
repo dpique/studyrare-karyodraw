@@ -15,6 +15,14 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   right column's first card did not. The columns now space their cards with flex `gap`, which
   ignores hidden cards, so both columns start at the same height.
 
+- **Fill the left-column gap with the browse list.** For a simple karyotype the left column ran
+  short while the right column's "how to read a chromosome" reference stayed tall, leaving a large
+  empty space; the "Common karyotypes, explained" list sat full-width below it. On wide screens the
+  browse list (and the meiotic-segregation card) now sit in a `col1-extra` grid item placed in the
+  left column's second row, with the right column spanning both rows — so the list fills the gap
+  instead of leaving a hole. Source order is unchanged (tool cards → decoded → browse), so the
+  single-column mobile layout still shows the decoded panel before the browse list.
+
 ## 2026-07-19 (polish: print, spelling, tour UX)
 
 - **Fix the doubled wordmark when printing.** The print stylesheet hid `header.top` and `main` but
