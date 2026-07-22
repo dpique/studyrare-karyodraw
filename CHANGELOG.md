@@ -5,6 +5,15 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
 
 ## 2026-07-22 (feedback: drop the debug notice; align and tidy the result columns)
 
+- **Remove the "Most-studied karyotypes" card.** It was a third way to pick a karyotype (after the
+  named example chips under the input and the named "Common karyotypes" catalog), but showed bare
+  ISCN strings with no condition names, so it was the redundant, least useful one. Removed the card,
+  its loader, and the `/api/top` fetch; the draw analytics beacon is unchanged.
+
+- **Polish the footer.** Replaced the single dense dot-separated link line with a two-part layout:
+  the brand and a one-line descriptor on the left, the links (feedback, source, Ko-fi) grouped on
+  the right, with real spacing and consistent styling. Wraps cleanly on mobile.
+
 - **Flatten the sitebar background.** The page had three background tones (sitebar `#ffffff→#f7f8fb`
   gradient, hero white, gray results). The sitebar gradient was a redundant near-white third tone;
   it now uses the panel white, so the page reads as two clean zones.
