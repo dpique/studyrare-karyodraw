@@ -161,7 +161,18 @@
   /* Space the stacked cards in each column with gap, not sibling-margins, so a
      hidden card (e.g. the collapsed guided-tour card) does not push the first
      visible card down and misalign the two columns. */
-  .grid > section, .grid > aside { display: flex; flex-direction: column; gap: 16px; }
+  .grid > section, .grid > aside, .grid > .col1-extra { display: flex; flex-direction: column; gap: 16px; }
+  .grid > .col1-extra > * { margin-top: 0; }
+  /* Desktop only: two-row placement so the browse list (col1-extra) fills the left
+     column under the tool cards instead of leaving a gap, while the tall right
+     column spans both rows alongside. Source order stays tool cards -> decoded ->
+     browse, so the single-column mobile layout keeps the decoded panel first. This
+     is min-width-scoped so it never fights the max-width single-column reset. */
+  @media (min-width: 1041px) {
+    .grid > section { grid-column: 1; grid-row: 1; }
+    .grid > aside { grid-column: 2; grid-row: 1 / span 2; }
+    .grid > .col1-extra { grid-column: 1; grid-row: 2; }
+  }
   .card h2 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 13px 16px; border-bottom: 1px solid var(--line); }
   .card .body { padding: 14px 16px; min-width: 0; }
 
@@ -579,7 +590,7 @@
           <div class="body" id="clinical"></div>
         </div>
       </aside>
-    </div>
+      <div class="col1-extra">
     <section id="segregation-card" style="display:none" aria-label="Meiotic segregation">
       <div class="card">
         <div class="body" id="segregation"></div>
@@ -630,6 +641,8 @@
         </div>
       </div>
     </section>
+      </div>
+    </div>
     <footer class="wrap">
       <!-- KD:FOOT:START -->
       <strong>KaryoDraw</strong> · <a href="https://karyodraw.com" target="_blank" rel="noopener">karyodraw.com</a> · a <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a> tool · <button type="button" class="fbtrigger" id="fbopen">Send feedback</button> · <a href="https://github.com/dpique/studyrare-karyodraw" target="_blank" rel="noopener">open source on GitHub</a> · <a href="https://ko-fi.com/studyrare" target="_blank" rel="noopener">♥ Support on Ko-fi</a>
