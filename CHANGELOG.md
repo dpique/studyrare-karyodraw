@@ -3,6 +3,12 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-22 (feedback: drop the debug notice)
+
+- **Remove the "Attached to help us debug…" line** from the feedback dialog. The karyotype and the
+  link to the current view are still sent with every report (unchanged), so this only drops the
+  redundant on-screen notice and its now-dead styles.
+
 ## 2026-07-19 (polish: print, spelling, tour UX)
 
 - **Fix the doubled wordmark when printing.** The print stylesheet hid `header.top` and `main` but
