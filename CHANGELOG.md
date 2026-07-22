@@ -3,7 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
-## 2026-07-22 (feedback: drop the debug notice; align the result columns)
+## 2026-07-22 (feedback: drop the debug notice; align and tidy the result columns)
+
+- **Flatten the sitebar background.** The page had three background tones (sitebar `#ffffff→#f7f8fb`
+  gradient, hero white, gray results). The sitebar gradient was a redundant near-white third tone;
+  it now uses the panel white, so the page reads as two clean zones.
+
+- **Tour pill in the sans font.** "Take the guided tour" switched from the display font to the sans
+  font, matching the STYLE/BANDS/SHOW controls beside it; the display font stays for headings.
+
+- **Multi-column browse list.** "Common karyotypes" is now a responsive multi-column grid instead of
+  one long single-column bulleted list, using the full width of the left column.
 
 - **Remove the "Attached to help us debug…" line** from the feedback dialog. The karyotype and the
   link to the current view are still sent with every report (unchanged), so this only drops the
