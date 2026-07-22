@@ -59,7 +59,7 @@
   }
   /* Unified site header (identical on the homepage and every generated page).
      Brand + nav are grouped on the left so home and the links sit together. */
-  .sitebar { border-bottom: 1px solid var(--line); background: linear-gradient(180deg, #ffffff, #f7f8fb); }
+  .sitebar { border-bottom: 1px solid var(--line); background: var(--panel); }
   .sitebar-inner { max-width: 1320px; margin: 0 auto; padding: 11px 24px; display: flex; align-items: center; gap: 4px 16px; flex-wrap: wrap; }
   .sitebar-brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; }
   .sitebar .dotmark { flex: 0 0 auto; }
@@ -297,6 +297,16 @@
   .emptystate code { font: 13px var(--font-mono); background: #f0f2f7; color: var(--ink-2); padding: 2px 6px; border-radius: 5px; }
   .muted { color: var(--muted); }
   .about { margin-top: 20px; }
+  /* Browse list as a responsive multi-column grid so it uses the full width of the
+     left column instead of one long bulleted line. */
+  .kdp-list { list-style: none; padding: 0; margin: 10px 0 0; display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1px 26px; }
+  .kdp-list li { margin: 0; }
+  .kdp-list a { display: block; text-decoration: none; padding: 6px 0; color: var(--ink-2);
+    font-size: 14px; line-height: 1.4; border-bottom: 1px solid transparent; }
+  .kdp-list a:hover { color: var(--peri-700); }
+  .kdp-list code { font: 600 12.5px var(--font-mono); color: var(--peri-700); }
+  .kdp-list b { font-weight: 600; }
   .about-body { max-width: 760px; }
   .about-body p { margin: 0 0 12px; font-size: 14.5px; line-height: 1.65; color: var(--ink-2); }
   .about-body p:last-child { margin-bottom: 0; }
@@ -352,7 +362,7 @@
   /* ---- guided tour ---- */
   .tourlaunch {
     margin-top: 10px; display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
-    font: 700 13px var(--font-display); padding: 8px 14px; border-radius: 999px;
+    font: 700 13px var(--font-sans); padding: 8px 14px; border-radius: 999px;
     background: var(--peri-50); color: var(--peri-700); border: 1px solid var(--peri-300);
   }
   .tourlaunch:hover { background: #e4e9fc; }
