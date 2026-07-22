@@ -3,11 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
-## 2026-07-22 (feedback: drop the debug notice)
+## 2026-07-22 (feedback: drop the debug notice; align the result columns)
 
 - **Remove the "Attached to help us debug…" line** from the feedback dialog. The karyotype and the
   link to the current view are still sent with every report (unchanged), so this only drops the
   redundant on-screen notice and its now-dead styles.
+
+- **Align the two result columns.** The left column's first visible card sat 16px lower than the
+  right one: the cards were spaced with `.card + .card { margin-top }`, so the visible card that
+  follows the collapsed (display:none) guided-tour card still inherited a top margin, while the
+  right column's first card did not. The columns now space their cards with flex `gap`, which
+  ignores hidden cards, so both columns start at the same height.
 
 ## 2026-07-19 (polish: print, spelling, tour UX)
 

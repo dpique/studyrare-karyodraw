@@ -140,7 +140,10 @@
   }
 
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); min-width: 0; }
-  .card + .card { margin-top: 16px; }
+  /* Space the stacked cards in each column with gap, not sibling-margins, so a
+     hidden card (e.g. the collapsed guided-tour card) does not push the first
+     visible card down and misalign the two columns. */
+  .grid > section, .grid > aside { display: flex; flex-direction: column; gap: 16px; }
   .card h2 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 13px 16px; border-bottom: 1px solid var(--line); }
   .card .body { padding: 14px 16px; min-width: 0; }
 
