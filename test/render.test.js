@@ -318,3 +318,61 @@ test('nearestBand returns null for a band that is already real', () => {
   assert.equal(Karyo.nearestBand('X', 'p22.31'), null);
   assert.equal(Karyo.nearestBand('9', 'q34'), null);
 });
+
+// ---- how copies inside one cell are aligned ---------------------------------
+// A whole-arm fusion (Robertsonian der, isochromosome) has its centromere at the
+// seam between two whole arms. That y is not comparable to a normal homolog's p/q
+// boundary: an acrocentric's centromere sits near its top, the fusion's sits in the
+// middle, so centromere-aligning the two shoves the normal homolog most of the way
+// down its cell and floats the derivative above the row. Those cells bottom-align.
+const cellOf = (k, chrom) => {
+  const c = ISCN.parse(k).clones[0];
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, c, { theme: 'simple', level: 1, affected: Karyo.computeAffected([c]) });
+  // the cell for `chrom` is the one whose label div holds exactly that text
+  const cells = cont.innerHTML.split('<div class="kcell');
+  return cells.find((s) => new RegExp('<div class="klabel">' + chrom + '</div>').test(s)) || '';
+};
+// margin-top of each copy in source order, 0 when absent
+const margins = (cellHtml) => [...cellHtml.matchAll(/<div class="kchrom[^"]*"[^>]*?(?:style="margin-top:([\d.]+)px")?>/g)]
+  .map((m) => (m[1] ? parseFloat(m[1]) : 0));
+const heights = (cellHtml) => [...cellHtml.matchAll(/<svg class="ideo" width="[\d.]+" height="([\d.]+)"/g)]
+  .map((m) => parseFloat(m[1]));
+
+test('a Robertsonian cell bottom-aligns its copies instead of centromere-aligning', () => {
+  const cell = cellOf('45,XX,rob(14;21)(q10;q10)', '14');
+  const [mNormal, mDer] = margins(cell);
+  const [hNormal, hDer] = heights(cell);
+  assert.ok(hDer > hNormal, 'the fusion is the taller copy');
+  assert.equal(mDer, 0, 'the tallest copy sets the baseline');
+  assert.ok(Math.abs(mNormal - (hDer - hNormal)) < 1,
+    `the shorter homolog drops by exactly the height difference (got ${mNormal}, want ${(hDer - hNormal).toFixed(1)})`);
+});
+// NOTE: for any isochromosome the centromere shift equals the bottom shift (iso
+// height = 2x the arm, seam at the middle), so this assertion holds under either
+// scheme. The discriminating test for the iso is the cenSeam one below.
+test('an isochromosome cell bottom-aligns too (its centromere is a seam as well)', () => {
+  const cell = cellOf('46,XX,i(21)(q10)', '21');
+  const [mNormal] = margins(cell);
+  const [hNormal, hIso] = heights(cell);
+  assert.ok(Math.abs(mNormal - (hIso - hNormal)) < 1, 'bottom-aligned, not centromere-aligned');
+});
+test('a derivative that keeps its own centromere still centromere-aligns', () => {
+  // der(9)t(9;22): the der keeps chromosome 9's real centromere, so comparing it to
+  // the normal 9 by centromere is the meaningful read and must not regress.
+  const cell = cellOf('46,XX,der(9)t(9;22)(q34;q11.2)', '9');
+  const [hNormal, hDer] = heights(cell);
+  const [mNormal, mDer] = margins(cell);
+  assert.notEqual(hNormal, hDer, 'the copies differ in length, so some alignment applies');
+  assert.ok(Math.abs(mNormal - Math.max(0, hDer - hNormal)) > 1 || Math.abs(mDer) > 1,
+    'not plain bottom alignment: the centromeres are comparable here');
+});
+test('drawInstance reports whether its centromere y came from a seam', () => {
+  const inst = (k, chrom) => (ISCN.parse(k).clones[0].slots[chrom] || []).find((i) => i.kind !== 'normal');
+  const ctx = { theme: 'simple', level: 1, affected: {} };
+  assert.equal(Karyo.drawInstance(inst('45,XX,rob(14;21)(q10;q10)', '14'), ctx).cenSeam, true);
+  assert.equal(Karyo.drawInstance(inst('46,XX,i(21)(q10)', '21'), ctx).cenSeam, true);
+  assert.equal(Karyo.drawInstance(inst('46,XX,der(9)t(9;22)(q34;q11.2)', '9'), ctx).cenSeam, false);
+  const normal14 = ISCN.parse('46,XX').clones[0].slots['14'][0];
+  assert.equal(Karyo.drawInstance(normal14, ctx).cenSeam, false);
+});

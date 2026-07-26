@@ -3,6 +3,22 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-26 (whole-arm derivatives sit on the row baseline in the full karyogram)
+
+- **A Robertsonian or isochromosome cell no longer breaks its row (bug).** A whole-arm derivative
+  reports a centromere y at its fusion seam, which was then aligned against the normal homolog's
+  real p/q boundary. Those two are not the same kind of thing: an acrocentric's centromere sits near
+  its top, a fusion's between two long arms, so aligning them dropped the normal homolog 82px down
+  its cell (56% of the cell height for `rob(14;21)`) and left the derivative floating above the
+  baseline its neighbours sit on. Cells like this now bottom-align in the full karyogram.
+
+  The "affected only" view still aligns on the seam, deliberately: there every cell is hung off one
+  shared horizontal centromere line, which is the classic karyogram look, and the seam is the best
+  centromere proxy such a derivative has. That behavior was already pinned by tests, all of which
+  render with `only:` — the full view was simply never checked. `alignMode()` now makes the
+  distinction explicit and is shared by the layout and the cross-cell metrics, so the two cannot
+  disagree about what a cell looks like.
+
 ## 2026-07-26 (the segregation panel's conceptus karyotypes are clickable)
 
 - **Every conceptus karyotype in the segregation panel loads in one click.** The panel already
