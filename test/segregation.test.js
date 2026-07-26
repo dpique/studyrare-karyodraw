@@ -221,3 +221,49 @@ test('2:2 and the 4:0 disomic gamete are keyed to their pole; the 3:1 gametes st
   // disomic gamete (1) whose four chromosomes all leave one pole = 7. The empty 4:0 gamete has none.
   assert.equal((html.match(/seg-g-(teal|rose)/g) || []).length, 7);
 });
+
+// ---- every conceptus is one click from being drawn --------------------------
+// The panel already enumerates the karyotypes related to what the user typed: a
+// rob(13;14) carrier lists 46,XY,der(13;14)(q10;q10),+14 as its trisomy 14
+// product. Those strings were dead text, so a student reading the panel had to
+// retype them (and, as one did, mistype them). They are buttons now, carrying the
+// karyotype in data-k like the example chips and the "did you mean" fix.
+const loadable = (html) => [...html.matchAll(/data-k="([^"]*)"/g)].map((m) => m[1]);
+
+test('each conceptus karyotype is emitted as a loadable button', () => {
+  const html = Seg.render(model('45,XY,der(13;14)(q10;q10)'));
+  const ks = loadable(html);
+  assert.ok(ks.includes('46,XY,der(13;14)(q10;q10),+14'), 'the trisomy 14 product is loadable');
+  assert.ok(ks.includes('46,XY,der(13;14)(q10;q10),+13'), 'the trisomy 13 product is loadable');
+  assert.ok(ks.includes('46,XY'), 'the normal outcome is loadable');
+  assert.match(html, /class="seg-kt"/);
+});
+test('the loadable karyotypes are exactly the conceptus karyotypes', () => {
+  const m = model('46,XX,t(2;5)(q21;q31)');
+  const ks = loadable(Seg.render(m));
+  eq([...ks].sort(), native(zygotes(m)).sort());   // no extras, none missed
+});
+test('every loadable karyotype re-parses to itself', () => {
+  ['45,XY,der(13;14)(q10;q10)', '46,XX,t(2;5)(q21;q31)', '45,XX,rob(14;21)(q10;q10)'].forEach((k) => {
+    loadable(Seg.render(model(k))).forEach((z) => {
+      const p = ISCN.parse(z);
+      assert.equal(p.warnings.length, 0, z + ' parses without complaint');
+      assert.equal(p.suggestion, null, z + ' needs no repair');
+      assert.equal(p.clones[0].counts.ok, true, z + ' is internally consistent');
+    });
+  });
+});
+// Chromosome names come out of the input verbatim, so a quote in one must not be
+// able to close the attribute early. Escaping is correct exactly when every emitted
+// value survives unescaping back to the karyotype it stands for.
+test('a quote in a chromosome name is escaped inside data-k, not able to close it', () => {
+  const m = Seg.compute(clone0('46,XX,t(2";5)(q21;q31)'));
+  assert.ok(m, 'still modeled');
+  const html = Seg.render(m);
+  assert.match(html, /&quot;/, 'the quote is entity-escaped');
+  const unesc = (s) => s.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  eq(loadable(html).map(unesc).sort(), native(zygotes(m)).sort());
+});
+test('the panel states that the conceptus karyotypes are clickable', () => {
+  assert.match(Seg.render(model('46,XX,t(2;5)(q21;q31)')), /Click any conceptus karyotype/);
+});

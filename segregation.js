@@ -237,6 +237,16 @@
   }
 
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  // For a double-quoted attribute value. The karyotypes here are built by this
+  // module, but from chromosome names the parser took verbatim out of the input,
+  // so a stray quote must not be able to close the attribute early.
+  function escAttr(s) { return esc(s).replace(/"/g, "&quot;"); }
+  // A conceptus karyotype the reader can load: same data-k contract as the example
+  // chips and the "did you mean" fix, so one delegated listener serves all three.
+  function ktButton(k) {
+    return '<button type="button" class="seg-kt" data-k="' + escAttr(k) +
+      '" title="Draw ' + escAttr(k) + '">' + esc(k) + '</button>';
+  }
   function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
   // ---- SVG primitives -------------------------------------------------------
@@ -468,8 +478,11 @@
 
     // Visually-hidden checkbox drives the anaphase-pull animation for every scene (pure
     // CSS, so the module stays DOM-free). Kept a sibling of .seg-modes for the ~ selector.
+    // The conceptus karyotypes are clickable, but a dotted underline alone is too
+    // quiet to be found, so the affordance is stated once here, directly above them.
     var controls = '<input type="checkbox" id="seg-anim" class="seg-anim-cb">' +
-      '<div class="seg-controls"><label for="seg-anim" class="seg-anim-toggle"><span class="seg-switch"></span>Animate the pull to the poles</label></div>';
+      '<div class="seg-controls"><label for="seg-anim" class="seg-anim-toggle"><span class="seg-switch"></span>Animate the pull to the poles</label>' +
+      '<span class="seg-hint">Click any conceptus karyotype below to draw and decode that outcome.</span></div>';
 
     var modes = model.modes.map(function (m) {
       // Key gametes to their pole color only for a clean single division (two gametes).
@@ -483,7 +496,7 @@
           ? '<div class="seg-imb">' + esc(gm.imbalance) + '</div>' : "";
         return '<div class="seg-gamete' + (acc ? " seg-g-" + acc : "") + '">' +
           '<div class="seg-gpoles">' + glyphRow(b, gm.bodies) + '</div>' +
-          '<div class="seg-gout"><code>' + esc(gm.zygote) + '</code>' + lab + imb +
+          '<div class="seg-gout">' + ktButton(gm.zygote) + lab + imb +
           '<div class="seg-viab">' + viabChip(gm.viability) + '</div></div></div>';
       }).join("");
       return '<div class="seg-mode' + (m.balanced ? " seg-balanced" : "") + '">' +

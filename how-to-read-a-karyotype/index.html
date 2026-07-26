@@ -178,7 +178,8 @@
   .seg-row { display: inline-flex; align-items: flex-end; gap: 3px; }
   .seg-gglyph { width: 26px; height: auto; display: inline-block; vertical-align: bottom; }
   .seg-anim-cb { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-  .seg-controls { margin: 0 0 14px; }
+  .seg-controls { margin: 0 0 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+  .seg-hint { font-size: 12.5px; color: var(--ink-2); }
   .seg-anim-toggle { display: inline-flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--ink-2); cursor: pointer; user-select: none; }
   .seg-switch { width: 32px; height: 18px; border-radius: 999px; background: #cdd2e1; position: relative; transition: background .2s; flex: 0 0 auto; }
   .seg-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform .2s; }
@@ -203,7 +204,18 @@
   .seg-gamete.seg-g-rose { border-left: 3px solid #c0568a; }
   .seg-gpoles { flex: 0 0 auto; }
   .seg-gout { min-width: 0; }
-  .seg-gout code { font: 600 12px var(--font-mono); color: var(--peri-700); word-break: break-word; }
+  /* The conceptus karyotype is the panel's one interactive element: it loads that
+     karyotype into the visualizer. Styled as the code it replaced, plus a link
+     underline, which keeps a dense list of outcomes from becoming a row of buttons.
+     The panel states the affordance in words too; the underline alone is too quiet
+     to be noticed at normal viewing size. */
+  .seg-kt {
+    font: 600 12px var(--font-mono); color: var(--peri-700); word-break: break-word;
+    background: none; border: 0; padding: 0; text-align: left; cursor: pointer;
+    border-bottom: 1px solid var(--peri-300); border-radius: 2px;
+  }
+  .seg-kt:hover { border-bottom-color: var(--periwinkle); background: var(--peri-50); }
+  .seg-kt:focus-visible { outline: 2px solid var(--periwinkle); outline-offset: 2px; }
   .seg-glabel { display: inline-block; margin-left: 6px; font-size: 11px; color: var(--muted); }
   .seg-imb { font-size: 11.5px; color: var(--ink-2); margin-top: 3px; }
   .seg-viab { margin-top: 5px; }
