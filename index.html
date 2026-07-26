@@ -200,6 +200,17 @@
   .seg-anim-cb { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
   .seg-controls { margin: 0 0 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
   .seg-hint { font-size: 12.5px; color: var(--ink-2); }
+  /* Preview of a conceptus karyotype, on hover or keyboard focus. pointer-events:none
+     so it can never sit between the pointer and the button it describes. */
+  .ktpeek {
+    position: fixed; z-index: 60; pointer-events: none; opacity: 0; transition: opacity .12s;
+    background: #fff; border: 1px solid var(--line); border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, .16); padding: 10px 12px 8px; max-width: 340px;
+  }
+  .ktpeek.on { opacity: 1; }
+  .ktpeek .ktpeek-k { font: 600 11.5px var(--font-mono); color: var(--peri-700); margin-bottom: 6px; }
+  .ktpeek .karyogram { margin: 0; }
+  .ktpeek .kcell { transform: scale(.82); transform-origin: bottom center; }
   .seg-anim-toggle { display: inline-flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--ink-2); cursor: pointer; user-select: none; }
   .seg-switch { width: 32px; height: 18px; border-radius: 999px; background: #cdd2e1; position: relative; transition: background .2s; flex: 0 0 auto; }
   .seg-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform .2s; }
@@ -750,8 +761,13 @@
     window.speechSynthesis.speak(u);
   }
 
+  // The karyotype drawn on a bare visit, and the one Back returns to if the viewer
+  // navigates past their first jump. Matches the Philadelphia example chip.
+  var DEMO_K = "46,XY,t(9;22)(q34;q11.2)";
+
   var EXAMPLES = [
-    ["47,XX,+21", "Down"],
+    ["45,XY,rob(14;21)(q10;q10)", "balanced carrier"],
+    ["46,XY,rob(14;21)(q10;q10),+21", "unbalanced: translocation Down"],
     ["46,XY,t(9;22)(q34;q11.2)", "Philadelphia / CML"],
     ["46,XY,del(5)(p15.2)", "cri-du-chat"],
     ["46,XY,inv(9)(p11q13)", "inv 9 variant"],
@@ -759,6 +775,17 @@
     ["46,XX,del(22)(q11.2)", "DiGeorge"],
     ["mos 45,X[12]/46,XX[18]", "Turner mosaic"]
   ];
+
+  // Jumping to another karyotype: an example chip, a "did you mean" fix, a conceptus
+  // in the segregation panel. One path for all three, so they behave identically and
+  // each gets its own history entry.
+  function loadKaryotype(k) {
+    if (k == null) return;
+    leaveTourIfActive();
+    input.value = k;
+    run.pushNext = true;
+    run();
+  }
 
   function buildExamples() {
     var box = $("#examples");
@@ -768,8 +795,7 @@
     }).join("");
     box.addEventListener("click", function (ev) {
       var c = ev.target.closest(".chip"); if (!c) return;
-      leaveTourIfActive();
-      input.value = c.getAttribute("data-k"); run();
+      loadKaryotype(c.getAttribute("data-k"));
     });
   }
 
@@ -1118,7 +1144,8 @@
     if (model.normalized && model.normalized !== val) { val = model.normalized; input.value = val; }
     // Skip the URL rewrite on the auto-loaded demo so a bare visit keeps a clean
     // landing URL; the first real interaction (type, toggle, pick an example) writes it.
-    if (run.skipHashOnce) { run.skipHashOnce = false; } else { setHash(val); }
+    var push = run.pushNext; run.pushNext = false;
+    if (run.skipHashOnce) { run.skipHashOnce = false; } else { setHash(val, push); }
     var bad = invalidBands(model);
     // Per-band advice up to a few; past that the list would crowd out everything
     // else in the warning box, so fall back to naming them together.
@@ -1234,12 +1261,26 @@
       .replace(/%2C/g, ",").replace(/%3B/g, ";").replace(/%2F/g, "/")
       .replace(/%5B/g, "[").replace(/%5D/g, "]");
   }
-  function setHash(val) {
+  // push=true gives this view its own history entry, so Back returns to the previous
+  // karyotype. Reserved for discrete jumps (see loadKaryotype); typing and the
+  // Style/Bands/Show toggles replace instead, or one keystroke per entry would fill
+  // history with half-typed karyotypes and make Back useless.
+  function setHash(val, push) {
     try {
       var k = (val != null ? String(val) : input.value).trim();
-      history.replaceState(null, "", "?k=" + prettyEncode(k) +
-        "&style=" + STYLE_TO_URL[MODE] + "&bands=" + BANDS_TO_URL[LEVEL] + "&show=" + SHOW);
+      var url = "?k=" + prettyEncode(k) +
+        "&style=" + STYLE_TO_URL[MODE] + "&bands=" + BANDS_TO_URL[LEVEL] + "&show=" + SHOW;
+      history[push ? "pushState" : "replaceState"](null, "", url);
     } catch (e) {}
+  }
+
+  // The view options carried in the URL. Shared by first load and by popstate, so
+  // going Back restores the whole view and not just the karyotype.
+  function applyUrlView() {
+    var pStyle = getParam("style"); if (pStyle && URL_TO_STYLE[pStyle]) MODE = URL_TO_STYLE[pStyle];
+    var pBands = getParam("bands"); if (pBands !== null && pBands in URL_TO_BANDS) LEVEL = URL_TO_BANDS[pBands];
+    var pShow = getParam("show"); if (pShow === "all" || pShow === "affected") SHOW = pShow;
+    syncSeg();
   }
   function getParam(name) {
     var m = new RegExp("[?&]" + name + "=([^&]+)").exec(location.search);
@@ -1459,8 +1500,7 @@
   }
   $("#warnings").addEventListener("click", function (e) {
     var b = e.target.closest ? e.target.closest(".dym") : null; if (!b) return;
-    leaveTourIfActive();
-    input.value = b.getAttribute("data-k"); run();
+    loadKaryotype(b.getAttribute("data-k"));
   });
   // A conceptus karyotype in the segregation panel loads that karyotype. Unlike the
   // example chips and the fix button, the panel sits well below the drawing, so a
@@ -1468,12 +1508,96 @@
   // result into view. Same data-k contract as the other two.
   $("#segregation").addEventListener("click", function (e) {
     var b = e.target.closest ? e.target.closest(".seg-kt") : null; if (!b) return;
-    leaveTourIfActive();
-    input.value = b.getAttribute("data-k"); run();
+    loadKaryotype(b.getAttribute("data-k"));
     // #summary, not #karyo: it leads the same card and states the karyotype just
     // loaded, so the reader lands on the label and the drawing together.
     var top = $("#summary") || $("#karyo");
     if (top && top.scrollIntoView) top.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  // ---- conceptus preview ----------------------------------------------------
+  // Six outcomes in the segregation panel differ from each other in two or three
+  // chromosomes, so the useful preview is the affected-only view, not a whole
+  // karyogram: cheap to draw and it shows exactly what changed. Hover is gated on a
+  // real hover-capable pointer; focus covers the keyboard, and neither is the only
+  // way to the information (clicking still draws and decodes it in full).
+  (function () {
+    var peek = null, timer = null, cache = {};
+    var canHover = !window.matchMedia || window.matchMedia("(hover: hover)").matches;
+
+    function el() {
+      if (!peek) {
+        peek = document.createElement("div");
+        peek.className = "ktpeek";
+        peek.setAttribute("aria-hidden", "true");   // a visual aid; the button already names the karyotype
+        document.body.appendChild(peek);
+      }
+      return peek;
+    }
+    function bodyFor(k) {
+      if (k in cache) return cache[k];
+      cache[k] = null;
+      var model = window.ISCN.parse(k);
+      var clone = model.clones && model.clones[0];
+      if (!clone || clone.modalNumber == null) return null;
+      var aff = window.Karyo.computeAffected([clone]);
+      var only = Object.keys(aff);
+      // A chromosomally normal outcome (46,XY from alternate segregation) has nothing
+      // to isolate. Twenty-four normal chromosomes in a popover would say nothing that
+      // the row's own "normal" label does not, so skip the preview entirely.
+      if (!only.length) return null;
+      var host = document.createElement("div");
+      window.Karyo.render(host, clone, { theme: "simple", level: 1, affected: aff, only: only });
+      cache[k] = '<div class="ktpeek-k">' + escapeHtml(k) + "</div>" + host.innerHTML;
+      return cache[k];
+    }
+    function show(btn) {
+      var k = btn.getAttribute("data-k");
+      var html = bodyFor(k);
+      if (!html) return;
+      var p = el();
+      p.innerHTML = html;
+      p.classList.add("on");
+      // Place beside the button, flipped or clamped to stay on screen.
+      var r = btn.getBoundingClientRect(), pw = p.offsetWidth, ph = p.offsetHeight, gap = 10;
+      var left = r.right + gap;
+      if (left + pw > window.innerWidth - 8) left = Math.max(8, r.left - gap - pw);
+      var top = r.top + r.height / 2 - ph / 2;
+      top = Math.max(8, Math.min(top, window.innerHeight - ph - 8));
+      p.style.left = left + "px";
+      p.style.top = top + "px";
+    }
+    function hide() {
+      clearTimeout(timer);
+      if (peek) { peek.classList.remove("on"); peek.innerHTML = ""; }
+    }
+    function arm(btn) { clearTimeout(timer); timer = setTimeout(function () { show(btn); }, 260); }
+
+    var host = $("#segregation");
+    host.addEventListener("mouseover", function (e) {
+      if (!canHover) return;
+      var b = e.target.closest ? e.target.closest(".seg-kt") : null;
+      if (b) arm(b); else hide();
+    });
+    host.addEventListener("mouseleave", hide);
+    host.addEventListener("focusin", function (e) {
+      var b = e.target.closest ? e.target.closest(".seg-kt") : null;
+      if (b) arm(b);
+    });
+    host.addEventListener("focusout", hide);
+    // A preview pinned to a stale position is worse than none.
+    window.addEventListener("scroll", hide, { passive: true });
+    window.addEventListener("resize", hide);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") hide(); });
+    host.addEventListener("click", hide);
+  })();
+
+  // Without this, Back would change the URL while the page kept showing the old
+  // drawing. skipHashOnce stops run() from rewriting the entry we just moved to.
+  window.addEventListener("popstate", function () {
+    applyUrlView();
+    input.value = getParam("k") || DEMO_K;
+    run.skipHashOnce = true;
+    run();
   });
   $("#speakbtn").addEventListener("click", speakKaryotype);
 
@@ -1566,12 +1690,9 @@
     });
   })();
 
-  var pStyle = getParam("style"); if (pStyle && URL_TO_STYLE[pStyle]) MODE = URL_TO_STYLE[pStyle];
-  var pBands = getParam("bands"); if (pBands !== null && pBands in URL_TO_BANDS) LEVEL = URL_TO_BANDS[pBands];
-  var pShow = getParam("show"); if (pShow === "all" || pShow === "affected") SHOW = pShow;
-  syncSeg();
+  applyUrlView();
   var hasK = getParam("k") != null;
-  var initial = getParam("k") || "46,XY,t(9;22)(q34;q11.2)";
+  var initial = getParam("k") || DEMO_K;
   input.value = initial;
   // If this deep-linked karyotype has a dedicated landing page, point the canonical
   // there so ?k= views consolidate onto one URL for search engines.

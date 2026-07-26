@@ -265,9 +265,15 @@
     // centromere so it draws a real constriction (you can see where the centromere
     // is) and provides the alignment y. Drop the plain fusion line there, since the
     // centromere marker now shows the join.
+    var cenIsSeam = false;
     if (!cenList.length && segments.length >= 2 && firstBoundaryY != null) {
       cenList.push({ y: firstBoundaryY, chrom: segments[0].chrom, reversed: false });
       junctionYs = junctionYs.filter(function (jy) { return Math.abs(jy - firstBoundaryY) > 0.5; });
+      // Flagged, because this y is NOT comparable to a normal homolog's p/q boundary:
+      // an acrocentric's centromere sits near its top, a whole-arm fusion's sits
+      // between two long arms. Aligning the two would shove the normal homolog down
+      // its cell and float the derivative above the row. See alignMode().
+      cenIsSeam = true;
     }
 
     // centromere: hatched constriction with a guaranteed-visible height + a thin
@@ -336,7 +342,8 @@
       svg: '<svg class="ideo" width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '"><defs>' +
         defs.join("") + '</defs>' + body.join("") + '</svg>',
       width: svgW, height: svgH,
-      cenY: cenList.length ? cenList[0].y : null   // centromere y (for aligning homologs)
+      cenY: cenList.length ? cenList[0].y : null,  // centromere y (for aligning homologs)
+      cenSeam: cenIsSeam                            // ...but only comparable when false
     };
   }
 
@@ -792,14 +799,14 @@
     var built = buildInstance(inst);
     if (built.dmin) {
       var dout = renderDmin(ctx);
-      return { svg: dout.svg, width: dout.width, height: dout.height, cenY: null, built: built };
+      return { svg: dout.svg, width: dout.width, height: dout.height, cenY: null, cenSeam: false, built: built };
     }
     if (built.ring && built.segments && built.segments[0]) {
       var rout = renderRing(built.segments[0], ctx);
-      return { svg: rout.svg, width: rout.width, height: rout.height, cenY: null, built: built };
+      return { svg: rout.svg, width: rout.width, height: rout.height, cenY: null, cenSeam: false, built: built };
     }
     var out = renderComposite(built.segments, { overlays: built.overlays, ctx: ctx });
-    return { svg: out.svg, width: out.width, height: out.height, cenY: out.cenY, built: built };
+    return { svg: out.svg, width: out.width, height: out.height, cenY: out.cenY, cenSeam: !!out.cenSeam, built: built };
   }
 
   // ----- karyogram (one clone) ----------------------------------------------
@@ -811,17 +818,52 @@
     { name: "r3", chroms: ["17", "18", "19", "20", "21", "22"], sex: true }
   ];
 
+  // How the copies in one cell (normal homolog, derivative, del...) line up. One
+  // decision, shared by the layout (cellHtml) and by the cross-cell metrics
+  // (cellMetrics), so the two can never disagree about what a cell looks like.
+  //
+  //  · "flush"  same overall length (an inversion): no shift, tops and bottoms meet.
+  //  · "cen"    every copy has a COMPARABLE centromere: align on it, so a shortened
+  //             p-arm reads as a p-arm loss and a shortened q-arm as a q-arm loss,
+  //             the way a real karyogram is compared side by side.
+  //  · "bottom" some copy's centromere is a seam between whole arms (a Robertsonian
+  //             der, an isochromosome), and this cell is read on its own. A seam y is
+  //             not the same kind of thing as a p/q boundary: an acrocentric's
+  //             centromere sits near its top, the fusion's between two long arms, so
+  //             aligning them drops the normal homolog most of the way down the cell
+  //             and floats the derivative above the row baseline its neighbours sit on.
+  //
+  // seamCen distinguishes the two views. In "affected only" every cell is deliberately
+  // hung off ONE shared horizontal centromere line (cellMetrics + cenOffset), which is
+  // the classic karyogram look and is why the fusion seam is worth aligning on there:
+  // it is the best centromere proxy that derivative has. The full 24-chromosome view
+  // has no shared line — cells just sit on a common baseline — so there a seam cell
+  // bottom-aligns instead.
+  function alignMode(drawn, seamCen) {
+    if (drawn.every(function (d) { return Math.abs(d.height - drawn[0].height) < 0.5; })) return "flush";
+    var haveCen = drawn.every(function (d) { return d.cenY != null; });
+    if (!haveCen) return "bottom";
+    return (seamCen || drawn.every(function (d) { return !d.cenSeam; })) ? "cen" : "bottom";
+  }
+  function tallest(drawn) {
+    return drawn.reduce(function (a, b) { return b.height > a.height ? b : a; }, drawn[0]);
+  }
+
   // The within-cell layout metrics of a chromosome cell: the y of its aligned
   // centromere line (from the top of the copies), and the cell's drawn height.
   // Used to line every affected chromosome's centromere up on one horizontal line.
   function cellMetrics(insts, ctx) {
     var drawn = insts.map(function (i) { return drawInstance(i, ctx); });
-    var sameLength = drawn.every(function (d) { return Math.abs(d.height - drawn[0].height) < 0.5; });
-    var everyCen = drawn.every(function (d) { return d.cenY != null; });
+    var mode = alignMode(drawn, true);   // only the shared-centromere-line view uses this
     var maxCen = 0, maxH = 0;
     drawn.forEach(function (d) { if (d.cenY != null && d.cenY > maxCen) maxCen = d.cenY; if (d.height > maxH) maxH = d.height; });
-    var cenLine = !everyCen ? null : (sameLength ? drawn[0].cenY : maxCen);
-    return { cenLine: cenLine, height: maxH };
+    // The line has to be where the cell will actually put a centromere. Under
+    // "bottom" the tallest copy is the one flush with the cell top, so its own
+    // centromere is the only y that stays true after layout.
+    var cenLine = mode === "flush" ? drawn[0].cenY
+      : mode === "cen" ? maxCen
+      : tallest(drawn).cenY;
+    return { cenLine: cenLine == null ? null : cenLine, height: maxH };
   }
 
   function cellHtml(labelText, insts, opts, ctx) {
@@ -831,26 +873,17 @@
     if (insts.length === 0 && opts.ghost) {
       h2.push(ghost(opts.ghostChrom || labelText, opts.ghostText || "absent"));
     } else {
-      // Align the copies (normal homolog, derivative, del…) by their centromere,
-      // so a shortened p-arm reads as a p-arm loss and a shortened q-arm as a
-      // q-arm loss — matching how a real karyogram is compared side by side.
-      // Three cases, in order:
-      //  · SAME overall length (e.g. an inversion) → flush top/bottom, no shift.
-      //  · every copy has a centromere y → centromere-align (the meaningful compare
-      //    for del/dup/most translocations, which leave a copy shorter or longer).
-      //  · a copy has NO centromere y (a whole-arm/Robertsonian derivative, an
-      //    isochromosome — its centromere sits at a segment edge) → we cannot
-      //    centromere-align, so BOTTOM-align to the group's baseline (align-items:
-      //    flex-end) instead of letting the short copy float at the top.
+      // Align the copies (normal homolog, derivative, del…) by alignMode(), which
+      // documents the three cases and is shared with cellMetrics.
       var drawn = insts.map(function (inst) { return { inst: inst, d: drawInstance(inst, ctx) }; });
-      var sameLength = drawn.every(function (x) { return Math.abs(x.d.height - drawn[0].d.height) < 0.5; });
-      var allCen = !sameLength && drawn.every(function (x) { return x.d.cenY != null; });
+      var mode = alignMode(drawn.map(function (x) { return x.d; }), !!opts.seamCen);
       var maxCen = 0, maxH = 0;
       drawn.forEach(function (x) { if (x.d.cenY != null && x.d.cenY > maxCen) maxCen = x.d.cenY; if (x.d.height > maxH) maxH = x.d.height; });
       drawn.forEach(function (x) {
         var inst = x.inst, d = x.d;
         var mt = 0;
-        if (!sameLength) mt = allCen ? Math.max(0, maxCen - d.cenY) : Math.max(0, maxH - d.height);
+        if (mode === "cen") mt = Math.max(0, maxCen - d.cenY);
+        else if (mode === "bottom") mt = Math.max(0, maxH - d.height);
         var cls = "kchrom" + (inst.kind !== "normal" ? " abn" : "");
         var sub = (inst.kind !== "normal") ? '<div class="ksub">' + esc(d.built.caption) + '</div>' : "";
         var style = mt > 0.5 ? ' style="margin-top:' + mt.toFixed(1) + 'px"' : "";
@@ -930,7 +963,7 @@
       cells.forEach(function (c) {
         var off = c.m.cenLine != null ? (above - c.m.cenLine) : Math.max(0, totalH - c.m.height);
         if (c.sexcell) sexOffset = off;
-        oh.push(cellHtml(c.chrom, c.insts, { sexcell: c.sexcell, cenOffset: off }, ctx));
+        oh.push(cellHtml(c.chrom, c.insts, { sexcell: c.sexcell, cenOffset: off, seamCen: true }, ctx));
       });
       // Show the absent homolog for a monosomy here too, so the affected view
       // matches the full karyogram (shared helper).
