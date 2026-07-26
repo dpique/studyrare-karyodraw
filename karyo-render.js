@@ -866,6 +866,20 @@
     return { cenLine: cenLine == null ? null : cenLine, height: maxH };
   }
 
+  // Absent homologs to draw as a placeholder: exactly the losses the karyotype states
+  // (the "-21" in 45,XY,-21), never a copy-number deficit. The two look identical by
+  // count — a balanced rob(13;14) carrier also has a single drawn 14 — but there 14q
+  // rides on the der and nothing is missing, so a placeholder would misstate it.
+  // Sex chromosomes are left to missingSexCells, which owns their pairing.
+  function lostCount(clone, chrom) {
+    if (chrom === "X" || chrom === "Y") return 0;
+    var n = 0;
+    (clone.aberrations || []).forEach(function (ab) {
+      if (ab.kind === "loss" && ab.chroms && ab.chroms.indexOf(chrom) >= 0) n += (ab.multiplier || 1);
+    });
+    return n;
+  }
+
   function cellHtml(labelText, insts, opts, ctx) {
     opts = opts || {};
     var copiesStyle = (opts.cenOffset && opts.cenOffset > 0.5) ? ' style="margin-top:' + opts.cenOffset.toFixed(1) + 'px"' : "";
@@ -889,6 +903,15 @@
         var style = mt > 0.5 ? ' style="margin-top:' + mt.toFixed(1) + 'px"' : "";
         h2.push('<div class="' + cls + '" data-chrom="' + inst.chrom + '" data-kind="' + inst.kind + '"' + style + '>' + d.svg + sub + '</div>');
       });
+      // The gap where a lost homolog was. Aligned as a normal copy of that chromosome
+      // would be, so it sits with its surviving partner rather than at the cell top.
+      if (opts.missing > 0) {
+        var refChrom = insts[0].chrom;
+        var ref = drawInstance({ chrom: refChrom, kind: "normal", label: refChrom, aberration: null, primary: null }, ctx);
+        var gmt = mode === "cen" ? Math.max(0, maxCen - ref.cenY)
+          : mode === "bottom" ? Math.max(0, maxH - ref.height) : 0;
+        for (var gi = 0; gi < opts.missing; gi++) h2.push(ghost(refChrom, "missing", gmt));
+      }
     }
     h2.push('</div><div class="klabel">' + esc(labelText) + '</div></div>');
     return h2.join("");
@@ -963,7 +986,7 @@
       cells.forEach(function (c) {
         var off = c.m.cenLine != null ? (above - c.m.cenLine) : Math.max(0, totalH - c.m.height);
         if (c.sexcell) sexOffset = off;
-        oh.push(cellHtml(c.chrom, c.insts, { sexcell: c.sexcell, cenOffset: off, seamCen: true }, ctx));
+        oh.push(cellHtml(c.chrom, c.insts, { sexcell: c.sexcell, cenOffset: off, seamCen: true, missing: lostCount(clone, c.chrom) }, ctx));
       });
       // Show the absent homolog for a monosomy here too, so the affected view
       // matches the full karyogram (shared helper).
@@ -978,7 +1001,7 @@
       html.push('<div class="kgroup" data-group="' + grp.name + '">');
       grp.chroms.forEach(function (chrom) {
         var insts = clone.slots[chrom] || [];
-        html.push(cellHtml(chrom, insts, { ghost: insts.length === 0, ghostChrom: chrom, ghostText: "nullisomy" }, ctx));
+        html.push(cellHtml(chrom, insts, { ghost: insts.length === 0, ghostChrom: chrom, ghostText: "nullisomy", missing: lostCount(clone, chrom) }, ctx));
       });
       if (grp.sex) {   // 21, 22, then X, Y, then any markers — group G + sex chromosomes
         var xN = (clone.slots["X"] || []).length, yN = (clone.slots["Y"] || []).length;
@@ -994,10 +1017,11 @@
     container.innerHTML = html.join("");
   }
 
-  function ghost(chrom, label) {
+  function ghost(chrom, label, mt) {
     var d = IDEO.data[chrom] || IDEO.data["X"];
     var H = h(d.length), pad = 3, cap = W * CAP_RATIO;
-    return '<div class="kchrom ghost"><svg class="ideo" width="' + (W + pad * 2) + '" height="' + (H + pad * 2) +
+    var style = (mt && mt > 0.5) ? ' style="margin-top:' + mt.toFixed(1) + 'px"' : "";
+    return '<div class="kchrom ghost"' + style + '><svg class="ideo" width="' + (W + pad * 2) + '" height="' + (H + pad * 2) +
       '"><rect x="' + pad + '" y="' + pad + '" width="' + W + '" height="' + H + '" rx="' + cap + '" ry="' + cap +
       '" fill="none" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 3"/></svg><div class="ksub muted">' + esc(label || "absent") + '</div></div>';
   }

@@ -376,3 +376,54 @@ test('drawInstance reports whether its centromere y came from a seam', () => {
   const normal14 = ISCN.parse('46,XX').clones[0].slots['14'][0];
   assert.equal(Karyo.drawInstance(normal14, ctx).cenSeam, false);
 });
+
+// ---- an absent autosomal homolog is drawn, a relocated one is not -----------
+// 45,X already shows a placeholder for the missing sex chromosome. An autosomal
+// monosomy showed nothing, so 45,XY,-21 drew a single normal-looking 21 and read as
+// "chromosome 21 is fine" — most visibly in the segregation panel's preview.
+//
+// The count alone cannot tell the two cases apart: a balanced rob(13;14) carrier ALSO
+// has one drawn 14, because 14q rides on the der. Nothing is missing there, so the
+// placeholder must follow the losses the karyotype states, never a copy-number deficit.
+const cellFor = (k, chrom, opts) => {
+  const c = ISCN.parse(k).clones[0];
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, c, Object.assign({ theme: 'simple', level: 1, affected: Karyo.computeAffected([c]) }, opts || {}));
+  const cells = cont.innerHTML.split('<div class="kcell');
+  return cells.find((s) => new RegExp('<div class="klabel">' + chrom + '</div>').test(s)) || '';
+};
+const ghosts = (cellHtml) => (cellHtml.match(/kchrom ghost/g) || []).length;
+
+test('an autosomal monosomy draws the absent homolog', () => {
+  const cell = cellFor('45,XY,-21', '21');
+  assert.equal(ghosts(cell), 1, 'one placeholder beside the remaining 21');
+  assert.match(cell, /missing/, 'labelled like the sex-chromosome placeholder');
+});
+test('each stated loss gets its own placeholder', () => {
+  assert.equal(ghosts(cellFor('44,XX,-2,-5', '2')), 1);
+  assert.equal(ghosts(cellFor('44,XX,-2,-5', '5')), 1);
+});
+test('a balanced Robertsonian carrier draws NO placeholder', () => {
+  // The single drawn 14 is not a loss: 14q is on the der(13;14).
+  assert.equal(ghosts(cellFor('45,XY,der(13;14)(q10;q10)', '14')), 0);
+  assert.equal(ghosts(cellFor('45,XY,rob(14;21)(q10;q10)', '21')), 0);
+  assert.equal(ghosts(cellFor('45,XY,der(13;14)(q10;q10)', '13')), 0);
+});
+test('a tertiary monosomy marks the absent partner, not the derivative', () => {
+  assert.equal(ghosts(cellFor('45,XY,der(2)t(2;5)(q21;q31),-5', '5')), 1, '5 is genuinely one short');
+  assert.equal(ghosts(cellFor('45,XY,der(2)t(2;5)(q21;q31),-5', '2')), 0, '2 carries the derivative');
+});
+test('a trisomy draws no placeholder', () => {
+  assert.equal(ghosts(cellFor('47,XX,+21', '21')), 0);
+});
+test('the affected-only view shows the absent autosomal homolog too', () => {
+  const cell = cellFor('45,XY,-21', '21', { only: ['21'] });
+  assert.equal(ghosts(cell), 1, 'consistent with the full karyogram');
+});
+test('the sex chromosomes keep their own placeholder path (no doubling)', () => {
+  // 45,X,-Y states a loss AND leaves a sex-chromosome gap; only one placeholder.
+  const c = ISCN.parse('45,X,-Y').clones[0];
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, c, { theme: 'simple', level: 1, affected: Karyo.computeAffected([c]) });
+  assert.equal((cont.innerHTML.match(/kchrom ghost/g) || []).length, 1, 'exactly one, from missingSexCells');
+});
