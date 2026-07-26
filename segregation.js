@@ -76,7 +76,7 @@
   }
   function trisomyViability(chrom) {
     return VIABLE_TRISOMY[chrom]
-      ? { tag: "viable", text: "Viable — translocation " + VIABLE_TRISOMY[chrom] }
+      ? { tag: "viable", text: "Viable: translocation " + VIABLE_TRISOMY[chrom] }
       : { tag: "lethal", text: "Usually lost in early pregnancy (trisomy " + chrom + ")" };
   }
   function monosomyViability(chrom) {
@@ -117,18 +117,18 @@
     function g(bodies, zygote, viability, label) {
       return { bodies: bodies, zygote: zygote, imbalance: imbalance(bodies), viability: viability, label: label };
     }
-    var recipUnbalanced = { tag: "unbalanced", text: "Unbalanced — whether it is liveborn depends on the size of the duplicated and deleted segments" };
+    var recipUnbalanced = { tag: "unbalanced", text: "Unbalanced: whether it is liveborn depends on the size of the duplicated and deleted segments" };
     // t(11;22)(q23;q11.2) is the recurrent reciprocal whose 3:1 +der(22) is liveborn.
     var isEmanuel = (A === "11" && B === "22") || (A === "22" && B === "11");
-    var emanuel = { tag: "viable", text: "Can be liveborn — the classic 3:1 outcome (supernumerary der(22), Emanuel syndrome)" };
-    var t31 = { tag: "unbalanced", text: "Unbalanced (3:1) — usually liveborn only when the extra derivative is small" };
+    var emanuel = { tag: "viable", text: "Can be liveborn: the classic 3:1 outcome (supernumerary der(22), Emanuel syndrome)" };
+    var t31 = { tag: "unbalanced", text: "Unbalanced (3:1): usually liveborn only when the extra derivative is small" };
 
     var modes = [
       { name: "Alternate", sub: "2:2", balanced: true,
         blurb: "Homologous and derivative centromeres go to opposite poles. The only mode that yields balanced gametes.",
         gametes: [
-          g(["A", "B"], "46," + sex, { tag: "viable", text: "Viable — chromosomally normal" }, "normal"),
-          g(["dA", "dB"], "46," + sex + "," + T, { tag: "viable", text: "Viable — balanced carrier, like the parent" }, "balanced carrier")
+          g(["A", "B"], "46," + sex, { tag: "viable", text: "Viable: chromosomally normal" }, "normal"),
+          g(["dA", "dB"], "46," + sex + "," + T, { tag: "viable", text: "Viable: balanced carrier, like the parent" }, "balanced carrier")
         ] },
       { name: "Adjacent-1", sub: "2:2", balanced: false,
         blurb: "Homologous centromeres separate; each gamete keeps one normal chromosome and the non-homologous derivative. Duplication of one exchanged segment, deletion of the other.",
@@ -186,8 +186,8 @@
       { name: "Alternate", sub: "2:1", balanced: true,
         blurb: "The fusion chromosome goes to one pole, the two normal homologues to the other. Both gametes are balanced.",
         gametes: [
-          g(["A", "B"], "46," + sex, "balanced", { tag: "viable", text: "Viable — chromosomally normal" }, "normal"),
-          g(["dF"], "45," + sex + "," + F, "balanced", { tag: "viable", text: "Viable — balanced carrier, like the parent" }, "balanced carrier")
+          g(["A", "B"], "46," + sex, "balanced", { tag: "viable", text: "Viable: chromosomally normal" }, "normal"),
+          g(["dF"], "45," + sex + "," + F, "balanced", { tag: "viable", text: "Viable: balanced carrier, like the parent" }, "balanced carrier")
         ] },
       { name: "Adjacent", sub: "2:1", balanced: false,
         blurb: "The fusion chromosome goes with one normal homologue, or a normal homologue goes alone. Each gamete is nullisomic or disomic for a whole long arm, giving a whole-chromosome trisomy or monosomy.",

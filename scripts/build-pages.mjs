@@ -62,7 +62,7 @@ function jsonLd(e) {
       '@id': url,
       url,
       name: pageTitle(e),
-      headline: `${e.name} — ${e.k}`,
+      headline: `${e.name}: ${e.k}`,
       description: pageDesc(e),
       inLanguage: 'en',
       isPartOf: { '@type': 'WebSite', name: 'KaryoDraw', url: SITE + '/' },
