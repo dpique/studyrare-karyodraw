@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-26 (the segregation panel's conceptus karyotypes are clickable)
+
+- **Every conceptus karyotype in the segregation panel loads in one click.** The panel already
+  enumerated the karyotypes related to what you typed: a `rob(13;14)` carrier lists
+  `46,XY,der(13;14)(q10;q10),+14` as its trisomy 14 product, and `rob(14;21)` lists
+  `46,XX,der(14;21)(q10;q10),+21` as translocation Down syndrome. Those were dead `<code>` text, so
+  reading the panel and then seeing the outcome meant retyping the karyotype by hand (and mistyping
+  it, which is how the parser bug above was found). They are buttons now, on the same `data-k`
+  contract as the example chips and the "did you mean" fix, so one delegated listener serves all
+  three. Clicking scrolls the drawing into view, since the panel sits well below it.
+
+- **The affordance is stated, not just styled.** A link underline alone was invisible at normal
+  viewing size, so the controls row above the modes now says so outright.
+
 ## 2026-07-26 (a dropped aberration no longer draws silently; Robertsonian and band help)
 
 Reported by a student preparing for the ABGC boards, who typed
