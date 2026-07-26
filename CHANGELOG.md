@@ -3,6 +3,14 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-26 (remove em dashes from user-facing text and SEO tags)
+
+- **Remove em dashes, per the house style.** Replaced the em dash in the homepage `og:title` and
+  `twitter:title`, the per-page JSON-LD `headline` ("Name: 46,XX" not "Name — 46,XX"), and the
+  user-facing decode and segregation-outcome text (`teach.js`, `segregation.js`) with colons or
+  periods. The homepage meta description was already em-dash-free (fixed earlier); Google was showing
+  a stale cached snippet.
+
 ## 2026-07-22 (feedback: drop the debug notice; align and tidy the result columns)
 
 - **Remove the "Most-studied karyotypes" card.** It was a third way to pick a karyotype (after the

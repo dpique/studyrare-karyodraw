@@ -112,7 +112,7 @@
     var k = ab.kind, c = ab.chroms[0], bp = ab.breakpoints, mult = ab.multiplier || 1;
     if (k === "idem") {
       var refName = ab.ref === "sdl" ? "the sideline (the clone before it)" : "the stemline (the first clone)";
-      return { text: "the SAME changes as " + refName + " — this subclone carries all of them, plus whatever is listed next (clonal evolution)", tag: "count" };
+      return { text: "the SAME changes as " + refName + ". This subclone carries all of them, plus whatever is listed next (clonal evolution)", tag: "count" };
     }
     if (k === "hsr") return { text: "a HOMOGENEOUSLY STAINING REGION on chromosome " + c + " at " + c + ((bp[0] || [])[0] || "?") + ": a block of amplified DNA (many extra copies of a gene, e.g. an oncogene) built into the chromosome", tag: "add" };
     if (k === "dmin") return { text: "DOUBLE MINUTES: small extra circles of amplified DNA floating outside the chromosomes (acentric, so not counted in the chromosome number). A hallmark of oncogene amplification", tag: "add" };
@@ -162,7 +162,7 @@
         var cycle = chroms.join("→") + "→" + chroms[0];   // e.g. 2→7→5→2
         return { text: "a " + (n === 3 ? "three-way" : nWord + "-way") + " TRANSLOCATION: chromosomes " + listJoin(chroms) +
           " each break (at " + listJoin(breaks) + ") and hand the piece beyond the break to the next chromosome in the list, wrapping around at the end (" +
-          cycle + "). The result is " + listJoin(ders) + " — each keeps its own centromere plus a segment from the chromosome before it.", tag: "t" };
+          cycle + "). The result is " + listJoin(ders) + ". Each keeps its own centromere plus a segment from the chromosome before it.", tag: "t" };
       }
       return { text: "a reciprocal TRANSLOCATION: chromosomes " + listJoin(chroms) + " break (at " + listJoin(breaks) +
         ") and swap the pieces beyond those breaks, giving two derivative chromosomes " + listJoin(ders), tag: "t" };
