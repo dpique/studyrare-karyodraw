@@ -750,8 +750,13 @@
     window.speechSynthesis.speak(u);
   }
 
+  // The karyotype drawn on a bare visit, and the one Back returns to if the viewer
+  // navigates past their first jump. Matches the Philadelphia example chip.
+  var DEMO_K = "46,XY,t(9;22)(q34;q11.2)";
+
   var EXAMPLES = [
-    ["47,XX,+21", "Down"],
+    ["45,XY,rob(14;21)(q10;q10)", "balanced carrier"],
+    ["46,XY,rob(14;21)(q10;q10),+21", "unbalanced: translocation Down"],
     ["46,XY,t(9;22)(q34;q11.2)", "Philadelphia / CML"],
     ["46,XY,del(5)(p15.2)", "cri-du-chat"],
     ["46,XY,inv(9)(p11q13)", "inv 9 variant"],
@@ -759,6 +764,17 @@
     ["46,XX,del(22)(q11.2)", "DiGeorge"],
     ["mos 45,X[12]/46,XX[18]", "Turner mosaic"]
   ];
+
+  // Jumping to another karyotype: an example chip, a "did you mean" fix, a conceptus
+  // in the segregation panel. One path for all three, so they behave identically and
+  // each gets its own history entry.
+  function loadKaryotype(k) {
+    if (k == null) return;
+    leaveTourIfActive();
+    input.value = k;
+    run.pushNext = true;
+    run();
+  }
 
   function buildExamples() {
     var box = $("#examples");
@@ -768,8 +784,7 @@
     }).join("");
     box.addEventListener("click", function (ev) {
       var c = ev.target.closest(".chip"); if (!c) return;
-      leaveTourIfActive();
-      input.value = c.getAttribute("data-k"); run();
+      loadKaryotype(c.getAttribute("data-k"));
     });
   }
 
@@ -1118,7 +1133,8 @@
     if (model.normalized && model.normalized !== val) { val = model.normalized; input.value = val; }
     // Skip the URL rewrite on the auto-loaded demo so a bare visit keeps a clean
     // landing URL; the first real interaction (type, toggle, pick an example) writes it.
-    if (run.skipHashOnce) { run.skipHashOnce = false; } else { setHash(val); }
+    var push = run.pushNext; run.pushNext = false;
+    if (run.skipHashOnce) { run.skipHashOnce = false; } else { setHash(val, push); }
     var bad = invalidBands(model);
     // Per-band advice up to a few; past that the list would crowd out everything
     // else in the warning box, so fall back to naming them together.
@@ -1234,12 +1250,26 @@
       .replace(/%2C/g, ",").replace(/%3B/g, ";").replace(/%2F/g, "/")
       .replace(/%5B/g, "[").replace(/%5D/g, "]");
   }
-  function setHash(val) {
+  // push=true gives this view its own history entry, so Back returns to the previous
+  // karyotype. Reserved for discrete jumps (see loadKaryotype); typing and the
+  // Style/Bands/Show toggles replace instead, or one keystroke per entry would fill
+  // history with half-typed karyotypes and make Back useless.
+  function setHash(val, push) {
     try {
       var k = (val != null ? String(val) : input.value).trim();
-      history.replaceState(null, "", "?k=" + prettyEncode(k) +
-        "&style=" + STYLE_TO_URL[MODE] + "&bands=" + BANDS_TO_URL[LEVEL] + "&show=" + SHOW);
+      var url = "?k=" + prettyEncode(k) +
+        "&style=" + STYLE_TO_URL[MODE] + "&bands=" + BANDS_TO_URL[LEVEL] + "&show=" + SHOW;
+      history[push ? "pushState" : "replaceState"](null, "", url);
     } catch (e) {}
+  }
+
+  // The view options carried in the URL. Shared by first load and by popstate, so
+  // going Back restores the whole view and not just the karyotype.
+  function applyUrlView() {
+    var pStyle = getParam("style"); if (pStyle && URL_TO_STYLE[pStyle]) MODE = URL_TO_STYLE[pStyle];
+    var pBands = getParam("bands"); if (pBands !== null && pBands in URL_TO_BANDS) LEVEL = URL_TO_BANDS[pBands];
+    var pShow = getParam("show"); if (pShow === "all" || pShow === "affected") SHOW = pShow;
+    syncSeg();
   }
   function getParam(name) {
     var m = new RegExp("[?&]" + name + "=([^&]+)").exec(location.search);
@@ -1459,8 +1489,7 @@
   }
   $("#warnings").addEventListener("click", function (e) {
     var b = e.target.closest ? e.target.closest(".dym") : null; if (!b) return;
-    leaveTourIfActive();
-    input.value = b.getAttribute("data-k"); run();
+    loadKaryotype(b.getAttribute("data-k"));
   });
   // A conceptus karyotype in the segregation panel loads that karyotype. Unlike the
   // example chips and the fix button, the panel sits well below the drawing, so a
@@ -1468,12 +1497,19 @@
   // result into view. Same data-k contract as the other two.
   $("#segregation").addEventListener("click", function (e) {
     var b = e.target.closest ? e.target.closest(".seg-kt") : null; if (!b) return;
-    leaveTourIfActive();
-    input.value = b.getAttribute("data-k"); run();
+    loadKaryotype(b.getAttribute("data-k"));
     // #summary, not #karyo: it leads the same card and states the karyotype just
     // loaded, so the reader lands on the label and the drawing together.
     var top = $("#summary") || $("#karyo");
     if (top && top.scrollIntoView) top.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  // Without this, Back would change the URL while the page kept showing the old
+  // drawing. skipHashOnce stops run() from rewriting the entry we just moved to.
+  window.addEventListener("popstate", function () {
+    applyUrlView();
+    input.value = getParam("k") || DEMO_K;
+    run.skipHashOnce = true;
+    run();
   });
   $("#speakbtn").addEventListener("click", speakKaryotype);
 
@@ -1566,12 +1602,9 @@
     });
   })();
 
-  var pStyle = getParam("style"); if (pStyle && URL_TO_STYLE[pStyle]) MODE = URL_TO_STYLE[pStyle];
-  var pBands = getParam("bands"); if (pBands !== null && pBands in URL_TO_BANDS) LEVEL = URL_TO_BANDS[pBands];
-  var pShow = getParam("show"); if (pShow === "all" || pShow === "affected") SHOW = pShow;
-  syncSeg();
+  applyUrlView();
   var hasK = getParam("k") != null;
-  var initial = getParam("k") || "46,XY,t(9;22)(q34;q11.2)";
+  var initial = getParam("k") || DEMO_K;
   input.value = initial;
   // If this deep-linked karyotype has a dedicated landing page, point the canonical
   // there so ?k= views consolidate onto one URL for search engines.

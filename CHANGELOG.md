@@ -3,6 +3,25 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-26 (Back returns to the previous karyotype; balanced/unbalanced examples)
+
+- **Back works (bug).** Every view was written with `history.replaceState`, so the app never added a
+  history entry and Back left the site entirely — from the segregation panel that meant landing on an
+  empty tab. Discrete jumps (an example chip, a "did you mean" fix, a conceptus karyotype) now push
+  their own entry, and a `popstate` handler re-renders from the URL, so Back and Forward walk the
+  karyotypes you visited. Typing still replaces, or one keystroke per entry would fill history with
+  half-typed karyotypes; verified that typing adds zero entries.
+
+- **One path for every jump.** The chip, fix-button, and conceptus handlers each did their own
+  `input.value = ...; run();`. They now share `loadKaryotype()`, so they cannot drift, and the
+  demo karyotype is a named constant instead of a string repeated in two places.
+
+- **Balanced and unbalanced translocation examples.** Replaced the free-trisomy Down chip with a
+  pair that reads as one family: `45,XY,rob(14;21)(q10;q10)` (balanced carrier) and
+  `46,XY,rob(14;21)(q10;q10),+21` (unbalanced: translocation Down). The carrier notation matches
+  `content/karyotypes.js`, so its canonical landing page still resolves. Trisomy 21 remains in the
+  Common karyotypes catalog and on its own page.
+
 ## 2026-07-26 (whole-arm derivatives sit on the row baseline in the full karyogram)
 
 - **A Robertsonian or isochromosome cell no longer breaks its row (bug).** A whole-arm derivative
