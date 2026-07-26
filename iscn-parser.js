@@ -92,6 +92,23 @@
     return { tok: tok.slice(0, m.index), mult: Math.min(n, MAX_COPIES), capped: n > MAX_COPIES };
   }
 
+  // Chromosomes with a satellited short arm carrying only rDNA repeats. A q10;q10
+  // fusion between two of these is a Robertsonian translocation, which is spelled
+  // rob()/der() rather than t() because it replaces both chromosomes with one.
+  var ACROCENTRIC = { "13": 1, "14": 1, "15": 1, "21": 1, "22": 1 };
+
+  // Text an operation did not consume. Most often it is the next aberration with
+  // its comma missing (the sign case, which is fully diagnosable); otherwise it is
+  // something outside the model, such as an "or" alternative.
+  function leftoverWarning(raw, leftover) {
+    if (/^[+\-−–](\d+|X|Y)$/.test(leftover)) {
+      return "“" + leftover + "” in “" + raw + "” was not read. Each aberration is a separate item, so it needs a comma before it: “" +
+        raw.replace(leftover, "," + leftover) + "”.";
+    }
+    return "Only the first part of “" + raw + "” was read; “" + leftover +
+      "” wasn’t understood (alternatives with “or” and uncertainty markers aren’t supported).";
+  }
+
   function parseAberration(tok, warnings) {
     var raw = tok;
     var ab = { raw: raw, kind: "unknown", sign: null, chroms: [], breakpoints: [], note: "", qualifier: null, multiplier: 1, ref: null };
@@ -166,7 +183,15 @@
       case "del": ab.kind = "del"; break;
       case "dup": ab.kind = "dup"; break;
       case "inv": ab.kind = "inv"; break;
-      case "t": ab.kind = "t"; break;
+      case "t":
+        ab.kind = "t";
+        // Flagged for parse(), which offers the rob() spelling when the stated
+        // count also says the writer meant a Robertsonian.
+        ab.wholeArmAcro = ab.chroms.length === 2 &&
+          ab.chroms.every(function (c) { return ACROCENTRIC[c]; }) &&
+          ab.breakpoints.length === 2 &&
+          ab.breakpoints.every(function (g) { return g.length === 1 && /^[pq]10$/.test(g[0]); });
+        break;
       case "ins": ab.kind = "ins"; break;
       case "i": ab.kind = "iso"; break;
       case "r": ab.kind = "ring"; break;
@@ -186,16 +211,23 @@
         // der(N) may be followed by t(...)/del(...) sub-ops describing its make-up.
         if (rest) {
           ab.note = "der(" + ab.chroms.join(";") + ")" + rest;
-          var sub = [];
+          var sub = [], cursor = 0, unread = "";
           var subRe = /([a-zA-Z]+)\(([^)]*)\)(?:\(([^)]*)\))?/g, sm;
           while ((sm = subRe.exec(rest)) !== null) {
+            unread += rest.slice(cursor, sm.index);
+            cursor = sm.index + sm[0].length;
             sub.push({
               op: sm[1].toLowerCase(),
               chroms: splitTop(sm[2], ";").map(function (x) { return x.trim(); }),
               breakpoints: splitTop(sm[3] || "", ";").map(function (p) { return splitBands(p.trim()); })
             });
           }
+          unread += rest.slice(cursor);
           ab.subOps = sub;
+          // Only op(...) groups are sub-ops. Anything else here was dropped, and a
+          // dropped "+14" is worse than a rejection: the drawing looks authoritative
+          // and is missing a chromosome. Say so rather than absorbing it.
+          if (unread.trim()) { ab.unread = unread.trim(); warnings.push(leftoverWarning(raw, ab.unread)); }
         }
         break;
       default:
@@ -206,7 +238,8 @@
     // alternative, an uncertainty marker, a trailing qualifier) is not modeled,
     // so warn instead of dropping it silently.
     if (ab.kind !== "der" && ab.kind !== "unknown" && rest && rest.trim()) {
-      warnings.push("Only the first part of “" + raw + "” was read; “" + rest.trim() + "” wasn’t understood (alternatives with “or” and uncertainty markers aren’t supported).");
+      ab.unread = rest.trim();
+      warnings.push(leftoverWarning(raw, ab.unread));
     }
     return finish(ab);
   }
@@ -374,7 +407,12 @@
       actual: actual,
       ok: clone.modalNumber == null || clone.modalNumber === actual || inRange
     };
-    if (!clone.counts.ok && clone.sex.tokens.length > 0 && !clone.incomplete) {
+    // Do not argue about the count when part of the designation went unread: the
+    // stated number is probably right and our tally is the thing that is short.
+    // "Says 46 but describes 45" reads as a claim about the karyotype, and sends
+    // people looking for an imbalance that is not there.
+    var unread = clone.aberrations.some(function (ab) { return ab.unread; });
+    if (!clone.counts.ok && clone.sex.tokens.length > 0 && !clone.incomplete && !unread) {
       var want = clone.modalHigh != null ? (clone.modalNumber + "–" + clone.modalHigh) : String(clone.modalNumber);
       warnings.push("The number at the start says " + want + ", but this karyotype describes " + actual + " chromosomes.");
     }
@@ -507,6 +545,18 @@
       warnings.push("Add a comma after the chromosome count, the count comes first, then the sex chromosomes, e.g. 46,XY.");
       suggestion = suggestion.replace(/^(\d+)([XYxy]{1,4})/, function (m, a, b) { return a + "," + b.toUpperCase(); });
     }
+    // A sign is only ever the first character of an aberration (+21, -X, +der(1)),
+    // so a sign sitting right after a closing parenthesis means the comma between
+    // two aberrations was left out: der(13;14)(q10;q10)+14. Anchoring on the ")"
+    // is what makes this safe. A general "sign after a digit" rule would also hit
+    // the modal-number range in 45-48,XY and the marker count in 1~3mar, turning
+    // "45-48" into "45,-48" (45 chromosomes, minus a chromosome 48) — a repair
+    // that reads as valid, so nothing downstream would catch it. No legal
+    // designation puts a sign directly after ")", which leaves no such ambiguity.
+    // No warning pushed here: the aberration that owns the fragment reports it by
+    // name (leftoverWarning), which is more use than a second general note.
+    suggestion = suggestion.replace(/\)\s*([+\-−–])/g, "),$1");
+
     var depth = 0, inner = false, fixed = "";
     for (var i = 0; i < suggestion.length; i++) {
       var ch = suggestion[i];
@@ -551,7 +601,23 @@
     if (!result.suggestion && result.clones.length === 1) {
       var cl0 = result.clones[0];
       if (cl0.modalNumber != null && cl0.counts && !cl0.counts.ok && cl0.counts.actual != null) {
-        result.countFix = raw.replace(/\d+/, String(cl0.counts.actual));
+        // A whole-arm acrocentric fusion written as t() keeps both derivative
+        // chromosomes, so the count stays 46 while the stated count says 45. The
+        // count is not the mistake, the operation is: fix the spelling, since
+        // bumping the count to 46 would silently endorse the wrong picture.
+        var robAb = null;
+        if (cl0.counts.actual === cl0.modalNumber + 1) {
+          robAb = cl0.aberrations.filter(function (a) { return a.wholeArmAcro; })[0] || null;
+        }
+        if (robAb) {
+          result.countFix = (result.normalized || raw).replace(robAb.raw, robAb.raw.replace(/^t\(/i, "rob("));
+          warnings.push("A whole-arm fusion of two acrocentric chromosomes at q10 is a Robertsonian translocation, written rob(" +
+            robAb.chroms.join(";") + ")(q10;q10) or der(" + robAb.chroms.join(";") +
+            ")(q10;q10). It replaces both chromosomes with one, which is the count of " + cl0.modalNumber +
+            " you wrote. Written as t(…), both derivative chromosomes are kept and the count stays " + cl0.counts.actual + ".");
+        } else {
+          result.countFix = raw.replace(/\d+/, String(cl0.counts.actual));
+        }
       }
     }
 

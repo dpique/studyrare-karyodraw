@@ -3,6 +3,39 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-26 (a dropped aberration no longer draws silently; Robertsonian and band help)
+
+Reported by a student preparing for the ABGC boards, who typed
+`45,XY,der(13;14)(q10;q10) +14` and got the plain Robertsonian carrier back with no warning at all.
+
+- **Never drop a fragment silently (bug).** `der()` accepts trailing sub-ops (`der(9)t(9;22)(q34;q11.2)`),
+  and anything in that position that was not a sub-op used to be discarded without a word, so a
+  trailing `+14` vanished and the drawing looked authoritative while missing a chromosome. The der
+  branch now tracks what its sub-op scan consumed and reports the remainder by name.
+
+- **Repair a missing comma before a sign.** `der(13;14)(q10;q10)+14` and `t(14;21)(q10;q10)+21` now
+  offer `…),+14` / `…),+21` as a one-click fix. A sign is only ever the first character of an
+  aberration, so a sign directly after `)` is unambiguous; the rule is anchored on the `)` so modal
+  ranges (`45-48,XY`) and marker counts (`1~3mar`) are untouched.
+
+- **Say what is actually wrong.** A missing-comma fragment used to be blamed on "alternatives with
+  'or' and uncertainty markers", which was never the problem. That note is now reserved for
+  fragments it fits.
+
+- **Stop arguing about the count when part of the input went unread.** "Says 46 but describes 45" was
+  a consequence of the dropped `+14`, and it sent the reader looking for an imbalance that was not
+  there. Suppressed when any aberration has unread text.
+
+- **Offer `rob()` for a whole-arm acrocentric fusion written as `t()`.** `45,XX,t(13;15)(q10;q10)` is
+  the classic error: a `t` keeps both derivatives, so the count stays 46. Instead of bumping the
+  stated count to 46 (which endorsed the wrong picture), the fix now corrects the operation to
+  `rob(13;15)(q10;q10)` and explains the difference.
+
+- **Make an invalid breakpoint fixable without leaving the page.** An unreal band holds back the whole
+  drawing, so the message now carries how far the arm actually runs and the closest band that does
+  exist: "Xp31 isn't a real band on chromosome X. Xp ends at Xp22.33." New `Karyo.armExtent` and
+  `Karyo.nearestBand`.
+
 ## 2026-07-26 (remove em dashes from user-facing text and SEO tags)
 
 - **Remove em dashes, per the house style.** Replaced the em dash in the homepage `og:title` and

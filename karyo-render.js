@@ -130,6 +130,42 @@
     var end = Math.max.apply(null, cands.map(function (b) { return b[2]; }));
     return { start: start, end: end, mid: (start + end) / 2, arm: name[0] };
   }
+  // ----- help for a breakpoint that does not exist ---------------------------
+  // A band name sorts by its digits, not as text: p22.33 is further out than p21,
+  // and "22.33" > "21" only if the region+band digits are read as one number and
+  // the sub-bands as its decimals. Returns null for anything but a band name.
+  function bandValue(name) {
+    var m = /^[pq](\d+)(?:\.(\d+))?$/.exec(String(name || ""));
+    if (!m) return null;
+    return parseFloat(m[1] + "." + (m[2] || "0"));
+  }
+  // First and last real band on an arm, so a message can say how far it goes.
+  function armExtent(chrom, arm) {
+    var d = IDEO.data[chrom];
+    if (!d || (arm !== "p" && arm !== "q")) return null;
+    var on = d.bands.filter(function (b) { return b[0][0] === arm && bandValue(b[0]) != null; });
+    if (!on.length) return null;
+    on.sort(function (a, b) { return bandValue(a[0]) - bandValue(b[0]); });
+    return { first: on[0][0], last: on[on.length - 1][0] };
+  }
+  // The closest real band to one that does not exist, staying on the arm asked
+  // for. Null when the band already resolves, so callers cannot suggest a
+  // "correction" to something that was never wrong.
+  function nearestBand(chrom, name) {
+    if (resolveBand(chrom, name)) return null;
+    var d = IDEO.data[chrom], want = bandValue(name);
+    if (!d || want == null) return null;
+    var arm = String(name)[0], best = null, bestGap = Infinity;
+    d.bands.forEach(function (b) {
+      if (b[0][0] !== arm) return;
+      var v = bandValue(b[0]);
+      if (v == null) return;
+      var gap = Math.abs(v - want);
+      if (gap < bestGap) { bestGap = gap; best = b[0]; }
+    });
+    return best;
+  }
+
   function splitAtBreak(chrom, band) {
     var d = IDEO.data[chrom];
     var r = resolveBand(chrom, band);
@@ -990,6 +1026,7 @@
   window.Karyo = {
     render: render, drawInstance: drawInstance, drawDetail: drawDetail, buildInstance: buildInstance,
     computeAffected: computeAffected, resolveBand: resolveBand, getBands: getBands,
+    armExtent: armExtent, nearestBand: nearestBand,
     STAIN: STAIN, OP_COLORS: OP_COLORS, AFFECTED_PALETTE: AFFECTED_PALETTE, tintRamp: tintRamp, BASELINE: BASELINE
   };
 })();

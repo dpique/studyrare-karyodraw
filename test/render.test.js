@@ -293,3 +293,28 @@ test('the affected view shows no missing homolog when there is no monosomy', () 
   assert.doesNotMatch(affKaryogram('47,XXX'), /missing/, '47,XXX has three X, none missing');
   assert.doesNotMatch(affKaryogram('46,X,i(X)(q10)'), /missing/, 'X + i(X) is two sex chromosomes');
 });
+
+// ---- nearest real band (for the invalid-breakpoint message) -----------------
+// A breakpoint that does not exist (Xp31, 5p21, both from a real practice exam)
+// suppresses the drawing, so the message has to be enough to fix the karyotype
+// on its own: how far the arm actually goes, plus the closest real band.
+test('armExtent reports the real span of an arm', () => {
+  assert.equal(Karyo.armExtent('X', 'p').first, 'p11.1');
+  assert.equal(Karyo.armExtent('X', 'p').last, 'p22.33');
+  assert.equal(Karyo.armExtent('5', 'p').first, 'p11');
+  assert.equal(Karyo.armExtent('5', 'p').last, 'p15.33');
+  assert.equal(Karyo.armExtent('9', 'z'), null);
+});
+test('nearestBand finds the closest real band on the same arm', () => {
+  assert.equal(Karyo.nearestBand('X', 'p31'), 'p22.33');
+  assert.equal(Karyo.nearestBand('5', 'p21'), 'p15.33');
+  assert.equal(Karyo.nearestBand('12', 'q32'), 'q24.33');
+});
+test('nearestBand stays on the arm it was given', () => {
+  assert.match(Karyo.nearestBand('X', 'q99'), /^q/);
+  assert.match(Karyo.nearestBand('X', 'p99'), /^p/);
+});
+test('nearestBand returns null for a band that is already real', () => {
+  assert.equal(Karyo.nearestBand('X', 'p22.31'), null);
+  assert.equal(Karyo.nearestBand('9', 'q34'), null);
+});

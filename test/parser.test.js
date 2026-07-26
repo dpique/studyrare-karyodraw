@@ -430,3 +430,61 @@ test('a complete karyotype is untouched (no bare-aberration suggestion)', () => 
   assert.equal(ISCN.parse('46,XX,t(2;5)(q21;q31)').suggestion, null);
   assert.equal(ISCN.parse('46,XY').suggestion, null);
 });
+
+// ---- a trailing aberration that is missing its comma ------------------------
+// Reported by a student: "45,XY,der(13;14)(q10;q10) +14" drew the plain
+// Robertsonian carrier with no warning at all, because der() accepts trailing
+// sub-ops (der(9)t(9;22)…) and anything that was not a sub-op was dropped on the
+// floor. A silently ignored +14 is worse than a rejection: the drawing looks
+// authoritative and is wrong.
+test('a trailing +14 after a der is never dropped silently', () => {
+  const m = ISCN.parse('45,XY,der(13;14)(q10;q10) +14');
+  assert.ok(m.warnings.length, 'the ignored +14 is reported');
+  assert.ok(m.warnings.some((w) => /\+14/.test(w)), 'the warning names the fragment');
+});
+test('a sign after a closing parenthesis is repaired with a comma', () => {
+  assert.equal(ISCN.parse('46,XY,der(13;14)(q10;q10)+14').suggestion, '46,XY,der(13;14)(q10;q10),+14');
+  assert.equal(ISCN.parse('46,XY,der(13;14)(q10;q10) +14').suggestion, '46,XY,der(13;14)(q10;q10),+14');
+  assert.equal(ISCN.parse('46,XX,t(14;21)(q10;q10)+21').suggestion, '46,XX,t(14;21)(q10;q10),+21');
+});
+test('the comma repair leaves a modal-number range alone', () => {
+  assert.equal(ISCN.parse('45-48,XY,+8').suggestion, null);
+  assert.equal(ISCN.parse('45~48,XY,+8').suggestion, null);
+  assert.equal(ISCN.parse('46,XX,1~3mar').suggestion, null);
+});
+test('a missing-comma sign gets a comma hint, not the "or"/uncertainty note', () => {
+  const w = ISCN.parse('46,XX,t(14;21)(q10;q10)+21').warnings.join(' ');
+  assert.match(w, /comma/, 'says what is actually wrong');
+  assert.doesNotMatch(w, /uncertainty/, 'no irrelevant "or"/uncertainty boilerplate');
+});
+test('genuine unreadable trailing text still gets the "only the first part" note', () => {
+  const w = ISCN.parse('46,XY,t(9;22)(q34;q11.2)ort(1;2)(p10;q10)').warnings.join(' ');
+  assert.match(w, /Only the first part/);
+});
+test('a legitimate der sub-op chain warns about nothing', () => {
+  assert.equal(ISCN.parse('46,XX,der(9)t(9;22)(q34;q11.2)').warnings.length, 0);
+  assert.equal(ISCN.parse('46,X,der(X)t(X;5)(p22.1;p13)').warnings.length, 0);
+});
+
+// ---- a whole-arm acrocentric fusion written as t(...) -----------------------
+// The classic teaching error, and the one in the student's practice exam:
+// "45,XX,t(13;15)(q10;q10)". A t keeps both derivatives, so the count stays 46;
+// the 45 count means a Robertsonian was intended. Offering the rob form teaches
+// the distinction, where bumping the stated count to 46 would bury it.
+test('t(13;15)(q10;q10) at a 45 count suggests the rob form', () => {
+  const m = ISCN.parse('45,XX,t(13;15)(q10;q10)');
+  assert.equal(m.countFix, '45,XX,rob(13;15)(q10;q10)');
+  assert.ok(m.warnings.some((w) => /Robertsonian/.test(w)), 'explains why');
+});
+test('a whole-arm t at a consistent count is left alone', () => {
+  const m = ISCN.parse('46,XX,t(13;15)(q10;q10)');
+  assert.equal(m.countFix, null);
+  assert.equal(m.warnings.length, 0);
+});
+test('a non-acrocentric whole-arm t is not called Robertsonian', () => {
+  const m = ISCN.parse('45,XY,t(1;3)(p10;q10)');
+  assert.ok(!/Robertsonian/.test(m.warnings.join(' ')), '1 and 3 are not acrocentric');
+});
+test('an ordinary translocation with a wrong count still gets the count fix', () => {
+  assert.equal(ISCN.parse('45,XX,t(9;22)(q34;q11.2)').countFix, '46,XX,t(9;22)(q34;q11.2)');
+});
