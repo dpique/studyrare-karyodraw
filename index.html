@@ -1064,7 +1064,7 @@
       (bands || []).forEach(function (band) {
         if (!chrom || !band || window.Karyo.resolveBand(chrom, band)) return;
         var key = chrom + band;
-        if (!seen[key]) { seen[key] = 1; bad.push(key); }
+        if (!seen[key]) { seen[key] = 1; bad.push({ label: key, chrom: chrom, band: band }); }
       });
     }
     (model.clones || []).forEach(function (clone) {
@@ -1076,6 +1076,24 @@
       });
     });
     return bad;
+  }
+
+  // An invalid breakpoint holds the whole drawing back (the renderer would drop it
+  // and draw a normal-looking chromosome), so the message has to carry enough to
+  // repair the karyotype without leaving the page: how far that arm actually runs,
+  // and the closest band that does exist.
+  function bandAdvice(b) {
+    var arm = String(b.band)[0];
+    var ext = window.Karyo.armExtent(b.chrom, arm);
+    var near = window.Karyo.nearestBand(b.chrom, b.band);
+    var msg = "“" + b.label + "” isn’t a real band on chromosome " + b.chrom + ".";
+    if (ext && near === ext.last) return msg + " " + b.chrom + arm + " ends at " + b.chrom + ext.last + ".";
+    if (ext && near) {
+      return msg + " " + b.chrom + arm + " runs from " + b.chrom + ext.first + " to " + b.chrom + ext.last +
+        ", and the closest real band is " + b.chrom + near + ".";
+    }
+    if (near) return msg + " Did you mean " + b.chrom + near + "?";
+    return msg + " Check it against the band map.";
   }
 
   // ---- run ------------------------------------------------------------------
@@ -1090,10 +1108,13 @@
     // landing URL; the first real interaction (type, toggle, pick an example) writes it.
     if (run.skipHashOnce) { run.skipHashOnce = false; } else { setHash(val); }
     var bad = invalidBands(model);
-    if (bad.length) {
-      model.warnings.push(bad.length === 1
-        ? "“" + bad[0] + "” isn’t a real band on that chromosome. Check the coordinate against the band map."
-        : "These aren’t real bands: " + bad.join(", ") + ". Check them against the band map.");
+    // Per-band advice up to a few; past that the list would crowd out everything
+    // else in the warning box, so fall back to naming them together.
+    if (bad.length && bad.length <= 3) {
+      bad.forEach(function (b) { model.warnings.push(bandAdvice(b)); });
+    } else if (bad.length) {
+      model.warnings.push("These aren’t real bands: " +
+        bad.map(function (b) { return b.label; }).join(", ") + ". Check them against the band map.");
     }
     AFFECTED = window.Karyo.computeAffected(model.clones);
     spokenText = (model.isMosaic ? "Mosaic. " : "") + model.clones.map(function (c) { return window.Teach.pronounce(c); }).filter(Boolean).join(". Next clone. ");
@@ -1184,7 +1205,8 @@
       parts.push('<div class="dym-row">Did you mean <button class="dym" data-k="' + escXml(fix) + '">' + escapeHtml(fix) + '</button>?</div>');
     }
     if (w.length) {
-      parts.push('<div class="warn-title">' + (fix ? "A couple of things to check:" : "Let’s sort this out:") + '</div>');
+      parts.push('<div class="warn-title">' +
+        (fix ? (w.length === 1 ? "One thing to check:" : "A couple of things to check:") : "Let’s sort this out:") + '</div>');
       parts.push('<ul>' + w.map(function (x) { return "<li>" + escapeHtml(x) + "</li>"; }).join("") + '</ul>');
     }
     parts.push('</div>');
