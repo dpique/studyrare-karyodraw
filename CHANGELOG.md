@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-26 (an absent autosomal homolog is drawn)
+
+- **An autosomal monosomy shows the gap (bug).** `45,X` has always drawn a placeholder for the
+  missing sex chromosome, but an autosomal loss drew nothing, so `45,XY,-21` showed a single
+  normal-looking 21 and read as "chromosome 21 is fine". Most visible in the segregation panel's new
+  preview, where the monosomy outcomes looked unremarkable.
+
+  The placeholder follows the losses the karyotype **states**, never a copy-number deficit. The two
+  are indistinguishable by count: a balanced `rob(13;14)` carrier also has a single drawn 14, but
+  there 14q rides on the derivative and nothing is missing, so a placeholder would misstate it.
+  Tests pin both directions, including the tertiary monosomy `45,XY,der(2)t(2;5)(q21;q31),-5`, which
+  marks 5 and not the derivative-carrying 2. Sex chromosomes keep their existing path, so
+  `45,X,-Y` still draws exactly one placeholder.
+
 ## 2026-07-26 (preview a conceptus karyotype without leaving the panel)
 
 - **Hover or focus a conceptus karyotype to see it drawn.** Six outcomes in the segregation panel
