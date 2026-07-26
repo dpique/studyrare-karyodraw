@@ -3,6 +3,23 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-26 (preview a conceptus karyotype without leaving the panel)
+
+- **Hover or focus a conceptus karyotype to see it drawn.** Six outcomes in the segregation panel
+  differ from one another in two or three chromosomes, and comparing them meant clicking away and
+  back. The preview shows the affected-only view, so it draws just what changed: for
+  `46,XY,der(14;21)(q10;q10),+21` that is chromosomes 14 and 21, not a whole karyogram.
+
+  Opens on keyboard focus as well as hover, so it is not mouse-only; hover itself is gated on
+  `(hover: hover)` so it never fires from a touch. `pointer-events: none` keeps it from ever sitting
+  between the pointer and the button, Escape dismisses it, and scrolling or resizing hides it rather
+  than leaving it pinned to a stale position. Nothing is available only through the preview: clicking
+  still draws and decodes the outcome in full.
+
+- **A chromosomally normal outcome gets no preview.** `46,XY` from alternate segregation has nothing
+  to isolate, and twenty-four normal chromosomes in a popover would add nothing to the row's own
+  "normal" label.
+
 ## 2026-07-26 (Back returns to the previous karyotype; balanced/unbalanced examples)
 
 - **Back works (bug).** Every view was written with `history.replaceState`, so the app never added a
