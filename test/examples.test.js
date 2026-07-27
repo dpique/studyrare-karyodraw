@@ -72,9 +72,50 @@ test('examples are unique', () => {
 });
 
 test('the trimmed row keeps every example reachable', () => {
-  // Showing a subset is only acceptable because Shuffle deals the rest. Without it,
-  // trimming the row would silently delete examples.
-  assert.ok(EXAMPLES_SHOWN < EXAMPLES.length, 'a subset is shown, so shuffling must be possible');
-  assert.match(html, /id="ex-shuffle"/, 'the shuffle control exists');
+  // Showing a subset is only acceptable because the deck is re-dealt on every page
+  // load. Without that, trimming the row would silently delete examples.
+  assert.ok(EXAMPLES_SHOWN < EXAMPLES.length, 'a subset is shown, so re-dealing must happen');
   assert.match(html, /function dealExamples/, 'the deal-without-repeats helper exists');
+  assert.match(html, /sessionStorage/, 'the deck survives a reload so refreshing walks the list');
+});
+
+test('dealing walks the whole list across reloads without repeating', () => {
+  // The reason for a deck rather than picking N at random each load: independent
+  // sampling would show the same two or three by chance and bury the rest. Run the
+  // real dealExamples against a sessionStorage stub, one call per simulated reload.
+  const src = html.match(/var DECK_KEY = [\s\S]*?\n  }\n\n  function paintExamples/)[0]
+    .replace(/\n\n  function paintExamples$/, '');
+  const store = {};
+  const sandbox = {
+    EXAMPLES,
+    sessionStorage: {
+      getItem: (k) => (k in store ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); },
+    },
+    Math, JSON, Array,
+  };
+  vm.createContext(sandbox);
+  vm.runInContext(src + '\nglobalThis.deal = dealExamples;', sandbox);
+
+  for (let trial = 0; trial < 40; trial += 1) {
+    for (const k of Object.keys(store)) delete store[k];
+    sandbox.exDeck = null;
+    const seen = new Set();
+    // ceil(7 / 3) = 3 reloads is the most it can take to exhaust a 7-card deck.
+    for (let reload = 0; reload < 3; reload += 1) {
+      const dealt = sandbox.deal(EXAMPLES_SHOWN);
+      assert.equal(dealt.length, EXAMPLES_SHOWN, 'always deals a full row');
+      assert.equal(new Set(dealt.map((e) => e[0])).size, EXAMPLES_SHOWN, 'no repeat within one row');
+      dealt.forEach((e) => seen.add(e[0]));
+      // exDeck is module state in the browser; a reload clears it but not the store.
+      sandbox.exDeck = null;
+    }
+    assert.equal(seen.size, EXAMPLES.length, `trial ${trial}: 3 reloads should surface all ${EXAMPLES.length}`);
+  }
+});
+
+test('a deck saved before the example list changed is discarded', () => {
+  // Indices are stored, not karyotypes, so a stale deck would deal the wrong chips
+  // or undefined. The saved length is checked against the current list.
+  assert.match(html, /saved\.n === EXAMPLES\.length/, 'stale decks are rejected on read');
 });
