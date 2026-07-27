@@ -207,6 +207,113 @@
     };
   }
 
+  // ---- parental origin: the forward model, run backwards ---------------------
+  // Typing an unbalanced product is how clinic and the boards actually work: you are
+  // handed the abnormal result and reason toward the parents. Rather than enumerate
+  // segregation a second time (and risk the two disagreeing), generate the small
+  // candidate set of parental carriers, run the SAME compute() forward on each, and
+  // keep the ones whose zygote list contains what was typed. Correctness is then a
+  // round trip. See docs/PARENTAL_ORIGIN.md.
+
+  // Comparison key: two designations for the same complement must match even when the
+  // spelling (rob/der) or the order of aberrations differs, since ISCN fixes neither.
+  function canonKey(k) {
+    var m = window.ISCN.parse(k), c = m.clones && m.clones[0];
+    if (!c || c.modalNumber == null) return null;
+    var parts = (c.aberrations || []).map(function (ab) {
+      return String(ab.raw || "").toLowerCase().replace(/\s+/g, "").replace(/^([+\-\u2212\u2013]?)rob\(/, "$1der(");
+    }).sort();
+    return c.modalNumber + "|" + (c.sex.label || "") + "|" + parts.join(",");
+  }
+
+  // The carriers that could have produced this, as ISCN strings. Small and
+  // enumerable, no search: a two-chromosome der means a whole-arm carrier (count one
+  // lower), and a t — free-standing, or as the sub-op of a der — means a reciprocal
+  // carrier at the same count.
+  function candidateCarriers(clone) {
+    var sex = sexOf(clone), out = [], seen = {};
+    function add(k) { if (k && !seen[k]) { seen[k] = 1; out.push(k); } }
+    function bps(ab) {
+      return (ab.breakpoints || []).map(function (g) { return (g || []).join(""); }).join(";");
+    }
+    (clone.aberrations || []).forEach(function (ab) {
+      if (!ab || !ab.chroms) return;
+      if (ab.kind === "der" && ab.chroms.length === 2) {
+        add((clone.modalNumber - 1) + "," + sex + ",der(" + ab.chroms.join(";") + ")(" + bps(ab) + ")");
+      }
+      if (ab.kind === "t" && ab.chroms.length === 2) {
+        add("46," + sex + ",t(" + ab.chroms.join(";") + ")(" + bps(ab) + ")");
+      }
+      (ab.subOps || []).forEach(function (sub) {
+        if (sub.op === "t" && sub.chroms && sub.chroms.length === 2) {
+          add("46," + sex + ",t(" + sub.chroms.join(";") + ")(" +
+            (sub.breakpoints || []).map(function (g) { return (g || []).join(""); }).join(";") + ")");
+        }
+      });
+    });
+    return out;
+  }
+
+  // Chromosomes whose uniparental disomy is a recognised syndrome, and therefore a
+  // reason to karyotype the parents that a segregation diagram cannot show. Named
+  // only: the magnitude is a counselor's to give, not a drawing's.
+  var UPD_RISK = {
+    "14": "chromosome 14 (Temple and Kagami-Ogata syndromes)",
+    "15": "chromosome 15 (Prader-Willi and Angelman syndromes)"
+  };
+
+  function origin(clone) {
+    if (!clone || clone.modalNumber == null) return null;
+    if (eligible(clone)) return null;         // a balanced carrier: the forward panel serves it
+    var typedKey = canonKey(clone.raw || "");
+    if (!typedKey) return null;
+    var candidates = [];
+    candidateCarriers(clone).forEach(function (ck) {
+      var cc = window.ISCN.parse(ck).clones[0];
+      if (!cc || !eligible(cc)) return;
+      var m = compute(cc);
+      if (!m) return;
+      for (var i = 0; i < m.modes.length; i++) {
+        for (var j = 0; j < m.modes[i].gametes.length; j++) {
+          var g = m.modes[i].gametes[j];
+          if (canonKey(g.zygote) !== typedKey) continue;
+          m.hereZygote = g.zygote;            // marked "you typed this" when the panel renders
+          candidates.push({
+            carrier: { XX: ck.replace(/,X[XY],/, ",XX,"), XY: ck.replace(/,X[XY],/, ",XY,") },
+            mode: m.modes[i].name, sub: m.modes[i].sub, label: g.label || "",
+            type: m.type, model: m,
+            upd: m.type === "robertsonian" ? [m.A, m.B].filter(function (c) { return UPD_RISK[c]; }) : []
+          });
+          return;
+        }
+      }
+    });
+    if (!candidates.length) return null;
+    return { typed: clone.raw || "", candidates: candidates, deNovoPossible: true };
+  }
+
+  function renderOrigin(m) {
+    if (!m || !m.candidates.length) return "";
+    var c = m.candidates[0];
+    var kind = c.type === "robertsonian" ? "Robertsonian" : "reciprocal";
+    var what = c.label ? "the <b>" + esc(c.label) + "</b> outcome of " : "the product of ";
+    var head = '<div class="seg-head"><h2>Where this came from</h2>' +
+      '<p class="seg-lead">This karyotype is ' + what + '<b>' + esc(c.mode) + '</b> segregation (' + esc(c.sub) +
+      ') in a parent who carries a balanced ' + kind + ' translocation. It can also arise <b>de novo</b>, ' +
+      'in a gamete or shortly after fertilisation, with both parents having normal karyotypes. ' +
+      'The two are told apart by karyotyping both parents, which is why that is the next step ' +
+      'whichever answer you expect.</p></div>';
+    var carriers = '<div class="orig-carriers"><span class="orig-label">The carrier parent would be</span>' +
+      '<span class="orig-pair"><span class="orig-who">either</span>' + ktButton(c.carrier.XX) +
+      '<span class="orig-who">or</span>' + ktButton(c.carrier.XY) + '</span>' +
+      '<span class="orig-note">Nothing in this karyotype says which parent, so both are worth drawing.</span></div>';
+    var upd = c.upd.length ? '<p class="orig-upd">A carrier of this translocation also passes a risk of ' +
+      '<b>uniparental disomy</b> for ' + c.upd.map(function (x) { return UPD_RISK[x]; }).join(" and ") +
+      ', which no segregation diagram shows and which parental testing is needed to address.</p>' : "";
+    var lead = '<p class="orig-lead2">Below is that carrier parent\u2019s meiosis, with the outcome you typed marked.</p>';
+    return head + carriers + upd + lead + render(c.model);
+  }
+
   function compute(clone) {
     var ab = soleAberration(clone);
     if (!ab) return null;
@@ -492,11 +599,13 @@
       var gametes = m.gametes.map(function (gm) {
         var acc = accentOf(gm);
         var lab = gm.label ? '<span class="seg-glabel">' + esc(gm.label) + '</span>' : "";
+        var here = (model.hereZygote && gm.zygote === model.hereZygote)
+          ? '<span class="seg-here">the karyotype you typed</span>' : "";
         var imb = (gm.imbalance && gm.imbalance !== "balanced")
           ? '<div class="seg-imb">' + esc(gm.imbalance) + '</div>' : "";
-        return '<div class="seg-gamete' + (acc ? " seg-g-" + acc : "") + '">' +
+        return '<div class="seg-gamete' + (acc ? " seg-g-" + acc : "") + (here ? " seg-is-here" : "") + '">' +
           '<div class="seg-gpoles">' + glyphRow(b, gm.bodies) + '</div>' +
-          '<div class="seg-gout">' + ktButton(gm.zygote) + lab + imb +
+          '<div class="seg-gout">' + ktButton(gm.zygote) + lab + here + imb +
           '<div class="seg-viab">' + viabChip(gm.viability) + '</div></div></div>';
       }).join("");
       return '<div class="seg-mode' + (m.balanced ? " seg-balanced" : "") + '">' +
@@ -512,5 +621,8 @@
     return head + config + controls + '<div class="seg-modes">' + modes + '</div>' + note;
   }
 
-  window.Segregation = { eligible: eligible, compute: compute, render: render };
+  window.Segregation = {
+    eligible: eligible, compute: compute, render: render,
+    origin: origin, renderOrigin: renderOrigin
+  };
 })();

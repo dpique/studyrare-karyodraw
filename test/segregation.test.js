@@ -267,3 +267,101 @@ test('a quote in a chromosome name is escaped inside data-k, not able to close i
 test('the panel states that the conceptus karyotypes are clickable', () => {
   assert.match(Seg.render(model('46,XX,t(2;5)(q21;q31)')), /Click any conceptus karyotype/);
 });
+
+// ---- parental origin: the forward model, run backwards ----------------------
+// Typing an unbalanced product used to get nothing, because eligible() requires a
+// balanced carrier. That is backwards from clinic and from the exam, where you are
+// handed the abnormal result and reason toward the parents. Implemented per
+// docs/PARENTAL_ORIGIN.md: generate the small candidate set of carriers, run the
+// EXISTING forward compute() on each, keep the ones whose zygote list contains what
+// was typed. So correctness is a round trip, not a second enumeration.
+const CARRIERS = [
+  '45,XX,rob(13;14)(q10;q10)',
+  '45,XX,rob(14;21)(q10;q10)',
+  '46,XX,t(2;5)(q21;q31)',
+  '46,XY,t(11;22)(q23;q11.2)',
+];
+// A zygote is in scope when it still carries a derivative. A bare aneuploidy
+// (45,XX,-2 from interchange 3:1) is deliberately out: nondisjunction and a carrier
+// parent both produce it, so naming a carrier would overclaim. See the spec.
+const hasDer = (k) => /der\(|rob\(|t\(/.test(k);
+const unbalancedZygotes = (carrier) => {
+  const m = model(carrier);
+  return m.modes.filter((md) => !md.balanced).flatMap((md) => md.gametes.map((g) => ({ zy: g.zygote, mode: md.name })));
+};
+
+test('every derivative-bearing unbalanced product finds its carrier and mode', () => {
+  let checked = 0;
+  CARRIERS.forEach((carrier) => {
+    unbalancedZygotes(carrier).forEach((g) => {
+      if (!hasDer(g.zy)) return;
+      const org = Seg.origin(clone0(g.zy));
+      assert.ok(org, `${g.zy} should trace back to a carrier`);
+      const cand = org.candidates[0];
+      assert.equal(cand.mode, g.mode, `${g.zy} should name ${g.mode}`);
+      const back = native(zygotes(cand.model));
+      assert.ok(back.includes(g.zy), `${g.zy} must appear in its carrier's own forward list`);
+      checked++;
+    });
+  });
+  assert.ok(checked >= 14, `covered ${checked} products`);
+});
+test('the carrier is offered in both sexes, and both parse to a balanced carrier', () => {
+  const cand = Seg.origin(clone0('46,XX,der(14;21)(q10;q10),+21')).candidates[0];
+  assert.equal(cand.carrier.XX, '45,XX,der(14;21)(q10;q10)');
+  assert.equal(cand.carrier.XY, '45,XY,der(14;21)(q10;q10)');
+  [cand.carrier.XX, cand.carrier.XY].forEach((k) => {
+    const p = ISCN.parse(k);
+    assert.equal(p.warnings.length, 0, k + ' parses clean');
+    assert.equal(p.clones[0].counts.ok, true, k + ' is self-consistent');
+    assert.equal(Seg.eligible(p.clones[0]), true, k + ' is a balanced carrier');
+  });
+});
+test('the typed karyotype is marked in the embedded panel', () => {
+  const org = Seg.origin(clone0('46,XX,der(14;21)(q10;q10),+21'));
+  assert.equal(org.candidates[0].model.hereZygote, '46,XX,der(14;21)(q10;q10),+21');
+  assert.match(Seg.renderOrigin(org), /seg-here/);
+});
+test('rob spelling and aberration order do not defeat the match', () => {
+  assert.ok(Seg.origin(clone0('46,XX,rob(14;21)(q10;q10),+21')), 'rob() matches a der() candidate');
+  assert.ok(Seg.origin(clone0('46,XX,+21,der(14;21)(q10;q10)')), 'order does not matter');
+});
+test('a balanced carrier gets no origin view (the forward panel serves it)', () => {
+  CARRIERS.forEach((k) => assert.equal(Seg.origin(clone0(k)), null, k));
+});
+test('out-of-scope karyotypes get no origin view', () => {
+  ['46,XX', '47,XX,+21', '45,XX,-21', '46,XY,del(5)(p15.2)', '46,XY,t(2;5;7)(q21;q31;q22)']
+    .forEach((k) => assert.equal(Seg.origin(clone0(k)), null, k));
+});
+test('origin() answers per clone; the mosaic gate belongs to the caller', () => {
+  // Same layering as eligible(): renderSegregation() in index.html passes a clone only
+  // when there is exactly one, so the mosaic rule lives there rather than being
+  // duplicated here. A mosaic clone in isolation IS a translocation-Down complement,
+  // and origin() correctly says so; it has no way to know a sibling clone exists.
+  const m = ISCN.parse('mos 46,XX,der(14;21)(q10;q10),+21[12]/46,XX[18]');
+  assert.equal(m.clones.length, 2);
+  assert.ok(Seg.origin(m.clones[0]), 'the clone on its own traces to a carrier');
+  assert.match(m.clones[0].raw, /\[12\]$/, 'and a trailing cell count does not defeat the match');
+});
+test('the origin view names de novo as the alternative, and says who to test', () => {
+  const html = Seg.renderOrigin(Seg.origin(clone0('46,XX,der(14;21)(q10;q10),+21')));
+  assert.match(html, /de novo/i);
+  assert.match(html, /both parents|karyotyping the parents|test both/i);
+});
+test('the origin view quotes no recurrence risk', () => {
+  // The spec's hard line: this is where "what are the odds again" is most tempting,
+  // and the numbers swing on chromosome pair, carrier sex, and ascertainment.
+  CARRIERS.forEach((carrier) => {
+    unbalancedZygotes(carrier).filter((g) => hasDer(g.zy)).forEach((g) => {
+      const html = Seg.renderOrigin(Seg.origin(clone0(g.zy)));
+      assert.doesNotMatch(html, /\d\s*%/, g.zy + ' must not quote a percentage');
+      assert.doesNotMatch(html, /\d+\s*in\s*\d/, g.zy + ' must not quote a 1-in-N risk');
+    });
+  });
+});
+test('a Robertsonian carrier of 14 or 15 names the UPD risk, without a figure', () => {
+  const html = Seg.renderOrigin(Seg.origin(clone0('46,XX,der(14;21)(q10;q10),+21')));
+  assert.match(html, /uniparental disomy|UPD/i, 'named, because it is a reason to test the parents');
+  const noUpd = Seg.renderOrigin(Seg.origin(clone0('46,XX,der(5)t(2;5)(q21;q31)')));
+  assert.doesNotMatch(noUpd, /uniparental disomy|UPD/i, 'not relevant to a 2;5 reciprocal');
+});

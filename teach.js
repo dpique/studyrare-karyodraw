@@ -240,6 +240,23 @@
   });
 
   // ---- token-by-token decode of a clone ------------------------------------
+  // A whole-arm fusion of two acrocentrics written as t() with a count that agrees
+  // with itself: legal ISCN, and for two non-acrocentrics it is genuinely what you
+  // would write, so it is not a warning. But for two acrocentrics it is almost never
+  // what the writer meant, and the drawing (both products present, 46 chromosomes) is
+  // exactly the picture that convinces a reader a Robertsonian carrier has 46. So the
+  // decode panel says what the notation means and names the alternative. When the
+  // count already contradicts the t (45,XX,t(13;15)(q10;q10)) the warning box and its
+  // rob() fix are doing this job, so stay quiet rather than say it twice.
+  function robNote(ab, clone) {
+    if (!ab.wholeArmAcro) return "";
+    if (!clone.counts || !clone.counts.ok || clone.modalNumber == null) return "";
+    var pair = ab.chroms.join(";");
+    return ". Both whole-arm products are kept here, so the count stays " + clone.modalNumber +
+      ". The acrocentric fusion that loses the short arms is a Robertsonian translocation, written rob(" +
+      pair + ")(q10;q10), and it gives a count of " + (clone.modalNumber - 1);
+  }
+
   function decode(clone) {
     var rows = [];
     if (clone.modalNumber != null) {
@@ -256,7 +273,7 @@
     clone.aberrations.forEach(function (ab) {
       var d = describeAberration(ab);
       var q = ab.qualifier && QUALIFIER_PHRASE[ab.qualifier];
-      rows.push({ code: ab.raw, text: d.text + (q ? " (" + ab.qualifier + " = " + q + ")" : ""), tag: d.tag });
+      rows.push({ code: ab.raw, text: d.text + (q ? " (" + ab.qualifier + " = " + q + ")" : "") + robNote(ab, clone), tag: d.tag });
     });
     if (clone.cellCount != null) {
       rows.push({ code: "[" + (clone.composite ? "cp" : "") + clone.cellCount + "]", text: (clone.composite ? "composite of " : "seen in ") + clone.cellCount + " cells counted for this clone", tag: "cells" });

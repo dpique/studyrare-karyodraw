@@ -200,6 +200,20 @@
   .seg-anim-cb { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
   .seg-controls { margin: 0 0 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
   .seg-hint { font-size: 12.5px; color: var(--ink-2); }
+  /* Parental origin (the reverse view): the carrier parent this karyotype could have
+     come from, above that parent's own segregation panel. */
+  .orig-carriers { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin: 0 0 10px; }
+  .orig-label { font-size: 12.5px; color: var(--ink-2); }
+  .orig-pair { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+  .orig-who { font-size: 12px; color: var(--muted); }
+  .orig-note { font-size: 12px; color: var(--muted); flex-basis: 100%; }
+  .orig-upd { font-size: 12.5px; line-height: 1.45; color: var(--ink-2); background: var(--amber-50);
+    border-radius: 8px; padding: 8px 10px; margin: 0 0 12px; }
+  .orig-lead2 { font-size: 12.5px; color: var(--ink-2); margin: 0 0 10px; }
+  /* The outcome the reader typed, inside the carrier's panel. */
+  .seg-gamete.seg-is-here { border-color: var(--periwinkle); box-shadow: 0 0 0 2px var(--peri-50); }
+  .seg-here { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 600;
+    color: var(--peri-700); background: var(--peri-50); border-radius: 6px; padding: 2px 7px; }
   /* Preview of a conceptus karyotype, on hover or keyboard focus. pointer-events:none
      so it can never sit between the pointer and the button it describes. */
   .ktpeek {
@@ -898,13 +912,26 @@
     for (var i = 0; i < syns.length; i++) { if (syns[i].acquired) return true; }
     return false;
   }
+  // A balanced carrier gets the forward panel (its meiosis, its possible conceptions).
+  // An unbalanced product gets the reverse: the carrier parent it could have come
+  // from, with that parent's panel embedded and the typed outcome marked. Both render
+  // into the same host, so the conceptus buttons, their previews, and the animation
+  // toggle are wired once. The single-clone and acquired gates cover both: parental
+  // origin is meaningless for a somatic tumour clone, and a mosaic is out of scope.
   function renderSegregation(clones) {
     var card = $("#segregation-card"), host = $("#segregation");
     var clone = (clones && clones.length === 1) ? clones[0] : null;
-    if (!window.Segregation || !clone || !window.Segregation.eligible(clone) || isAcquired(clone)) {
-      card.style.display = "none"; host.innerHTML = ""; return;
+    var html = "";
+    if (window.Segregation && clone && !isAcquired(clone)) {
+      if (window.Segregation.eligible(clone)) {
+        html = window.Segregation.render(window.Segregation.compute(clone));
+      } else {
+        var org = window.Segregation.origin(clone);
+        if (org) html = window.Segregation.renderOrigin(org);
+      }
     }
-    host.innerHTML = window.Segregation.render(window.Segregation.compute(clone));
+    if (!html) { card.style.display = "none"; host.innerHTML = ""; return; }
+    host.innerHTML = html;
     card.style.display = "";
   }
 

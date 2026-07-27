@@ -3,6 +3,41 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-26 (parental origin: the segregation panel, run backwards)
+
+- **Type an unbalanced karyotype and see the carrier parent it could have come from.** The panel only
+  ever worked forwards, from a balanced carrier to its possible conceptions, which is backwards from
+  clinic and from the boards: there you are handed the abnormal result and reason toward the parents.
+  `46,XX,rob(14;21)(q10;q10),+21` used to show nothing at all. It now names the segregation that
+  produced it, offers the carrier parent in both sexes as loadable karyotypes, and embeds that
+  parent's own segregation panel with the outcome you typed marked.
+
+  It is the forward model run backwards, not a second enumeration: the small candidate set of carriers
+  is generated, the existing `compute()` runs on each, and the ones whose conceptus list contains the
+  typed karyotype are kept. So the nomenclature surface stays the one already validated against ISCN
+  2024 Table 5, and correctness is a round trip that the tests walk over every derivative-bearing
+  product of four carriers.
+
+- **No recurrence-risk numbers, and no claim about which parent.** Both carrier sexes are always
+  shown, since nothing in a proband's karyotype says which parent carries it. A test fails the build
+  on a percentage or a 1-in-N figure anywhere in the panel: the figures swing on chromosome pair,
+  carrier sex and ascertainment, and a wrong one in a teaching tool is worse than none. A Robertsonian
+  carrier of 14 or 15 does get one line naming the uniparental-disomy risk, because that is a reason
+  to karyotype the parents that a segregation diagram cannot show.
+
+- **A bare aneuploidy still shows nothing.** `45,XY,-21` and `47,XX,+21` have no determinate origin:
+  nondisjunction and a carrier parent both produce them. Naming a carrier there would overclaim. See
+  `docs/PARENTAL_ORIGIN.md`, which now records what was built and what was deliberately left out.
+
+- **A whole-arm acrocentric `t()` at a self-consistent count is explained in the decode panel.**
+  `46,XX,t(13;15)(q10;q10)` is legal, and for two non-acrocentrics it is what you would write, so it
+  is not a warning: warning on correct input is how a warning box loses its authority. But for two
+  acrocentrics it is almost never what was meant, and the drawing (46 chromosomes, both products
+  present) is the picture that convinces a reader a Robertsonian carrier has 46. The decode row now
+  says the count stays 46 because both whole-arm products are kept, and names
+  `rob(13;15)(q10;q10)` at 45. When the count already contradicts the `t`, the warning box and its
+  one-click fix are doing that job, so the decode panel stays quiet.
+
 ## 2026-07-26 (an absent autosomal homolog is drawn)
 
 - **An autosomal monosomy shows the gap (bug).** `45,X` has always drawn a placeholder for the
