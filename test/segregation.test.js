@@ -365,3 +365,22 @@ test('a Robertsonian carrier of 14 or 15 names the UPD risk, without a figure', 
   const noUpd = Seg.renderOrigin(Seg.origin(clone0('46,XX,der(5)t(2;5)(q21;q31)')));
   assert.doesNotMatch(noUpd, /uniparental disomy|UPD/i, 'not relevant to a 2;5 reciprocal');
 });
+
+test('nothing the segregation model emits is called out of order', () => {
+  // The listing-order check is deliberately narrow because a broader one flagged
+  // 46,XX,+der(5)t(2;5)(q21;q31),-2, which this model emits and which follows ISCN
+  // 2024 Table 5. This pins the two halves of the app to the same position.
+  const CARRIERS = ['46,XX,t(2;5)(q21;q31)', '45,XY,rob(14;21)(q10;q10)', '46,XY,t(11;22)(q23;q11.2)'];
+  let seen = 0;
+  CARRIERS.forEach((k) => {
+    const model = Seg.compute(ISCN.parse(k).clones[0]);
+    (model.modes || []).forEach((mode) => (mode.gametes || []).forEach((g) => {
+      if (!g.zygote) return;
+      seen += 1;
+      const c = ISCN.parse(g.zygote).clones[0];
+      assert.ok(c, `${g.zygote} parses`);
+      assert.equal(c.outOfOrder, null, `${g.zygote} should not be called out of order`);
+    }));
+  });
+  assert.ok(seen >= 20, `only ${seen} conceptus karyotypes checked`);
+});

@@ -428,6 +428,40 @@
     clone.complement = comp;
     clone.slots = slots;
 
+    // Whole-chromosome gains and losses are listed in ascending chromosome order:
+    // 43,XY,rob(14;21)(q10;q10),-21,-20 lists 21 before 20, and drew silently.
+    //
+    // Scoped hard, on purpose. ISCN's full listing order also covers structural
+    // abnormalities, and this app has already taken the opposite position once:
+    // segregation.js says "ISCN fixes neither [spelling nor order]" where it builds an
+    // order-insensitive comparison key, and the segregation model, which was checked
+    // against ISCN 2024 Table 5, emits 46,XX,+der(5)t(2;5)(q21;q31),-2 with 5 before
+    // 2. A broader rule flagged that as an error. Since a false accusation here is
+    // worse than a missed one, only +N / -N against each other is checked, which is
+    // the piece that is not in dispute. Everything else is left alone.
+    var numeric = clone.aberrations.filter(function (ab) {
+      return (ab.kind === "gain" || ab.kind === "loss") &&
+        ab.chroms.length === 1 && /^\d+$/.test(ab.chroms[0]);
+    });
+    clone.outOfOrder = null;
+    for (var oi = 1; oi < numeric.length; oi++) {
+      if (parseInt(numeric[oi - 1].chroms[0], 10) > parseInt(numeric[oi].chroms[0], 10)) {
+        clone.outOfOrder = { before: numeric[oi].raw, after: numeric[oi - 1].raw };
+        break;
+      }
+    }
+    // The same karyotype with only those gains and losses sorted into place; anything
+    // else keeps exactly the position it was written in.
+    if (clone.outOfOrder) {
+      var sorted = numeric.slice().sort(function (a, b) {
+        return parseInt(a.chroms[0], 10) - parseInt(b.chroms[0], 10);
+      });
+      var ni = 0;
+      clone.orderedRaws = clone.aberrations.map(function (ab) {
+        return numeric.indexOf(ab) >= 0 ? sorted[ni++].raw : ab.raw;
+      });
+    }
+
     // Reassemble the clone from everything the parser kept, and compare it with what
     // it was handed. Anything that does not come back was dropped without being
     // understood, and the drawing that follows would be of a karyotype nobody typed.
@@ -490,6 +524,10 @@
     clone.unreadable = clone.aberrations.some(function (ab) {
       return (ab.badBands || []).length > 0 || ab.kind === "unknown" || ab.unread;
     });
+    if (clone.outOfOrder) {
+      warnings.push("Whole-chromosome gains and losses are listed in chromosome order, so “" +
+        clone.outOfOrder.before + "” comes before “" + clone.outOfOrder.after + "”.");
+    }
     // countWrong is the app asserting the count is wrong, and it is set at exactly the
     // point the warning is pushed so the two can never disagree. It is NOT the same as
     // !counts.ok: 48,XY,+8,inc says there are further unidentified changes, so its
@@ -689,7 +727,7 @@
   function parse(input) {
     var raw = (input || "").trim();
     var warnings = [];
-    var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [], suggestion: null, countFix: null, note: null };
+    var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [], suggestion: null, countFix: null, orderFix: null, note: null };
     if (!raw) { warnings.push("Type a karyotype to begin, e.g. 46,XY, 47,XX,+21, or 46,XY,t(9;22)(q34;q11.2)."); return result; }
     diagnose(raw, result, warnings);
 
@@ -740,6 +778,19 @@
           result.countFix = raw.replace(/\d+/, String(cl0.counts.actual));
         }
       }
+    }
+
+    // The karyotype with its changes put in chromosome order. Single clone only, like
+    // countFix: reassembling a mosaic means rebuilding the "/" chain, and the warning
+    // already names the pair that is out of order.
+    if (!result.suggestion && !result.countFix && result.clones.length === 1 && result.clones[0].orderedRaws) {
+      var oc = result.clones[0];
+      var ordered = [];
+      if (oc.modalGiven) ordered.push(oc.modalGiven);
+      if (oc.sexGiven) ordered.push(oc.sexGiven);
+      oc.orderedRaws.forEach(function (r) { ordered.push(r); });
+      result.orderFix = ordered.join(",") + (oc.cellGiven || "") ;
+      if (result.isMosaic) result.orderFix = "mos " + result.orderFix;
     }
 
     // The same whole-arm acrocentric t(), but with a count that agrees with itself:

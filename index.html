@@ -1280,6 +1280,12 @@
     // next one nobody has thought of yet. 61 varied valid karyotypes round-trip
     // exactly, so a mismatch is worth refusing on.
     var unaccounted = model.clones.some(function (c) { return c.unaccounted; });
+    // Listing order is deliberately NOT in this gate. It changes only how the
+    // karyotype is written, never what is drawn, and confidence in the exact ISCN
+    // rule is lower than for the others here: a broader version of the check accused
+    // this app's own ISCN-2024-checked segregation output of being wrong. It gets a
+    // warning and a one-click fix instead, so a wrong call costs a suggestion rather
+    // than a refusal.
     var invalid = !model.clones.length || model.clones.every(function (c) { return c.modalNumber == null; }) ||
       !!model.suggestion || bad.length > 0 || unreadable || countWrong || unaccounted;
     beaconDraw(val, !invalid);
@@ -1385,7 +1391,7 @@
 
   function renderWarnings(model) {
     var box = $("#warnings");
-    var w = model.warnings, fix = model.suggestion || model.countFix;
+    var w = model.warnings, fix = model.suggestion || model.countFix || model.orderFix;
     // A note is only ever set on input the parser accepted and the renderer drew
     // correctly, so it never shares the box with a warning (the parser guarantees
     // this, and a test pins it). It gets the neutral treatment and its own verb:
