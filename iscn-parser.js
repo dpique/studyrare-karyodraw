@@ -238,10 +238,20 @@
         ab.kind = "unknown";
         warnings.push("Don’t recognize “" + op + "” in “" + raw + "”. Known: del, dup, inv, t, i, r, der, add, ins, dic, fra, mar.");
     }
-    // Non-der ops should consume the whole token; leftover text (an "or"
-    // alternative, an uncertainty marker, a trailing qualifier) is not modeled,
-    // so warn instead of dropping it silently.
-    if (ab.kind !== "der" && ab.kind !== "unknown" && rest && rest.trim()) {
+    // Every op except der() should consume its whole token; leftover text (an "or"
+    // alternative, an uncertainty marker, a trailing qualifier) is not modeled, so
+    // warn instead of dropping it silently. der() is exempt because it parses its own
+    // sub-op chain above and reports its own leftover there.
+    //
+    // Keyed on the op as WRITTEN, not on ab.kind. rob() sets kind "der" (it behaves
+    // exactly like der(13;14)(q10;q10)) but never runs der's sub-op parsing, so a
+    // kind test exempted it from both reporters and its leftover vanished:
+    // rob(14;21)(q10;q10)+21 dropped the +21 with nothing said. That silence then
+    // defeated the unread guard on the count warning below, so the app announced
+    // "the number at the start says 46, but this karyotype describes 45 chromosomes"
+    // directly above a "did you mean" whose own count is 46. der(13;14)(q10;q10)+14,
+    // the same karyotype spelled the other way, always reported it correctly.
+    if (op !== "der" && ab.kind !== "unknown" && rest && rest.trim()) {
       ab.unread = rest.trim();
       warnings.push(leftoverWarning(raw, ab.unread));
     }
