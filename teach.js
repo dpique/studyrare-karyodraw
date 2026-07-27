@@ -453,7 +453,15 @@
     var out = [];
     out.push("Chromosomes are the packages of DNA inside your cells. A typical result has 46 chromosomes, arranged in 23 pairs, including the two that determine sex.");
     var s = SEX_PLAIN[clone.sex.label] || (clone.sex.label ? clone.sex.label + " sex chromosomes" : "");
-    out.push("This result shows " + (clone.modalNumber != null ? clone.modalNumber : "an unusual number of") + " chromosomes" + (s ? ", with " + s : "") + ".");
+    // The count is reported as written, but when it disagrees with the changes listed
+    // the wrong number must not be asserted as fact. This paragraph sits inches from a
+    // drawing of the OTHER number, so silently repeating "45 chromosomes" beside a
+    // 46-chromosome karyogram is the contradiction, not the fix for it.
+    var mism = clone.counts && !clone.counts.ok && clone.counts.actual != null && clone.modalNumber != null;
+    out.push("This result shows " + (clone.modalNumber != null ? clone.modalNumber : "an unusual number of") +
+      " chromosomes" + (s ? ", with " + s : "") + "." +
+      (mism ? " That is the count as written; the changes listed below add up to " + clone.counts.actual +
+        " chromosomes, which is what the diagram shows." : ""));
     if (!clone.aberrations.length) {
       out.push("No changes were seen in the chromosomes with this test.");
     } else {

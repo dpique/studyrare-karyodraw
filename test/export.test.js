@@ -1,0 +1,106 @@
+'use strict';
+// What leaves the app has to be as honest as what is on screen.
+//
+// The `invalid` gate refuses to draw anything it cannot read: nothing parsed, no
+// modal number, a syntax repair on offer, a band that does not exist on that
+// chromosome. It DOES draw the one remaining case, where the notation is unambiguous
+// and only the writer's own count disagrees with it, because there the picture is the
+// explanation: 45,XX,t(13;15)(q10;q10) says 45 and the drawing shows the 46
+// chromosomes a t() actually describes. That policy is deliberate and stays.
+//
+// The hole it left was the exports. The PNG carried the karyotype as typed, the
+// karyogram, and nothing else; the print sheet the same. Those are the copies that
+// end up in slides and question banks, in front of people who never typed the input,
+// so a caption saying 45 over a drawing of 46 travels with no way to tell.
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+
+const root = path.join(__dirname, '..');
+const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+
+const win = {};
+const context = vm.createContext({ window: win });
+['ideogram-data.js', 'iscn-parser.js', 'karyo-render.js', 'teach.js'].forEach((f) =>
+  vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), context));
+const ISCN = win.ISCN;
+const Teach = win.Teach;
+
+// Run the page's own countMismatchNote rather than a copy of it, so this cannot
+// pass while the shipped function says something else.
+const noteSrc = html.match(/ {2}function countMismatchNote\(model\) \{[\s\S]*?\n {2}\}/)[0];
+const sandbox = { Array };
+vm.createContext(sandbox);
+vm.runInContext(noteSrc + '\nglobalThis.note = countMismatchNote;', sandbox);
+const noteFor = (k) => sandbox.note(ISCN.parse(k));
+
+test('the note names both numbers for a count that does not add up', () => {
+  assert.equal(noteFor('45,XX,t(13;15)(q10;q10)'),
+    'you wrote 45; this notation describes 46 chromosomes');
+});
+
+test('no note when the karyotype agrees with itself', () => {
+  ['46,XX,t(13;15)(q10;q10)', '45,XY,rob(14;21)(q10;q10)', '46,XY', '47,XX,+21', 'mos 45,X[12]/46,XX[18]']
+    .forEach((k) => assert.equal(noteFor(k), '', k));
+});
+
+test('a mosaic names which clone is off', () => {
+  // Clone 2 says 45 and describes 46. countFix is single-clone only, so a mosaic
+  // never gets the "did you mean" button and this note is the only thing that
+  // travels with the image.
+  const n = noteFor('mos 45,X[12]/45,XX,t(13;15)(q10;q10)[18]');
+  assert.match(n, /clone 2/, 'says which clone, since the drawing shows both');
+  assert.match(n, /you wrote 45; this notation describes 46 chromosomes/);
+  assert.doesNotMatch(n, /clone 1/, 'the clone that agrees with itself is not named');
+});
+
+test('the exported PNG and the print sheet both carry the note', () => {
+  // Regexes over the page because both builders are module-scoped. They pin the call,
+  // not the wording, which the tests above own.
+  const exportSvg = html.slice(html.indexOf('function buildExportSVG'));
+  assert.match(exportSvg.slice(0, 4000), /countMismatchNote\(model\)/, 'the PNG builder asks for it');
+  const printSheet = html.slice(html.indexOf('function renderPrintSheet'));
+  assert.match(printSheet.slice(0, 3000), /countMismatchNote\(model\)/, 'the print sheet asks for it');
+});
+
+test('the export canvas grows to fit the note instead of clipping it', () => {
+  // The note is a second line under the title; if titleBlockH stayed at its one-line
+  // value the karyogram would be drawn over it.
+  const src = html.slice(html.indexOf('function buildExportSVG'));
+  assert.match(src.slice(0, 4000), /titleBlockH = note \? \d+ : \d+/, 'title block is taller when a note is present');
+});
+
+test('the plain-language summary does not assert the wrong count as fact', () => {
+  // It sits inches from a drawing of the other number in the same print sheet.
+  const off = Teach.plainSummary(ISCN.parse('45,XX,t(13;15)(q10;q10)').clones[0]).join(' ');
+  assert.match(off, /45 chromosomes/, 'still reports the count as written');
+  assert.match(off, /count as written/, 'and says that is what it is');
+  assert.match(off, /add up to 46 chromosomes/, 'and names what the changes actually describe');
+
+  const ok = Teach.plainSummary(ISCN.parse('46,XX,t(13;15)(q10;q10)').clones[0]).join(' ');
+  assert.doesNotMatch(ok, /count as written/, 'no hedging when the karyotype agrees with itself');
+});
+
+// ---- Back walks the view toggles ------------------------------------------
+// Style / Bands / Show rewrite the URL and the drawing, so each is a state Back
+// should be able to return to. They were left on replaceState when Back was fixed for
+// the example chips and the fix button, so three toggle clicks added zero history
+// entries and one Back left the site. Typing stays on replaceState on purpose: one
+// entry per keystroke would fill history with half-typed karyotypes.
+test('the view toggles push a history entry; typing still replaces', () => {
+  const seg = html.match(/ {2}function wireSeg\(sel, take\) \{[\s\S]*?\n {2}\}/)[0];
+  assert.match(seg, /run\.pushNext = true/, 'a toggle earns its own history entry');
+  assert.match(seg, /!take\(b\)\) return/, 're-clicking the active button does nothing at all');
+  // The input listener must NOT set pushNext.
+  const typing = html.match(/input\.addEventListener\("input"[\s\S]{0,400}/);
+  if (typing) assert.doesNotMatch(typing[0], /pushNext/, 'typing must not push');
+});
+
+test('all three toggles are wired through the pushing helper', () => {
+  ['#modeseg', '#levelseg', '#showseg'].forEach((id) => {
+    assert.match(html, new RegExp('wireSeg\\("' + id + '"'), `${id} pushes`);
+    assert.doesNotMatch(html, new RegExp('\\$\\("' + id + '"\\)\\.addEventListener'), `${id} has no bypassing handler`);
+  });
+});

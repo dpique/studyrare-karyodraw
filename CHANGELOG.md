@@ -3,6 +3,40 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (Back undoes a view toggle; a count that does not add up travels with the image)
+
+- **Back skipped the Style / Bands / Show toggles entirely (bug).** Measured on production: three
+  toggle clicks added **zero** history entries, and one Back left the site. Each toggle rewrites the
+  URL and the drawing, so each is a state Back should return to; they were simply not in the set
+  that #98 fixed (example chips, the "did you mean" button, conceptus karyotypes). Typing stays on
+  `replaceState` on purpose, since one entry per keystroke would fill history with half-typed
+  karyotypes, but a toggle is a discrete click and there is no such argument for it. Re-clicking the
+  button that is already on re-renders nothing and adds no entry, or Back would replay states that
+  look identical. `popstate` already restored all three through `applyUrlView`, so nothing else
+  needed to change. Verified: three toggles now give three entries, and three Backs walk them in
+  reverse with the buttons restored.
+
+- **A karyotype whose count does not add up now says so in the PNG and the print summary.** The
+  policy for drawing questionable input is unchanged and deliberate: the app refuses to draw
+  anything it cannot read (nothing parsed, no modal number, a syntax repair on offer, a band that
+  does not exist), and does draw the one case where the notation is unambiguous and only the
+  writer's own count disagrees with it. For `45,XX,t(13;15)(q10;q10)` the picture is the
+  explanation, and refusing would leave a learner with an error and no reason.
+
+  What was missing is that the explanation stopped at the screen. On screen there is a red "count
+  doesn't add up" pill and a warning box; the exported PNG carried the karyotype as typed, the
+  karyogram, and nothing else, and the print sheet the same. Those are the copies that outlive the
+  session and land in slides and question banks, in front of people who never typed the input, so a
+  caption reading 45 over a drawing of 46 travelled with no way to tell. Both now carry
+  "⚠ you wrote 45; this notation describes 46 chromosomes", and the export canvas grows a line
+  rather than drawing the karyogram over it. A mosaic names the clone, since `countFix` is
+  single-clone only and a mosaic never gets the one-click fix.
+
+- **The plain-language summary no longer asserts the wrong count as fact.** It read "This result
+  shows 45 chromosomes" a few inches above a drawing of 46 in the same print sheet. It still reports
+  the count as written, and now adds that this is what it is and what the listed changes actually
+  add up to.
+
 ## 2026-07-27 (the example chips re-deal on page load; the Shuffle button is gone)
 
 - **The Shuffle chip is removed; the three examples are re-dealt on every page load instead.** It

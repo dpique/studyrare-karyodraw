@@ -481,6 +481,7 @@
     #printsheet .ps-sub { color: var(--muted); font-size: 9pt; }
     #printsheet .ps-title { font-family: var(--font-display); font-size: 15pt; margin: 9px 0 3px; color: var(--navy); }
     #printsheet .ps-kt { font-family: var(--font-mono); font-size: 13pt; font-weight: 600; margin-bottom: 4px; }
+    #printsheet .ps-warn { color: var(--error-700); font-size: 10pt; font-weight: 700; margin-bottom: 4px; }
     #printsheet .ps-meta { color: var(--muted); font-size: 10pt; margin-bottom: 6px; }
     #printsheet .ps-pic { text-align: center; margin: 4px 0 8px; }
     #printsheet .ps-pic .karyogram { display: inline-flex; padding: 0; margin: 0; }
@@ -1275,6 +1276,28 @@
     renderDetail(focus);
   }
 
+  // The one way a DRAWN karyogram can contradict its own caption. The `invalid` gate
+  // refuses to draw anything it cannot read: nothing parsed, no modal number, a syntax
+  // repair on offer, a band that does not exist. What it does draw is the case where
+  // the notation is unambiguous and only the writer's count disagrees with it, because
+  // there the picture IS the explanation — 45,XX,t(13;15)(q10;q10) says 45 and the
+  // drawing shows the 46 chromosomes a t() actually describes.
+  //
+  // On screen that discrepancy is a red pill beside the title and a warning box. The
+  // PNG and the print sheet carry neither, and they are the copies that leave the app
+  // and land in slides and question banks, in front of people who never typed the
+  // input. So they say it too. Derived from clone.counts, the same data the parser's
+  // own warning is built from; the wording is shorter because a caption has to be.
+  function countMismatchNote(model) {
+    var parts = [];
+    (model.clones || []).forEach(function (c, i) {
+      if (!c || !c.counts || c.counts.ok || c.counts.actual == null || c.modalNumber == null) return;
+      parts.push(((model.clones.length > 1) ? "clone " + (i + 1) + ": " : "") +
+        "you wrote " + c.modalNumber + "; this notation describes " + c.counts.actual + " chromosomes");
+    });
+    return parts.join(" · ");
+  }
+
   // ---- printable 1-page summary (built each render; shown only when printing) --
   function renderPrintSheet(model) {
     var ps = $("#printsheet");
@@ -1303,6 +1326,7 @@
       '<div class="ps-head"><span class="ps-brand">Karyo<span>Draw</span></span><span class="ps-sub">a StudyRare teaching tool</span></div>' +
       '<h1 class="ps-title">Karyotype summary</h1>' +
       '<div class="ps-kt">' + escapeHtml(model.raw) + '</div>' +
+      (countMismatchNote(model) ? '<div class="ps-warn">⚠ ' + escapeHtml(countMismatchNote(model)) + '</div>' : "") +
       '<div class="ps-meta">' + escapeHtml(meta) + '</div>' +
       '<div class="ps-pic">' + picDiv.innerHTML + '</div>' +
       '<h2 class="ps-h2">In plain language</h2>' + plain +
@@ -1452,9 +1476,13 @@
 
     var M = 18, footH = 16, gap = 12;
     var title = model.raw;
-    var titleBlockH = 20;   // karyotype title only; sex note omitted for a clean image
+    var note = countMismatchNote(model);
+    // Karyotype title only; the sex note stays off for a clean image. The count note
+    // is the exception: it is the one way a DRAWN karyogram can contradict its own
+    // caption, and this image is the copy that outlives the session.
+    var titleBlockH = note ? 36 : 20;
     // widen the canvas so a long karyotype never runs past the edge
-    var contentW = Math.max(kgW, title.length * 9.2, 320);
+    var contentW = Math.max(kgW, title.length * 9.2, note.length * 6.2, 320);
     var outW = Math.ceil(contentW + M * 2);
     var outH = Math.ceil(M + titleBlockH + gap + kgH + gap + footH + M);
     var kgX = M + (contentW - kgW) / 2, kgY = M + titleBlockH + gap;
@@ -1462,6 +1490,7 @@
     var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + outW + '" height="' + outH + '" viewBox="0 0 ' + outW + ' ' + outH + '">' +
       '<rect width="' + outW + '" height="' + outH + '" fill="#ffffff"/>' +
       '<text x="' + M + '" y="' + (M + 14) + '" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" font-weight="700" fill="#242a45">' + escXml(title) + '</text>' +
+      (note ? '<text x="' + M + '" y="' + (M + 30) + '" font-family="system-ui, sans-serif" font-size="11.5" font-weight="600" fill="#a2302c">⚠ ' + escXml(note) + '</text>' : "") +
       '<g transform="translate(' + kgX.toFixed(1) + ',' + kgY.toFixed(1) + ')">' + pieces.join("") + '</g>' +
       '<text x="' + (outW - M) + '" y="' + (outH - M + 8) + '" text-anchor="end" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#5e72e4">karyodraw.com</text>' +
       '</svg>';
@@ -1565,17 +1594,33 @@
   });
   $("#draw").addEventListener("click", function () { leaveTourIfActive(); run(); });
   input.addEventListener("keydown", function (e) { if (e.key === "Enter") { leaveTourIfActive(); run(); } });
-  $("#modeseg").addEventListener("click", function (e) {
-    var b = e.target.closest ? e.target.closest("button") : null; if (!b) return;
-    MODE = b.getAttribute("data-mode"); syncSeg(); run();
+  // Style / Bands / Show each earn a history entry, so Back undoes a toggle. They
+  // were left on replaceState when Back was fixed for the example chips and the fix
+  // button, which meant three toggle clicks added zero entries and one Back left the
+  // site. Typing deliberately stays on replaceState — one entry per keystroke would
+  // fill history with half-typed karyotypes — but a toggle is a discrete click that
+  // changes the URL and the drawing, which is exactly what Back should be able to
+  // walk. popstate restores all three through applyUrlView, so nothing else is needed.
+  //
+  // Re-clicking the button that is already on changes nothing, so it re-renders
+  // nothing and adds no entry; otherwise Back would replay states that look identical.
+  function wireSeg(sel, take) {
+    $(sel).addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest("button") : null;
+      if (!b || !take(b)) return;
+      syncSeg();
+      run.pushNext = true;
+      run();
+    });
+  }
+  wireSeg("#modeseg", function (b) {
+    var v = b.getAttribute("data-mode"); if (v === MODE) return false; MODE = v; return true;
   });
-  $("#levelseg").addEventListener("click", function (e) {
-    var b = e.target.closest ? e.target.closest("button") : null; if (!b) return;
-    LEVEL = parseInt(b.getAttribute("data-level"), 10); syncSeg(); run();
+  wireSeg("#levelseg", function (b) {
+    var v = parseInt(b.getAttribute("data-level"), 10); if (v === LEVEL) return false; LEVEL = v; return true;
   });
-  $("#showseg").addEventListener("click", function (e) {
-    var b = e.target.closest ? e.target.closest("button") : null; if (!b) return;
-    SHOW = b.getAttribute("data-show"); syncSeg(); run();
+  wireSeg("#showseg", function (b) {
+    var v = b.getAttribute("data-show"); if (v === SHOW) return false; SHOW = v; return true;
   });
   $("#printbtn").addEventListener("click", function () { window.print(); });
   $("#copyhint").addEventListener("click", function () { copyLink($("#copyhint")); });
