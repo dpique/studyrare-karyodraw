@@ -100,13 +100,18 @@
   // Text an operation did not consume. Most often it is the next aberration with
   // its comma missing (the sign case, which is fully diagnosable); otherwise it is
   // something outside the model, such as an "or" alternative.
+  //
+  // Both messages lead with the ISCN rule, not with what the parser did. A reader
+  // here is a learner who mistyped a karyotype: "was not read" describes the app's
+  // internal state, teaches nothing, and leaves them to work out the rule themselves.
+  // The rule is the whole point. See the message-voice test.
   function leftoverWarning(raw, leftover) {
     if (/^[+\-−–](\d+|X|Y)$/.test(leftover)) {
-      return "“" + leftover + "” in “" + raw + "” was not read. Each aberration is a separate item, so it needs a comma before it: “" +
+      return "Changes are separated by commas, so “" + leftover + "” needs one before it: “" +
         raw.replace(leftover, "," + leftover) + "”.";
     }
-    return "Only the first part of “" + raw + "” was read; “" + leftover +
-      "” wasn’t understood (alternatives with “or” and uncertainty markers aren’t supported).";
+    return "KaryoDraw draws one karyotype at a time, so “" + leftover + "” in “" + raw +
+      "” cannot be included. Alternatives written with “or”, and uncertainty markers, are not supported.";
   }
 
   function parseAberration(tok, warnings) {
@@ -163,7 +168,7 @@
         ab.note = "unrecognized token";
         return finish(ab);
       }
-      warnings.push("Couldn’t read “" + raw + "”. Aberrations look like +21, del(5)(p15.2), or t(9;22)(q34;q11.2).");
+      warnings.push("“" + raw + "” is not a change KaryoDraw recognizes. Changes look like +21, del(5)(p15.2), or t(9;22)(q34;q11.2).");
       ab.note = "unrecognized token";
       return finish(ab);
     }
@@ -236,7 +241,7 @@
         break;
       default:
         ab.kind = "unknown";
-        warnings.push("Don’t recognize “" + op + "” in “" + raw + "”. Known: del, dup, inv, t, i, r, der, add, ins, dic, fra, mar.");
+        warnings.push("“" + op + "” in “" + raw + "” is not an ISCN abbreviation. The ones KaryoDraw draws: del, dup, inv, t, i, r, der, add, ins, dic, fra, mar.");
     }
     // Every op except der() should consume its whole token; leftover text (an "or"
     // alternative, an uncertainty marker, a trailing qualifier) is not modeled, so
@@ -428,7 +433,11 @@
     var unread = clone.aberrations.some(function (ab) { return ab.unread; });
     if (!clone.counts.ok && clone.sex.tokens.length > 0 && !clone.incomplete && !unread) {
       var want = clone.modalHigh != null ? (clone.modalNumber + "–" + clone.modalHigh) : String(clone.modalNumber);
-      warnings.push("The number at the start says " + want + ", but this karyotype describes " + actual + " chromosomes.");
+      // Names the rule as well as the discrepancy: a learner who does not already
+      // know that the leading number is the cell's total count cannot act on "these
+      // two disagree", and that is who is reading this.
+      warnings.push("The number at the start says " + want + ", but this karyotype describes " + actual +
+        " chromosomes. That number is the total count for the cell, so it has to match the changes listed after it.");
     }
   }
 
@@ -443,7 +452,7 @@
     if (tokens.length === 0) {
       warnings.push("The 2nd field should be the sex chromosomes (XX, XY, X, …), “" + field + "” has no X or Y. Did you skip the sex chromosomes?");
     } else if (bad.length) {
-      warnings.push("Ignored “" + bad.join("") + "” in the sex chromosomes “" + field + "”, only X and Y belong there.");
+      warnings.push("Only X and Y belong in the sex chromosomes, so “" + bad.join("") + "” in “" + field + "” is left out of the drawing.");
     }
     var label = tokens.join("");
     var SEX_NOTE = {

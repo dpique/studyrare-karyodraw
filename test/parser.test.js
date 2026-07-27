@@ -124,7 +124,7 @@ test('idic(Y) counts as a chromosome — 46,X,idic(Y)(q11)', () => {
 
 test('"or" alternative warns instead of silently dropping', () => {
   const r = ISCN.parse('46,XY,del(5)(q13q33) or del(5)(q14q34)');
-  assert.ok(r.warnings.some((w) => /only the first|not understood|wasn.t understood|extra text/i.test(w)));
+  assert.ok(r.warnings.some((w) => /one karyotype at a time|not supported/i.test(w)));
 });
 
 // The renderer distinguishes a direct (tandem) duplication from an inverted one
@@ -339,7 +339,7 @@ test('a numbered marker +2mar draws two marker chromosomes', () => {
 
 test('a ranged marker count +1~3mar is recognized, not rejected as unreadable', () => {
   const r = ISCN.parse('47~49,XX,+1~3mar');
-  assert.ok(!r.warnings.some((w) => /Couldn.t read/i.test(w)), 'ranged marker parses');
+  assert.ok(!r.warnings.some((w) => /not a change KaryoDraw recognizes/i.test(w)), 'ranged marker parses');
   assert.ok((r.clones[0].slots.mar || []).length >= 1, 'draws at least one marker');
 });
 
@@ -351,7 +351,7 @@ test('a labeled marker +mar1 is still a single marker, not a count', () => {
 // --- inc: the ISCN "incomplete karyotype" flag (frequent in cancer karyotypes) ---
 test('inc is recognized and does not read as an unknown token', () => {
   const r = ISCN.parse('46,XX,inc');
-  assert.ok(!r.warnings.some((w) => /Couldn.t read/i.test(w)), 'inc is recognized');
+  assert.ok(!r.warnings.some((w) => /not a change KaryoDraw recognizes/i.test(w)), 'inc is recognized');
   assert.equal(r.clones[0].counts.ok, true, '46,XX with only inc still counts as 46');
 });
 
@@ -367,7 +367,7 @@ test('a qualifier after a space is still recognized (de novo, dn)', () => {
   const c = clone0('46,XY,r(13)(p11q34) dn');
   assert.equal(abKinds(c)[0], 'ring');
   assert.equal(c.aberrations[0].qualifier, 'dn', 'the space before dn does not drop the qualifier');
-  assert.ok(!ISCN.parse('46,XY,r(13)(p11q34) dn').warnings.some((w) => /wasn.t understood|Couldn.t read/i.test(w)),
+  assert.ok(!ISCN.parse('46,XY,r(13)(p11q34) dn').warnings.some((w) => /cannot be included|not a change KaryoDraw recognizes/i.test(w)),
     'no "not understood" warning');
 });
 
@@ -459,7 +459,7 @@ test('a missing-comma sign gets a comma hint, not the "or"/uncertainty note', ()
 });
 test('genuine unreadable trailing text still gets the "only the first part" note', () => {
   const w = ISCN.parse('46,XY,t(9;22)(q34;q11.2)ort(1;2)(p10;q10)').warnings.join(' ');
-  assert.match(w, /Only the first part/);
+  assert.match(w, /one karyotype at a time/);
 });
 test('a legitimate der sub-op chain warns about nothing', () => {
   assert.equal(ISCN.parse('46,XX,der(9)t(9;22)(q34;q11.2)').warnings.length, 0);
@@ -545,8 +545,8 @@ test('no note for input the rob() reading does not apply to', () => {
 const warnOf = (k) => ISCN.parse(k).warnings.join(' | ');
 
 test('a missing comma after rob() is reported, like it always was after der()', () => {
-  assert.match(warnOf('46,XY,rob(14;21)(q10;q10)+21'), /needs a comma before it/);
-  assert.match(warnOf('46,XY,rob(14;21)(q10;q10)-21'), /needs a comma before it/);
+  assert.match(warnOf('46,XY,rob(14;21)(q10;q10)+21'), /separated by commas.*“\+21” needs one before it/);
+  assert.match(warnOf('46,XY,rob(14;21)(q10;q10)-21'), /separated by commas.*“-21” needs one before it/);
   assert.equal(ISCN.parse('46,XY,rob(14;21)(q10;q10)+21').clones[0].aberrations[0].unread, '+21',
     'the fragment is recorded, which is what the count guard reads');
 });

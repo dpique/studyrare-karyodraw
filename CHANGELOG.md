@@ -3,6 +3,35 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (the warning box teaches the rule instead of reporting on the parser)
+
+- **"was not read" is gone, along with the rest of the parser-voice copy.** The message that
+  prompted this read: *"'+21' in 'rob(14;21)(q10;q10)+21' was not read. Each aberration is a separate
+  item, so it needs a comma before it: …"*. Read by whom, and so what? The reader here is a learner
+  who mistyped a karyotype, and the useful content is the ISCN rule they missed. It now reads
+  **"Changes are separated by commas, so '+21' needs one before it: 'rob(14;21)(q10;q10),+21'."**
+  Rule first, then the fix, and nothing about the app's internal handling of the text.
+
+  Four more rewritten the same way: *"Only the first part … was read; … wasn't understood"* →
+  "KaryoDraw draws one karyotype at a time, so … cannot be included"; *"Couldn't read …"* → "… is not
+  a change KaryoDraw recognizes. Changes look like +21, del(5)(p15.2), or t(9;22)(q34;q11.2)";
+  *"Don't recognize 'zzz' …"* → "'zzz' … is not an ISCN abbreviation. The ones KaryoDraw draws: …";
+  *"Ignored 'Q' in the sex chromosomes"* → "Only X and Y belong in the sex chromosomes, so 'Q' … is
+  left out of the drawing".
+
+- **The count warning now names the rule, not just the discrepancy.** Caught by the new test rather
+  than by eye: "The number at the start says 45, but this karyotype describes 46 chromosomes" states
+  a fact and teaches nothing. A reader who does not already know that the leading number is the
+  cell's total count cannot act on it, and that is exactly who is reading. It now adds: "That number
+  is the total count for the cell, so it has to match the changes listed after it."
+
+- **A test keeps parser voice out, because it creeps back one message at a time.** 24 deliberately
+  broken inputs are parsed, every warning collected, and each checked against a list of phrasings
+  that report on the app rather than teach ("was not read", "couldn't read", "failed to parse",
+  "unable to", "invalid input", "ignored", "don't recognize", "error"), plus a looser check that
+  every message names a rule, a correct form, or an example. It also fails the build on an em dash
+  in any message. Verified to fail when a single old message is restored.
+
 ## 2026-07-27 (a wrong "count doesn't add up" on a missing comma after rob)
 
 - **`46,XY,rob(14;21)(q10;q10)+21` claimed the count was wrong when it was right (bug).** With the
