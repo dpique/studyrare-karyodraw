@@ -166,11 +166,29 @@
     return best;
   }
 
+  // Split a chromosome at a breakpoint into the piece the derivative keeps and the
+  // piece it exchanges away. Away from the centromere the kept piece is the centric
+  // one, which is what the position test finds.
+  //
+  // A CENTROMERIC breakpoint (p10, q10, cen) needs its own rule, because both pieces
+  // are then centric: each carries half the centromere, so "which side is centric?"
+  // has no answer and the position test is degenerate (bp === centromere makes
+  // "bp <= centromere" true, which sent q10 down the p-side path). ISCN settles it by
+  // formula: der(A) = A pter→bandA :: B bandB→B qter. At the centromere pter→band is
+  // the p arm whichever letter is written, so a whole-arm derivative keeps its own p
+  // arm and receives the partner's q arm — and the p10/q10 choice records which half
+  // of the centromere it carries, not which arms join. Without this, every whole-arm
+  // reciprocal came out swapped: t(13;15)(q10;q10) drew der(13) as 15p+13q, which is
+  // der(15)'s content, contradicting the imbalance segregation.js states for the very
+  // same string. Robertsonian fusions are unaffected: der/rob go to wholeArmSegments,
+  // where the breakpoint letters DO name the arms kept.
   function splitAtBreak(chrom, band) {
     var d = IDEO.data[chrom];
     var r = resolveBand(chrom, band);
     var bp = r ? r.mid : d.centromere;
-    if (bp <= d.centromere) return { centric: [bp, d.length], acentric: [0, bp], bp: bp, side: "p" };
+    var atCen = /^[pq]10$/.test(String(band)) || String(band) === "cen";
+    var side = atCen ? "q" : (bp <= d.centromere ? "p" : "q");
+    if (side === "p") return { centric: [bp, d.length], acentric: [0, bp], bp: bp, side: "p" };
     return { centric: [0, bp], acentric: [bp, d.length], bp: bp, side: "q" };
   }
 

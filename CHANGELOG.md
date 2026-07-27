@@ -3,6 +3,31 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-26 (whole-arm reciprocal translocations had their arms swapped)
+
+- **`t(13;15)(q10;q10)` drew der(13) as 15p+13q, which is der(15)'s content (bug).** Every whole-arm
+  reciprocal translocation came out with the two derivatives' material exchanged relative to their
+  labels. The giveaway is visual: a whole-arm exchange of q arms should leave each derivative
+  dominated by its *partner's* colour, and instead each looked like itself.
+
+  Pre-existing, and the app contradicted itself about it: `segregation.js` calls
+  `der(13)t(13;15)(q10;q10)` a partial trisomy for 15q and a partial monosomy for 13q, so the drawing
+  carried exactly the arm the text said was missing. A test now asserts the renderer and the
+  segregation model agree on the same string, so the two halves cannot drift apart again.
+
+  Cause: `p10` and `q10` both resolve to *exactly* the centromere, so `splitAtBreak`'s positional test
+  ("is the breakpoint at or above the centromere?") was degenerate and sent both down the p-side path.
+  At a centromeric break both pieces are centric, each carrying half the centromere, so position
+  cannot settle it. ISCN settles it by formula: `der(A) = A pter→bandA :: B bandB→B qter`, and at the
+  centromere `pter→band` is the p arm whichever letter is written. So a whole-arm derivative keeps its
+  own p arm and receives the partner's q arm, and the `p10`/`q10` choice records which half of the
+  centromere it carries rather than which arms join. That also settles the mixed case,
+  `t(1;3)(p10;q10)`, as der(1) = 1p+3q.
+
+  Ordinary breakpoints were never affected, since away from the centromere position and arm letter
+  agree. Robertsonian fusions were never affected either: `der`/`rob` go through `wholeArmSegments`,
+  where the breakpoint letters genuinely do name the arms kept, and `rob(13;14)` still gives 13q+14q.
+
 ## 2026-07-26 (parental origin: the segregation panel, run backwards)
 
 - **Type an unbalanced karyotype and see the carrier parent it could have come from.** The panel only

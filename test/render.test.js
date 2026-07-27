@@ -16,6 +16,7 @@ const load = (f) => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f
 load('ideogram-data.js');
 load('iscn-parser.js');
 load('karyo-render.js');
+load('segregation.js');
 const Karyo = win.Karyo;
 const ISCN = win.ISCN;
 const IDEO = win.IDEOGRAM;
@@ -426,4 +427,65 @@ test('the sex chromosomes keep their own placeholder path (no doubling)', () => 
   const cont = { innerHTML: '' };
   Karyo.render(cont, c, { theme: 'simple', level: 1, affected: Karyo.computeAffected([c]) });
   assert.equal((cont.innerHTML.match(/kchrom ghost/g) || []).length, 1, 'exactly one, from missingSexCells');
+});
+
+// ---- which arm each derivative keeps at a centromeric breakpoint -------------
+// p10 and q10 both resolve to exactly the centromere, so a positional test
+// ("is the breakpoint at or above the centromere?") cannot tell which side the break
+// is on and sent both down the p-side path. Every whole-arm RECIPROCAL translocation
+// therefore came out with its arms swapped: t(13;15)(q10;q10) drew der(13) as
+// 15p+13q, which is der(15)'s content. Ordinary breakpoints were never affected,
+// because there the position and the band's arm letter agree.
+//
+// The rule for a reciprocal is ISCN's derivative formula, the one this renderer
+// already implements everywhere else and the one segregation.js states in its
+// imbalance text: der(A) = A pter→bandA :: B bandB→B qter. For q10 that means A keeps
+// its p arm and receives B's q arm.
+const armsOf = (k, chrom) => {
+  const c = ISCN.parse(k).clones[0];
+  const i = (c.slots[chrom] || []).find((x) => x.kind !== 'normal');
+  if (!i) return null;
+  return Karyo.buildInstance(i).segments.map((s) => {
+    const cen = IDEO.data[s.chrom].centromere;
+    return s.chrom + (s.to <= cen ? 'p' : s.from >= cen ? 'q' : 'p+q');
+  }).join('+');
+};
+
+test('a whole-arm reciprocal keeps its own p arm and takes the partner q arm', () => {
+  assert.equal(armsOf('46,XX,t(13;15)(q10;q10)', '13'), '13p+15q');
+  assert.equal(armsOf('46,XX,t(13;15)(q10;q10)', '15'), '15p+13q');
+});
+test('a whole-arm reciprocal with mixed p10/q10 breakpoints follows the same formula', () => {
+  // der(1) = 1pter→1p10 :: 3q10→3qter
+  assert.equal(armsOf('46,XY,t(1;3)(p10;q10)', '1'), '1p+3q');
+  assert.equal(armsOf('46,XY,t(1;3)(p10;q10)', '3'), '3p+1q');
+});
+test('the der(A)t(A;B) product form agrees with the plain t form', () => {
+  assert.equal(armsOf('46,XX,der(13)t(13;15)(q10;q10)', '13'), '13p+15q');
+  assert.equal(armsOf('46,XX,der(15)t(13;15)(q10;q10)', '15'), '15p+13q');
+});
+test('the drawing agrees with what segregation.js says the imbalance is', () => {
+  // The two halves of the app must not disagree about the same string. segregation.js
+  // calls der(13)t(13;15)(q10;q10) a partial trisomy for 15q and a partial monosomy
+  // for 13q, so the drawn chromosome must carry 15q and must NOT carry 13q.
+  const Seg = win.Segregation;
+  const m = Seg.compute(ISCN.parse('46,XX,t(13;15)(q10;q10)').clones[0]);
+  const adj1 = m.modes.find((x) => x.name === 'Adjacent-1');
+  adj1.gametes.forEach((g) => {
+    const named = /der\((\d+)\)/.exec(g.zygote)[1];
+    const arms = armsOf(g.zygote, named);
+    const gained = /partial trisomy (\d+)q/.exec(g.imbalance)[1];
+    const lost = /partial monosomy (\d+)q/.exec(g.imbalance)[1];
+    assert.ok(arms.includes(gained + 'q'), `${g.zygote}: drawing must carry the gained ${gained}q (got ${arms})`);
+    assert.ok(!arms.includes(lost + 'q'), `${g.zygote}: drawing must not carry the lost ${lost}q (got ${arms})`);
+  });
+});
+test('Robertsonian fusions are untouched (they keep the arm each breakpoint names)', () => {
+  assert.equal(armsOf('45,XY,rob(13;14)(q10;q10)', '13'), '13q+14q');
+  assert.equal(armsOf('45,XX,der(14;21)(q10;q10)', '14'), '14q+21q');
+});
+test('ordinary translocations are unchanged', () => {
+  assert.equal(armsOf('46,XY,t(9;22)(q34;q11.2)', '9'), '9p+q+22q');
+  assert.equal(armsOf('46,XY,t(9;22)(q34;q11.2)', '22'), '22p+q+9q');
+  assert.equal(armsOf('46,XX,t(2;5)(q21;q31)', '2'), '2p+q+5q');
 });
