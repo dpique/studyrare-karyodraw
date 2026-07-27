@@ -426,12 +426,20 @@
       actual: actual,
       ok: clone.modalNumber == null || clone.modalNumber === actual || inRange
     };
-    // Do not argue about the count when part of the designation went unread: the
-    // stated number is probably right and our tally is the thing that is short.
+    // Do not argue about the count when part of the designation was not interpreted:
+    // the stated number is probably right and our tally is the thing that is short.
     // "Says 46 but describes 45" reads as a claim about the karyotype, and sends
     // people looking for an imbalance that is not there.
-    var unread = clone.aberrations.some(function (ab) { return ab.unread; });
-    if (!clone.counts.ok && clone.sex.tokens.length > 0 && !clone.incomplete && !unread) {
+    //
+    // Two ways a token goes uncounted. It can be leftover text hanging off an
+    // aberration that WAS read (ab.unread), or it can be a whole token that failed to
+    // become one at all (kind "unknown"). 46,XY,rob(14;21)(q10;q10),21 is the second:
+    // the signless 21 contributes nothing to the tally, so the count came out 45 and
+    // the app announced a discrepancy underneath the message that actually diagnoses
+    // it ("21 needs a sign"). Fix the sign and the count is fine, so saying it was
+    // wrong is both unhelpful and, for the +21 reading, untrue.
+    var uncounted = clone.aberrations.some(function (ab) { return ab.unread || ab.kind === "unknown"; });
+    if (!clone.counts.ok && clone.sex.tokens.length > 0 && !clone.incomplete && !uncounted) {
       var want = clone.modalHigh != null ? (clone.modalNumber + "–" + clone.modalHigh) : String(clone.modalNumber);
       // Names the rule as well as the discrepancy: a learner who does not already
       // know that the leading number is the cell's total count cannot act on "these

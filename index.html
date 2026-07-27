@@ -1015,9 +1015,17 @@
   function renderSummary(model) {
     var box = $("#summary");
     var kt = model.normalized || model.raw;
-    var pill = model.clones.every(function (c) { return c.counts.ok; })
-      ? ''
-      : '<span class="pill warn">count doesn’t add up</span>';
+    // Name both numbers rather than saying "count doesn't add up". The drawing is
+    // built from the changes listed, never from the number at the front, so
+    // 46,XY,rob(14;21)(q10;q10),-21 and 40,XY,rob(14;21)(q10;q10),-21 produce the
+    // SAME karyogram of 44 chromosomes. Without the drawn figure beside the written
+    // one that looks like the app ignoring the input, and the label on the picture
+    // is a number the picture does not contain.
+    var off = model.clones.filter(function (c) { return !c.counts.ok && c.counts.actual != null; });
+    var pill = !off.length ? ''
+      : (model.clones.length === 1
+        ? '<span class="pill warn">written ' + off[0].modalNumber + ' · drawn ' + off[0].counts.actual + '</span>'
+        : '<span class="pill warn">count doesn’t add up</span>');
     var meta = model.isMosaic ? "mosaic (" + model.clones.length + " clones)" : "";
     box.innerHTML = '<span class="kt">' + escapeHtml(kt) + '</span>' +
       (meta ? '<span class="sex">' + meta + '</span>' : '') +

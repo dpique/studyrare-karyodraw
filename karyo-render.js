@@ -945,6 +945,12 @@
     return n;
   }
 
+  // A plain normal copy of a chromosome, with no aberration. Used as the reference
+  // for a gap's size and position when the real copies cannot supply one.
+  function normalInst(chrom) {
+    return { chrom: chrom, kind: "normal", label: chrom, aberration: null, primary: null };
+  }
+
   function cellHtml(labelText, insts, opts, ctx) {
     opts = opts || {};
     var copiesStyle = (opts.cenOffset && opts.cenOffset > 0.5) ? ' style="margin-top:' + opts.cenOffset.toFixed(1) + 'px"' : "";
@@ -971,8 +977,11 @@
       // The gap where a lost homolog was. Aligned as a normal copy of that chromosome
       // would be, so it sits with its surviving partner rather than at the cell top.
       if (opts.missing > 0) {
-        var refChrom = insts[0].chrom;
-        var ref = drawInstance({ chrom: refChrom, kind: "normal", label: refChrom, aberration: null, primary: null }, ctx);
+        // insts can be EMPTY here: 44,XY,rob(14;21)(q10;q10),-21 leaves no free 21 at
+        // all, one fused into the derivative and one lost, and the cell is then
+        // nothing but its gap. Fall back to the cell's own chromosome.
+        var refChrom = insts.length ? insts[0].chrom : (opts.ghostChrom || labelText);
+        var ref = drawInstance(normalInst(refChrom), ctx);
         var gmt = mode === "cen" ? Math.max(0, maxCen - ref.cenY)
           : mode === "bottom" ? Math.max(0, maxH - ref.height) : 0;
         for (var gi = 0; gi < opts.missing; gi++) h2.push(ghost(refChrom, "missing", gmt));
@@ -1034,10 +1043,24 @@
     GROUPS.forEach(function (grp) {
       grp.chroms.forEach(function (chrom) {
         var insts = clone.slots[chrom] || [];
-        if (!wanted(chrom) || (only && !insts.length)) return;
+        var lost = lostCount(clone, chrom);
+        // An empty slot is normally nothing to isolate, so the affected view skips
+        // it. Not when the karyotype STATES a loss for that chromosome: then the gap
+        // is the finding. 44,XY,rob(14;21)(q10;q10),-21 leaves no free 21 at all (one
+        // fused into the der, one lost) and used to draw no chromosome 21 whatsoever
+        // in the focused view, so the -21 was invisible.
+        if (!wanted(chrom) || (only && !insts.length && !lost)) return;
         specs.push({ row: grp.name, chrom: chrom, insts: insts, opts: {
-          ghost: !only && insts.length === 0, ghostChrom: chrom, ghostText: "nullisomy",
-          missing: lostCount(clone, chrom) } });
+          // A slot only empties two ways, and neither is nullisomy. With a stated
+          // loss the gaps below say it (after rob(14;21) plus -21, 21q is still
+          // present on the derivative, so that is a monosomy for 21q and not an
+          // absence of it). Otherwise every copy was consumed by a derivative, as in
+          // 43,XY,rob(13;14)(q10;q10),rob(13;14)(q10;q10), where both 13q and both
+          // 14q are present on the two fusions and nothing is missing at all. The
+          // label says what is true of the SLOT, which is that no free copy is left.
+          ghost: !only && insts.length === 0 && !lost,
+          ghostChrom: chrom, ghostText: "none free",
+          missing: lost } });
       });
       if (!grp.sex) return;
       // 21, 22, then X, Y, then the gap where a lost sex chromosome was, then markers
@@ -1087,7 +1110,14 @@
     if (opts.only != null) {
       // Only cells with copies can be measured; cellMetrics reads drawn[0] and would
       // throw on the absent-homolog placeholder, which has none by definition.
-      specs.forEach(function (s) { if (s.insts.length) s.m = cellMetrics(s.insts, ctx); });
+      // A cell that is nothing but gaps still has to line up on the shared centromere
+      // line, so measure a normal copy of its chromosome instead of its (empty) list.
+      // Only the sex-chromosome placeholder, which has no chromosome of its own, is
+      // left unmeasured.
+      specs.forEach(function (s) {
+        if (s.insts.length) s.m = cellMetrics(s.insts, ctx);
+        else if (s.chrom && s.opts.missing > 0) s.m = cellMetrics([normalInst(s.chrom)], ctx);
+      });
       var withCen = specs.filter(function (s) { return s.m && s.m.cenLine != null; });
       var above = withCen.length ? Math.max.apply(null, withCen.map(function (s) { return s.m.cenLine; })) : 0;
       var below = withCen.length ? Math.max.apply(null, withCen.map(function (s) { return s.m.height - s.m.cenLine; })) : 0;

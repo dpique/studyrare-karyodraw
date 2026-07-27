@@ -633,3 +633,60 @@ test('the two views keep their own vertical alignment on purpose', () => {
   assert.match(html(Object.keys(aff)), /kcell-copies" style="margin-top:/, 'affected view sets a shared centromere line');
   assert.doesNotMatch(html(null), /kcell-copies" style="margin-top:/, 'the full karyogram does not');
 });
+
+// ---- a stated loss is drawn even when it empties the slot -------------------
+// 44,XY,rob(14;21)(q10;q10),-21 leaves no free chromosome 21 at all: one fused into
+// the derivative, one lost. The affected view drew no 21 cell whatsoever, so the -21
+// was invisible, and the full karyogram labelled the empty slot "nullisomy" — wrong
+// as well as alarming, since 21q is still present on the der(14). This is a monosomy
+// for 21q, not an absence of it.
+const gapsIn = (k, view, chrom) => {
+  const c = ISCN.parse(k).clones[0];
+  const aff = Karyo.computeAffected([c]);
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, c, { theme: 'simple', level: 1, affected: aff, only: view === 'affected' ? Object.keys(aff) : null });
+  const cell = cont.innerHTML.split(/(?=<div class="kcell[ "])/).slice(1)
+    .find((x) => new RegExp('<div class="klabel">' + chrom + '</div>').test(x));
+  if (!cell) return null;
+  return { gaps: (cell.match(/kchrom ghost/g) || []).length, nullisomy: /nullisomy/.test(cell) };
+};
+
+test('an emptied slot shows its gap in BOTH views, and is not called nullisomy', () => {
+  ['all', 'affected'].forEach((view) => {
+    const c21 = gapsIn('44,XY,rob(14;21)(q10;q10),-21', view, '21');
+    assert.ok(c21, `${view}: chromosome 21 has a cell at all`);
+    assert.equal(c21.gaps, 1, `${view}: one gap, for the one stated loss`);
+    assert.equal(c21.nullisomy, false, `${view}: 21q rides on the der, so this is not nullisomy`);
+  });
+});
+
+test('each stated loss gets its own gap', () => {
+  assert.equal(gapsIn('44,XY,-21,-21', 'all', '21').gaps, 2);
+  assert.equal(gapsIn('45,XY,-21', 'all', '21').gaps, 1);
+});
+
+test('a balanced carrier gets no gap, because nothing is missing', () => {
+  // 45,XY,rob(14;21)(q10;q10) also has a single drawn 21, but 21q rides on the
+  // derivative and no loss is stated, so a gap would misstate it.
+  assert.equal(gapsIn('45,XY,rob(14;21)(q10;q10)', 'all', '21').gaps, 0);
+  assert.equal(gapsIn('45,XY,rob(14;21)(q10;q10)', 'affected', '21').gaps, 0);
+});
+
+test('a slot emptied by derivatives says "none free", not "nullisomy"', () => {
+  // 43,XY,rob(13;14)(q10;q10) twice consumes both 13s and both 14s. Both 13q and
+  // both 14q are present, on the two fusions, so nothing is missing and "nullisomy"
+  // was flatly wrong. A probe over the reachable inputs found no case where an
+  // autosome slot empties with nothing accounting for it, so the label had no
+  // correct use left at all.
+  const c = ISCN.parse('43,XY,rob(13;14)(q10;q10),rob(13;14)(q10;q10)').clones[0];
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, c, { theme: 'simple', level: 1, affected: Karyo.computeAffected([c]) });
+  assert.match(cont.innerHTML, /none free/, 'says what is true of the slot');
+  assert.doesNotMatch(cont.innerHTML, /nullisomy/, 'and does not claim material is absent');
+});
+
+test('the word nullisomy is gone from the renderer', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'karyo-render.js'), 'utf8');
+  const code = src.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+  assert.ok(!/nullisomy/.test(code), 'no remaining nullisomy label in code');
+});
