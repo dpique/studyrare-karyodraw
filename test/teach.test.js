@@ -120,3 +120,32 @@ test('pronounce speaks the cell count when present', () => {
   assert.match(Teach.pronounce(ISCN.parse('46,XX[cp20]').clones[0]), /composite of 20 cells/);
   assert.doesNotMatch(Teach.pronounce(ISCN.parse('46,XX').clones[0]), /cell/);
 });
+
+// ---- a whole-arm acrocentric t() at a self-consistent count -----------------
+// 45,XX,t(13;15)(q10;q10) contradicts itself and gets a warning plus a rob() fix.
+// 46,XX,t(13;15)(q10;q10) does not: it is legal, and for two non-acrocentrics it is
+// genuinely what you would write. But for two acrocentrics it is almost never what
+// the writer meant, and the drawing (46 chromosomes, both products present) is the
+// picture that convinces a student a Robertsonian carrier has 46. That belongs in the
+// decode panel, which explains what you typed, not in the warning box, which is for
+// what is wrong: warning on correct input is how a warning box loses its authority.
+test('a 46-count whole-arm acrocentric t is explained, and points at rob', () => {
+  const t = decodeText('46,XX,t(13;15)(q10;q10)');
+  assert.match(t, /count stays 46/);
+  assert.match(t, /rob\(13;15\)\(q10;q10\)/);
+  assert.match(t, /45/, 'names the count a Robertsonian would give');
+});
+test('the same note is absent when the count already contradicts the t', () => {
+  // 45,XX,t(13;15)(q10;q10): the warning box and the rob() fix already handle it, so
+  // the decode panel must not repeat the lesson.
+  assert.doesNotMatch(decodeText('45,XX,t(13;15)(q10;q10)'), /count stays 46/);
+});
+test('a whole-arm t between non-acrocentrics gets no rob note', () => {
+  assert.doesNotMatch(decodeText('46,XY,t(1;3)(p10;q10)'), /Robertsonian|rob\(/);
+});
+test('an ordinary reciprocal translocation gets no rob note', () => {
+  assert.doesNotMatch(decodeText('46,XY,t(9;22)(q34;q11.2)'), /Robertsonian|rob\(/);
+});
+test('a real Robertsonian is not told to use rob (it already does)', () => {
+  assert.doesNotMatch(decodeText('45,XX,rob(13;15)(q10;q10)'), /count stays 46/);
+});

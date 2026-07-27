@@ -1,7 +1,10 @@
 # Spec: parental origin (the segregation panel, run backwards)
 
-Status: **proposed, not built.** Design agreed 2026-07-26; this file is the thing to
-implement against. The forward half shipped in #96.
+Status: **built** (2026-07-26). The forward half shipped in #96, this in #100.
+`Segregation.origin(clone)` / `Segregation.renderOrigin(model)`; tests in
+`test/segregation.test.js`. Kept as the record of why it works this way, and of what was
+deliberately left out. Three things came out differently from the plan below; each is
+marked **AS BUILT**.
 
 ## The problem
 
@@ -61,9 +64,15 @@ karyotype instead of an `XX or XY` construction that is not valid ISCN.
 ## Scope
 
 **In, v1.** A single non-mosaic clone, not acquired, whose aberrations include a
-derivative built from two chromosomes (`der(A;B)` whole-arm, or `der(A)t(A;B)`), and
-which is unbalanced. That is exactly the set the forward model emits, which is what
-makes the round-trip test total.
+derivative built from two chromosomes (`der(A;B)` whole-arm, or `der(A)t(A;B)`), or a
+free-standing `t` alongside an imbalance, and which is unbalanced.
+
+**AS BUILT:** that is *not* quite the whole set the forward model emits, so the round
+trip is total over the derivative-bearing products only. Interchange 3:1 gametes give
+bare aneuploidies (`45,XX,-2`, `45,XX,-5`) with no derivative left in them, and those
+fall into the excluded class below for the same reason: nondisjunction produces them
+too, so naming a carrier would overclaim. The test asserts the round trip over
+derivative-bearing products and states the count it covered.
 
 **Out, v1**, each for a reason:
 
@@ -173,26 +182,33 @@ applies: normalize through JSON before `deepEqual`.
 
 ## UI placement
 
-Its own card, directly above the segregation card, titled for the question it answers
-("Where this came from"). Not folded into the segregation card: that card's lead
-paragraph asserts the drawn karyotype is a balanced carrier whose chromosomes pair at
-meiosis, which is false for an unbalanced proband. Keeping them separate keeps each
-card's claim true. The reverse card then *embeds* the carrier's forward panel, which is
-where the pairing statement becomes true again, about the parent.
+**AS BUILT: one card, not two.** The plan called for a separate card above the
+segregation card, on the grounds that the segregation card's lead asserts the drawn
+karyotype is a balanced carrier pairing at meiosis, which is false for an unbalanced
+proband. Both panels in fact render into the same `#segregation` host, because that host
+already carries the wiring the embedded panel needs: the conceptus buttons, their
+previews, and the animation toggle's `#seg-anim` sibling selectors. A second card would
+have had to duplicate all of it.
+
+The objection is answered by ordering instead. The reverse panel leads with its own
+"Where this came from" heading and states the inference, then a line hands over
+explicitly ("Below is that carrier parent's meiosis, with the outcome you typed
+marked"), and only then does the embedded panel's "constitutional balanced carrier"
+lead appear — by which point it is true, about the parent.
 
 ## Open questions
 
-1. **Bare aneuploidy.** Should `47,XX,+21` say anything? A qualitative line ("free
-   trisomy 21, typically nondisjunction; parental karyotypes are typically normal; this
-   is not a translocation") has teaching value and is the contrast case for
-   translocation Down syndrome. It also widens scope well beyond translocations. Lean:
-   defer to v2, and only as a one-line contrast, never as a carrier candidate.
-2. **De novo proportions.** Whether to say anything about how often these are de novo
-   versus inherited. Quoted figures for translocation Down syndrome vary by series and
-   by ascertainment. Lean: omit, consistent with the no-numbers rule, and let "both are
-   excluded by testing the parents" carry the weight.
-3. **UPD.** A Robertsonian carrier parent also carries a uniparental-disomy risk for
-   the involved chromosomes (14 and 15 especially: Temple and Kagami-Ogata syndromes),
-   which is a real reason to test parents and is invisible in a segregation diagram.
-   Worth one line in the reverse card, or out of scope? Lean: one line, named only, no
-   risk figure.
+1. **Bare aneuploidy.** Should `47,XX,+21` say anything? **Still open, still deferred.**
+   A qualitative line ("free trisomy 21, typically nondisjunction; parental karyotypes
+   are typically normal; this is not a translocation") has teaching value and is the
+   contrast case for translocation Down syndrome. It also widens scope well beyond
+   translocations, and it would have to stay a contrast line, never a carrier candidate.
+   `45,XY,-21` and `47,XX,+21` currently show no panel at all.
+2. **De novo proportions.** **Resolved: omitted.** Quoted figures for translocation Down
+   syndrome vary by series and by ascertainment, and the no-numbers rule applies most
+   exactly here. "Told apart by karyotyping both parents" carries the weight, and a test
+   fails the build on a percentage or a 1-in-N figure anywhere in the panel.
+3. **UPD.** **Resolved: named, no figure.** A Robertsonian carrier of 14 or 15 gets one
+   line naming uniparental disomy and the syndromes (Temple and Kagami-Ogata for 14,
+   Prader-Willi and Angelman for 15), because it is a real reason to test the parents
+   that a segregation diagram cannot show. A reciprocal carrier gets no such line.
