@@ -3,6 +3,28 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (the view options are ordered by use; the tour moves to the nav)
+
+- **Show, then Bands, then Style.** Ordered by how often a viewer reaches for each one, which turns
+  out to be the same order as the question each answers: which chromosomes, then how much detail,
+  then how they are coloured. Two independent principles agreeing on the same order is the reason to
+  trust it. Style is close to a one-time preference, so it goes last.
+
+- **The guided tour moves out of the typing path and into the nav.** It was the only full pill in
+  the input stack, sitting between the examples and the controls on a row of its own, and most
+  people arrive to type rather than to be toured. It is now a nav item beside Guide, which is what
+  it is: a destination. That removes a whole row from the header.
+
+  It also **works from every landing page now**, which it never did. The link is `/?tour=1`, and the
+  homepage opens the tour after the first draw so it appears over a karyogram rather than an empty
+  page. The URL is rewritten without `tour=1` on that first draw, so a refresh or a shared link does
+  not silently restart it. The nav is single-sourced in `scripts/build-pages.mjs`, so all 32 landing
+  pages, the hub and the two static pages picked it up from one edit.
+
+- **Left as is:** the hint line under the controls still describes the Style toggle while sitting at
+  the left, now under Show. The bolded word matches the active button's label, so the connection is
+  made by the word rather than the position, and it reads fine.
+
 ## 2026-07-27 (a round-trip check, so dropped input stops being found one case at a time)
 
 - **`47~49,XY,+8,,` drew a full karyogram and said nothing at all (bug).** Two commas. The field
