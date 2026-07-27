@@ -111,9 +111,6 @@
   }
   .chip:hover { background: var(--peri-50); border-color: var(--peri-300); color: var(--peri-700); }
   .chip b { color: var(--peri-700); font-weight: 700; }
-  /* Shuffle is a control, not an example: dashed edge and no mono karyotype so the
-     eye does not read it as a fourth karyotype to click. */
-  .chip-shuffle { border-style: dashed; color: var(--muted); font-family: inherit; }
 
   /* Visible keyboard focus on every interactive control. :focus-visible keeps the
      ring for keyboard users while leaving mouse clicks clean. */
@@ -803,9 +800,9 @@
   ];
   // Show a rotating handful rather than the whole list. Eight chips wrapped to three
   // rows and pushed the karyogram below the fold on a laptop, where a viewer reads
-  // two of them and scrolls past the rest. Three plus Shuffle takes one row, or two
-  // when a long label is dealt. Shuffle is what keeps the other four reachable, so
-  // the shorter row hides nothing; without it, trimming would just delete examples.
+  // two of them and scrolls past the rest. Three fits one row at most widths, and the
+  // set is re-dealt on every page load, so the other four are reached by refreshing
+  // rather than by a control competing with the chips for the same row.
   var EXAMPLES_SHOWN = 3;
 
   // Jumping to another karyotype: an example chip, a "did you mean" fix, a conceptus
@@ -819,35 +816,52 @@
     run();
   }
 
-  // Cycle a shuffled copy of the list rather than sampling independently each time,
-  // so repeated Shuffle clicks walk the whole set instead of re-rolling the same two
-  // or three by chance. The deck is reshuffled only once it has been dealt out.
-  var exDeck = [];
+  // Deal from a shuffled deck held in sessionStorage rather than sampling afresh, so
+  // successive page loads walk the whole list instead of re-rolling the same two or
+  // three by chance. sessionStorage and not localStorage: the deck should reset for a
+  // new visit, and it is per-tab, so two open tabs do not fight over one cursor. Any
+  // storage failure (Safari private mode throws on write) falls back to an in-memory
+  // deck, which still shuffles correctly and only loses continuity across reloads.
+  var DECK_KEY = "kd.exdeck.v1";
+  var exDeck = null;
+  function readDeck() {
+    if (exDeck) return exDeck;
+    try {
+      var raw = sessionStorage.getItem(DECK_KEY);
+      var saved = raw ? JSON.parse(raw) : null;
+      // Ignore a deck saved before the EXAMPLES list changed, or it would deal
+      // karyotypes that no longer exist.
+      if (saved && saved.n === EXAMPLES.length && Array.isArray(saved.order)) exDeck = saved.order;
+    } catch (e) {}
+    return exDeck || (exDeck = []);
+  }
+  function saveDeck() {
+    try { sessionStorage.setItem(DECK_KEY, JSON.stringify({ n: EXAMPLES.length, order: exDeck })); } catch (e) {}
+  }
   function dealExamples(n) {
-    var out = [];
+    var deck = readDeck(), out = [];
     while (out.length < n) {
-      if (!exDeck.length) {
-        exDeck = EXAMPLES.slice();
-        for (var i = exDeck.length - 1; i > 0; i--) {
-          var j = Math.floor(Math.random() * (i + 1));
-          var t = exDeck[i]; exDeck[i] = exDeck[j]; exDeck[j] = t;
+      if (!deck.length) {
+        for (var i = 0; i < EXAMPLES.length; i++) deck.push(i);
+        for (var j = deck.length - 1; j > 0; j--) {
+          var r = Math.floor(Math.random() * (j + 1));
+          var t = deck[j]; deck[j] = deck[r]; deck[r] = t;
         }
       }
-      var e = exDeck.pop();
-      // A deck boundary can repeat one across the seam; skip it rather than show
-      // the same karyotype twice in a row of three.
-      if (out.indexOf(e) < 0) out.push(e);
+      var idx = deck.pop();
+      // A deck boundary can repeat one across the seam; skip it rather than show the
+      // same karyotype twice in a row of three.
+      if (out.indexOf(idx) < 0) out.push(idx);
     }
-    return out;
+    saveDeck();
+    return out.map(function (i) { return EXAMPLES[i]; });
   }
 
   function paintExamples() {
     $("#examples").innerHTML = dealExamples(Math.min(EXAMPLES_SHOWN, EXAMPLES.length)).map(function (e) {
       return '<button type="button" class="chip" data-k="' + e[0].replace(/"/g, "&quot;") +
         '" aria-label="Draw ' + e[0].replace(/"/g, "&quot;") + ', ' + e[1] + '"><b>' + e[0] + '</b> · ' + e[1] + '</button>';
-    }).join("") +
-      '<button type="button" class="chip chip-shuffle" id="ex-shuffle" title="Show three more examples" ' +
-      'aria-label="Show three more example karyotypes">⟳ Shuffle</button>';
+    }).join("");
   }
 
   function buildExamples() {
@@ -855,9 +869,6 @@
     paintExamples();
     box.addEventListener("click", function (ev) {
       var c = ev.target.closest(".chip"); if (!c) return;
-      // Reshuffling must not redraw the karyogram, so it is handled before the
-      // data-k path and the Shuffle chip deliberately carries no data-k.
-      if (c.id === "ex-shuffle") { paintExamples(); $("#ex-shuffle").focus(); return; }
       loadKaryotype(c.getAttribute("data-k"));
     });
   }

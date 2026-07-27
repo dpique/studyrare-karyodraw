@@ -3,6 +3,28 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (the example chips re-deal on page load; the Shuffle button is gone)
+
+- **The Shuffle chip is removed; the three examples are re-dealt on every page load instead.** It
+  shipped earlier today and lasted about an hour. It was a control sitting in the row it was meant
+  to shorten, competing with the three chips for the same horizontal space and reading, at a glance,
+  like a fourth karyotype to click. A page load is already the moment a viewer arrives with fresh
+  attention, so dealing there costs no pixels and no explanation.
+
+- **The deck lives in `sessionStorage`, so refreshing walks the whole list.** Picking three at
+  random on each load would show the same two or three by chance and bury the rest, which is the
+  failure the deck existed to prevent. Indices are dealt from a shuffled deck whose cursor survives
+  a reload, so three reloads surface all seven examples. `sessionStorage` rather than
+  `localStorage`: the deck should reset for a new visit, and it is per-tab, so two open tabs do not
+  fight over one cursor. Any storage failure (Safari private mode throws on write) falls back to an
+  in-memory deck that still shuffles correctly and only loses continuity across reloads. A saved
+  deck is discarded when the example list changes length, since it stores indices rather than
+  karyotypes.
+
+  Tested against a `sessionStorage` stub over 40 trials: every trial deals a full row of three with
+  no repeat inside a row, and covers all seven within three reloads. Verified to fail when the deck
+  is swapped for independent sampling.
+
 ## 2026-07-27 (every Robertsonian was drawn upside down)
 
 - **`rob(14;21)(q10;q10)` drew der(14) as 90 Mb of inverted 14q above 35 Mb of 21q (bug).** The
