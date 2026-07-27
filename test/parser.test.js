@@ -676,3 +676,48 @@ test('the count fix follows countWrong, like every other count claim', () => {
   assert.equal(ISCN.parse('46,XY,rob(14;21)(q10;q10),-21').countFix, '44,XY,rob(14;21)(q10;q10),-21');
   assert.equal(ISCN.parse('47,XY,del(5)(zzqewdf2315.2)').countFix, null, 'not while a breakpoint is unreadable');
 });
+
+// ---- whole-chromosome gains and losses are listed in chromosome order -------
+// 43,XY,rob(14;21)(q10;q10),-21,-20 lists 21 before 20 and drew silently.
+//
+// Scoped hard, on purpose. ISCN's full listing order also covers structural
+// abnormalities, and a broader version of this check accused this app's own
+// segregation output of being wrong. Only +N against -N is checked.
+test('gains and losses out of chromosome order are flagged, with a fix', () => {
+  const m = ISCN.parse('43,XY,rob(14;21)(q10;q10),-21,-20');
+  assert.match(m.warnings.join(' '), /chromosome order, so “-20” comes before “-21”/);
+  assert.equal(m.orderFix, '43,XY,rob(14;21)(q10;q10),-20,-21', 'only the two losses move');
+});
+
+test('the fix moves nothing it was not asked to move', () => {
+  // The rob stays exactly where it was written; only the gains and losses sort.
+  assert.equal(ISCN.parse('44,XY,-21,-20').orderFix, '44,XY,-20,-21');
+  assert.ok(ISCN.parse('43,XY,rob(14;21)(q10;q10),-21,-20').orderFix.startsWith('43,XY,rob(14;21)(q10;q10),'),
+    'the rob keeps the position it was written in');
+});
+
+test('correctly ordered karyotypes are left alone', () => {
+  ['45,XY,-20,-21', '47,XY,+8,+21', '48,XY,+8,+8', '46,XY,rob(14;21)(q10;q10),+21',
+   '48,XY,+8,inc', '47,XX,+mar', '49,XY,+8,+der(22)t(9;22)(q34;q11.2)']
+    .forEach((k) => assert.equal(ISCN.parse(k).clones[0].outOfOrder, null, k));
+});
+
+test('structural abnormalities are not ordered against anything', () => {
+  // 46,XX,+der(5)t(2;5)(q21;q31),-2 is what this app's own segregation model emits for
+  // a 3:1 product, and that model was checked against ISCN 2024 Table 5. A rule that
+  // called it an error would be the app contradicting itself on a point it has
+  // already reasoned about (see canonKey in segregation.js).
+  assert.equal(ISCN.parse('46,XX,+der(5)t(2;5)(q21;q31),-2').clones[0].outOfOrder, null);
+  assert.equal(ISCN.parse('46,XY,+8,t(X;18)(p11;q11)').clones[0].outOfOrder, null);
+});
+
+test('listing order does not block the drawing', () => {
+  // It changes how the karyotype is written, never what is drawn, and confidence in
+  // the exact ISCN rule is lower than for the count and readability checks. A wrong
+  // call should cost a suggestion, not a refusal.
+  const c = ISCN.parse('43,XY,rob(14;21)(q10;q10),-21,-20').clones[0];
+  assert.ok(c.outOfOrder, 'flagged');
+  assert.equal(c.unreadable, false);
+  assert.equal(c.countWrong, false);
+  assert.equal(c.unaccounted, false, 'none of the refusing flags are set');
+});

@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (gains and losses out of chromosome order are flagged)
+
+- **`43,XY,rob(14;21)(q10;q10),-21,-20` drew silently.** The count is right (43) and the drawing is
+  right, but 21 is listed before 20. It now says "Whole-chromosome gains and losses are listed in
+  chromosome order, so `-20` comes before `-21`" and offers
+  `43,XY,rob(14;21)(q10;q10),-20,-21` in one click. Only the two losses move; the `rob` keeps the
+  position it was written in.
+
+- **Scoped hard, and this is the interesting part.** ISCN's listing order also covers structural
+  abnormalities, and the first version of this check applied it to them. It then flagged
+  `46,XX,+der(5)t(2;5)(q21;q31),-2` as out of order, which is what this app's **own** segregation
+  model emits for a 3:1 product, and that model was checked against ISCN 2024 Table 5.
+  `segregation.js` had also already reached the opposite conclusion in writing, where its comparison
+  key says "ISCN fixes neither [spelling nor order]".
+
+  Rather than resolve that from memory, the check was narrowed to the piece that is not in dispute:
+  `+N` and `-N` against each other. Everything else is left alone. A test pins the app's own
+  segregation output against the check, so the two halves cannot take opposite positions again.
+
+- **This one warns, it does not refuse.** Every other check added today blocks the drawing, and this
+  deliberately does not: listing order changes how a karyotype is written and never what is drawn,
+  and confidence in the exact ISCN rule is lower here than for the count and readability rules. A
+  wrong call should cost a suggestion, not a refusal.
+
 ## 2026-07-27 (the view options are ordered by use; the tour moves to the nav)
 
 - **Show, then Bands, then Style.** Ordered by how often a viewer reaches for each one, which turns
