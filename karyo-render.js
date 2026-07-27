@@ -213,6 +213,11 @@
     var ctx = opts.ctx || { theme: "detailed", level: 99, affected: {} };
     var simple = ctx.theme === "simple";
     var overlays = opts.overlays || [];
+    // The chromosome this composite is filed and labelled as, used for the outline
+    // colour and for a seam centromere. drawInstance passes it; the fallback is the
+    // old positional guess, kept for the direct renderComposite calls in tests.
+    var idChrom = opts.idChrom != null ? String(opts.idChrom)
+      : ((segments.filter(function (s) { return s.hasCen; })[0] || segments[0] || {}).chrom);
     var totalBp = segments.reduce(function (s, g) { return s + (g.to - g.from); }, 0);
     var H = h(totalBp);
     var pad = 3, cap = W * CAP_RATIO, CEN_H = 9;
@@ -285,7 +290,11 @@
     // centromere marker now shows the join.
     var cenIsSeam = false;
     if (!cenList.length && segments.length >= 2 && firstBoundaryY != null) {
-      cenList.push({ y: firstBoundaryY, chrom: segments[0].chrom, reversed: false });
+      // Coloured as the chromosome the derivative is named for, not as whichever arm
+      // is drawn on top. A Robertsonian's seam centromere belongs to neither partner
+      // in particular (the notation is lowest-number-first and does not record whose
+      // centromere is kept, as the decode says), so the label is the honest tiebreak.
+      cenList.push({ y: firstBoundaryY, chrom: idChrom, reversed: false });
       junctionYs = junctionYs.filter(function (jy) { return Math.abs(jy - firstBoundaryY) > 0.5; });
       // Flagged, because this y is NOT comparable to a normal homolog's p/q boundary:
       // an acrocentric's centromere sits near its top, a whole-arm fusion's sits
@@ -350,9 +359,8 @@
         '" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="2 1.5"/>');
     });
 
-    // Outline color follows the centromere-donor (the chromosome the derivative is
-    // named for), not whichever piece happens to be drawn on top.
-    var idChrom = (segments.filter(function (s) { return s.hasCen; })[0] || segments[0]).chrom;
+    // Outline color follows the chromosome the derivative is named for, not
+    // whichever piece happens to be drawn on top (idChrom, resolved above).
     body.push('<rect x="' + pad + '" y="' + pad + '" width="' + W + '" height="' + H + '" rx="' + cap + '" ry="' + cap +
       '" fill="none" stroke="' + outlineFor(ctx, idChrom) + '" stroke-width="1.1"/>');
 
@@ -585,6 +593,27 @@
   // ENTIRE arm named by each breakpoint (q arm for q10, p arm for p10) and orient
   // both so their centromeres meet at the join in the middle — the two long arms
   // of a rob(13;14)(q10;q10), with both short arms lost.
+  //
+  // Which retained arm goes on TOP is a drawing question, and ISCN does not answer
+  // it: ISCN says how to WRITE der(14;21)(q10;q10), including that the partners are
+  // listed lowest-number-first, and that ordering says nothing about the picture
+  // (teach.js already tells the reader as much). The rule that does apply is the
+  // one every other chromosome in the karyogram already obeys, and the one a
+  // cytogeneticist uses on a chromosome cut out of a metaphase spread, where no name
+  // is available: orient by morphology, SHORT ARM UP.
+  //
+  // Taking the nomenclature order as a drawing order put the LONG arm on top of
+  // every Robertsonian, upside down (a q arm in the top position must be flipped so
+  // qter points up). der(14;21) came out with 90 Mb of 14q inverted above 35 Mb of
+  // 21q, so the derivative's 14q banding ran backwards next to the normal 14 beside
+  // it, which is the exact comparison the picture exists to support.
+  //
+  // Ordering by arm length instead fixes that and costs nothing, because exactly one
+  // arm must be flipped whenever both retained pieces are the same arm letter, and
+  // putting the SHORTER one up means the flipped one is the shorter one. When the
+  // letters differ (der(1;3)(p10;q10) keeps 1p and 3q) the p arm goes up and NEITHER
+  // arm is flipped, so that case is decided by reversal count, not length: a length
+  // rule would put 3q (107 Mb) above 1p (123 Mb) and invert both arms to do it.
   function wholeArmSegments(inst) {
     var ab = inst.aberration, chroms = ab.chroms, bps = ab.breakpoints;
     var a = String(chroms[0]), b = String(chroms[1]);
@@ -593,11 +622,23 @@
     var da = IDEO.data[a], db = IDEO.data[b];
     var segA = arma === "q" ? { chrom: a, from: da.centromere, to: da.length } : { chrom: a, from: 0, to: da.centromere };
     var segB = armb === "q" ? { chrom: b, from: db.centromere, to: db.length } : { chrom: b, from: 0, to: db.centromere };
+    segA.arm = arma; segB.arm = armb;
+
+    // One p and one q: the p arm on top is the only arrangement that flips neither.
+    // Same letter on both sides: one flip is unavoidable, so put the shorter arm up
+    // and spend the flip on it. Arm lengths come from the single bp-coordinate table,
+    // not from the band level, so the Bands toggle never re-orders a derivative.
+    var top = segA, bottom = segB;
+    if (arma !== armb) {
+      if (armb === "p") { top = segB; bottom = segA; }
+    } else if ((segB.to - segB.from) < (segA.to - segA.from)) {
+      top = segB; bottom = segA;
+    }
     // Top arm: centromere at its bottom (a q arm must be flipped so qter is up);
     // bottom arm: centromere at its top (a p arm must be flipped so pter is down).
-    segA.hasCen = true; segA.reversed = (arma === "q");
-    segB.hasCen = true; segB.reversed = (armb === "p");
-    return [segA, segB];
+    top.hasCen = true; top.reversed = (top.arm === "q");
+    bottom.hasCen = true; bottom.reversed = (bottom.arm === "p");
+    return [top, bottom];
   }
 
   // A dicentric of two chromosomes: keep each one's centric piece and orient them
@@ -823,7 +864,13 @@
       var rout = renderRing(built.segments[0], ctx);
       return { svg: rout.svg, width: rout.width, height: rout.height, cenY: null, cenSeam: false, built: built };
     }
-    var out = renderComposite(built.segments, { overlays: built.overlays, ctx: ctx });
+    // idChrom is the chromosome this derivative is filed and labelled as. Passed
+    // explicitly rather than read off segments[0] or the first centric segment,
+    // because segment order is a DRAWING decision (see wholeArmSegments, which puts
+    // the shorter arm on top) and must not be able to change what the derivative
+    // looks like it IS. For every other kind the two agree; for a Robertsonian they
+    // no longer do.
+    var out = renderComposite(built.segments, { overlays: built.overlays, ctx: ctx, idChrom: inst.chrom });
     return { svg: out.svg, width: out.width, height: out.height, cenY: out.cenY, cenSeam: !!out.cenSeam, built: built };
   }
 

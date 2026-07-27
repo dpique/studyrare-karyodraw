@@ -3,6 +3,48 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (every Robertsonian was drawn upside down)
+
+- **`rob(14;21)(q10;q10)` drew der(14) as 90 Mb of inverted 14q above 35 Mb of 21q (bug).** The
+  derivative's long arm ran backwards next to the normal 14 standing beside it, which is the exact
+  comparison the picture exists to support. It also left the derivative floating above its row,
+  because its seam centromere sat far from the normal homolog's.
+
+  Cause: `wholeArmSegments` put `chroms[0]` on top, taking the nomenclature order as a drawing
+  order. Those are different things. ISCN says how to WRITE `der(14;21)(q10;q10)`, including that
+  the partners are listed lowest-number-first, and says nothing at all about the drawing, which
+  `teach.js` already tells the reader ("written lowest-number-first by convention, not by which
+  centromere is kept"). The renderer was contradicting its own explanation. And because a q arm in
+  the top position has to be flipped so qter points up, naming order decided which arm got inverted.
+
+  The rule that does apply is the one every other chromosome in the karyogram already obeys, and the
+  one a cytogeneticist uses on a chromosome cut out of a metaphase spread where no name is
+  available: orient by morphology, **short arm up**. Ordering the two retained arms by length puts
+  the shorter one on top, so the single unavoidable flip is spent on the shorter arm and the long
+  arm reads the same way up as its normal homolog. der(14;21) is now 21q over 14q, and the
+  derivative's 14q lines up band for band with the normal 14. rob(13;14) becomes 14q over 13q
+  (14q is 90 Mb to 13q's 97 Mb).
+
+- **The mixed-letter case is decided by reversal count, not length.** `der(1;3)(p10;q10)` keeps 1p
+  (123 Mb) and 3q (107 Mb), and putting the p arm on top is the only arrangement that flips neither
+  arm. A pure length rule would hoist 3q above 1p and invert both to do it, which is strictly worse
+  to read, so that drawing is unchanged.
+
+- **Segment order can no longer change what a derivative looks like it IS.** The outline colour and
+  the seam centromere used to be read off `segments[0]` / the first centric segment, which only
+  happened to be the named chromosome because the named chromosome was drawn first. Reordering the
+  arms would have made der(14) outlined in chromosome 21's colour. `drawInstance` now passes the
+  label chromosome explicitly. For every other kind of derivative the two agree, so nothing else
+  moves.
+
+- **One test changed meaning rather than expectation.** The whole-arm alignment test used
+  `rob(13;14)` and asserted that centromere-alignment and bottom-alignment give different shifts, to
+  prove the centromere path ran. Under the new orientation they coincide exactly, and that is a
+  property worth having rather than a gap: the derivative is filed under the chromosome with the
+  longer arm, that arm is drawn at the bottom, so the derivative and its normal homolog end on the
+  same arm. The test now asserts the coincidence. The del(1)(q42) test still discriminates the two
+  alignment paths.
+
 ## 2026-07-27 (a whole-arm acrocentric t gets a note and a rob button; fewer example chips)
 
 - **`46,XX,t(13;15)(q10;q10)` now offers the Robertsonian reading beside the drawing.** The help was
