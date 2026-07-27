@@ -3,6 +3,28 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (the count message stops claiming more authority than it has)
+
+- **"but this karyotype describes 46 chromosomes" is gone.** It stated the app's own arithmetic as a
+  property of the karyotype. The figure is nothing more than the sum of the copies this app worked
+  out, so if that working is wrong the sentence is wrong with exactly the same confidence, and it
+  had been wrong three times this week. It now reads: **"The number at the start says 47, but the
+  changes listed after it add up to 46 chromosomes. That first number is the cell's total, so the
+  two have to agree."** Saying whose sum it is invites the reader to check it, which is both the
+  honest claim and the more useful one. The note carried into the PNG and the print sheet was
+  reworded to match.
+
+- **It deliberately does not point at the drawing**, tempting as that was, since the figure IS the
+  number of copies drawn and the two can never disagree. A bad band such as `47,XY,del(5)(zz15.2)`
+  raises this warning and is also refused a karyogram, so "count them below" would sometimes point
+  at nothing. A test pins that.
+
+- **A test rejects oracle voice in any message**, alongside the existing parser-voice guard: no
+  warning may say "this karyotype describes", "this notation describes", or "the karyotype
+  is/has/contains". Five test assertions that pinned the old prose were retargeted to assert the two
+  numbers and their order instead, so rewording the copy no longer churns them; `message-voice.test.js`
+  owns the wording.
+
 ## 2026-07-27 (every count claim now reads one flag)
 
 - **`46,XY,rob(14;21)(q10;q10),21` still offered "Did you mean 45,XY,rob(14;21)(q10;q10),21?".** The

@@ -1307,7 +1307,7 @@
       // tally, so the image must not carry one.
       if (!c || !c.counts || c.counts.ok || c.uncounted || c.counts.actual == null || c.modalNumber == null) return;
       parts.push(((model.clones.length > 1) ? "clone " + (i + 1) + ": " : "") +
-        "you wrote " + c.modalNumber + "; this notation describes " + c.counts.actual + " chromosomes");
+        "you wrote " + c.modalNumber + "; the changes listed add up to " + c.counts.actual + " chromosomes");
     });
     return parts.join(" · ");
   }
