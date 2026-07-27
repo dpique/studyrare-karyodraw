@@ -164,6 +164,22 @@
           " each break (at " + listJoin(breaks) + ") and hand the piece beyond the break to the next chromosome in the list, wrapping around at the end (" +
           cycle + "). The result is " + listJoin(ders) + ". Each keeps its own centromere plus a segment from the chromosome before it.", tag: "t" };
       }
+      // Both breaks at a centromere designation. Worth its own sentence, because the
+      // p10/q10 letters read as if they name the arms that join, and they do not: at
+      // the centromere ISCN's derivative formula (der(A) = A pter→bandA :: B bandB→B
+      // qter) makes pter→band the whole p arm whichever letter is written, so every
+      // spelling gives der(A) = Ap+Bq. The letters record which half of the split
+      // centromere each derivative carries. Say so, or the identical drawings from
+      // (p10;q10) and (q10;q10) look like the app ignoring the input.
+      if (ab.wholeArm) {
+        var a0 = chroms[0], a1 = chroms[1];
+        return { text: "a WHOLE-ARM reciprocal TRANSLOCATION: chromosomes " + listJoin(chroms) +
+          " break inside their own centromeres (at " + listJoin(breaks) +
+          ") and trade entire arms, giving " + listJoin(ders) + ". der(" + a0 + ") is " + a0 + "p carrying " + a1 +
+          "q, and der(" + a1 + ") is " + a1 + "p carrying " + a0 + "q. Each derivative keeps its own short arm and receives its partner's long arm. " +
+          "p10 and q10 are the two halves of a centromere, so they record which half each derivative ends up with rather than which arms join: " +
+          "(p10;q10), (q10;q10) and (p10;p10) all describe the same two chromosomes and are drawn the same way", tag: "t" };
+      }
       return { text: "a reciprocal TRANSLOCATION: chromosomes " + listJoin(chroms) + " break (at " + listJoin(breaks) +
         ") and swap the pieces beyond those breaks, giving two derivative chromosomes " + listJoin(ders), tag: "t" };
     }
@@ -254,7 +270,10 @@
     var pair = ab.chroms.join(";");
     return ". Both whole-arm products are kept here, so the count stays " + clone.modalNumber +
       ". The acrocentric fusion that loses the short arms is a Robertsonian translocation, written rob(" +
-      pair + ")(q10;q10), and it gives a count of " + (clone.modalNumber - 1);
+      pair + ")(q10;q10), and it gives a count of " + (clone.modalNumber - 1) +
+      ". That is the form seen in practice, and dropping those short arms costs nothing: an acrocentric short arm carries " +
+      "ribosomal RNA gene repeats that the other acrocentrics carry as well, so a balanced Robertsonian carrier is healthy at " +
+      (clone.modalNumber - 1) + " chromosomes";
   }
 
   function decode(clone) {

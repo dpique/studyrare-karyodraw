@@ -149,3 +149,58 @@ test('an ordinary reciprocal translocation gets no rob note', () => {
 test('a real Robertsonian is not told to use rob (it already does)', () => {
   assert.doesNotMatch(decodeText('45,XX,rob(13;15)(q10;q10)'), /count stays 46/);
 });
+
+// ---- why (p10;q10) and (q10;q10) draw the same thing ------------------------
+// Reported: the two spellings render identically, which reads as the app ignoring
+// the input. It is correct. ISCN's derivative formula is der(A) = A pter->bandA ::
+// B bandB->B qter, and at the centromere "pter->band" is the whole p arm whichever
+// letter is written, so every spelling gives der(A) = Ap+Bq. The letters record
+// which half of the split centromere each derivative carries. The decode has to say
+// so, or the identical drawings look like a bug.
+test('a whole-arm reciprocal is decoded as a whole-arm exchange, with the arms named', () => {
+  const t = decodeText('46,XX,t(13;15)(q10;q10)');
+  assert.match(t, /WHOLE-ARM/);
+  assert.match(t, /der\(13\) is 13p carrying 15q/);
+  assert.match(t, /der\(15\) is 15p carrying 13q/);
+});
+test('the decode says the p10\/q10 letters do not choose the arms', () => {
+  assert.match(decodeText('46,XX,t(13;15)(p10;q10)'),
+    /halves of a centromere[\s\S]*same two chromosomes/);
+});
+test('every whole-arm spelling decodes to the same arms', () => {
+  // Only the echoed breakpoints may differ between spellings; the sentence naming
+  // what each derivative carries must not.
+  ['(p10;q10)', '(q10;q10)', '(p10;p10)', '(q10;p10)'].forEach((bp) => {
+    const t = decodeText('46,XX,t(13;15)' + bp);
+    assert.match(t, /der\(13\) is 13p carrying 15q/, bp);
+    assert.match(t, /der\(15\) is 15p carrying 13q/, bp);
+  });
+});
+test('the prose and the drawing cannot disagree about a whole-arm derivative', () => {
+  // The decode names the arms in words; the renderer builds them as segments. Pin
+  // them to each other so a change to either one fails here.
+  const Karyo = win.Karyo, IDEO = win.IDEOGRAM;
+  const armsOf = (k, chrom) => {
+    const c = ISCN.parse(k).clones[0];
+    const i = (c.slots[chrom] || []).find((x) => x.kind !== 'normal');
+    return Karyo.buildInstance(i).segments.map((s) => {
+      const cen = IDEO.data[s.chrom].centromere;
+      return s.chrom + (s.to <= cen ? 'p' : s.from >= cen ? 'q' : 'p+q');
+    }).join('+');
+  };
+  ['46,XX,t(13;15)(p10;q10)', '46,XY,t(1;3)(p10;q10)'].forEach((k) => {
+    const t = decodeText(k);
+    const said = /der\((\d+)\) is (\d+)p carrying (\d+)q/.exec(t);
+    assert.ok(said, k);
+    assert.equal(armsOf(k, said[1]), said[2] + 'p+' + said[3] + 'q', k);
+  });
+});
+test('an ordinary reciprocal keeps the plain wording', () => {
+  const t = decodeText('46,XY,t(9;22)(q34;q11.2)');
+  assert.doesNotMatch(t, /WHOLE-ARM/);
+  assert.match(t, /a reciprocal TRANSLOCATION/);
+});
+test('the rob note says why losing the acrocentric short arms is harmless', () => {
+  // "45 chromosomes" reads as a monosomy until you know what is on those short arms.
+  assert.match(decodeText('46,XX,t(13;15)(q10;q10)'), /ribosomal RNA gene repeats/);
+});
