@@ -1021,7 +1021,11 @@
     // SAME karyogram of 44 chromosomes. Without the drawn figure beside the written
     // one that looks like the app ignoring the input, and the label on the picture
     // is a number the picture does not contain.
-    var off = model.clones.filter(function (c) { return !c.counts.ok && c.counts.actual != null; });
+    // c.uncounted: part of the designation was never interpreted, so the drawn tally
+    // is a byproduct of an incomplete reading rather than a statement about the
+    // karyotype. 46,XY,rob(14;21)(q10;q10),21 would read "written 46 · drawn 45" when
+    // the answer is to add a sign, not to change the number.
+    var off = model.clones.filter(function (c) { return !c.counts.ok && !c.uncounted && c.counts.actual != null; });
     var pill = !off.length ? ''
       : (model.clones.length === 1
         ? '<span class="pill warn">written ' + off[0].modalNumber + ' · drawn ' + off[0].counts.actual + '</span>'
@@ -1299,7 +1303,9 @@
   function countMismatchNote(model) {
     var parts = [];
     (model.clones || []).forEach(function (c, i) {
-      if (!c || !c.counts || c.counts.ok || c.counts.actual == null || c.modalNumber == null) return;
+      // Same guard as the pill: an incompletely read designation has no trustworthy
+      // tally, so the image must not carry one.
+      if (!c || !c.counts || c.counts.ok || c.uncounted || c.counts.actual == null || c.modalNumber == null) return;
       parts.push(((model.clones.length > 1) ? "clone " + (i + 1) + ": " : "") +
         "you wrote " + c.modalNumber + "; this notation describes " + c.counts.actual + " chromosomes");
     });

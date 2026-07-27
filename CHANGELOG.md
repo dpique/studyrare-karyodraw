@@ -3,6 +3,25 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (every count claim now reads one flag)
+
+- **`46,XY,rob(14;21)(q10;q10),21` still offered "Did you mean 45,XY,rob(14;21)(q10;q10),21?".** The
+  previous change suppressed the count *warning* for an incompletely read designation but not the
+  one-click count *fix*, so the app quietly proposed keeping the signless `21` and changing the
+  number that was right. Caught on the deployed build while verifying the fix that preceded it.
+
+- **One flag, `clone.uncounted`, and everything that makes a claim about the count reads it.** The
+  warning, the one-click fix, the "written N · drawn M" pill, the note carried into the PNG and
+  print sheet, and the plain-language summary all gate on the same thing: was any part of the
+  designation left uninterpreted. A tally built from a partial reading is a byproduct of that
+  reading, not a statement about the karyotype, and nothing should present it as one. A test asserts
+  the flag's value directly so the five consumers cannot drift into disagreeing about the same
+  karyotype.
+
+- **Legitimate count fixes are untouched.** `46,XY,rob(14;21)(q10;q10),-21` and
+  `40,XY,rob(14;21)(q10;q10),-21` still offer 44, and `45,XX,t(13;15)(q10;q10)` still offers the
+  `rob()` spelling.
+
 ## 2026-07-27 (an emptied chromosome slot, a signless token, and the drawn count)
 
 - **`44,XY,rob(14;21)(q10;q10),-21` drew no chromosome 21 at all (bug).** That karyotype leaves no

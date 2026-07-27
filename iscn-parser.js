@@ -438,8 +438,12 @@
     // the app announced a discrepancy underneath the message that actually diagnoses
     // it ("21 needs a sign"). Fix the sign and the count is fine, so saying it was
     // wrong is both unhelpful and, for the +21 reading, untrue.
-    var uncounted = clone.aberrations.some(function (ab) { return ab.unread || ab.kind === "unknown"; });
-    if (!clone.counts.ok && clone.sex.tokens.length > 0 && !clone.incomplete && !uncounted) {
+    // Recorded on the clone, not just used here: parse() has to make the same call
+    // about the one-click count fix. Suppressing the warning while still offering
+    // "did you mean 45,XY,rob(14;21)(q10;q10),21" would be worse than saying nothing,
+    // since that fix keeps the signless 21 and changes the number that was right.
+    clone.uncounted = clone.aberrations.some(function (ab) { return ab.unread || ab.kind === "unknown"; });
+    if (!clone.counts.ok && clone.sex.tokens.length > 0 && !clone.incomplete && !clone.uncounted) {
       var want = clone.modalHigh != null ? (clone.modalNumber + "–" + clone.modalHigh) : String(clone.modalNumber);
       // Names the rule as well as the discrepancy: a learner who does not already
       // know that the leading number is the cell's total count cannot act on "these
@@ -631,7 +635,9 @@
     // If a single clone's stated count is off, offer the corrected count as a fix.
     if (!result.suggestion && result.clones.length === 1) {
       var cl0 = result.clones[0];
-      if (cl0.modalNumber != null && cl0.counts && !cl0.counts.ok && cl0.counts.actual != null) {
+      // Same guard as the count warning: a tally built from a designation that was
+      // not fully interpreted cannot be the basis of a suggested count.
+      if (cl0.modalNumber != null && cl0.counts && !cl0.counts.ok && cl0.counts.actual != null && !cl0.uncounted) {
         // A whole-arm acrocentric fusion written as t() keeps both derivative
         // chromosomes, so the count stays 46 while the stated count says 45. The
         // count is not the mistake, the operation is: fix the spelling, since

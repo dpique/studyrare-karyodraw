@@ -104,3 +104,24 @@ test('all three toggles are wired through the pushing helper', () => {
     assert.doesNotMatch(html, new RegExp('\\$\\("' + id + '"\\)\\.addEventListener'), `${id} has no bypassing handler`);
   });
 });
+
+test('an incompletely read karyotype carries no count note into the image', () => {
+  // 46,XY,rob(14;21)(q10;q10),21 draws, because it parses. Its tally is short only
+  // because the signless 21 was never interpreted, so "you wrote 46; this notation
+  // describes 45 chromosomes" would travel a claim the app cannot stand behind.
+  assert.equal(noteFor('46,XY,rob(14;21)(q10;q10),21'), '');
+  assert.equal(noteFor('46,XY,rob(14;21)(q10;q10),-21'),
+    'you wrote 46; this notation describes 44 chromosomes', 'a real mismatch still travels');
+});
+
+test('the summary pill and the image note gate on the same flag', () => {
+  const pill = html.match(/var off = model\.clones\.filter\([\s\S]*?\);/)[0];
+  assert.match(pill, /!c\.uncounted/, 'the pill respects it');
+  const note = html.match(/function countMismatchNote\(model\)[\s\S]*?\n  \}/)[0];
+  assert.match(note, /c\.uncounted/, 'the exported note respects it');
+});
+
+test('the plain-language summary hedges only on a real mismatch', () => {
+  const uncounted = Teach.plainSummary(ISCN.parse('46,XY,rob(14;21)(q10;q10),21').clones[0]).join(' ');
+  assert.doesNotMatch(uncounted, /count as written/, 'no hedge when the tally is just incomplete');
+});
