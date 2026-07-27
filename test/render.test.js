@@ -434,7 +434,7 @@ test('the sex chromosomes keep their own placeholder path (no doubling)', () => 
   const c = ISCN.parse('45,X,-Y').clones[0];
   const cont = { innerHTML: '' };
   Karyo.render(cont, c, { theme: 'simple', level: 1, affected: Karyo.computeAffected([c]) });
-  assert.equal((cont.innerHTML.match(/kchrom ghost/g) || []).length, 1, 'exactly one, from missingSexCells');
+  assert.equal((cont.innerHTML.match(/kchrom ghost/g) || []).length, 1, 'exactly one, from the sex-chromosome gap in cellSpecs');
 });
 
 // ---- which arm each derivative keeps at a centromeric breakpoint -------------
@@ -570,4 +570,66 @@ test('the Bands toggle cannot re-order a derivative', () => {
   const cenYs = [0, 1, 99].map((level) => Karyo.drawInstance(der, { theme: 'detailed', level, affected: {} }).cenY);
   assert.equal(new Set(cenYs).size, 1, `seam moved across band levels: ${cenYs.join(', ')}`);
   assert.equal(topArmOf('45,XX,rob(21;22)(q10;q10)', '21').map((s) => s.id).join(' over '), '21q over 22q');
+});
+
+// ---- the two views are built from one cell list ----------------------------
+// They used to assemble their own, and drifted: the absent-homolog placeholder for a
+// monosomy shipped in the full karyogram and had to be back-ported to the affected
+// view afterwards, and the two disagreed about where that placeholder sat (before
+// markers in one, after them in the other). cellSpecs now decides WHICH cells exist
+// for both; the views differ only in grouping and vertical alignment, which is
+// deliberate and is asserted separately below.
+const cellsOf = (k, view) => {
+  const c = ISCN.parse(k).clones[0];
+  const aff = Karyo.computeAffected([c]);
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, c, { theme: 'simple', level: 1, affected: aff, only: view === 'affected' ? Object.keys(aff) : null });
+  // Split on the cell wrapper only. `kcell-copies` shares the prefix, so an
+  // unanchored split cuts every cell in two and the labels come out nonsense.
+  return cont.innerHTML.split(/(?=<div class="kcell[ "])/).slice(1).map((cell) => {
+    // A cell can hold a real chromosome AND a placeholder for its lost homolog
+    // (45,XY,-21 draws one 21 beside a gap), so a named chromosome wins the label.
+    const m = /data-chrom="([^"]+)"/.exec(cell);
+    if (m) return m[1];
+    if (/kchrom ghost/.test(cell)) return /nullisomy/.test(cell) ? 'nullisomy' : 'gap';
+    return '?';
+  });
+};
+
+test('the sex-chromosome gap sits with the sex chromosomes in BOTH views', () => {
+  // 45,X,+mar: one X, one lost sex chromosome, one marker. The affected view used to
+  // emit the gap last, after the marker; the full karyogram put it before. Same order
+  // now, and it is the full karyogram's, because the gap belongs to the sex pair.
+  ['all', 'affected'].forEach((view) => {
+    const cells = cellsOf('45,X,+mar', view);
+    assert.ok(cells.indexOf('gap') > cells.indexOf('X'), `${view}: gap follows X`);
+    assert.ok(cells.indexOf('gap') < cells.indexOf('mar'), `${view}: gap precedes the marker`);
+  });
+});
+
+test('every cell kind in the affected view also exists in the full view', () => {
+  // The drift guard. A cell kind can legitimately be dropped by the affected filter,
+  // but one must never appear there and be missing from the full karyogram.
+  ['45,X', '45,X,+mar', '47,XY,+mar', '46,XY,dmin', '45,XY,-21', '45,XY,rob(14;21)(q10;q10)',
+   'mos 45,X[12]/46,XX[18]', '48,XY,+mar,+mar'].forEach((k) => {
+    const all = new Set(cellsOf(k, 'all'));
+    cellsOf(k, 'affected').forEach((c) => assert.ok(all.has(c), `${k}: "${c}" is in the affected view but not the full one`));
+  });
+});
+
+test('an empty slot is a nullisomy ghost in the full view and absent from the affected one', () => {
+  // The one intended asymmetry: an empty slot has nothing to isolate.
+  assert.ok(cellsOf('45,XY,-21', 'all').includes('21'), 'the surviving 21 is drawn');
+  assert.ok(!cellsOf('45,XY,-21', 'affected').includes('nullisomy'), 'no nullisomy ghost in the focused row');
+});
+
+test('the two views keep their own vertical alignment on purpose', () => {
+  // Not a candidate for consolidation: the affected row hangs every cell off one
+  // shared centromere line, and across 24 chromosomes that would put chromosome 1's
+  // centromere on the same line as 21's. Only the affected view offsets its cells.
+  const c = ISCN.parse('45,XY,rob(14;21)(q10;q10)').clones[0];
+  const aff = Karyo.computeAffected([c]);
+  const html = (only) => { const x = { innerHTML: '' }; Karyo.render(x, c, { theme: 'simple', level: 1, affected: aff, only: only }); return x.innerHTML; };
+  assert.match(html(Object.keys(aff)), /kcell-copies" style="margin-top:/, 'affected view sets a shared centromere line');
+  assert.doesNotMatch(html(null), /kcell-copies" style="margin-top:/, 'the full karyogram does not');
 });

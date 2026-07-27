@@ -935,7 +935,7 @@
   // (the "-21" in 45,XY,-21), never a copy-number deficit. The two look identical by
   // count — a balanced rob(13;14) carrier also has a single drawn 14 — but there 14q
   // rides on the der and nothing is missing, so a placeholder would misstate it.
-  // Sex chromosomes are left to missingSexCells, which owns their pairing.
+  // Sex chromosomes are left to cellSpecs, which owns their pairing and the gap.
   function lostCount(clone, chrom) {
     if (chrom === "X" || chrom === "Y") return 0;
     var n = 0;
@@ -1010,52 +1010,103 @@
     return map;
   }
 
-  // The absent-sex-chromosome placeholder(s) for a monosomy (e.g. 45,X), shared by
-  // the full karyogram and the affected/isolated view so the two never diverge. The
-  // karyogram shows the karyotype; it does not label the gap "?" or guess whether an
-  // X or a Y was lost. Returns [] when the sex complement is complete.
-  function missingSexCells(clone, ctx, cenOffset) {
-    var xN = (clone.slots["X"] || []).length, yN = (clone.slots["Y"] || []).length, out = [];
-    for (var i = 0, n = 2 - (xN + yN); i < n; i++) {
-      out.push(cellHtml("", [], { ghost: true, ghostChrom: "X", ghostText: "missing", sexcell: true, cenOffset: cenOffset }, ctx));
-    }
+  // Every cell a karyogram is made of, in order, for BOTH views. One list, because a
+  // cell kind added to one view used to be able to go missing from the other, and did:
+  // the absent-homolog placeholder for a monosomy shipped in the full karyogram and
+  // had to be back-ported to the affected view afterwards. The two also disagreed
+  // about where the placeholder sat, before markers in one and after them in the
+  // other. Anything that decides WHICH cells exist belongs here.
+  //
+  // `only` selects the affected/isolated view. It filters to the listed chromosomes
+  // and drops empty slots instead of drawing the full view's nullisomy ghost, since an
+  // empty slot has nothing to isolate. Markers, double minutes and the sex placeholder
+  // are not filtered: they are what the karyotype says is there or missing regardless
+  // of which chromosomes were asked for.
+  //
+  // Everything past this point is layout, and the two views deliberately keep their
+  // own. The affected row hangs every cell off one shared centromere line; doing that
+  // across 24 chromosomes would put chromosome 1's centromere (about 123 Mb down) on
+  // the same line as chromosome 21's (about 12 Mb down) and leave a chromosome-length
+  // of blank space above every small one.
+  function cellSpecs(clone, only) {
+    var specs = [];
+    var wanted = function (chrom) { return !only || only.indexOf(chrom) >= 0; };
+    GROUPS.forEach(function (grp) {
+      grp.chroms.forEach(function (chrom) {
+        var insts = clone.slots[chrom] || [];
+        if (!wanted(chrom) || (only && !insts.length)) return;
+        specs.push({ row: grp.name, chrom: chrom, insts: insts, opts: {
+          ghost: !only && insts.length === 0, ghostChrom: chrom, ghostText: "nullisomy",
+          missing: lostCount(clone, chrom) } });
+      });
+      if (!grp.sex) return;
+      // 21, 22, then X, Y, then the gap where a lost sex chromosome was, then markers
+      // and double minutes.
+      ["X", "Y"].forEach(function (chrom) {
+        var insts = clone.slots[chrom] || [];
+        if (!insts.length || !wanted(chrom)) return;
+        specs.push({ row: grp.name, chrom: chrom, insts: insts, sexcell: true, opts: {
+          sexcell: true, missing: lostCount(clone, chrom) } });
+      });
+      // The karyogram shows the karyotype: it does not label the gap "?" or guess
+      // whether an X or a Y was lost.
+      var xN = (clone.slots["X"] || []).length, yN = (clone.slots["Y"] || []).length;
+      for (var i = 0, n = 2 - (xN + yN); i < n; i++) {
+        specs.push({ row: grp.name, chrom: "", insts: [], sexcell: true, opts: {
+          ghost: true, ghostChrom: "X", ghostText: "missing", sexcell: true } });
+      }
+      ["mar", "dmin"].forEach(function (chrom) {
+        var insts = clone.slots[chrom] || [];
+        if (!insts.length) return;
+        specs.push({ row: grp.name, chrom: chrom, insts: insts, opts: {
+          missing: lostCount(clone, chrom) } });
+      });
+    });
+    return specs;
+  }
+
+  // Merge a spec's own cellHtml options with the ones the layout adds (cenOffset,
+  // seamCen). Kept explicit so a layout cannot silently drop a spec option.
+  function cellOpts(spec, extra) {
+    var out = {};
+    for (var k in spec.opts) if (Object.prototype.hasOwnProperty.call(spec.opts, k)) out[k] = spec.opts[k];
+    for (var j in extra) if (Object.prototype.hasOwnProperty.call(extra, j)) out[j] = extra[j];
     return out;
   }
 
   function render(container, clone, opts) {
     opts = opts || {};
     var ctx = { theme: opts.theme || "detailed", level: opts.level == null ? 99 : opts.level, affected: opts.affected || computeAffected(clone) };
+    var specs = cellSpecs(clone, opts.only != null ? opts.only : null);
 
     // "Affected only" view (CyDAS AlteredChromosomesOnly): a single focused row of
-    // just the involved chromosomes (each with its normal homolog + derivative).
+    // just the involved chromosomes (each with its normal homolog + derivative), with
+    // every centromere on one horizontal line — the classic karyogram look
+    // (acrocentrics hang from the line, a metacentric Robertsonian sits centred on
+    // it). Cells with no centromere on any copy (a dmin fragment) bottom-align.
     if (opts.only != null) {
-      var order = window.ISCN.ALL;
-      var list = opts.only.slice().sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); });
-      // Build the focused row, then line every chromosome's centromere up on one
-      // horizontal line — the classic karyogram look (acrocentrics hang from the
-      // line, a metacentric Robertsonian sits centered on it). Cells with no
-      // centromere on any copy (a dmin fragment) bottom-align to the baseline.
-      var cells = [];
-      list.forEach(function (chrom) {
-        var insts = clone.slots[chrom] || [];
-        if (insts.length) cells.push({ chrom: chrom, insts: insts, sexcell: (chrom === "X" || chrom === "Y"), m: cellMetrics(insts, ctx) });
-      });
-      if ((clone.slots["mar"] || []).length) cells.push({ chrom: "mar", insts: clone.slots["mar"], m: cellMetrics(clone.slots["mar"], ctx) });
-      if ((clone.slots["dmin"] || []).length) cells.push({ chrom: "dmin", insts: clone.slots["dmin"], m: cellMetrics(clone.slots["dmin"], ctx) });
-      var withCen = cells.filter(function (c) { return c.m.cenLine != null; });
-      var above = withCen.length ? Math.max.apply(null, withCen.map(function (c) { return c.m.cenLine; })) : 0;
-      var below = withCen.length ? Math.max.apply(null, withCen.map(function (c) { return c.m.height - c.m.cenLine; })) : 0;
+      // Only cells with copies can be measured; cellMetrics reads drawn[0] and would
+      // throw on the absent-homolog placeholder, which has none by definition.
+      specs.forEach(function (s) { if (s.insts.length) s.m = cellMetrics(s.insts, ctx); });
+      var withCen = specs.filter(function (s) { return s.m && s.m.cenLine != null; });
+      var above = withCen.length ? Math.max.apply(null, withCen.map(function (s) { return s.m.cenLine; })) : 0;
+      var below = withCen.length ? Math.max.apply(null, withCen.map(function (s) { return s.m.height - s.m.cenLine; })) : 0;
       var totalH = above + below;
       var oh = ['<div class="karyogram affected-only"><div class="kgroup">'];
       var sexOffset = 0;
-      cells.forEach(function (c) {
-        var off = c.m.cenLine != null ? (above - c.m.cenLine) : Math.max(0, totalH - c.m.height);
-        if (c.sexcell) sexOffset = off;
-        oh.push(cellHtml(c.chrom, c.insts, { sexcell: c.sexcell, cenOffset: off, seamCen: true, missing: lostCount(clone, c.chrom) }, ctx));
+      specs.forEach(function (s) {
+        var off;
+        if (!s.m) {
+          // The placeholder inherits the offset of the sex cell it stands beside, so
+          // the gap lines up with its surviving partner instead of the row top. It is
+          // always emitted after X/Y, so sexOffset is already set.
+          off = sexOffset;
+        } else {
+          off = s.m.cenLine != null ? (above - s.m.cenLine) : Math.max(0, totalH - s.m.height);
+          if (s.sexcell) sexOffset = off;
+        }
+        oh.push(cellHtml(s.chrom, s.insts, cellOpts(s, { cenOffset: off, seamCen: true }), ctx));
       });
-      // Show the absent homolog for a monosomy here too, so the affected view
-      // matches the full karyogram (shared helper).
-      missingSexCells(clone, ctx, sexOffset).forEach(function (h) { oh.push(h); });
       oh.push('</div></div>');
       container.innerHTML = oh.join("");
       return;
@@ -1064,18 +1115,9 @@
     var html = ['<div class="karyogram">'];
     GROUPS.forEach(function (grp) {
       html.push('<div class="kgroup" data-group="' + grp.name + '">');
-      grp.chroms.forEach(function (chrom) {
-        var insts = clone.slots[chrom] || [];
-        html.push(cellHtml(chrom, insts, { ghost: insts.length === 0, ghostChrom: chrom, ghostText: "nullisomy", missing: lostCount(clone, chrom) }, ctx));
+      specs.forEach(function (s) {
+        if (s.row === grp.name) html.push(cellHtml(s.chrom, s.insts, cellOpts(s, {}), ctx));
       });
-      if (grp.sex) {   // 21, 22, then X, Y, then any markers — group G + sex chromosomes
-        var xN = (clone.slots["X"] || []).length, yN = (clone.slots["Y"] || []).length;
-        if (xN) html.push(cellHtml("X", clone.slots["X"], { sexcell: true }, ctx));
-        if (yN) html.push(cellHtml("Y", clone.slots["Y"], { sexcell: true }, ctx));
-        missingSexCells(clone, ctx).forEach(function (h) { html.push(h); });
-        if ((clone.slots["mar"] || []).length) html.push(cellHtml("mar", clone.slots["mar"], {}, ctx));
-        if ((clone.slots["dmin"] || []).length) html.push(cellHtml("dmin", clone.slots["dmin"], {}, ctx));
-      }
       html.push('</div>');
     });
     html.push('</div>');
