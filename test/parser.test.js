@@ -603,3 +603,27 @@ test('a fully interpreted karyotype still gets its count checked', () => {
     /number at the start says 46, but this karyotype describes 44/);
   assert.equal(ISCN.parse('44,XY,rob(14;21)(q10;q10),-21').warnings.length, 0, 'and stays quiet when it adds up');
 });
+
+test('an uncounted token blocks the count FIX, not just the count warning', () => {
+  // Suppressing the warning while still offering "did you mean 45,XY,rob(14;21)
+  // (q10;q10),21" would be worse than saying nothing: that fix keeps the signless 21
+  // and changes the number that was right.
+  const m = ISCN.parse('46,XY,rob(14;21)(q10;q10),21');
+  assert.equal(m.countFix, null, 'no count fix offered');
+  assert.equal(m.suggestion, null);
+  assert.match(m.warnings.join(' '), /needs a sign/, 'the sign is still the diagnosis');
+});
+
+test('legitimate count fixes are untouched', () => {
+  assert.equal(ISCN.parse('46,XY,rob(14;21)(q10;q10),-21').countFix, '44,XY,rob(14;21)(q10;q10),-21');
+  assert.equal(ISCN.parse('40,XY,rob(14;21)(q10;q10),-21').countFix, '44,XY,rob(14;21)(q10;q10),-21');
+  assert.equal(ISCN.parse('45,XX,t(13;15)(q10;q10)').countFix, '45,XX,rob(13;15)(q10;q10)');
+});
+
+test('clone.uncounted is the single flag every count claim reads', () => {
+  // The pill, the export note, the print summary and the count fix all gate on it,
+  // so they cannot drift into disagreeing about the same karyotype.
+  assert.equal(ISCN.parse('46,XY,rob(14;21)(q10;q10),21').clones[0].uncounted, true);
+  assert.equal(ISCN.parse('46,XY,rob(14;21)(q10;q10)+21').clones[0].uncounted, true);
+  assert.equal(ISCN.parse('46,XY,rob(14;21)(q10;q10),-21').clones[0].uncounted, false);
+});

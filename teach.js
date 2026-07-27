@@ -457,7 +457,8 @@
     // the wrong number must not be asserted as fact. This paragraph sits inches from a
     // drawing of the OTHER number, so silently repeating "45 chromosomes" beside a
     // 46-chromosome karyogram is the contradiction, not the fix for it.
-    var mism = clone.counts && !clone.counts.ok && clone.counts.actual != null && clone.modalNumber != null;
+    var mism = clone.counts && !clone.counts.ok && !clone.uncounted &&
+      clone.counts.actual != null && clone.modalNumber != null;
     out.push("This result shows " + (clone.modalNumber != null ? clone.modalNumber : "an unusual number of") +
       " chromosomes" + (s ? ", with " + s : "") + "." +
       (mism ? " That is the count as written; the changes listed below add up to " + clone.counts.actual +
