@@ -3,6 +3,39 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (a karyogram is drawn only for valid ISCN)
+
+- **If it draws, the notation was accepted.** Drawing the nearest plausible reading of a wrong
+  designation is not teaching: it lets a mistake look answered, and it destroys the app's use as a
+  check, which is what someone writing an exam question needs from it. Three things still drew
+  despite not being valid ISCN, and now do not:
+
+  - `46,XY,zzz(9)(q34)` drew a full, normal-looking karyogram. The made-up operation parsed as
+    "unknown", the count happened to add up, the band was real, and nothing objected.
+  - `46,XY,rob(14;21)(q10;q10),21` (no sign) and `46,XY,inv(9)(p11q13)zzz` (trailing text an
+    operation could not consume) drew the same way.
+  - A count the app is willing to call wrong, such as `46,XY,rob(14;21)(q10;q10),-21`, drew the
+    44-chromosome karyotype it was not asked for.
+
+- **The line is "valid ISCN", not "the app has a complaint".** Two flags, both set by the parser:
+  `clone.unreadable` for a part that could not be read, and `clone.countWrong`, set at exactly the
+  point the count warning is pushed. `countWrong` is deliberately not `!counts.ok`, because valid
+  ISCN can have a tally that cannot be pinned. All of these still draw: `48,XY,+8,inc` and
+  `46,XY,inc`, modal ranges `47~49,XY,+8`, mosaics, composites `[cp10]`, and `45<2n>,XY,…`. So does
+  the legal-but-unusual `46,XX,t(13;15)(q10;q10)`, with its note offering the `rob()` reading.
+  "Unusual" is not "invalid".
+
+- **Two live bugs on valid input fell out of drawing that line.** `48,XY,+8,inc` was offered "Did
+  you mean 47,XY,+8,inc?" and would have carried "you wrote 48; the changes listed add up to 47"
+  into an exported PNG. Its tally is short by design. Every count claim now reads `countWrong`: the
+  warning, the one-click fix, the pill, the image note, and the plain-language summary.
+
+- **A new test file guards the direction that matters more.** Refusing valid ISCN is far worse than
+  tolerating invalid ISCN, so `test/draw-gate.test.js` walks every karyotype the app itself ships,
+  the guided tour and all the landing pages out of `content/karyotypes.js` plus the example chips,
+  and asserts each still draws and still renders without throwing. It also pins that the page's gate
+  really uses both flags rather than merely reading them.
+
 ## 2026-07-27 (gibberish in a breakpoint is refused, not drawn)
 
 - **`47,XY,del(5)(zzqewdf2315.2)` drew a karyogram (bug).** It also offered "Did you mean

@@ -117,10 +117,23 @@ test('an incompletely read karyotype carries no count note into the image', () =
 });
 
 test('the summary pill and the image note gate on the same flag', () => {
+  // countWrong, the flag the parser sets at exactly the point it pushes the count
+  // warning. Not !counts.ok, which is true for valid ISCN such as 48,XY,+8,inc.
   const pill = html.match(/var off = model\.clones\.filter\([\s\S]*?\);/)[0];
-  assert.match(pill, /!c\.uncounted/, 'the pill respects it');
+  assert.match(pill, /c\.countWrong/, 'the pill respects it');
   const note = html.match(/function countMismatchNote\(model\)[\s\S]*?\n  \}/)[0];
-  assert.match(note, /c\.uncounted/, 'the exported note respects it');
+  assert.match(note, /c\.countWrong/, 'the exported note respects it');
+});
+
+test('an incomplete karyotype is never captioned as a count mismatch', () => {
+  // 48,XY,+8,inc is valid: "inc" says there are further, unidentified changes, so the
+  // tally is short by design. It drew AND carried "you wrote 48; the changes listed
+  // add up to 47" into the PNG.
+  const c = ISCN.parse('48,XY,+8,inc').clones[0];
+  assert.equal(c.counts.ok, false, 'the tally really is short');
+  assert.equal(c.countWrong, false, 'but the app does not call that an error');
+  assert.equal(noteFor('48,XY,+8,inc'), '', 'so nothing travels with the image');
+  assert.doesNotMatch(Teach.plainSummary(c).join(' '), /count as written/, 'and the summary does not hedge');
 });
 
 test('the plain-language summary hedges only on a real mismatch', () => {

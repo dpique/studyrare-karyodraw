@@ -660,3 +660,19 @@ test('a band that is well formed but does not exist is a different case', () => 
   assert.equal(m.clones[0].unreadable, false);
   assert.deepEqual(m.clones[0].aberrations[0].breakpoints[0].join(), 'p99');
 });
+
+test('a valid incomplete karyotype is offered no count fix', () => {
+  // 48,XY,+8,inc says there are further, unidentified changes, so its tally is short
+  // by design. It used to be offered "did you mean 47,XY,+8,inc?".
+  const m = ISCN.parse('48,XY,+8,inc');
+  assert.equal(m.clones[0].counts.ok, false, 'the tally really is short');
+  assert.equal(m.clones[0].countWrong, false, 'but that is not an error');
+  assert.equal(m.countFix, null);
+  assert.equal(m.suggestion, null);
+  assert.equal(m.warnings.length, 0, 'and nothing to complain about at all');
+});
+
+test('the count fix follows countWrong, like every other count claim', () => {
+  assert.equal(ISCN.parse('46,XY,rob(14;21)(q10;q10),-21').countFix, '44,XY,rob(14;21)(q10;q10),-21');
+  assert.equal(ISCN.parse('47,XY,del(5)(zzqewdf2315.2)').countFix, null, 'not while a breakpoint is unreadable');
+});

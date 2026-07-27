@@ -1025,7 +1025,11 @@
     // is a byproduct of an incomplete reading rather than a statement about the
     // karyotype. 46,XY,rob(14;21)(q10;q10),21 would read "written 46 · drawn 45" when
     // the answer is to add a sign, not to change the number.
-    var off = model.clones.filter(function (c) { return !c.counts.ok && !c.uncounted && c.counts.actual != null; });
+    // countWrong, not !counts.ok: 48,XY,+8,inc draws and its tally is legitimately
+    // short, so it must not be captioned as a mismatch. Since countWrong also blocks
+    // the drawing, this is now defensive rather than reachable, and stays so the two
+    // cannot drift apart if the draw rule is ever relaxed.
+    var off = model.clones.filter(function (c) { return c.countWrong && c.counts.actual != null; });
     var pill = !off.length ? ''
       : (model.clones.length === 1
         ? '<span class="pill warn">written ' + off[0].modalNumber + ' · drawn ' + off[0].counts.actual + '</span>'
@@ -1258,13 +1262,27 @@
     AFFECTED = window.Karyo.computeAffected(model.clones);
     spokenText = (model.isMosaic ? "Mosaic. " : "") + model.clones.map(function (c) { return window.Teach.pronounce(c); }).filter(Boolean).join(". Next clone. ");
     renderWarnings(model);
-    // c.unreadable: a breakpoint group that yielded no band at all, like
-    // del(5)(zzqewdf2315.2). The renderer would draw chromosome 5 with no cut point,
-    // which looks like a real answer to a question nobody asked. invalidBands cannot
-    // catch it, because by the time it looks there is no band left to check.
+    // A karyogram is only drawn for input that IS valid ISCN. Drawing the nearest
+    // plausible thing is not teaching: it lets a wrong designation look answered, and
+    // it destroys the app's use as a check, which is what someone writing an exam
+    // question needs from it. If it draws, the notation was accepted.
+    //
+    //   c.unreadable  part of the designation could not be read: a breakpoint group
+    //                 that yielded no band (del(5)(zzqewdf2315.2)), a token that never
+    //                 became an aberration (zzz(9)(q34), or a signless ",21"), or text
+    //                 an operation could not consume (inv(9)(p11q13)zzz).
+    //   c.countWrong  the app is willing to say the stated count is wrong. NOT the
+    //                 same as !counts.ok: 48,XY,+8,inc is valid ISCN whose tally is
+    //                 legitimately short, and it still draws. Ranges (47~49), mosaics
+    //                 and composites likewise.
+    //
+    // What stays drawable is anything ISCN permits, including the unusual:
+    // 46,XX,t(13;15)(q10;q10) is legal and draws, with a note offering the rob()
+    // reading. "Unusual" is not "invalid" and must not be refused.
     var unreadable = model.clones.some(function (c) { return c.unreadable; });
+    var countWrong = model.clones.some(function (c) { return c.countWrong; });
     var invalid = !model.clones.length || model.clones.every(function (c) { return c.modalNumber == null; }) ||
-      !!model.suggestion || bad.length > 0 || unreadable;
+      !!model.suggestion || bad.length > 0 || unreadable || countWrong;
     beaconDraw(val, !invalid);
     if (invalid) {
       $("#summary").innerHTML = '<span class="kt">' + escapeHtml(val) + '</span><span class="sex">couldn’t read this as a karyotype yet</span>';
@@ -1309,9 +1327,9 @@
   function countMismatchNote(model) {
     var parts = [];
     (model.clones || []).forEach(function (c, i) {
-      // Same guard as the pill: an incompletely read designation has no trustworthy
-      // tally, so the image must not carry one.
-      if (!c || !c.counts || c.counts.ok || c.uncounted || c.counts.actual == null || c.modalNumber == null) return;
+      // Same guard as the pill, and the same reason: 48,XY,+8,inc has a legitimately
+      // short tally and must not travel captioned as a mismatch.
+      if (!c || !c.countWrong || c.counts.actual == null || c.modalNumber == null) return;
       parts.push(((model.clones.length > 1) ? "clone " + (i + 1) + ": " : "") +
         "you wrote " + c.modalNumber + "; the changes listed add up to " + c.counts.actual + " chromosomes");
     });
