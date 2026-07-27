@@ -578,3 +578,28 @@ test('a genuine count mismatch is still reported', () => {
   assert.match(warnOf('45,XX,t(13;15)(q10;q10)'), /number at the start says 45, but this karyotype describes 46/);
   assert.match(warnOf('47,XY,rob(14;21)(q10;q10),+21'), /number at the start says 47/);
 });
+
+// ---- a token that never became an aberration is not a count argument --------
+// 46,XY,rob(14;21)(q10;q10),21 (no sign) reported "the number at the start says 46,
+// but this karyotype describes 45 chromosomes" underneath the message that actually
+// diagnoses it. The signless 21 contributed nothing to the tally, so the tally was
+// short, not the karyotype. Read as +21 the stated 46 is exactly right.
+test('a signless token gets the sign hint, not a count argument', () => {
+  const w = ISCN.parse('46,XY,rob(14;21)(q10;q10),21').warnings.join(' | ');
+  assert.match(w, /needs a sign/, 'the diagnosis is the missing sign');
+  assert.doesNotMatch(w, /number at the start says/, 'and the count is not second-guessed');
+});
+
+test('the count guard covers both ways a token goes uncounted', () => {
+  // Leftover hanging off an aberration that was read, and a whole token that never
+  // became one. Both leave the tally short for the same reason.
+  ['46,XY,rob(14;21)(q10;q10)+21', '46,XY,rob(14;21)(q10;q10),21']
+    .forEach((k) => assert.doesNotMatch(ISCN.parse(k).warnings.join(' '), /number at the start says/, k));
+});
+
+test('a fully interpreted karyotype still gets its count checked', () => {
+  // The guard is about uninterpreted tokens, not about counts.
+  assert.match(ISCN.parse('46,XY,rob(14;21)(q10;q10),-21').warnings.join(' '),
+    /number at the start says 46, but this karyotype describes 44/);
+  assert.equal(ISCN.parse('44,XY,rob(14;21)(q10;q10),-21').warnings.length, 0, 'and stays quiet when it adds up');
+});

@@ -3,6 +3,41 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (an emptied chromosome slot, a signless token, and the drawn count)
+
+- **`44,XY,rob(14;21)(q10;q10),-21` drew no chromosome 21 at all (bug).** That karyotype leaves no
+  free 21: one fused into the derivative, one lost. The affected view drops empty slots, on the
+  reasoning that an empty slot has nothing to isolate, so the whole point of the karyotype was
+  invisible. An empty slot is now kept whenever the karyotype **states** a loss for that chromosome,
+  because then the gap is the finding. Chromosome 21 shows its gap in both views.
+
+- **"nullisomy" was wrong every time it appeared, and is gone.** The full karyogram labelled an
+  empty slot "nullisomy". A slot only empties two ways and neither is nullisomy: with a stated loss
+  the gaps say it (after `rob(14;21)` plus `-21`, 21q is still present on the derivative, so that is
+  a monosomy for 21q and not an absence of it), and otherwise every copy was consumed by a
+  derivative, as in `43,XY,rob(13;14)(q10;q10),rob(13;14)(q10;q10)`, where both 13q and both 14q are
+  present on the two fusions and nothing is missing at all. A probe over the reachable inputs found
+  no case where an autosome slot empties with nothing accounting for it, so the label had no correct
+  use left. It now reads "none free", which is what is true of the slot.
+
+- **`46,XY,rob(14;21)(q10;q10),21` argued about the count instead of the missing sign.** The
+  signless `21` never became an aberration, so it contributed nothing to the tally, the tally came
+  out 45, and the app announced "the number at the start says 46, but this karyotype describes 45
+  chromosomes" underneath the message that actually diagnoses it. Read as `+21` the stated 46 is
+  exactly right. The count warning already stays quiet when a token went unread; that guard now also
+  covers a token that never became an aberration at all, which is the same failure by a different
+  route.
+
+- **The pill names both numbers: "written 46 · drawn 44".** The drawing is built from the changes
+  listed and never from the number at the front, so `46,XY,rob(14;21)(q10;q10),-21` and
+  `40,XY,rob(14;21)(q10;q10),-21` produce the same karyogram of 44 chromosomes. "Count doesn't add
+  up" did not explain why three different inputs give one picture, and left the drawing captioned
+  with a number it does not contain.
+
+  Still drawn rather than refused, deliberately. For `45,XX,t(13;15)(q10;q10)` the picture is the
+  whole lesson, and refusing on any count mismatch would delete it. The rule stays: draw what the
+  changes describe, and never let the written number sit on the picture unchallenged.
+
 ## 2026-07-27 (the warning box teaches the rule instead of reporting on the parser)
 
 - **"was not read" is gone, along with the rest of the parser-voice copy.** The message that
