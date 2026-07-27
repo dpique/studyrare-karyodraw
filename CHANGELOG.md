@@ -3,6 +3,37 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (a wrong "count doesn't add up" on a missing comma after rob)
+
+- **`46,XY,rob(14;21)(q10;q10)+21` claimed the count was wrong when it was right (bug).** With the
+  comma before `+21` left out, the app offered the correct fix,
+  `46,XY,rob(14;21)(q10;q10),+21`, and then listed as the one thing to check: "The number at the
+  start says 46, but this karyotype describes 45 chromosomes." That contradicted its own suggestion,
+  whose count is 46. The writer's 46 was right: this is translocation Down syndrome. The `+21` had
+  been swallowed into the `rob` token, so the app's tally was short by one, not the karyotype.
+
+  The count warning already guards against precisely this, and the reason is written next to it:
+  when part of the designation went unread, the stated number is probably right and our tally is the
+  thing that is short, and "says 46 but describes 45" reads as a claim about the karyotype that
+  sends people hunting an imbalance that is not there. The guard did not fire because **`rob()`
+  never recorded its leftover.** `rob()` sets kind `der` (it behaves exactly like
+  `der(13;14)(q10;q10)`) but never runs `der()`'s sub-op parsing, so a `kind`-based exemption
+  excused it from both leftover reporters and the `+21` was dropped in silence. Keying the exemption
+  on the op as written fixes it.
+
+- **The missing comma is now named, which it never was after `rob()`.** `der(13;14)(q10;q10)+14`
+  always said "'+14' … was not read. Each aberration is a separate item, so it needs a comma before
+  it"; the same rearrangement spelled `rob(14;21)(q10;q10)+21` said nothing at all, leaving a "did
+  you mean" whose only visible difference from the input is one comma. A test now asserts the two
+  spellings warn identically about the same mistake.
+
+- **`45,XY,rob(14;21)(q10;q10)+21` used to produce no warning whatsoever.** The broken parse
+  happened to total 45, matching the stated count, so the case where something really was wrong was
+  silent while the case where nothing was wrong shouted. It now reports the missing comma.
+
+- **Genuine count mismatches are untouched.** The guard is about unread text, not about counts:
+  `45,XX,t(13;15)(q10;q10)` and `47,XY,rob(14;21)(q10;q10),+21` still say so.
+
 ## 2026-07-27 (one cell list behind both karyogram views)
 
 - **The full karyogram and the affected-only view each assembled their own cell list, and drifted.**

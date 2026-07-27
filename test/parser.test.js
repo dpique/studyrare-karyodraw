@@ -528,3 +528,53 @@ test('no note for input the rob() reading does not apply to', () => {
   assert.equal(ISCN.parse('45,XX,rob(13;15)(q10;q10)').note, null, 'already written as rob');
   assert.equal(ISCN.parse('46,XY').note, null);
 });
+
+// ---- rob() lost its leftover, and that broke the count warning --------------
+// 46,XY,rob(14;21)(q10;q10)+21 (missing comma) announced "the number at the start
+// says 46, but this karyotype describes 45 chromosomes" directly above a "did you
+// mean" whose own count is 46. The stated 46 was right; the +21 had been swallowed
+// into the rob token and the tally, not the karyotype, was short by one.
+//
+// The count warning already guards against exactly this: it stays quiet when part of
+// the designation went unread, because "says 46 but describes 45" reads as a claim
+// about the karyotype and sends people hunting an imbalance that is not there. The
+// guard did not fire because rob() never recorded its leftover. rob() sets kind
+// "der" but does not run der()'s sub-op parsing, so a kind-based exemption excused it
+// from both leftover reporters. der(13;14)(q10;q10)+14, the same rearrangement spelled
+// the other way, always reported it correctly.
+const warnOf = (k) => ISCN.parse(k).warnings.join(' | ');
+
+test('a missing comma after rob() is reported, like it always was after der()', () => {
+  assert.match(warnOf('46,XY,rob(14;21)(q10;q10)+21'), /needs a comma before it/);
+  assert.match(warnOf('46,XY,rob(14;21)(q10;q10)-21'), /needs a comma before it/);
+  assert.equal(ISCN.parse('46,XY,rob(14;21)(q10;q10)+21').clones[0].aberrations[0].unread, '+21',
+    'the fragment is recorded, which is what the count guard reads');
+});
+
+test('rob() and der() spell the same karyotype and now warn identically', () => {
+  const rob = warnOf('46,XY,rob(14;21)(q10;q10)+21').replace(/rob/g, 'der');
+  const der = warnOf('46,XY,der(14;21)(q10;q10)+21');
+  assert.equal(rob, der, 'the two spellings must not disagree about the same mistake');
+});
+
+test('no count argument while part of the designation is unread', () => {
+  // The stated count is probably right and our tally is the thing that is short.
+  ['46,XY,rob(14;21)(q10;q10)+21', '45,XY,rob(14;21)(q10;q10)+21', '46,XX,der(13;14)(q10;q10)+14']
+    .forEach((k) => assert.doesNotMatch(warnOf(k), /number at the start says/, k));
+});
+
+test('the offered fix is the karyotype the writer meant', () => {
+  const m = ISCN.parse('46,XY,rob(14;21)(q10;q10)+21');
+  assert.equal(m.suggestion, '46,XY,rob(14;21)(q10;q10),+21');
+  // And that fix is self-consistent at 46: translocation Down syndrome. The warning
+  // the old build showed contradicted this.
+  const fixed = ISCN.parse(m.suggestion);
+  assert.equal(fixed.clones[0].counts.ok, true, 'the suggestion adds up, so nothing should have claimed otherwise');
+  assert.equal(fixed.warnings.length, 0);
+});
+
+test('a genuine count mismatch is still reported', () => {
+  // The guard is about unread text, not about counts in general.
+  assert.match(warnOf('45,XX,t(13;15)(q10;q10)'), /number at the start says 45, but this karyotype describes 46/);
+  assert.match(warnOf('47,XY,rob(14;21)(q10;q10),+21'), /number at the start says 47/);
+});
