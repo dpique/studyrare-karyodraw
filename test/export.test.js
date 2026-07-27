@@ -127,3 +127,13 @@ test('the plain-language summary hedges only on a real mismatch', () => {
   const uncounted = Teach.plainSummary(ISCN.parse('46,XY,rob(14;21)(q10;q10),21').clones[0]).join(' ');
   assert.doesNotMatch(uncounted, /count as written/, 'no hedge when the tally is just incomplete');
 });
+
+test('an unreadable breakpoint blocks the karyogram', () => {
+  // The renderer would draw chromosome 5 with no cut point, which reads as a real
+  // answer. invalidBands cannot catch it: by then there is no band left to check.
+  // Anchored on the statement's own indentation, not on the first ";" — there is a
+  // ";" inside the callback on the same statement.
+  const gate = html.match(/ {4}var invalid = [\s\S]*?\n {4}beacon/)[0];
+  assert.match(gate, /unreadable/, 'the draw gate consults the flag');
+  assert.match(html, /c\.unreadable/, 'and reads it off the clone');
+});

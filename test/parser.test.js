@@ -628,3 +628,35 @@ test('clone.uncounted is the single flag every count claim reads', () => {
   assert.equal(ISCN.parse('46,XY,rob(14;21)(q10;q10)+21').clones[0].uncounted, true);
   assert.equal(ISCN.parse('46,XY,rob(14;21)(q10;q10),-21').clones[0].uncounted, false);
 });
+
+// ---- breakpoint text that is not a breakpoint ------------------------------
+// del(5)(zzqewdf2315.2) drew a chromosome 5, offered "did you mean
+// 46,XY,del(5)(zzqewdf2315.2)?" (the same gibberish with the count changed), and
+// explained itself as "everything distal to 5? is lost". splitBands found no band and
+// dropped the group, which left it identical to del(5) with no breakpoint at all, so
+// index.html's band check had nothing to look at either.
+test('breakpoint text that yields no band is recorded, not discarded', () => {
+  assert.deepEqual(ISCN.parse('47,XY,del(5)(zzqewdf2315.2)').clones[0].aberrations[0].badBands.join(), 'zzqewdf2315.2');
+  assert.deepEqual(ISCN.parse('46,XY,t(9;22)(q34;zzz)').clones[0].aberrations[0].badBands.join(), 'zzz');
+});
+
+test('a legitimately absent breakpoint is not flagged', () => {
+  // del(5) and r(13) are legal without one; only non-empty text that yields nothing is.
+  ['46,XY,del(5)', '46,XY,r(13)', '47,XY,+mar', '46,XY,dmin', '46,XY,del(5)(p15.2)', '46,XY,inv(9)(p11q13)']
+    .forEach((k) => assert.equal(ISCN.parse(k).clones[0].unreadable, false, k));
+});
+
+test('an unreadable breakpoint is explained, and gets no count fix', () => {
+  const m = ISCN.parse('47,XY,del(5)(zzqewdf2315.2)');
+  assert.match(m.warnings.join(' '), /is not a breakpoint.*arm letter.*band number/);
+  assert.equal(m.countFix, null, 'a fix that keeps the gibberish is not a fix');
+  assert.equal(m.clones[0].unreadable, true, 'and the flag that blocks the drawing is set');
+});
+
+test('a band that is well formed but does not exist is a different case', () => {
+  // p99 parses as a band, so it reaches index.html's band check, which knows the real
+  // extent of the arm and can name the nearest real band. It is not "unreadable".
+  const m = ISCN.parse('46,XY,del(5)(p99)');
+  assert.equal(m.clones[0].unreadable, false);
+  assert.deepEqual(m.clones[0].aberrations[0].breakpoints[0].join(), 'p99');
+});

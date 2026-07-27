@@ -183,6 +183,15 @@
     // multiple bands (del/dup/inv interstitial).
     var bpParts = splitTop(bpGroup, ";");
     ab.breakpoints = bpParts.map(function (p) { return splitBands(p.trim()); });
+    // Breakpoint text that yields no band at all is not a breakpoint, and dropping it
+    // makes it indistinguishable from having written none: del(5)(zzqewdf2315.2) and
+    // del(5) both left breakpoints as [[]], so the gibberish drew a chromosome 5 with
+    // no cut point and the app explained it as "everything distal to 5? is lost".
+    // index.html's band check could not catch it either, since by then there was no
+    // band left to check. Keep the raw text so it can be reported and can block the
+    // drawing. An empty group (del(5), r(13)) is legal and is not flagged.
+    ab.badBands = bpParts.map(function (p) { return p.trim(); })
+      .filter(function (p, i) { return p && !ab.breakpoints[i].length; });
 
     switch (op) {
       case "del": ab.kind = "del"; break;
@@ -260,6 +269,10 @@
       ab.unread = rest.trim();
       warnings.push(leftoverWarning(raw, ab.unread));
     }
+    ab.badBands.forEach(function (b) {
+      warnings.push("“" + b + "” in “" + raw + "” is not a breakpoint. A breakpoint is an arm letter " +
+        "then a band number, like " + (ab.chroms[0] || "5") + "p15.2 or " + (ab.chroms[0] || "5") + "q31.");
+    });
     return finish(ab);
   }
 
@@ -443,6 +456,11 @@
     // "did you mean 45,XY,rob(14;21)(q10;q10),21" would be worse than saying nothing,
     // since that fix keeps the signless 21 and changes the number that was right.
     clone.uncounted = clone.aberrations.some(function (ab) { return ab.unread || ab.kind === "unknown"; });
+    // Part of the designation could not be read at all. Distinct from `uncounted`,
+    // which is only about whether the tally can be trusted: an unreadable BREAKPOINT
+    // leaves the tally fine (a del does not change the count) but leaves the drawing
+    // a guess, so it blocks the karyogram and the one-click count fix.
+    clone.unreadable = clone.aberrations.some(function (ab) { return (ab.badBands || []).length > 0; });
     if (!clone.counts.ok && clone.sex.tokens.length > 0 && !clone.incomplete && !clone.uncounted) {
       var want = clone.modalHigh != null ? (clone.modalNumber + "–" + clone.modalHigh) : String(clone.modalNumber);
       // Two things this has to get right.
@@ -462,7 +480,8 @@
       // And it names the rule, since a learner who does not already know the leading
       // number is the cell's total cannot act on "these two disagree".
       warnings.push("The number at the start says " + want + ", but the changes listed after it add up to " +
-        actual + " chromosomes. That first number is the cell's total, so the two have to agree.");
+        actual + " chromosomes. That first number is the cell's total chromosome count, so either it or the " +
+        "changes needs fixing.");
     }
   }
 
@@ -650,7 +669,8 @@
       var cl0 = result.clones[0];
       // Same guard as the count warning: a tally built from a designation that was
       // not fully interpreted cannot be the basis of a suggested count.
-      if (cl0.modalNumber != null && cl0.counts && !cl0.counts.ok && cl0.counts.actual != null && !cl0.uncounted) {
+      if (cl0.modalNumber != null && cl0.counts && !cl0.counts.ok && cl0.counts.actual != null &&
+          !cl0.uncounted && !cl0.unreadable) {
         // A whole-arm acrocentric fusion written as t() keeps both derivative
         // chromosomes, so the count stays 46 while the stated count says 45. The
         // count is not the mistake, the operation is: fix the spelling, since

@@ -28,7 +28,7 @@ const BAD_INPUTS = [
   '46,XY,der(13;14)(q10;q10)+14', '46,XY,t(9;22)(q34;q11.2)ort(1;2)(p10;q10)',
   '46,XY,t(9,22)(q34;q11.2)', '46,XY,t(9;22)(q34;q11.2', 't(9;22)(q34;q11.2)',
   '47,idem,+9', '45,XX,t(13;15)(q10;q10)', '46,XY,+21×99', '46,XY,dmin×99',
-  '46,XY,inv(9)(p11q13)zzz', '46XY', '46,XY,del(5)(zz15.2)',
+  '46,XY,inv(9)(p11q13)zzz', '46XY', '46,XY,del(5)(zz15.2)', '46,XY,t(9;22)(q34;zzz)',
 ];
 
 const allWarnings = () => {
@@ -68,7 +68,7 @@ test('no warning reports on the parser instead of teaching the rule', () => {
 test('every warning tells the reader something to do or a rule to follow', () => {
   // A heuristic, deliberately loose: a message must either name the correct form,
   // give an example, or state a rule. One that only reports a problem fails.
-  const TEACHES = /\b(needs?|must|has to|use|write|written|should|belongs?|separated?|starts? with|comes? first|add|make sure|for example|e\.g\.|look like|is a|are not supported|not an ISCN|takes? one|draws? one|left out of the drawing|capped|Type a karyotype)\b/i;
+  const TEACHES = /\b(needs?|must|has to|use|write|written|should|belongs?|separated?|starts? with|comes? first|add|make sure|for example|e\.g\.|like|look like|is a|are not supported|not an ISCN|takes? one|draws? one|left out of the drawing|capped|Type a karyotype)\b/i;
   allWarnings().forEach(function (x) {
     assert.ok(TEACHES.test(x.w), `message for "${x.k}" reports a problem without teaching anything:\n    ${x.w}`);
   });
@@ -108,9 +108,20 @@ test('no message states the app\'s own arithmetic as a property of the karyotype
 test('the count message attributes the total and names the rule', () => {
   const w = ISCN.parse('47,XY,rob(14;21)(q10;q10),+21').warnings.join(' ');
   assert.match(w, /changes listed after it add up to 46/, 'says whose sum it is');
-  assert.match(w, /cell's total, so the two have to agree/, 'and the rule that makes it matter');
+  assert.match(w, /cell's total chromosome count, so either it or the changes needs fixing/,
+    'names the rule, and does not presume which side is the error');
   // Deliberately does NOT point at the drawing. 47,XY,del(5)(zz15.2) raises this
   // warning and is also refused a karyogram over the bad band, so "count them below"
   // would sometimes point at nothing.
   assert.doesNotMatch(w, /below|karyogram|drawing|drawn/i, 'no reference to a picture that may not exist');
+});
+
+test('the count message does not presume which side is wrong', () => {
+  // 45,XX,t(13;15)(q10;q10) is the case that makes this matter: there the count is
+  // arguably right and the OPERATION is what should change (the app offers rob()).
+  // "so it has to match the changes listed after it" pointed the reader at the one
+  // thing that was not the error.
+  const w = ISCN.parse('45,XX,t(13;15)(q10;q10)').warnings.join(' ');
+  assert.match(w, /either it or the changes/, 'either side may be the one to fix');
+  assert.doesNotMatch(w, /has to match the changes listed/, 'no longer prescribes changing the number');
 });
