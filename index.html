@@ -111,6 +111,9 @@
   }
   .chip:hover { background: var(--peri-50); border-color: var(--peri-300); color: var(--peri-700); }
   .chip b { color: var(--peri-700); font-weight: 700; }
+  /* Shuffle is a control, not an example: dashed edge and no mono karyotype so the
+     eye does not read it as a fourth karyotype to click. */
+  .chip-shuffle { border-style: dashed; color: var(--muted); font-family: inherit; }
 
   /* Visible keyboard focus on every interactive control. :focus-visible keeps the
      ring for keyboard users while leaving mouse clicks clean. */
@@ -346,6 +349,11 @@
   .warnbox ul { margin: 6px 0 0; padding-left: 18px; }
   .warnbox .dym-row { font-size: 14.5px; color: var(--ink-2); margin-bottom: 6px; }
   .warnbox .warn-title { font-weight: 700; }
+  /* Deliberately NOT the amber warnbox: a note fires on input that is correct and
+     drawn correctly, so it must not read as an error. Periwinkle = informational. */
+  .notebox { margin: 0 0 14px; padding: 12px 15px; border-radius: 10px; background: var(--peri-50); border: 1px solid var(--peri-300); color: var(--ink-2); font-size: 13.5px; line-height: 1.65; }
+  .notebox .note-title { font-weight: 700; color: var(--peri-700); margin-bottom: 3px; }
+  .notebox .note-fix { margin-top: 8px; }
   .dym { font: 600 13px var(--font-mono); background: var(--peri-50); border: 1px solid var(--peri-300); color: var(--peri-700); border-radius: 7px; padding: 2px 8px; cursor: pointer; }
   .dym:hover { background: #dee3fb; }
   .emptystate { padding: 42px 22px; text-align: center; color: var(--muted); font-size: 14.5px; line-height: 1.8; }
@@ -779,6 +787,11 @@
   // navigates past their first jump. Matches the Philadelphia example chip.
   var DEMO_K = "46,XY,t(9;22)(q34;q11.2)";
 
+  // Every example must be a rearrangement a karyogram can actually SHOW. The former
+  // del(22)(q11.2) "DiGeorge" chip failed that test: a 22q11.2 deletion is about
+  // 3 Mb, far below the ~5-10 Mb a 550-band karyotype resolves, so it is found by
+  // FISH or microarray and not by banding (the guide says so). Drawing it as a
+  // visible missing band taught the opposite of the thing worth learning.
   var EXAMPLES = [
     ["45,XY,rob(14;21)(q10;q10)", "balanced carrier"],
     ["46,XY,rob(14;21)(q10;q10),+21", "unbalanced: translocation Down"],
@@ -786,9 +799,14 @@
     ["46,XY,del(5)(p15.2)", "cri-du-chat"],
     ["46,XY,inv(9)(p11q13)", "inv 9 variant"],
     ["46,X,i(X)(q10)", "iso-Xq"],
-    ["46,XX,del(22)(q11.2)", "DiGeorge"],
     ["mos 45,X[12]/46,XX[18]", "Turner mosaic"]
   ];
+  // Show a rotating handful rather than the whole list. Eight chips wrapped to three
+  // rows and pushed the karyogram below the fold on a laptop, where a viewer reads
+  // two of them and scrolls past the rest. Three plus Shuffle takes one row, or two
+  // when a long label is dealt. Shuffle is what keeps the other four reachable, so
+  // the shorter row hides nothing; without it, trimming would just delete examples.
+  var EXAMPLES_SHOWN = 3;
 
   // Jumping to another karyotype: an example chip, a "did you mean" fix, a conceptus
   // in the segregation panel. One path for all three, so they behave identically and
@@ -801,14 +819,45 @@
     run();
   }
 
-  function buildExamples() {
-    var box = $("#examples");
-    box.innerHTML = EXAMPLES.map(function (e) {
+  // Cycle a shuffled copy of the list rather than sampling independently each time,
+  // so repeated Shuffle clicks walk the whole set instead of re-rolling the same two
+  // or three by chance. The deck is reshuffled only once it has been dealt out.
+  var exDeck = [];
+  function dealExamples(n) {
+    var out = [];
+    while (out.length < n) {
+      if (!exDeck.length) {
+        exDeck = EXAMPLES.slice();
+        for (var i = exDeck.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var t = exDeck[i]; exDeck[i] = exDeck[j]; exDeck[j] = t;
+        }
+      }
+      var e = exDeck.pop();
+      // A deck boundary can repeat one across the seam; skip it rather than show
+      // the same karyotype twice in a row of three.
+      if (out.indexOf(e) < 0) out.push(e);
+    }
+    return out;
+  }
+
+  function paintExamples() {
+    $("#examples").innerHTML = dealExamples(Math.min(EXAMPLES_SHOWN, EXAMPLES.length)).map(function (e) {
       return '<button type="button" class="chip" data-k="' + e[0].replace(/"/g, "&quot;") +
         '" aria-label="Draw ' + e[0].replace(/"/g, "&quot;") + ', ' + e[1] + '"><b>' + e[0] + '</b> · ' + e[1] + '</button>';
-    }).join("");
+    }).join("") +
+      '<button type="button" class="chip chip-shuffle" id="ex-shuffle" title="Show three more examples" ' +
+      'aria-label="Show three more example karyotypes">⟳ Shuffle</button>';
+  }
+
+  function buildExamples() {
+    var box = $("#examples");
+    paintExamples();
     box.addEventListener("click", function (ev) {
       var c = ev.target.closest(".chip"); if (!c) return;
+      // Reshuffling must not redraw the karyogram, so it is handled before the
+      // data-k path and the Shuffle chip deliberately carries no data-k.
+      if (c.id === "ex-shuffle") { paintExamples(); $("#ex-shuffle").focus(); return; }
       loadKaryotype(c.getAttribute("data-k"));
     });
   }
@@ -1265,6 +1314,18 @@
   function renderWarnings(model) {
     var box = $("#warnings");
     var w = model.warnings, fix = model.suggestion || model.countFix;
+    // A note is only ever set on input the parser accepted and the renderer drew
+    // correctly, so it never shares the box with a warning (the parser guarantees
+    // this, and a test pins it). It gets the neutral treatment and its own verb:
+    // "draw it instead", not "did you mean", because nothing here is a mistake.
+    if (!w.length && !fix && model.note) {
+      box.innerHTML = '<div class="notebox"><div class="note-title">Worth knowing</div>' +
+        escapeHtml(model.note.text) +
+        (model.note.fix ? '<div class="note-fix">Draw it as a Robertsonian instead: <button class="dym" data-k="' +
+          escXml(model.note.fix) + '">' + escapeHtml(model.note.fix) + '</button></div>' : "") +
+        '</div>';
+      return;
+    }
     if (!w.length && !fix) { box.innerHTML = ""; return; }
     var parts = ['<div class="warnbox">'];
     if (fix && fix !== model.raw) {

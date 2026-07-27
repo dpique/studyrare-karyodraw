@@ -488,3 +488,43 @@ test('a non-acrocentric whole-arm t is not called Robertsonian', () => {
 test('an ordinary translocation with a wrong count still gets the count fix', () => {
   assert.equal(ISCN.parse('45,XX,t(9;22)(q34;q11.2)').countFix, '46,XX,t(9;22)(q34;q11.2)');
 });
+
+// ---- the same fusion at a count that agrees with itself ---------------------
+// 46,XX,t(13;15)(q10;q10) is legal ISCN and the renderer draws it correctly, so it
+// is not a warning. It is still almost never what a learner meant, and its picture
+// (46 chromosomes, both whole-arm products present) is the one that convinces a
+// reader a Robertsonian carrier has 46. It gets result.note: neutral prose plus the
+// rob() reading to draw beside it, never the amber warning box.
+test('a whole-arm acrocentric t at a consistent count gets a note, not a warning', () => {
+  const m = ISCN.parse('46,XX,t(13;15)(q10;q10)');
+  assert.equal(m.warnings.length, 0, 'correct input must not raise a warning');
+  assert.equal(m.countFix, null);
+  assert.ok(m.note, 'note is set');
+  assert.equal(m.note.fix, '45,XX,rob(13;15)(q10;q10)', 'rob spelling AND the decremented count');
+  assert.match(m.note.text, /Robertsonian/);
+});
+test('the note is identical for every whole-arm spelling of the same fusion', () => {
+  // p10/q10 name centromere halves, not the arms that join, so these are the same
+  // rearrangement and must not get different advice.
+  const fixes = ['(p10;q10)', '(q10;q10)', '(p10;p10)', '(q10;p10)']
+    .map((bp) => ISCN.parse('46,XX,t(13;15)' + bp).note.fix);
+  assert.deepEqual(fixes, Array(4).fill('45,XX,rob(13;15)(q10;q10)'));
+});
+test('the note and the warning box never both fire', () => {
+  // 45,XX,t(13;15)(q10;q10) is the count-mismatch case: the warning box and its
+  // countFix own it, so a note here would say the same thing twice.
+  const m = ISCN.parse('45,XX,t(13;15)(q10;q10)');
+  assert.ok(m.warnings.length && m.countFix, 'still the warning path');
+  assert.equal(m.note, null);
+});
+test('the note decrements the count rather than assuming 46 -> 45', () => {
+  // Replacing two derivatives with one fused chromosome always removes exactly one,
+  // whatever else the karyotype carries.
+  assert.equal(ISCN.parse('47,XX,t(13;15)(q10;q10),+21').note.fix, '46,XX,rob(13;15)(q10;q10),+21');
+});
+test('no note for input the rob() reading does not apply to', () => {
+  assert.equal(ISCN.parse('46,XY,t(1;3)(p10;q10)').note, null, '1 and 3 are not acrocentric');
+  assert.equal(ISCN.parse('46,XY,t(9;22)(q34;q11.2)').note, null, 'not a whole-arm break');
+  assert.equal(ISCN.parse('45,XX,rob(13;15)(q10;q10)').note, null, 'already written as rob');
+  assert.equal(ISCN.parse('46,XY').note, null);
+});

@@ -185,12 +185,16 @@
       case "inv": ab.kind = "inv"; break;
       case "t":
         ab.kind = "t";
-        // Flagged for parse(), which offers the rob() spelling when the stated
-        // count also says the writer meant a Robertsonian.
-        ab.wholeArmAcro = ab.chroms.length === 2 &&
-          ab.chroms.every(function (c) { return ACROCENTRIC[c]; }) &&
+        // Both breakpoints at a centromere designation: the exchanged pieces are
+        // entire arms. teach.js explains the p10/q10 letters here, because at the
+        // centromere they name which centromere HALF each derivative carries and
+        // not which arms join, so all four spellings draw the same two chromosomes.
+        ab.wholeArm = ab.chroms.length === 2 &&
           ab.breakpoints.length === 2 &&
           ab.breakpoints.every(function (g) { return g.length === 1 && /^[pq]10$/.test(g[0]); });
+        // Flagged for parse(), which offers the rob() spelling whether or not the
+        // stated count agrees with the t (see the two branches there).
+        ab.wholeArmAcro = ab.wholeArm && ab.chroms.every(function (c) { return ACROCENTRIC[c]; });
         break;
       case "ins": ab.kind = "ins"; break;
       case "i": ab.kind = "iso"; break;
@@ -573,7 +577,7 @@
   function parse(input) {
     var raw = (input || "").trim();
     var warnings = [];
-    var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [], suggestion: null, countFix: null };
+    var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [], suggestion: null, countFix: null, note: null };
     if (!raw) { warnings.push("Type a karyotype to begin, e.g. 46,XY, 47,XX,+21, or 46,XY,t(9;22)(q34;q11.2)."); return result; }
     diagnose(raw, result, warnings);
 
@@ -618,6 +622,33 @@
         } else {
           result.countFix = raw.replace(/\d+/, String(cl0.counts.actual));
         }
+      }
+    }
+
+    // The same whole-arm acrocentric t(), but with a count that agrees with itself:
+    // 46,XX,t(13;15)(q10;q10). Legal ISCN, and the renderer draws it correctly, so
+    // it is NOT a warning — warning on correct input is how a warning box loses its
+    // authority. It is still almost never what a learner meant, and the picture it
+    // produces (46 chromosomes, both whole-arm products present) is exactly the one
+    // that convinces a reader a Robertsonian carrier has 46. So offer the rob()
+    // reading as a neutral note beside the drawing, with the count decremented, and
+    // let the viewer compare the two pictures. The count-mismatch branch above owns
+    // the case where the numbers already contradict the t; the two never both fire.
+    if (!result.suggestion && !result.countFix && result.clones.length === 1) {
+      var cl1 = result.clones[0];
+      var acroAb = cl1.counts && cl1.counts.ok && cl1.modalNumber != null
+        ? cl1.aberrations.filter(function (a) { return a.kind === "t" && a.wholeArmAcro; })[0]
+        : null;
+      if (acroAb) {
+        var pair = acroAb.chroms.join(";");
+        result.note = {
+          text: "A whole-arm exchange between two acrocentric chromosomes is written t(…) only when both products are kept, which is why the count here is " +
+            cl1.modalNumber + ". The fusion that actually occurs loses the two short arms and leaves one chromosome: that is a Robertsonian translocation, rob(" +
+            pair + ")(q10;q10), and a balanced carrier of it has " + (cl1.modalNumber - 1) + " chromosomes, not " + cl1.modalNumber + ".",
+          fix: (result.normalized || raw)
+            .replace(acroAb.raw, "rob(" + pair + ")(q10;q10)")
+            .replace(/\d+/, String(cl1.modalNumber - 1))
+        };
       }
     }
 

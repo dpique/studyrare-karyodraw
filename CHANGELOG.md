@@ -3,6 +3,49 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (a whole-arm acrocentric t gets a note and a rob button; fewer example chips)
+
+- **`46,XX,t(13;15)(q10;q10)` now offers the Robertsonian reading beside the drawing.** The help was
+  backwards from the risk: when the count contradicts the `t` (`45,XX,t(13;15)(q10;q10)`) the viewer
+  got an amber box and a one-click `rob()` fix, but when the karyotype is internally consistent at 46
+  the only hint was the tail of a 60-word decode sentence, below the karyogram and the fold. The
+  consistent one is the more convincing picture and therefore the more dangerous one: 46 chromosomes
+  with both whole-arm products present is exactly the image that persuades a reader a Robertsonian
+  carrier has 46. It now gets a periwinkle "Worth knowing" note above the drawing with a button that
+  draws `45,XX,rob(13;15)(q10;q10)`, so the two pictures can be compared in one click.
+
+  Deliberately not the amber warning box, and deliberately "draw it as a Robertsonian instead" rather
+  than "did you mean": the input is legal ISCN and the renderer draws it correctly, and warning on
+  correct input is how a warning box loses its authority. A test pins that the note and the warning
+  never both fire. The count in the offered fix is decremented rather than hardcoded to 45, since
+  replacing two derivatives with one fused chromosome removes exactly one chromosome whatever else
+  the karyotype carries (`47,XX,t(13;15)(q10;q10),+21` offers `46,XX,rob(13;15)(q10;q10),+21`).
+
+- **The decode explains why `(p10;q10)` and `(q10;q10)` draw the same thing.** Reported as a
+  suspected bug, and it is correct behaviour: ISCN's derivative formula is `der(A) = A pter→bandA ::
+  B bandB→B qter`, and at the centromere `pter→band` is the whole p arm whichever letter is written,
+  so all four spellings give der(A) = Ap+Bq. The letters record which half of the split centromere
+  each derivative carries, not which arms join. Two identical drawings from two different inputs read
+  as the app ignoring the input, so the decode now says this outright and names the arms each
+  derivative carries. A test asserts the prose and the renderer's segments agree, so the sentence
+  cannot drift from the drawing.
+
+- **The rob note says why 45 chromosomes is not a monosomy.** "It gives a count of 45" left the
+  obvious question unanswered. An acrocentric short arm carries ribosomal RNA gene repeats that the
+  other acrocentrics carry as well, which is why a balanced carrier is healthy at 45.
+
+- **The DiGeorge example chip is gone.** A 22q11.2 deletion is about 3 Mb, well under the 5-10 Mb a
+  ~550-band karyotype resolves, so it is found by FISH or microarray and not by banding. The guide
+  page says exactly that, and the chip drew it as a visibly missing band, teaching the opposite of
+  the thing worth learning. A test now holds every chip to the app's own parser (no warning, no
+  suggested fix, no note) and requires each to highlight something, and keeps submicroscopic
+  syndromes off the list.
+
+- **Three example chips at a time, with Shuffle.** Eight chips wrapped to three rows and pushed the
+  karyogram below the fold on a laptop, where the last five are scrolled past unread. Shuffle deals
+  from a shuffled deck rather than sampling independently, so repeated clicks walk the whole list
+  instead of re-rolling the same two or three, and no example becomes unreachable.
+
 ## 2026-07-26 (whole-arm reciprocal translocations had their arms swapped)
 
 - **`t(13;15)(q10;q10)` drew der(13) as 15p+13q, which is der(15)'s content (bug).** Every whole-arm
