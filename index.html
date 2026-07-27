@@ -1281,8 +1281,14 @@
     // reading. "Unusual" is not "invalid" and must not be refused.
     var unreadable = model.clones.some(function (c) { return c.unreadable; });
     var countWrong = model.clones.some(function (c) { return c.countWrong; });
+    // c.unaccounted: the parser could not hand back everything it was given, so
+    // something was dropped without being understood. A backstop rather than a
+    // diagnosis: the specific cases each get their own message, and this catches the
+    // next one nobody has thought of yet. 61 varied valid karyotypes round-trip
+    // exactly, so a mismatch is worth refusing on.
+    var unaccounted = model.clones.some(function (c) { return c.unaccounted; });
     var invalid = !model.clones.length || model.clones.every(function (c) { return c.modalNumber == null; }) ||
-      !!model.suggestion || bad.length > 0 || unreadable || countWrong;
+      !!model.suggestion || bad.length > 0 || unreadable || countWrong || unaccounted;
     beaconDraw(val, !invalid);
     if (invalid) {
       $("#summary").innerHTML = '<span class="kt">' + escapeHtml(val) + '</span><span class="sex">couldn’t read this as a karyotype yet</span>';

@@ -3,6 +3,34 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (a round-trip check, so dropped input stops being found one case at a time)
+
+- **`47~49,XY,+8,,` drew a full karyogram and said nothing at all (bug).** Two commas. The field
+  list is filtered for length, so the blanks vanished before anything could object.
+
+- **The parser now reassembles each clone from everything it kept and compares it with what it was
+  handed.** Anything that does not come back was dropped without being understood, and the drawing
+  that follows would be of a karyotype nobody typed. This is the general net rather than one more
+  special case: it catches the class, not that one member of it.
+
+  The comparison is on the fields **as written** (`modalGiven`, `sexGiven`, `ab.raw`, `cellGiven`)
+  rather than on re-serialised values, which is what lets case, range spelling (`47-49` and
+  `47~49`), `<2n>`, `×2` and `x2`, qualifiers and cell counts survive it untouched. **61 varied
+  valid karyotypes round-trip exactly**, which is what makes a mismatch worth refusing on. A
+  subclone written `idem`/`sl`/`sdl` is exempt, since its list is deliberately expanded from the
+  stemline and can never round-trip.
+
+- **The empty field is repaired, not only refused.** `47~49,XY,+8,,` offers `47~49,XY,+8` and says
+  "Each change is its own item between commas, so an empty item is not one. Remove the extra comma."
+  A bare refusal on a stray comma would be a poor trade. Commas inside parentheses are untouched;
+  they have their own message.
+
+- **The corpus is itself under test.** A guard validated on five inputs is not a guard, so a
+  meta-assertion fails the build if the valid list drops below 40 karyotypes or stops exercising at
+  least 14 aberration kinds. Also verified: `45<2n>,…` used to be the one valid karyotype that did
+  not round-trip, because the ploidy annotation was parsed and discarded; keeping the modal field as
+  written fixed that too.
+
 ## 2026-07-27 (a karyogram is drawn only for valid ISCN)
 
 - **If it draws, the notation was accepted.** Drawing the nearest plausible reading of a wrong

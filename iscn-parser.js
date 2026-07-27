@@ -428,6 +428,28 @@
     clone.complement = comp;
     clone.slots = slots;
 
+    // Reassemble the clone from everything the parser kept, and compare it with what
+    // it was handed. Anything that does not come back was dropped without being
+    // understood, and the drawing that follows would be of a karyotype nobody typed.
+    //
+    // This exists because the alternative is finding these one at a time: 47~49,XY,+8,,
+    // has two commas, produced no warning of any kind, and drew a full karyogram. A
+    // general net catches the class instead of that one member of it. Fields are
+    // compared as WRITTEN (modalGiven, sexGiven, ab.raw), so case, range spelling,
+    // "<2n>", multiplier style and qualifiers all survive; 40 varied valid karyotypes
+    // round-trip exactly, which is what makes a mismatch worth acting on.
+    var rebuilt = [];
+    if (clone.modalGiven) rebuilt.push(clone.modalGiven);
+    if (clone.sexGiven) rebuilt.push(clone.sexGiven);
+    clone.aberrations.forEach(function (ab) { rebuilt.push(ab.raw); });
+    var rejoined = rebuilt.join(",");
+    if (clone.cellGiven) rejoined += clone.cellGiven;
+    // A subclone written with idem/sl/sdl is exempt: "the same changes as the previous
+    // clone" is expanded into this clone's list on purpose, so it legitimately carries
+    // more than its own text and can never round-trip.
+    var inherits = clone.aberrations.some(function (ab) { return ab.kind === "idem"; });
+    clone.unaccounted = !inherits && rejoined !== clone.raw;
+
     // Sanity check: does the drawn count match the modal number? A range modal
     // number (47~49) is satisfied by any count inside the range.
     var actual = 0;
@@ -524,8 +546,9 @@
 
   function parseClone(cloneStr, warnings) {
     var clone = {
-      raw: cloneStr.trim(), cellCount: null, composite: false,
-      modalNumber: null, modalHigh: null, modalGiven: "", sex: { tokens: [], label: "", note: "" },
+      raw: cloneStr.trim(), cellCount: null, composite: false, cellGiven: "",
+      modalNumber: null, modalHigh: null, modalGiven: "", sexGiven: "",
+      sex: { tokens: [], label: "", note: "" },
       aberrations: []
     };
     var s = clone.raw;
@@ -535,6 +558,7 @@
     if (cnt) {
       clone.cellCount = parseInt(cnt[2], 10);
       clone.composite = !!cnt[1];
+      clone.cellGiven = cnt[0];   // as written, for the round-trip
       s = s.slice(0, cnt.index).trim();
     }
 
@@ -551,7 +575,7 @@
     }
 
     // modal number — may be a range like 47~49 (a cancer clone whose count varies)
-    clone.modalGiven = fields[0];
+    clone.modalGiven = fields[0];   // as written, so "45<2n>" and "47-49" survive intact
     var mn = /^(\d+)(?:\s*[~\-–]\s*(\d+))?/.exec(fields[0]);
     if (mn) {
       clone.modalNumber = parseInt(mn[1], 10);
@@ -566,6 +590,7 @@
     if (fields.length > 1 && /^(idem|sl|sdl)$/i.test(fields[1])) {
       firstAb = 1;
     } else if (fields.length > 1) {
+      clone.sexGiven = fields[1];   // as written; parseSex normalises case and order
       clone.sex = parseSex(fields[1], warnings);
     }
 
@@ -636,6 +661,17 @@
     // No warning pushed here: the aberration that owns the fragment reports it by
     // name (leftoverWarning), which is more use than a second general note.
     suggestion = suggestion.replace(/\)\s*([+\-−–])/g, "),$1");
+
+    // An empty field between commas. 47~49,XY,+8,, drew a full karyogram and said
+    // nothing at all: the field list is filtered for length, so the blanks vanished
+    // before anything could object. Repaired rather than only refused, so the viewer
+    // gets the karyotype they meant in one click. Commas inside parentheses are not
+    // touched, since splitTop only reaches depth 0.
+    var collapsed = suggestion.replace(/,{2,}/g, ",").replace(/^,+/, "").replace(/,+$/, "");
+    if (collapsed !== suggestion) {
+      warnings.push("Each change is its own item between commas, so an empty item is not one. Remove the extra comma.");
+      suggestion = collapsed;
+    }
 
     var depth = 0, inner = false, fixed = "";
     for (var i = 0; i < suggestion.length; i++) {
