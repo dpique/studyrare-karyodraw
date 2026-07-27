@@ -460,8 +460,21 @@
     // which is only about whether the tally can be trusted: an unreadable BREAKPOINT
     // leaves the tally fine (a del does not change the count) but leaves the drawing
     // a guess, so it blocks the karyogram and the one-click count fix.
-    clone.unreadable = clone.aberrations.some(function (ab) { return (ab.badBands || []).length > 0; });
+    // Part of the designation could not be read. Any of the three blocks the drawing:
+    // a breakpoint group that yielded no band, a token that never became an
+    // aberration (a made-up operation, or a chromosome with no sign), and text an
+    // operation could not consume. Distinct from `uncounted`, which is only about
+    // whether the tally can be trusted.
+    clone.unreadable = clone.aberrations.some(function (ab) {
+      return (ab.badBands || []).length > 0 || ab.kind === "unknown" || ab.unread;
+    });
+    // countWrong is the app asserting the count is wrong, and it is set at exactly the
+    // point the warning is pushed so the two can never disagree. It is NOT the same as
+    // !counts.ok: 48,XY,+8,inc says there are further unidentified changes, so its
+    // tally is legitimately short and the app has no business calling that an error.
+    clone.countWrong = false;
     if (!clone.counts.ok && clone.sex.tokens.length > 0 && !clone.incomplete && !clone.uncounted) {
+      clone.countWrong = true;
       var want = clone.modalHigh != null ? (clone.modalNumber + "–" + clone.modalHigh) : String(clone.modalNumber);
       // Two things this has to get right.
       //
@@ -667,10 +680,12 @@
     // If a single clone's stated count is off, offer the corrected count as a fix.
     if (!result.suggestion && result.clones.length === 1) {
       var cl0 = result.clones[0];
-      // Same guard as the count warning: a tally built from a designation that was
-      // not fully interpreted cannot be the basis of a suggested count.
-      if (cl0.modalNumber != null && cl0.counts && !cl0.counts.ok && cl0.counts.actual != null &&
-          !cl0.uncounted && !cl0.unreadable) {
+      // countWrong, the same flag the warning sets, so a fix is only ever offered for a
+      // count this app is actually willing to call wrong. Gating on !counts.ok instead
+      // offered "did you mean 47,XY,+8,inc?" for 48,XY,+8,inc, which is valid ISCN
+      // whose tally is short by design. !unreadable on top, because a fix that leaves
+      // an unreadable breakpoint in place is not a fix.
+      if (cl0.countWrong && cl0.counts.actual != null && !cl0.unreadable) {
         // A whole-arm acrocentric fusion written as t() keeps both derivative
         // chromosomes, so the count stays 46 while the stated count says 45. The
         // count is not the mistake, the operation is: fix the spelling, since
