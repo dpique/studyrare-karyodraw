@@ -181,14 +181,22 @@ const shifts = (kar, chrom, kindPred) => {
 };
 
 test('a whole-arm derivative reports a fusion-seam centromere y and centromere-aligns', () => {
-  const s = shifts('45,XX,rob(13;14)(q10;q10)', '13', (i) => i.kind === 'normal');
+  const s = shifts('45,XX,rob(14;21)(q10;q10)', '14', (i) => i.kind === 'normal');
   assert.ok(s.allCen, 'both copies now have a centromere y (the der on its fusion seam)');
-  assert.ok(Math.abs(s.cenShift - s.botShift) > 3, 'centromere and bottom shifts differ here');
-  const c = ISCN.parse('45,XX,rob(13;14)(q10;q10)').clones[0];
+  const c = ISCN.parse('45,XX,rob(14;21)(q10;q10)').clones[0];
   const cont = { innerHTML: '' };
-  Karyo.render(cont, c, { theme: 'detailed', level: 99, affected: Karyo.computeAffected([c]), only: ['13', '14'] });
-  const normal13 = marginTopOf(cont.innerHTML, '13', 'normal');
-  assert.ok(Math.abs(normal13 - s.cenShift) < 1, 'normal 13 uses the centromere shift, not the bottom shift');
+  Karyo.render(cont, c, { theme: 'detailed', level: 99, affected: Karyo.computeAffected([c]), only: ['14', '21'] });
+  const normal14 = marginTopOf(cont.innerHTML, '14', 'normal');
+  assert.ok(Math.abs(normal14 - s.cenShift) < 1, 'normal 14 is shifted to line its centromere up with the seam');
+  // This case can no longer tell centromere-alignment from bottom-alignment, and that
+  // is a property of the orientation rule rather than a gap: the derivative is filed
+  // under 14, and 14q is the longer arm, so 14q is drawn at the BOTTOM in its natural
+  // orientation. The derivative and the normal 14 therefore end on the same arm and
+  // the two schemes agree exactly. Asserted rather than worked around, because a
+  // regression in the orientation rule would break the equality. The test that
+  // discriminates the two alignment paths is the del(1)(q42) one below, where a
+  // q-arm deletion moves the bottom without moving the centromere.
+  assert.ok(Math.abs(s.cenShift - s.botShift) < 1e-6, 'der and normal 14 share a bottom arm, so both schemes coincide');
 });
 
 test('an isochromosome reports a mirror-seam centromere y and centromere-aligns', () => {
@@ -480,12 +488,86 @@ test('the drawing agrees with what segregation.js says the imbalance is', () => 
     assert.ok(!arms.includes(lost + 'q'), `${g.zygote}: drawing must not carry the lost ${lost}q (got ${arms})`);
   });
 });
-test('Robertsonian fusions are untouched (they keep the arm each breakpoint names)', () => {
-  assert.equal(armsOf('45,XY,rob(13;14)(q10;q10)', '13'), '13q+14q');
-  assert.equal(armsOf('45,XX,der(14;21)(q10;q10)', '14'), '14q+21q');
+test('Robertsonian fusions keep the arm each breakpoint names', () => {
+  // Content only. armsOf() returns the arms in DRAWING order, which is decided by
+  // arm length (see the orientation tests below), so compare as a set.
+  const armSet = (k, chrom) => armsOf(k, chrom).split('+').sort().join('+');
+  assert.equal(armSet('45,XY,rob(13;14)(q10;q10)', '13'), '13q+14q');
+  assert.equal(armSet('45,XX,der(14;21)(q10;q10)', '14'), '14q+21q');
 });
 test('ordinary translocations are unchanged', () => {
   assert.equal(armsOf('46,XY,t(9;22)(q34;q11.2)', '9'), '9p+q+22q');
   assert.equal(armsOf('46,XY,t(9;22)(q34;q11.2)', '22'), '22p+q+9q');
   assert.equal(armsOf('46,XX,t(2;5)(q21;q31)', '2'), '2p+q+5q');
+});
+
+// ---- which arm of a whole-arm fusion is drawn on top ------------------------
+// ISCN says how to WRITE der(14;21)(q10;q10), including that partners are listed
+// lowest-number-first, and says nothing about the drawing. Taking that nomenclature
+// order as a drawing order put the LONG arm on top of every Robertsonian, and a q
+// arm in the top position has to be flipped so qter points up: der(14;21) came out
+// as 90 Mb of inverted 14q above 35 Mb of 21q, so the derivative's banding ran
+// backwards next to the normal 14 beside it. The rule that applies is the one every
+// other chromosome in the karyogram already obeys and the one a cytogeneticist uses
+// on a chromosome cut from a metaphase spread, where no name is available: orient by
+// morphology, short arm up.
+const topArmOf = (k, chrom) => {
+  const c = ISCN.parse(k).clones[0];
+  const i = (c.slots[chrom] || []).find((x) => x.kind !== 'normal');
+  return Karyo.buildInstance(i).segments.map((s) => {
+    const cen = IDEO.data[s.chrom].centromere;
+    return { id: s.chrom + (s.to <= cen ? 'p' : 'q'), bp: s.to - s.from, reversed: !!s.reversed };
+  });
+};
+
+test('a Robertsonian draws its shorter arm on top', () => {
+  // .join(), not deepEqual: the renderer builds its arrays inside the vm realm, so
+  // a strict deep compare fails on the Array prototype rather than the contents.
+  const order = (k, c) => topArmOf(k, c).map((s) => s.id).join(' over ');
+  assert.equal(order('45,XY,rob(14;21)(q10;q10)', '14'), '21q over 14q');
+  assert.equal(order('45,XY,rob(13;14)(q10;q10)', '13'), '14q over 13q');
+  assert.equal(order('45,XX,der(14;21)(q10;q10)', '14'), '21q over 14q');
+});
+
+test('the long arm of a Robertsonian reads the same way up as its normal homolog', () => {
+  // The whole point of drawing the derivative beside the normal 14 is comparing the
+  // two, which is impossible if one of them is upside down. Exactly one arm must be
+  // flipped when both retained pieces are q arms; it has to be the short one.
+  const segs = topArmOf('45,XY,rob(14;21)(q10;q10)', '14');
+  assert.equal(segs[1].id, '14q');
+  assert.equal(segs[1].reversed, false, '14q is drawn in its natural orientation');
+  assert.equal(segs[0].reversed, true, 'the short arm on top is the flipped one');
+  assert.equal(segs.filter((s) => s.reversed).length, 1, 'never more than one flip');
+});
+
+test('a mixed p/q whole-arm der is ordered by reversal count, not by length', () => {
+  // der(1;3)(p10;q10) keeps 1p (123 Mb) and 3q (107 Mb). Putting the p arm up is the
+  // only arrangement that flips neither arm; a pure length rule would hoist 3q above
+  // 1p and invert both to do it, which is strictly worse to read.
+  const segs = topArmOf('45,XY,der(1;3)(p10;q10)', '1');
+  assert.equal(segs.map((s) => s.id).join(' over '), '1p over 3q');
+  assert.equal(segs.filter((s) => s.reversed).length, 0, 'neither arm needs flipping');
+});
+
+test('the drawing order does not change what the derivative is named for', () => {
+  // The outline colour and the seam centromere follow the label, not segments[0], so
+  // reordering the arms cannot make der(14) look like a chromosome 21.
+  const c = ISCN.parse('45,XY,rob(14;21)(q10;q10)').clones[0];
+  const aff = Karyo.computeAffected([c]);
+  const inst = c.slots['14'].find((x) => x.kind !== 'normal');
+  const out = Karyo.drawInstance(inst, { theme: 'simple', level: 99, affected: aff });
+  assert.ok(out.svg.includes(aff['14']), 'the derivative is outlined in chromosome 14 colour');
+});
+
+test('the Bands toggle cannot re-order a derivative', () => {
+  // Arm ordering is decided from bp coordinates in IDEO.data, one table with no
+  // per-level variants, and buildInstance takes no band level at all. rob(21;22) is
+  // the case that would expose a level-dependent length: 21q (34.7 Mb) and 22q
+  // (35.8 Mb) are 3% apart, so any drift would flip which one is on top. The seam y
+  // is the observable, since it is the length of whichever arm was drawn first.
+  const c = ISCN.parse('45,XX,rob(21;22)(q10;q10)').clones[0];
+  const der = c.slots['21'].find((x) => x.kind !== 'normal');
+  const cenYs = [0, 1, 99].map((level) => Karyo.drawInstance(der, { theme: 'detailed', level, affected: {} }).cenY);
+  assert.equal(new Set(cenYs).size, 1, `seam moved across band levels: ${cenYs.join(', ')}`);
+  assert.equal(topArmOf('45,XX,rob(21;22)(q10;q10)', '21').map((s) => s.id).join(' over '), '21q over 22q');
 });
