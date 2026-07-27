@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (one cell list behind both karyogram views)
+
+- **The full karyogram and the affected-only view each assembled their own cell list, and drifted.**
+  The chromosome drawing was already fully shared (`drawInstance` → `cellHtml` → `alignMode`), but
+  each view separately decided *which* cells exist and separately handled markers, double minutes
+  and the absent-homolog placeholder. That is the code path that produced a real bug: the
+  placeholder for a monosomy shipped in the full karyogram and had to be back-ported to the affected
+  view afterwards. A single `cellSpecs(clone, only)` now answers "which cells", for both.
+
+- **A second disagreement surfaced and is fixed.** The two views ordered the sex-chromosome gap
+  differently: the full karyogram put it directly after X and Y, the affected row put it last, after
+  markers. Visible on `45,X,+mar` and `46,X,+mar`. Both now use the full karyogram's order, since the
+  gap belongs to the sex pair rather than to the end of the row.
+
+- **Nothing else moved.** Verified by rendering 36 karyotypes across both views and both themes,
+  144 snapshots of the emitted HTML, and diffing against the previous build: 140 byte-identical, and
+  the 4 that differ are exactly the `+mar` ordering above, same cells, same markup, same length.
+
+- **The two views keep their own vertical alignment, on purpose.** That part is not a consolidation
+  candidate and is now asserted as such. The affected row hangs every cell off one shared centromere
+  line, which is the classic karyogram look for a focused row; across 24 chromosomes it would put
+  chromosome 1's centromere (about 123 Mb down) on the same line as chromosome 21's (about 12 Mb
+  down) and leave a chromosome-length of blank space above every small one.
+
 ## 2026-07-27 (Back undoes a view toggle; a count that does not add up travels with the image)
 
 - **Back skipped the Style / Bands / Show toggles entirely (bug).** Measured on production: three
