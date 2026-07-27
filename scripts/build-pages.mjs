@@ -154,7 +154,11 @@ const LANDING_CSS = `
 // Site chrome, single-sourced here and injected into index.html (KD:NAV / KD:FOOT
 // markers) too, so the SPA and the generated pages can never drift.
 const LINKS = { studyrare: 'https://studyrare.com', github: 'https://github.com/dpique/studyrare-karyodraw', kofi: 'https://ko-fi.com/studyrare' };
-const NAV_ITEMS = [['/karyotype/', 'Karyotypes', 'karyotypes'], ['/how-to-read-a-karyotype/', 'Guide', 'guide'], ['/about/', 'About', 'about']];
+// The tour is a destination like Guide, so it lives in the nav rather than as a
+// button in the typing path on the homepage. Being here also makes it reachable from
+// every landing page, which it never was before. No `active` key: it is a mode of the
+// homepage, not a page of its own, so it never highlights.
+const NAV_ITEMS = [['/karyotype/', 'Karyotypes', 'karyotypes'], ['/?tour=1', 'Tour', 'tour'], ['/how-to-read-a-karyotype/', 'Guide', 'guide'], ['/about/', 'About', 'about']];
 
 function siteHeader(active) {
   const link = (href, label, key) => `<a href="${href}"${active === key ? ' aria-current="page"' : ''}>${label}</a>`;
