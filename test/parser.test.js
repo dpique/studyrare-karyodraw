@@ -575,8 +575,9 @@ test('the offered fix is the karyotype the writer meant', () => {
 
 test('a genuine count mismatch is still reported', () => {
   // The guard is about unread text, not about counts in general.
-  assert.match(warnOf('45,XX,t(13;15)(q10;q10)'), /number at the start says 45, but this karyotype describes 46/);
-  assert.match(warnOf('47,XY,rob(14;21)(q10;q10),+21'), /number at the start says 47/);
+  // Numbers and order, not prose; message-voice.test.js owns the wording.
+  assert.match(warnOf('45,XX,t(13;15)(q10;q10)'), /number at the start says 45\b[\s\S]*\b46 chromosomes\b/);
+  assert.match(warnOf('47,XY,rob(14;21)(q10;q10),+21'), /number at the start says 47\b[\s\S]*\b46 chromosomes\b/);
 });
 
 // ---- a token that never became an aberration is not a count argument --------
@@ -600,7 +601,7 @@ test('the count guard covers both ways a token goes uncounted', () => {
 test('a fully interpreted karyotype still gets its count checked', () => {
   // The guard is about uninterpreted tokens, not about counts.
   assert.match(ISCN.parse('46,XY,rob(14;21)(q10;q10),-21').warnings.join(' '),
-    /number at the start says 46, but this karyotype describes 44/);
+    /number at the start says 46\b[\s\S]*\b44 chromosomes\b/);
   assert.equal(ISCN.parse('44,XY,rob(14;21)(q10;q10),-21').warnings.length, 0, 'and stays quiet when it adds up');
 });
 

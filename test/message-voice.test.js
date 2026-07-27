@@ -87,3 +87,30 @@ test('no message uses an em dash', () => {
     assert.ok(x.w.indexOf('—') < 0, `em dash in message for "${x.k}":\n    ${x.w}`);
   });
 });
+
+test('no message states the app\'s own arithmetic as a property of the karyotype', () => {
+  // "This karyotype describes 46 chromosomes" claims more authority than the app has
+  // earned: the figure is just the sum of the copies it worked out, and if that
+  // working is wrong the sentence is wrong with exactly the same confidence. Say
+  // whose sum it is and let the reader check it.
+  const ORACLE = [
+    /\bthis karyotype describes\b/i,
+    /\bthis notation describes\b/i,
+    /\bthe karyotype (is|has|contains)\b/i,
+  ];
+  allWarnings().forEach(function (x) {
+    ORACLE.forEach(function (re) {
+      assert.ok(!re.test(x.w), `states our arithmetic as fact ${re} for "${x.k}":\n    ${x.w}`);
+    });
+  });
+});
+
+test('the count message attributes the total and names the rule', () => {
+  const w = ISCN.parse('47,XY,rob(14;21)(q10;q10),+21').warnings.join(' ');
+  assert.match(w, /changes listed after it add up to 46/, 'says whose sum it is');
+  assert.match(w, /cell's total, so the two have to agree/, 'and the rule that makes it matter');
+  // Deliberately does NOT point at the drawing. 47,XY,del(5)(zz15.2) raises this
+  // warning and is also refused a karyogram over the bad band, so "count them below"
+  // would sometimes point at nothing.
+  assert.doesNotMatch(w, /below|karyogram|drawing|drawn/i, 'no reference to a picture that may not exist');
+});

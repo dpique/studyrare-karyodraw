@@ -445,11 +445,24 @@
     clone.uncounted = clone.aberrations.some(function (ab) { return ab.unread || ab.kind === "unknown"; });
     if (!clone.counts.ok && clone.sex.tokens.length > 0 && !clone.incomplete && !clone.uncounted) {
       var want = clone.modalHigh != null ? (clone.modalNumber + "–" + clone.modalHigh) : String(clone.modalNumber);
-      // Names the rule as well as the discrepancy: a learner who does not already
-      // know that the leading number is the cell's total count cannot act on "these
-      // two disagree", and that is who is reading this.
-      warnings.push("The number at the start says " + want + ", but this karyotype describes " + actual +
-        " chromosomes. That number is the total count for the cell, so it has to match the changes listed after it.");
+      // Two things this has to get right.
+      //
+      // Attribution. "This karyotype describes 46 chromosomes" states our arithmetic
+      // as a property of the karyotype, which is more authority than we have earned:
+      // `actual` is just the sum of the copies this app worked out, and if that
+      // working is wrong the sentence is wrong with the same confidence. Saying the
+      // listed changes "add up to" 46 says whose sum it is and invites the reader to
+      // check it, which is the honest claim and the more useful one.
+      //
+      // No reference to the drawing, tempting as it is (actual IS the number of
+      // copies drawn, so they can never disagree). A bad band such as
+      // 47,XY,del(5)(zz15.2) raises this warning AND stops the karyogram being drawn
+      // at all, so pointing at a picture would sometimes point at nothing.
+      //
+      // And it names the rule, since a learner who does not already know the leading
+      // number is the cell's total cannot act on "these two disagree".
+      warnings.push("The number at the start says " + want + ", but the changes listed after it add up to " +
+        actual + " chromosomes. That first number is the cell's total, so the two have to agree.");
     }
   }
 

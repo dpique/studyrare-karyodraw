@@ -37,8 +37,10 @@ vm.runInContext(noteSrc + '\nglobalThis.note = countMismatchNote;', sandbox);
 const noteFor = (k) => sandbox.note(ISCN.parse(k));
 
 test('the note names both numbers for a count that does not add up', () => {
-  assert.equal(noteFor('45,XX,t(13;15)(q10;q10)'),
-    'you wrote 45; this notation describes 46 chromosomes');
+  // Pinned on the two numbers and their order, not the prose around them, so
+  // rewording the copy does not churn this file. The wording itself is owned by
+  // test/message-voice.test.js.
+  assert.match(noteFor('45,XX,t(13;15)(q10;q10)'), /\b45\b[\s\S]*\b46 chromosomes\b/);
 });
 
 test('no note when the karyotype agrees with itself', () => {
@@ -52,7 +54,7 @@ test('a mosaic names which clone is off', () => {
   // travels with the image.
   const n = noteFor('mos 45,X[12]/45,XX,t(13;15)(q10;q10)[18]');
   assert.match(n, /clone 2/, 'says which clone, since the drawing shows both');
-  assert.match(n, /you wrote 45; this notation describes 46 chromosomes/);
+  assert.match(n, /\b45\b[\s\S]*\b46 chromosomes\b/);
   assert.doesNotMatch(n, /clone 1/, 'the clone that agrees with itself is not named');
 });
 
@@ -110,8 +112,8 @@ test('an incompletely read karyotype carries no count note into the image', () =
   // because the signless 21 was never interpreted, so "you wrote 46; this notation
   // describes 45 chromosomes" would travel a claim the app cannot stand behind.
   assert.equal(noteFor('46,XY,rob(14;21)(q10;q10),21'), '');
-  assert.equal(noteFor('46,XY,rob(14;21)(q10;q10),-21'),
-    'you wrote 46; this notation describes 44 chromosomes', 'a real mismatch still travels');
+  assert.match(noteFor('46,XY,rob(14;21)(q10;q10),-21'), /\b46\b[\s\S]*\b44 chromosomes\b/,
+    'a real mismatch still travels');
 });
 
 test('the summary pill and the image note gate on the same flag', () => {
