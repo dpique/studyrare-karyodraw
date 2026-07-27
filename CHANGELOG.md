@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (gibberish in a breakpoint is refused, not drawn)
+
+- **`47,XY,del(5)(zzqewdf2315.2)` drew a karyogram (bug).** It also offered "Did you mean
+  `46,XY,del(5)(zzqewdf2315.2)`?", the same gibberish with the count changed, and explained itself
+  as "a terminal DELETION of chromosome 5: everything distal to 5? (out to the tip) is lost". It now
+  refuses to draw and says: "'zzqewdf2315.2' in 'del(5)(zzqewdf2315.2)' is not a breakpoint. A
+  breakpoint is an arm letter then a band number, like 5p15.2 or 5q31."
+
+  Cause: `splitBands` found nothing band-like and returned an empty list, which left
+  `del(5)(zzqewdf2315.2)` **identical to `del(5)`** with no breakpoint written at all. The band
+  check in `index.html` could not catch it either, because by the time it looks there is no band
+  left to look at. The raw text is now kept when a group yields no band, which is what makes the
+  case visible at all. An empty group is still legal: `del(5)`, `r(13)` and `+mar` are untouched.
+
+- **A well-formed band that does not exist is still a different case.** `del(5)(p99)` parses as a
+  band, so it reaches the existing check that knows how far 5p actually runs and can name the
+  nearest real band. That message is better than "not a breakpoint" and is unchanged.
+
+- **The count message no longer presumes which side is wrong.** "That number is the total count for
+  the cell, so it has to match the changes listed after it" pointed the reader at the number. For
+  `45,XX,t(13;15)(q10;q10)` the number is arguably right and the operation is what should change,
+  which the app itself says in the very next line when it offers `rob()`. It now reads: "That first
+  number is the cell's total chromosome count, so either it or the changes needs fixing."
+
 ## 2026-07-27 (the count message stops claiming more authority than it has)
 
 - **"but this karyotype describes 46 chromosomes" is gone.** It stated the app's own arithmetic as a
