@@ -707,6 +707,32 @@
     // name (leftoverWarning), which is more use than a second general note.
     suggestion = suggestion.replace(/\)\s*([+\-−–])/g, "),$1");
 
+    // A SECOND sign inside a token that already begins with one: "-2-21" is two
+    // changes with the comma between them left out, and it used to be reported as
+    // "“-2-21” is not a change KaryoDraw recognizes", which names the symptom and not
+    // the mistake.
+    //
+    // This is the safe subset of the "sign after a digit" rule rejected above, and
+    // what makes it safe is that it is applied per FIELD and never to the first two.
+    // The modal-number range (45-48) is field 0 and is never examined; a marker count
+    // (1~3mar, 1-3mar) does not begin with a sign, so it is never examined either.
+    // Both of the cases that made the general rule unsafe are therefore unreachable.
+    var splitSigns = [];
+    suggestion = suggestion.split("/").map(function (cl) {
+      var lead = (/^(?:mos|chi)\s+/i.exec(cl) || [""])[0];
+      var fields = splitTop(cl.slice(lead.length), ",");
+      for (var fi = 2; fi < fields.length; fi++) {
+        if (!/^[+\-−–]/.test(fields[fi])) continue;
+        var fixed = fields[fi].replace(/(.)([+\-−–])/g, "$1,$2");
+        if (fixed !== fields[fi]) { splitSigns.push(fields[fi]); fields[fi] = fixed; }
+      }
+      return lead + fields.join(",");
+    }).join("/");
+    splitSigns.forEach(function (tok) {
+      warnings.push("Changes are separated by commas, so “" + tok + "” is two of them: “" +
+        tok.replace(/(.)([+\-−–])/g, "$1,$2") + "”.");
+    });
+
     // An empty field between commas. 47~49,XY,+8,, drew a full karyogram and said
     // nothing at all: the field list is filtered for length, so the blanks vanished
     // before anything could object. Repaired rather than only refused, so the viewer

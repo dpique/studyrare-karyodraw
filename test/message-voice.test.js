@@ -29,6 +29,7 @@ const BAD_INPUTS = [
   '46,XY,t(9,22)(q34;q11.2)', '46,XY,t(9;22)(q34;q11.2', 't(9;22)(q34;q11.2)',
   '47,idem,+9', '45,XX,t(13;15)(q10;q10)', '46,XY,+21×99', '46,XY,dmin×99',
   '46,XY,inv(9)(p11q13)zzz', '46XY', '46,XY,del(5)(zz15.2)', '46,XY,t(9;22)(q34;zzz)',
+  '46,XY,-2-21', '43,XZY,+8', '46,QQ,+21', '44,XY,-21,-20',
 ];
 
 const allWarnings = () => {
@@ -68,7 +69,7 @@ test('no warning reports on the parser instead of teaching the rule', () => {
 test('every warning tells the reader something to do or a rule to follow', () => {
   // A heuristic, deliberately loose: a message must either name the correct form,
   // give an example, or state a rule. One that only reports a problem fails.
-  const TEACHES = /\b(needs?|must|has to|use|write|written|should|belongs?|separated?|starts? with|comes? first|add|make sure|for example|e\.g\.|like|look like|is a|are not supported|not an ISCN|takes? one|draws? one|left out of the drawing|capped|Type a karyotype)\b/i;
+  const TEACHES = /\b(needs?|must|has to|use|write|written|should|belongs?|separated?|starts? with|comes? first|comes? before|listed in|add|make sure|for example|e\.g\.|like|look like|is a|are not supported|not an ISCN|takes? one|draws? one|left out of the drawing|capped|Type a karyotype)\b/i;
   allWarnings().forEach(function (x) {
     assert.ok(TEACHES.test(x.w), `message for "${x.k}" reports a problem without teaching anything:\n    ${x.w}`);
   });
@@ -124,4 +125,12 @@ test('the count message does not presume which side is wrong', () => {
   const w = ISCN.parse('45,XX,t(13;15)(q10;q10)').warnings.join(' ');
   assert.match(w, /either it or the changes/, 'either side may be the one to fix');
   assert.doesNotMatch(w, /has to match the changes listed/, 'no longer prescribes changing the number');
+});
+
+test('the empty state does not promise the problem will resolve itself', () => {
+  // "couldn't read this as a karyotype yet" implied it was still working on it. It is
+  // not: nothing changes until the input does.
+  const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.ok(!/as a karyotype yet/.test(page), 'no "yet" in the summary line');
+  assert.ok(!/karyogram to display yet/.test(page), 'no "yet" in the aria label');
 });

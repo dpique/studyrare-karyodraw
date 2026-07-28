@@ -1290,9 +1290,9 @@
       !!model.suggestion || bad.length > 0 || unreadable || countWrong || unaccounted;
     beaconDraw(val, !invalid);
     if (invalid) {
-      $("#summary").innerHTML = '<span class="kt">' + escapeHtml(val) + '</span><span class="sex">couldn’t read this as a karyotype yet</span>';
-      $("#karyo").innerHTML = '<div class="emptystate">Fix the karyotype above and the drawing shows up here.</div>';
-      $("#karyo").setAttribute("aria-label", "No valid karyogram to display yet");
+      $("#summary").innerHTML = '<span class="kt">' + escapeHtml(val) + '</span><span class="sex">not a readable karyotype</span>';
+      $("#karyo").innerHTML = '<div class="emptystate">Fix the karyotype above and the drawing appears here.</div>';
+      $("#karyo").setAttribute("aria-label", "No karyogram to display");
       $("#decode").innerHTML = '<div class="muted">…</div>';
       $("#clinical-card").style.display = "none";
       $("#printsheet").innerHTML = "";

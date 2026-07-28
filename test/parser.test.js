@@ -757,3 +757,31 @@ test('ordinary sex fields are untouched', () => {
       assert.equal(ISCN.parse(k).sexFix, null, k);
     });
 });
+
+// ---- a missing comma between two signed changes -----------------------------
+// "-2-21" was reported as "“-2-21” is not a change KaryoDraw recognizes", which names
+// the symptom and not the mistake. The general "sign after a digit" repair is unsafe
+// (it would turn the modal range 45-48 into 45,-48), but the subset applied per FIELD
+// to a token that ALREADY begins with a sign cannot reach either dangerous case: the
+// modal range is field 0 and is never examined, and a marker count does not begin
+// with a sign.
+test('a missing comma between two signed changes is named and repaired', () => {
+  const m = ISCN.parse('43,XY,rob(14;21)(q10;q10),-2-21,-20');
+  assert.equal(m.suggestion, '43,XY,rob(14;21)(q10;q10),-2,-21,-20');
+  assert.match(m.warnings.join(' '), /separated by commas, so “-2-21” is two of them/);
+});
+
+test('the sign repair cannot reach a modal range or a marker count', () => {
+  // The two cases that made the general rule unsafe.
+  ['45-48,XY,+8', '45~48,XY,+8', '46,XY,1~3mar', '46,XY,1-3mar', '46,XY,2mar']
+    .forEach((k) => assert.equal(ISCN.parse(k).suggestion, null, k));
+});
+
+test('the sign repair leaves ordinary signed changes alone', () => {
+  ['47,XY,+8', '45,XY,-8', '46,XY,+der(22)t(9;22)(q34;q11.2)', '46,XY,+8×2', '47,idem,+8',
+   'mos 45,X[12]/46,XX[18]'].forEach((k) => assert.equal(ISCN.parse(k).suggestion, null, k));
+});
+
+test('it works on sex chromosomes too', () => {
+  assert.equal(ISCN.parse('44,XY,-X-Y').suggestion, '44,XY,-X,-Y');
+});
