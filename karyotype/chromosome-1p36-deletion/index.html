@@ -520,6 +520,29 @@
   .lp-ops { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margin: 8px 0 14px; }
   .lp-ops dt { margin: 0; } .lp-ops dt code { font-size: 13.5px; }
   .lp-ops dd { margin: 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.5; }
+
+  /* Print. index.html's stylesheet hides `main` because the app page prints the
+     #printsheet it assembles rather than its own interface. A landing page has no
+     print sheet, so hiding main left it printing a blank page. It prints its article
+     instead, minus the parts that mean nothing on paper: the breadcrumb, the button
+     into the visualizer, and the list of links to other pages. */
+  @media print {
+    main.lp-wrap { display: block !important; max-width: none; padding: 0; }
+    .lp-crumb, .lp-cta, .lp-related { display: none !important; }
+    article h1 { font-size: 20pt; }
+    .lp-kt { font-size: 13pt; }
+    .lp-intro, .lp-prose p, .lp-syn p, .lp-decode dd, .lp-ops dd { font-size: 10.5pt; line-height: 1.45; }
+    .lp-sec h2, .lp-prose h2 { font-size: 12pt; margin: 14px 0 6px; }
+    .lp-fig { border: none; box-shadow: none; padding: 0; overflow: visible; }
+    .lp-karyo-img { max-width: 100%; }
+    /* Keep a figure, a decode list, or a clinical note from splitting across pages. */
+    .lp-fig, .lp-sec, .lp-decode, .lp-syn { break-inside: avoid; }
+    .lp-sec h2, .lp-prose h2, .lp-prose h3, article h1 { break-after: avoid; }
+    /* Colored link text is noise once the links cannot be followed. Each selector
+       here has to match the specificity of the screen rule it overrides. */
+    a, .lp-foot a, .lp-prose a, .lp-crumb a { color: inherit; text-decoration: none; }
+    .lp-foot { font-size: 8.5pt; margin-top: 20px; }
+  }
 </style>
 </head>
 <body>

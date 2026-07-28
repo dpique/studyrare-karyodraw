@@ -3,6 +3,23 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-28 (every page prints something)
+
+- **Printing a karyotype page, the guide, the About page, or the hub produced a blank sheet.** The
+  app page prints a purpose-built one-page summary, so its print stylesheet hides `main`. That
+  stylesheet is inlined verbatim into all 36 generated pages, which have no such summary to take
+  main's place, so `Cmd-P` on any of them gave an empty page.
+
+  Generated pages now print their own article: the heading, the karyotype, the drawing, the decoded
+  notation and the clinical note, ending in the disclaimer. Dropped from the printout are the parts
+  that mean nothing on paper: the site header, the breadcrumb, the button into the visualizer, and
+  the list of links to related pages. Headings will not orphan at the foot of a page, and a figure,
+  a decode list, or a clinical note will not split across two. A karyotype page is one sheet; the
+  guide is five.
+
+  The app page is untouched and still prints its summary. `test/layout.test.js` holds both halves:
+  generated pages re-show their main in print, and the homepage does not.
+
 ## 2026-07-27 (the homepage footer reaches the bottom of the page)
 
 - **The homepage footer sat on a band of empty page.** Its markup was nested inside `<main>`, and

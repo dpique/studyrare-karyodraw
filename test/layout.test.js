@@ -38,6 +38,30 @@ test('the print sheet hides the footer by name, not by hiding main', () => {
     + `covered by hiding main (hides: ${hidden.join(', ')})`);
 });
 
+// The app page prints a purpose-built #printsheet, so its print stylesheet hides
+// `main`. That stylesheet is inlined verbatim into every generated page, and a landing
+// page has no #printsheet to take main's place, so printing one produced a blank sheet.
+const styleOf = (f) => read(f).match(/<style>([\s\S]*?)<\/style>/)[1];
+const GENERATED = ['about/index.html', 'how-to-read-a-karyotype/index.html',
+  'karyotype/index.html', 'karyotype/down-syndrome/index.html'];
+
+test('generated pages print their own article, not a blank sheet', () => {
+  for (const f of GENERATED) {
+    const css = styleOf(f);
+    const print = css.slice(css.indexOf('@media print'));
+    assert.ok(/(^|[\s,])main[\s,]/.test(print.slice(0, 400)),
+      `${f}: expected the inherited app print rule that hides main`);
+    assert.match(print, /main\.lp-wrap\s*\{[^}]*display:\s*block\s*!important/,
+      `${f}: a landing page has no #printsheet, so it must re-show its own main in print`);
+  }
+});
+
+test('the app page still prints its print sheet, not its interface', () => {
+  const print = (() => { const c = styleOf('index.html'); return c.slice(c.indexOf('@media print')); })();
+  assert.ok(!/main\.lp-wrap\s*\{[^}]*display:\s*block/.test(print),
+    'the homepage must keep hiding main in print: it prints the #printsheet it builds');
+});
+
 test('the homepage footer is a top-level element, not wrapped in a container', () => {
   const html = read('index.html');
   const mainClose = mainCloseOf(html);
