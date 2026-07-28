@@ -263,3 +263,36 @@ test('punctuation that is part of the notation is left alone', () => {
    '46,XY,del(22)(q11.2)mat', '47~49,XY,+8', '47-49,XY,+8', '46,XY,+21c']
     .forEach((k) => assert.equal(ISCN.parse(k).suggestion, null, k));
 });
+
+// A dash range draws and is correct enough to keep, but the ISCN spelling is a tilde.
+// Saying so only in the decode prose left the reader to retype it, and left the question
+// "so which one is it" open: the chip still showed the dash. It is now offered as a
+// one-click alternative in the neutral note box, the same mechanism that offers rob()
+// for a whole-arm acrocentric t().
+test('a dash range still draws and is never refused', () => {
+  ['46-49,XY', '47-49,XY,+8', '47-49,XY,+8,+21[cp10]', '46-48,XX,+21']
+    .forEach((k) => assert.equal(refused(k), false, k));
+});
+
+test('a dash range is offered the tilde spelling as a note, not a warning', () => {
+  const m = ISCN.parse('46-49,XY');
+  assert.equal(m.warnings.length, 0, `should not warn: ${JSON.stringify(m.warnings)}`);
+  assert.equal(m.fixes.length, 0, 'should not sit in the "did you mean" box');
+  assert.ok(m.note, 'should carry a note');
+  assert.equal(m.note.fix, '46~49,XY');
+  assert.match(m.note.text, /tilde/, m.note.text);
+  assert.ok(m.note.fixLabel, 'the note needs its own label, not the Robertsonian wording');
+});
+
+test('a tilde range carries no note, and the note slot is not stolen', () => {
+  assert.equal(ISCN.parse('47~49,XY,+8').note, null);
+  assert.equal(ISCN.parse('46,XY').note, null);
+  // The whole-arm acrocentric note still owns the slot when both could apply.
+  const acro = ISCN.parse('46,XX,t(13;15)(q10;q10)');
+  assert.ok(acro.note && /Robertsonian/.test(acro.note.text), 'acro note should survive');
+});
+
+test('the tilde note keeps the rest of the karyotype intact', () => {
+  assert.equal(ISCN.parse('47-49,XY,+8,+21[cp10]').note.fix, '47~49,XY,+8,+21[cp10]');
+  assert.equal(ISCN.parse('mos 46-49,XY/46,XX').note, null);   // more than one clone: left alone
+});

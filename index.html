@@ -1410,7 +1410,10 @@
     if (!w.length && !fix && model.note) {
       box.innerHTML = '<div class="notebox"><div class="note-title">Worth knowing</div>' +
         escapeHtml(model.note.text) +
-        (model.note.fix ? '<div class="note-fix">Draw it as a Robertsonian instead: <button class="dym" data-k="' +
+        // The label comes with the note. It used to be hardcoded to the Robertsonian
+        // wording, which was the only note there was.
+        (model.note.fix ? '<div class="note-fix">' +
+          escapeHtml(model.note.fixLabel || "Draw it this way instead:") + ' <button class="dym" data-k="' +
           escXml(model.note.fix) + '">' + escapeHtml(model.note.fix) + '</button></div>' : "") +
         '</div>';
       return;

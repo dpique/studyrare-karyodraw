@@ -109,10 +109,19 @@ chip used to be reassembled as `N~M`, so `47-49` displayed as `47~49`: a charact
 reader had not typed, which reads as the app having quietly edited the input, and it also
 dropped the `<2n>` ploidy note off `45<2n>,XY,…` entirely.
 
-Where the written form is accepted but not canonical, the explanation says so instead of the
-chip changing: a dash range is the Mitelman spelling, ISCN uses a tilde, and the decode adds
-"ISCN writes a range with a tilde, 47~49". That belongs in the decode rather than in a
-warning, because the karyotype is correct and draws.
+Where the written form is accepted but not canonical, the chip still shows what was written
+and the canonical form is offered in the **note box** (`result.note`), with a one-click
+alternative. A dash range is the Mitelman spelling, ISCN uses a tilde, so `46-49,XY` draws
+and carries a note offering `46~49,XY`.
+
+That is not a warning: warning on correct input is how a warning box loses its authority. It
+was first tried as a sentence in the decode row, which was not enough — it left the reader to
+retype the karyotype, and the chip beside it still read `46-49`, so "which one is it" stayed
+open. State it once, in the place that can act on it.
+
+`result.note` carries its own `fixLabel`. It used to be hardcoded in the page to the
+Robertsonian wording, which was the only note there was, and it holds one note at a time:
+whichever branch runs first keeps the slot, and later branches check `!result.note`.
 
 ## Offering a repair
 

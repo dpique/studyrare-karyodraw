@@ -932,9 +932,33 @@
           text: "A whole-arm exchange between two acrocentric chromosomes is written t(…) only when both products are kept, which is why the count here is " +
             cl1.modalNumber + ". The fusion that actually occurs loses the two short arms and leaves one chromosome: that is a Robertsonian translocation, rob(" +
             pair + ")(q10;q10), and a balanced carrier of it has " + (cl1.modalNumber - 1) + " chromosomes, not " + cl1.modalNumber + ".",
+          fixLabel: "Draw it as a Robertsonian instead:",
           fix: (result.normalized || raw)
             .replace(acroAb.raw, "rob(" + pair + ")(q10;q10)")
             .replace(/\d+/, String(cl1.modalNumber - 1))
+        };
+      }
+    }
+
+    // A modal-number range written with a dash: 46-49,XY. Mitelman writes it that way and
+    // KaryoDraw accepts it, but the ISCN symbol for a range is a tilde. Not a warning,
+    // because the karyotype is correct and draws, and warning on correct input is how a
+    // warning box loses its authority.
+    //
+    // It began as a sentence in the decode row, which was not enough: it left the reader
+    // to retype the karyotype, and the chip beside it still showed the dash, so "which one
+    // is it" stayed open. Here it comes with the tilde version attached, one click away.
+    //
+    // Single clone only. Rewriting one clone of a mosaic would leave the two halves spelled
+    // differently, which is worse than the dash.
+    if (!result.note && !result.suggestion && result.clones.length === 1) {
+      var rc = result.clones[0];
+      if (rc.modalHigh != null && /[\-–]/.test(rc.modalGiven || "")) {
+        var tilde = rc.modalGiven.replace(/[\-–]/, "~");
+        result.note = {
+          text: "The count is written " + rc.modalGiven + ", which is how Mitelman writes a range and is understood here. ISCN writes a range with a tilde: " + tilde + ".",
+          fixLabel: "Write the range with a tilde:",
+          fix: (result.normalized || raw).replace(rc.modalGiven, tilde)
         };
       }
     }
