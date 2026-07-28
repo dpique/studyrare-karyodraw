@@ -526,7 +526,10 @@
     // A sex field the app had to edit to use. 43,XZY,… dropped the Z and drew, and
     // 46,QQ,+21 drew a karyogram with no sex chromosomes at all.
     }) || (clone.sex && ((clone.sex.dropped || []).length > 0 ||
-      (clone.sexGiven && !clone.sex.tokens.length)));
+      (clone.sexGiven && !clone.sex.tokens.length)))
+    // No sex field stated at all: 69.XX, and 46 on its own. The check above cannot
+    // see this one, since it compares against a field that was never there.
+    || !!clone.sexMissing;
     if (clone.outOfOrder) {
       warnings.push("Whole-chromosome gains and losses are listed in chromosome order, so “" +
         clone.outOfOrder.before + "” comes before “" + clone.outOfOrder.after + "”.");
@@ -637,6 +640,16 @@
     } else if (fields.length > 1) {
       clone.sexGiven = fields[1];   // as written; parseSex normalises case and order
       clone.sex = parseSex(fields[1], warnings);
+    } else {
+      // No second field at all. ISCN states the sex chromosomes right after the count,
+      // and there is nothing to infer them from: "46" is as consistent with XX as with
+      // XY. Drawing it picked neither and left both slots labelled "missing", which
+      // reads as a finding about the karyotype rather than a gap in the designation.
+      // Recorded rather than warned about here, because the draw gate has to refuse it
+      // either way while the message depends on what else was said: diagnose() can
+      // repair a mistyped separator, and when it has, naming the rule a second time
+      // reads as a second, separate problem. parse() pushes the message.
+      clone.sexMissing = true;
     }
 
     // remaining = aberrations (including a leading idem/sl/sdl marker)
@@ -691,10 +704,34 @@
     if (opens !== closes) {
       warnings.push("Unbalanced parentheses, " + opens + " “(” but " + closes + " “)”. Make sure every “(” has a matching “)”.");
     }
-    if (/^\d+[XY]{1,4}(,|\[|$)/i.test(raw)) {
-      warnings.push("Add a comma after the chromosome count, the count comes first, then the sex chromosomes, e.g. 46,XY.");
-      suggestion = suggestion.replace(/^(\d+)([XYxy]{1,4})/, function (m, a, b) { return a + "," + b.toUpperCase(); });
-    }
+    // The comma between the chromosome count and the sex chromosomes, written as
+    // anything else or left out. "69.XX" is the whole reason this is one rule rather
+    // than the narrower "no separator at all" it replaces: the count pattern read 69
+    // and stopped at the period, so the designation stayed a single field, no sex field
+    // was ever built, and the app drew 69 chromosomes with both sex slots empty. Every
+    // other check was looking elsewhere. The sex-field check compares against a stated
+    // field and there was none; the count check is skipped when there are no sex
+    // chromosomes to count; and the round-trip keeps the count field as written, so a
+    // character dropped INSIDE it is exactly what it cannot see.
+    //
+    // Safe because the separator alternatives cannot appear there in valid ISCN: the
+    // count itself may only carry digits, a range dash or tilde, and a <2n> ploidy note,
+    // all of which are consumed before the separator is examined. A comma never matches,
+    // so no correctly written karyotype is touched, and the sex letters must not be
+    // followed by another letter, so "46XYZ" is left for the sex-field check to refuse.
+    var sexSeps = [];
+    suggestion = suggestion.split("/").map(function (cl) {
+      var lead = (/^(?:mos|chi)\s+/i.exec(cl) || [""])[0];
+      var rest = cl.slice(lead.length);
+      var m = /^(\d+(?:\s*[~\-–]\s*\d+)?(?:<\d+n>)?)([.;:]|\s+)?([XYxy]{1,4})(?![A-Za-z])/.exec(rest);
+      if (!m) return cl;
+      sexSeps.push([m[1] + (m[2] || "") + m[3], m[1] + "," + m[3].toUpperCase()]);
+      return lead + m[1] + "," + m[3].toUpperCase() + rest.slice(m[0].length);
+    }).join("/");
+    sexSeps.forEach(function (pair) {
+      warnings.push("The chromosome count and the sex chromosomes are separated by a comma, so “" +
+        pair[0] + "” is “" + pair[1] + "”.");
+    });
     // A sign is only ever the first character of an aberration (+21, -X, +der(1)),
     // so a sign sitting right after a closing parenthesis means the comma between
     // two aberrations was left out: der(13;14)(q10;q10)+14. Anchoring on the ")"
@@ -783,6 +820,14 @@
     // Resolve clonal-evolution references now that all clones are parsed.
     result.clones.forEach(function (cl, ci) { if (cl.pendingIdem) expandIdem(result.clones, ci, warnings); });
     result.ok = result.clones.length > 0 && result.clones.every(function (c) { return c.modalNumber != null; });
+
+    // A clone that never stated its sex chromosomes. One message per mistake: when
+    // diagnose() already named a mistyped separator and offered the repair, that IS
+    // this mistake, and stating the rule again reads as a second thing to fix.
+    if (!result.suggestion && result.clones.some(function (c) { return c.sexMissing; })) {
+      warnings.push("A karyotype starts with the chromosome count, then the sex chromosomes: " +
+        "46,XY, 45,X, 69,XXX.");
+    }
 
     // If a single clone's stated count is off, offer the corrected count as a fix.
     if (!result.suggestion && result.clones.length === 1) {
