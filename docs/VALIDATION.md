@@ -22,12 +22,27 @@ is written and never what is drawn.
 | `clone.unreadable` — part could not be read | `parseClone` | see below |
 | `clone.countWrong` — the count is contradicted | `buildComplement` | `46,XY,rob(14;21)(q10;q10),-21` |
 | `clone.unaccounted` — input was silently dropped | round-trip, below | `47~49,XY,+8,,` |
+| `clone.sexMissing` — no sex field stated | `parseClone` | `69.XX`, `46` |
 
 ### `clone.unreadable`
 
 Any of: a breakpoint group that yielded no band (`del(5)(zzqewdf2315.2)`); a token that
 never became an aberration (`zzz(9)(q34)`, or a signless `,21`); text an operation could
-not consume (`inv(9)(p11q13)zzz`); a sex field the app had to edit to use (`XZY`, `QQ`).
+not consume (`inv(9)(p11q13)zzz`); a sex field the app had to edit to use (`XZY`, `QQ`);
+a clone that states **no** sex field at all (`clone.sexMissing`: `69.XX`, `46`).
+
+`sexMissing` is a separate flag from the edited-sex-field check above, because that one
+compares against a field that was stated and there was none. `69.XX` is one comma-separated
+field: the count pattern read `69` and stopped at the period, so nothing ever looked at
+`XX`. The count check is also no help, since it is skipped when there are no sex
+chromosomes to count, and the round-trip keeps the count field verbatim (see its limit
+below). Before the flag, `69.XX` drew 69 chromosomes with both sex slots labelled
+"missing" and said nothing. ISCN always states the count then the sex complement, and
+there is nothing to infer the sex from: `46` is as consistent with XX as with XY.
+
+`diagnose()` repairs the separator when it can (`69.XX` → `69,XX`, also `;`, `:`, a space,
+or nothing at all), and `parse()` only pushes the "starts with the count, then the sex
+chromosomes" message when no such repair was offered, so one mistake yields one message.
 
 ### `clone.countWrong` is not `!counts.ok`
 
@@ -94,6 +109,12 @@ worked on. Roughly ordered by how badly the drawing misleads.
 | `46,xy,del(5)(p15.2)` | lowercase; accepted deliberately, may not be wanted in a checker |
 
 Reproduce with the survey in `NEXT_SESSION_HANDOFF.md`.
+
+Note what this list is not. Every entry above is a well-formed field list with a bad
+*aberration* in it, because that is what the survey was built to probe. `69.XX` was not on
+it and drew for months: the mistake was in the *separator between fields*, one level up
+from anything being surveyed. When adding to the survey, vary the punctuation and the
+field structure too, not only the operations.
 
 ## Adding a check
 

@@ -3,6 +3,36 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-28 (a karyotype has to say what the sex chromosomes are)
+
+- **`69.XX` drew 69 chromosomes with both sex slots labelled "missing", and said nothing.** A period
+  instead of a comma made the whole designation one field: the count pattern read `69` and stopped
+  at the period, so nothing ever looked at the `XX`. The same held for `46.XY`, `46;XY`, `46 XY`,
+  and `46` on its own.
+
+  Every existing check was looking somewhere else. The sex-field check added for `43,XZY` compares
+  against a field that was stated, and there was none. The count check is skipped when there are no
+  sex chromosomes to count. The round-trip check compares fields as written, and the count field
+  came back verbatim, so the loss was inside a field rather than a field going missing, which is the
+  one thing that check cannot see.
+
+  Two changes. `diagnose()` now treats the comma between the count and the sex chromosomes as
+  required, whether it was written as something else or left out, and offers the repair:
+  "The chromosome count and the sex chromosomes are separated by a comma, so `69.XX` is `69,XX`."
+  That replaces the narrower rule that only caught `46XY`. And a clone that states no sex field at
+  all is refused outright, because nothing can be inferred: `46` is as consistent with XX as with
+  XY, and drawing it picked neither. The message names the rule instead of a repair, since there is
+  no repair to offer.
+
+  Only one of the two messages ever shows. When the separator repair has already named the mistake,
+  restating the rule reads as a second, separate problem.
+
+  Verified against every karyotype the app ships, the example chips, and the 61-karyotype round-trip
+  corpus: a differential run over 66 inputs found no change to anything that was already correct.
+  Note what the known-holes survey missed here. Every entry on that list is a well-formed field list
+  with a bad aberration in it, because that is what it was built to probe. This mistake was one level
+  up, in the punctuation between fields. `docs/VALIDATION.md` records the lesson.
+
 ## 2026-07-28 (every page prints something)
 
 - **Printing a karyotype page, the guide, the About page, or the hub produced a blank sheet.** The

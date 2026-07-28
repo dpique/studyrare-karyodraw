@@ -71,6 +71,43 @@ test('a count the app is willing to call wrong is refused', () => {
 });
 
 // ---- drawn: valid ISCN, including the parts that cannot be tallied ----------
+// A karyotype states the chromosome count and then the sex chromosomes. Anything but a
+// comma between the two swallowed the sex field whole: the count regex read "69" out of
+// "69.XX" and stopped at the period, so the whole designation was one field, no sex
+// field was ever built, and the app drew 69 chromosomes with both sex slots labelled
+// "missing". Nothing objected, because every existing check was looking elsewhere. The
+// sex-field check needs a stated field to compare against, the count check is skipped
+// when there are no sex chromosomes to count, and the round-trip keeps the count field
+// verbatim so it cannot see a character dropped inside it.
+test('a separator other than a comma before the sex chromosomes is refused', () => {
+  ['69.XX', '46.XY', '46;XY', '46 XY', '46XY', '46:XY', '69.XXX', 'mos 46.XX/47,XX']
+    .forEach((k) => assert.equal(refused(k), true, k));
+});
+
+test('the comma repair is offered, and it is the karyotype that was meant', () => {
+  [['69.XX', '69,XX'], ['46.XY', '46,XY'], ['46;XY', '46,XY'], ['46 XY', '46,XY'],
+   ['46XY', '46,XY'], ['69.XXX', '69,XXX'], ['46.XX,+21', '46,XX,+21'],
+   ['mos 46.XX/47,XX', 'mos 46,XX/47,XX']].forEach(([bad, want]) => {
+    assert.equal(ISCN.parse(bad).suggestion, want, bad);
+  });
+  // The repair has to name the rule, not report on the parser.
+  const w = ISCN.parse('69.XX').warnings.join(' ');
+  assert.match(w, /comma/i, `the message should name the comma rule: ${w}`);
+});
+
+test('a karyotype with no sex chromosomes stated at all is refused', () => {
+  // No repair is possible here, so this leans on the gate rather than a suggestion.
+  ['46', '69', '46.', '69.QQ', '47~49'].forEach((k) => assert.equal(refused(k), true, k));
+});
+
+test('a subclone that inherits its sex field still draws', () => {
+  // idem/sl/sdl stand in for the whole stemline, sex included, so the second clone
+  // legitimately states no sex field of its own. This is the case the check above
+  // must not catch.
+  ['47,XX,+8[cp10]/48,idem,+9', '47,XX,+8/48,sl,+9', '47,XY,+8/46,XY']
+    .forEach((k) => assert.equal(refused(k), false, k));
+});
+
 test('valid ISCN whose tally cannot be pinned still draws', () => {
   // Refusing any of these would be a worse bug than the one this change fixes.
   [
