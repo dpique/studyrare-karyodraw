@@ -215,10 +215,12 @@ test('the decoded count echoes the range separator that was typed', () => {
   assert.equal(codeOf('45<2n>,XY,der(14;21)(q10;q10)').code, '45<2n>');
 });
 
-test('the decoded count names the tilde as the ISCN spelling of a range', () => {
+
+test('the decode states the range once, and the tilde advice is not repeated there', () => {
   const textOf = (k) => Teach.decode(ISCN.parse(k).clones[0]).filter((r) => r.tag === 'count')[0].text;
-  assert.match(textOf('47-49,XY,+8'), /47~49/, 'a dash range should point at the tilde form');
-  // Already canonical: no need to tell the reader to write what they wrote.
-  assert.ok(!/ISCN/.test(textOf('47~49,XY,+8')), textOf('47~49,XY,+8'));
-  assert.ok(!/~/.test(textOf('46,XY')), textOf('46,XY'));
+  // The chip still echoes what was typed...
+  assert.equal(Teach.decode(ISCN.parse('46-49,XY').clones[0]).filter((r) => r.tag === 'count')[0].code, '46-49');
+  // ...but the tilde advice lives in the note box with a one-click fix, not twice on screen.
+  assert.ok(!/tilde/.test(textOf('46-49,XY')), textOf('46-49,XY'));
+  assert.match(textOf('46-49,XY'), /varies from 46 to 49/);
 });

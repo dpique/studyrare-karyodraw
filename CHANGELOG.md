@@ -3,6 +3,29 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-28 (the tilde spelling, one click away)
+
+- **"Is it the tilde or the dash?" now has an answer you can click.** ISCN writes a range of modal
+  numbers with a tilde, `47~49`. A dash is how Mitelman writes it, and KaryoDraw accepts it. Saying
+  so in the decode row was not enough: it left the reader to retype the karyotype, and the chip
+  beside the sentence still read `46-49`, so the question it raised stayed open.
+
+  `46-49,XY` now draws and carries a neutral note: "The count is written 46-49, which is how Mitelman
+  writes a range and is understood here. ISCN writes a range with a tilde: 46~49." — with
+  `46~49,XY` attached as a one-click alternative. The sentence is gone from the decode, so the fact
+  is stated once, in the place that can act on it.
+
+  Not a warning. The karyotype is correct and draws, and warning on correct input is how a warning
+  box loses its authority. This is the same neutral mechanism that offers `rob()` for a whole-arm
+  acrocentric `t()`, which now supplies its own label instead of the page hardcoding the Robertsonian
+  wording. One note shows at a time, and the acrocentric branch keeps the slot when both could apply.
+
+  A single clone only: rewriting one clone of `mos 46-49,XY/46,XX` would leave the two halves spelled
+  differently, which is worse than the dash.
+
+  A differential run over 58 inputs found no change to the gate, the repairs, or any warning. Notes
+  appear on the four dash ranges and nowhere else.
+
 ## 2026-07-28 (a stray period at the end; the range separator you typed)
 
 - **A trailing period blamed the change it was stuck to.** `47-49,XY,+8,+21[cp10].` said
