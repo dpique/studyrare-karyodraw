@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (a missing comma between two signed changes; validation is documented)
+
+- **`-2-21` was reported as "not a change KaryoDraw recognizes".** That names the symptom, not the
+  mistake: it is `-2` and `-21` with the comma left out. It now says "Changes are separated by
+  commas, so `-2-21` is two of them: `-2,-21`" and offers the repaired karyotype.
+
+  The general "a sign after a digit means a missing comma" rule was rejected earlier for good
+  reason: it would turn the modal range `45-48` into `45,-48`, a repair that reads as valid so
+  nothing downstream would catch it. The safe subset is to apply it **per field**, and only to a
+  token that **already begins with a sign**. Neither dangerous case can be reached: a modal range is
+  field 0 and is never examined, and a marker count (`1~3mar`, `1-3mar`) does not begin with a sign.
+  Tests pin both.
+
+- **"couldn't read this as a karyotype yet" loses the "yet".** It implied the app was still working
+  on it. Nothing changes until the input does. Same for the aria label and the empty state.
+
+- **`docs/VALIDATION.md`**: what the app will and will not draw, why the round-trip check is worded
+  the way it is and what it cannot see, the one case that warns without refusing and the evidence
+  behind its narrow scope, a list of 14 known holes, and the rules for adding a check.
+
+- **`NEXT_SESSION_HANDOFF.md`**: state, land mines (the CDN serves mixed versions for a few minutes
+  after a merge; a guard can pass without the code it guards), and a reproduction script for the
+  known holes.
+
 ## 2026-07-27 (a sex field the app had to edit is refused, not drawn)
 
 - **`43,XZY,rob(14;21)(q10;q10),-21,-20` dropped the Z, said so, and drew anyway (bug).** The
