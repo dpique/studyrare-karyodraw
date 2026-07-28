@@ -21,8 +21,11 @@ reasoning behind each; `docs/VALIDATION.md` is the standing reference for the dr
   message states the app's arithmetic as fact. Guarded by `test/message-voice.test.js`.
 - **UI:** Back undoes a view toggle; view options ordered Show/Bands/Style; the tour
   moved to the nav and now works from every landing page; example chips re-deal per load.
+- **Layout (#119):** the homepage footer was inside `<main>`, so `main`'s 60px bottom
+  padding painted below it. The footer is now a sibling of `main`, `main` has no bottom
+  padding, and `test/layout.test.js` holds the three invariants.
 
-321 tests pass (`npm test`). Verified live with a headless browser after each merge.
+324 tests pass (`npm test`). Verified live with a headless browser after each merge.
 
 ## In flight
 Nothing. Working tree clean, no open PRs, no worktrees, `main` at the last merge.
@@ -40,6 +43,14 @@ Nothing. Working tree clean, no open PRs, no worktrees, `main` at the last merge
 - **`clone.countWrong` is not `!counts.ok`.** `48,XY,+8,inc` has a short tally by design.
 - **The round-trip compares fields as written**, so it cannot see a character dropped
   *inside* a field. That is why the sex field needs its own check.
+- **The print rule hides elements by name.** `@media print` lists `header.top, main,
+  footer, #tooltip, .sitebar`. Anything moved out of `main` leaves the print sheet unless
+  it is added to that list; the footer did exactly that. Check `emulateMediaType('print')`
+  after any change to the page skeleton.
+- **`index.html` is partly generated.** `scripts/build-pages.mjs` rewrites the KD:PAGES,
+  KD:NAV and KD:FOOT blocks with its own indentation, and copies the whole `<style>` into
+  every landing page. Run `npm run build` after touching either, and run it twice to
+  confirm the output is stable.
 
 ## Verify first
 ```
