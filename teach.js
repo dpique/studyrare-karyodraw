@@ -280,9 +280,19 @@
     var rows = [];
     if (clone.modalNumber != null) {
       var range = clone.modalHigh != null;
-      var code = range ? (clone.modalNumber + "~" + clone.modalHigh) : String(clone.modalNumber);
+      // Echo the count field as it was written. Rebuilding it as N~M meant typing 47-49
+      // and being shown 47~49, which reads as the app having quietly edited the input, and
+      // leaves the reader unsure which mark is the right one. It also dropped a <2n>
+      // ploidy note off the chip entirely.
+      var code = clone.modalGiven || (range ? (clone.modalNumber + "~" + clone.modalHigh) : String(clone.modalNumber));
+      // A dash range is the Mitelman spelling and is accepted, but ISCN writes it with a
+      // tilde. Said here, in the decode, rather than as a warning: the karyotype is fine
+      // and draws, so this is something to know, not something to fix.
+      var dashRange = range && /[\-–]/.test(clone.modalGiven || "");
       var txt = range
-        ? "chromosome count varies from " + clone.modalNumber + " to " + clone.modalHigh + " across the cells counted (normal is 46)"
+        ? "chromosome count varies from " + clone.modalNumber + " to " + clone.modalHigh +
+          " across the cells counted (normal is 46)" +
+          (dashRange ? ". ISCN writes a range with a tilde, " + clone.modalNumber + "~" + clone.modalHigh : "")
         : "total chromosome count" + (clone.modalNumber === 46 ? " (the normal human number)" : " (normal is 46)");
       rows.push({ code: code, text: txt, tag: "count" });
     }

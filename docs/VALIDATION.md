@@ -86,6 +86,34 @@ own segregation model emits for a 3:1 product, checked against ISCN 2024 Table 5
 order]". `test/segregation.test.js` pins the model's output against the check so the two
 halves of the app cannot take opposite positions again.
 
+## Normalization before the parse
+
+`parse()` cleans the designation before `parseClone` sees it, and `diagnose()` reports the
+same cleanups as repairs on the raw text. The two have to stay in step: a cleanup applied
+only in `diagnose()` leaves the parser tripping over the character anyway, so one mistake
+produces two messages.
+
+| cleaned | why | example |
+| --- | --- | --- |
+| whitespace | ISCN carries no internal spaces, humans and copy-paste add them | `47, XX, +21` |
+| trailing `.` `;` `:` | sentence punctuation from prose. The cell-count pattern is anchored to the end of its field, so `+21[cp10].` never matched it and the whole change was reported as unrecognized, naming the change instead of the period | `47-49,XY,+8,+21[cp10].` |
+
+Only at the very END of the designation. A sub-band ends in a digit after its period
+(`del(11)(q24.1)`), a cell count in `]`, a qualifier in a letter, so nothing legal ends in
+one of these marks and a period inside the text is never touched.
+
+## What the decode echoes
+
+Each decode chip shows the field **as written**, not a rebuilt canonical form. The count
+chip used to be reassembled as `N~M`, so `47-49` displayed as `47~49`: a character the
+reader had not typed, which reads as the app having quietly edited the input, and it also
+dropped the `<2n>` ploidy note off `45<2n>,XY,…` entirely.
+
+Where the written form is accepted but not canonical, the explanation says so instead of the
+chip changing: a dash range is the Mitelman spelling, ISCN uses a tilde, and the decode adds
+"ISCN writes a range with a tilde, 47~49". That belongs in the decode rather than in a
+warning, because the karyotype is correct and draws.
+
 ## Offering a repair
 
 `result.fixes` is the ordered list of repairs the page renders as "Did you mean X or Y?".

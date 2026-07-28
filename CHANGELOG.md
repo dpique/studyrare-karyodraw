@@ -3,6 +3,33 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-28 (a stray period at the end; the range separator you typed)
+
+- **A trailing period blamed the change it was stuck to.** `47-49,XY,+8,+21[cp10].` said
+  "`+21[cp10].` is not a change KaryoDraw recognizes", which names the token that failed rather than
+  the mistake. The cell-count pattern is anchored to the end of the field, so the stray period kept
+  it from matching and swallowed the whole change with it. It now says the karyotype ends with the
+  last change or its cell count, so the period at the end does not belong, and offers the karyotype
+  without it. Same for a trailing semicolon or colon.
+
+  Stripped in two places on purpose: the repair string, and the text that is actually parsed. Only
+  the repair would have left the aberration still reporting itself as unrecognized, so one stray
+  character would have produced two messages.
+
+  Punctuation inside the notation is untouched: a sub-band ends in a digit after its period
+  (`del(11)(q24.1)`), a cell count in `]`, a qualifier in a letter. Nothing legal ends in one of
+  these marks.
+
+- **The decoded count now shows the separator you typed.** ISCN writes a range of modal numbers with
+  a tilde, `47~49`. A dash is the Mitelman spelling and KaryoDraw accepts it, but the decode panel
+  rebuilt the chip as `47~49` regardless, so typing `47-49` showed a character you had not typed and
+  left it unclear which mark was the right one. The chip echoes the field as written, and when the
+  range was written with a dash the explanation adds that ISCN writes it with a tilde. Said in the
+  decode rather than as a warning, because the karyotype is correct and draws.
+
+  Echoing the field also restored something that was being dropped: `45<2n>,XY,…` showed a bare `45`
+  in the chip, losing the ploidy annotation.
+
 ## 2026-07-28 (a contradicted count has two readings, and both are offered)
 
 - **"Did you mean" showed one repair where there were two.** `50,XXXXXXX` states 50 and lists seven
