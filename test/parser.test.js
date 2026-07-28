@@ -721,3 +721,39 @@ test('listing order does not block the drawing', () => {
   assert.equal(c.countWrong, false);
   assert.equal(c.unaccounted, false, 'none of the refusing flags are set');
 });
+
+// ---- a sex field the app had to edit to use --------------------------------
+// 43,XZY,rob(14;21)(q10;q10),-21,-20 dropped the Z, said so, and drew anyway, which
+// is the class we stopped doing. 46,QQ,+21 was worse: it drew a karyogram with NO sex
+// chromosomes at all. Neither is caught by the round-trip, which compares each field
+// AS WRITTEN, so "XZY" comes back intact while the Z is discarded inside it.
+test('a sex field with a character that is not X or Y is refused', () => {
+  const m = ISCN.parse('43,XZY,rob(14;21)(q10;q10),-21,-20');
+  assert.equal(m.clones[0].unreadable, true, 'blocks the drawing');
+  assert.match(m.warnings.join(' '), /written with X and Y only, so “Z”/);
+  assert.equal(m.sexFix, '43,XY,rob(14;21)(q10;q10),-21,-20', 'and offers it without the Z');
+});
+
+test('a sex field with no X or Y at all is refused', () => {
+  const m = ISCN.parse('46,QQ,+21');
+  assert.equal(m.clones[0].unreadable, true, 'used to draw with no sex chromosomes');
+  assert.equal(m.sexFix, null, 'nothing to keep, so no fix is invented');
+  assert.match(m.warnings.join(' '), /written with X and Y/);
+});
+
+test('the round-trip cannot see this, which is why it is checked here', () => {
+  // The guard compares fields as written, so a character dropped INSIDE a field is
+  // invisible to it. Pinned so the limitation stays documented by a failing test if
+  // anyone assumes the round-trip covers everything.
+  assert.equal(ISCN.parse('43,XZY,rob(14;21)(q10;q10),-20,-21').clones[0].unaccounted, false,
+    'round-trips fine, and is still not acceptable input');
+});
+
+test('ordinary sex fields are untouched', () => {
+  ['46,XY', '46,XX', '45,X', '47,XXY', '47,XXX', '48,XXYY', '69,XXY', '46,xy', 'mos 45,X[12]/46,XX[18]']
+    .forEach((k) => {
+      const c = ISCN.parse(k).clones[0];
+      assert.equal(c.unreadable, false, k);
+      assert.equal(ISCN.parse(k).sexFix, null, k);
+    });
+});

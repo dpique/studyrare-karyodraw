@@ -1391,7 +1391,7 @@
 
   function renderWarnings(model) {
     var box = $("#warnings");
-    var w = model.warnings, fix = model.suggestion || model.countFix || model.orderFix;
+    var w = model.warnings, fix = model.suggestion || model.countFix || model.sexFix || model.orderFix;
     // A note is only ever set on input the parser accepted and the renderer drew
     // correctly, so it never shares the box with a warning (the parser guarantees
     // this, and a test pins it). It gets the neutral treatment and its own verb:

@@ -3,6 +3,26 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (a sex field the app had to edit is refused, not drawn)
+
+- **`43,XZY,rob(14;21)(q10;q10),-21,-20` dropped the Z, said so, and drew anyway (bug).** The
+  message even admitted it: "…is left out of the drawing". That is the class of behaviour that was
+  supposed to be gone. It now refuses and offers `43,XY,rob(14;21)(q10;q10),-21,-20` in one click.
+
+- **`46,QQ,+21` was worse: it drew a karyogram with no sex chromosomes at all.** Also refused now.
+  No fix is offered, because "QQ" leaves nothing to keep and inventing one would be a guess.
+
+- **The round-trip guard could not have caught either, and that limit is now pinned by a test.** It
+  compares each field **as written**, which is exactly what lets `<2n>`, `47-49` and `+8×2` survive
+  it. The cost is that a character dropped *inside* a field is invisible to it: `XZY` round-trips
+  intact while the Z is discarded within it. A test asserts `unaccounted` is false for that input,
+  so the limitation fails loudly if anyone later assumes the round-trip covers everything.
+
+- **Both messages reworded to teach.** "Only X and Y belong in the sex chromosomes, so 'Z' … is left
+  out of the drawing" becomes "The sex chromosomes are written with X and Y only, so 'Z' in 'XZY' is
+  not one of them", and the no-X-or-Y message now names the forms: "written with X and Y: XX, XY, X,
+  XXY".
+
 ## 2026-07-27 (gains and losses out of chromosome order are flagged)
 
 - **`43,XY,rob(14;21)(q10;q10),-21,-20` drew silently.** The count is right (43) and the drawing is
