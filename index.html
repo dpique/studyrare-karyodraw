@@ -1397,7 +1397,12 @@
 
   function renderWarnings(model) {
     var box = $("#warnings");
-    var w = model.warnings, fix = model.suggestion || model.countFix || model.sexFix || model.orderFix;
+    // Every repair on offer, not just the first. A contradicted count has two honest
+    // readings (change the number, or change what follows it) and the parser cannot know
+    // which was meant, so showing one of them as "did you mean" presented a guess as the
+    // answer. The parser decides the order and drops anything that leads nowhere.
+    var w = model.warnings, fixes = model.fixes || [];
+    var fix = fixes[0];
     // A note is only ever set on input the parser accepted and the renderer drew
     // correctly, so it never shares the box with a warning (the parser guarantees
     // this, and a test pins it). It gets the neutral treatment and its own verb:
@@ -1412,8 +1417,15 @@
     }
     if (!w.length && !fix) { box.innerHTML = ""; return; }
     var parts = ['<div class="warnbox">'];
-    if (fix && fix !== model.raw) {
-      parts.push('<div class="dym-row">Did you mean <button class="dym" data-k="' + escXml(fix) + '">' + escapeHtml(fix) + '</button>?</div>');
+    if (fixes.length) {
+      var chips = fixes.map(function (f) {
+        return '<button class="dym" data-k="' + escXml(f) + '">' + escapeHtml(f) + '</button>';
+      });
+      // "or" between the last two, so two readings read as a choice rather than a list.
+      var joined = chips.length > 1
+        ? chips.slice(0, -1).join(", ") + " or " + chips[chips.length - 1]
+        : chips[0];
+      parts.push('<div class="dym-row">Did you mean ' + joined + '?</div>');
     }
     if (w.length) {
       parts.push('<div class="warn-title">' +

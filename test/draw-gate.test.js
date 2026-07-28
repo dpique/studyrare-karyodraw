@@ -155,3 +155,82 @@ test('what draws, renders', () => {
     assert.ok(cont.innerHTML.includes('kcell'), `${k} drew cells`);
   });
 });
+
+// A count that contradicts the tally has two honest readings: the number is wrong, or
+// what follows it is. The app offered only the first, so "50,XXXXXXX" got a single chip
+// reading 51,XXXXXXX, presented as the answer, when dropping an X to reach the stated 50
+// is exactly as plausible. Where both readings are well defined, both are offered.
+test('a count contradicted by the sex chromosomes offers both readings', () => {
+  const fixes = (k) => ISCN.parse(k).fixes || [];
+  assert.equal(fixes('50,XXXXXXX').join(' | '), '51,XXXXXXX | 50,XXXXXX');
+  assert.equal(fixes('70,XXX').join(' | '), '69,XXX | 70,XXXX');
+  // Order matters: the count fix is the smaller edit, so it leads.
+  assert.equal(fixes('50,XXXXXXX')[0], '51,XXXXXXX');
+});
+
+test('the second reading is withheld when it is not well defined', () => {
+  const fixes = (k) => ISCN.parse(k).fixes || [];
+  // Mixed sex letters: dropping an X and dropping the Y give different karyotypes, and
+  // nothing in the input says which was meant.
+  assert.equal(fixes('50,XXXXXXY').join(' | '), '51,XXXXXXY');
+  // An aberration is present, so the excess is not necessarily in the sex field.
+  assert.equal(fixes('50,XXXXXXX,+21').join(' | '), '52,XXXXXXX,+21');
+});
+
+test('no offered repair is a dead end', () => {
+  // A fix does not have to draw. It has to fix the mistake it addresses, and the app
+  // names one mistake at a time, so landing on a different one is progress: "69.XX"
+  // repairs to "69,XX", which is refused for its count and then offers "69,XXX", the
+  // triploidy that was probably meant. What must never be offered is a repair that is
+  // refused with nothing further to click, which is a wasted click and no information.
+  const deadEnd = (f) => refused(f) && ISCN.parse(f).fixes.length === 0;
+  ['50,XXXXXXX', '70,XXX', '69.XX', '46 XY', '46,,', '46,,XY,,', 't(9;22)(q34;q11.2)',
+   '46,XY,rob(14;21)(q10;q10),-2-21', '47~49,XY,+8,,', '50,XXXXXXY'].forEach((k) => {
+    ISCN.parse(k).fixes.forEach((f) => assert.equal(deadEnd(f), false, `${k} -> ${f}`));
+  });
+  // And the feature has to exist: reading `fixes` off a parse that never sets it would
+  // let every assertion above pass over an empty list.
+  ['50,XXXXXXX', '69.XX', '46 XY', 't(9;22)(q34;q11.2)'].forEach((k) =>
+    assert.ok(ISCN.parse(k).fixes.length > 0, `${k} should offer at least one fix`));
+  // "46,," is the case the vetting exists for: its repair "46" states no sex
+  // chromosomes, so it is refused with nothing onward, and the message carries it alone.
+  assert.equal(ISCN.parse('46,,').fixes.length, 0);
+});
+
+test('every clicked repair eventually reaches something drawable', () => {
+  // Following the chain must terminate on a karyogram rather than loop or stall. Three
+  // steps is the depth the app should ever need.
+  ['69.XX', '50,XXXXXXX', '70,XXX', '46 XY', '46;XY', 't(9;22)(q34;q11.2)', '+21',
+   '46,XY,rob(14;21)(q10;q10),-2-21'].forEach((k) => {
+    let cur = k;
+    let reached = false;
+    for (let step = 0; step < 3 && !reached; step++) {
+      if (!refused(cur)) { reached = true; break; }
+      const fixes = ISCN.parse(cur).fixes;
+      assert.ok(fixes.length, `${k}: stalled at "${cur}" with no repair on offer`);
+      cur = fixes[fixes.length - 1];   // the reading that changes the content, when there is one
+      if (!refused(cur)) reached = true;
+    }
+    assert.ok(reached, `${k}: no drawable karyotype within three repairs (stopped at "${cur}")`);
+  });
+});
+
+test('typing only the rearrangement gives one message, not two', () => {
+  // #122 added a "starts with the chromosome count" message that fired here as well as
+  // the more specific one this path already had, because the repair is decided after it.
+  ['t(9;22)(q34;q11.2)', 'del(5)(p15.2)', '+21'].forEach((k) => {
+    const w = ISCN.parse(k).warnings;
+    assert.equal(w.length, 1, `${k}: ${JSON.stringify(w)}`);
+    assert.match(w[0], /only the rearrangement/, w[0]);
+  });
+});
+
+test('the count message names what disagrees with the number', () => {
+  // "the changes listed after it" is wrong when there are no changes: in 50,XXXXXXX the
+  // number disagrees with the sex chromosomes.
+  const w = ISCN.parse('50,XXXXXXX').warnings.join(' ');
+  assert.match(w, /sex chromosomes/, w);
+  assert.ok(!/changes listed after it/.test(w), `should not blame changes that are absent: ${w}`);
+  // The aberration case keeps its wording.
+  assert.match(ISCN.parse('46,XY,rob(14;21)(q10;q10),-21').warnings.join(' '), /changes listed after it/);
+});
