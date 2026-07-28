@@ -3,6 +3,23 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-27 (the homepage footer reaches the bottom of the page)
+
+- **The homepage footer sat on a band of empty page.** Its markup was nested inside `<main>`, and
+  `main { padding: 18px 0 60px }` painted that 60px of bottom padding below the footer rather than
+  above it. Together with the footer's own 48px of bottom padding, 108px of nothing followed the
+  last line of the page.
+
+  A page-level footer is not main content, so it now follows `</main>` as a sibling, and `main`
+  carries no bottom padding: the space above the footer is the footer's `margin-top`, the space
+  below it is its `padding-bottom`, and nothing else renders underneath. The gap above the footer
+  rule is unchanged at 34px; the gap below the text goes from 108px to 48px. Landing pages set
+  their own bottom padding on `.lp-wrap`, which ends inside `main`, so they are untouched.
+
+  Moving the footer out of `main` broke one thing that had been working by accident: the print
+  stylesheet hid the footer only because it hides `main`. The print rule now names `footer`, and a
+  test holds it there.
+
 ## 2026-07-27 (a missing comma between two signed changes; validation is documented)
 
 - **`-2-21` was reported as "not a change KaryoDraw recognizes".** That names the symptom, not the

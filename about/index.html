@@ -114,7 +114,11 @@
   .seg button.on { background: var(--navy); color: #fff; font-weight: 600; }
   .seg button:not(.on):hover { background: #f0f2f7; }
 
-  main { padding: 18px 0 60px; }
+  /* No bottom padding: the page footer is a sibling that follows main, so padding
+     here would be empty page between the last content and the footer's rule. The
+     space above the footer is the footer's own margin-top; the space below it is its
+     padding-bottom. Landing pages set their bottom padding on .lp-wrap, inside main. */
+  main { padding: 18px 0 0; }
   .grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
   /* minmax(0,1fr), not 1fr: let the column shrink below its content so a wide
      karyogram scrolls inside its card instead of stretching the whole page. */
@@ -441,7 +445,9 @@
   /* ---- printable 1-page summary (hidden on screen) ---- */
   #printsheet { display: none; }
   @media print {
-    header.top, main, #tooltip, .sitebar { display: none !important; }
+    /* `footer` is named explicitly: it is a sibling of main, not a child, so hiding
+       main no longer hides it and the print sheet would carry the site footer. */
+    header.top, main, footer, #tooltip, .sitebar { display: none !important; }
     body { background: #fff; }
     @page { margin: 13mm; }
     #printsheet {
