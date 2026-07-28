@@ -234,3 +234,32 @@ test('the count message names what disagrees with the number', () => {
   // The aberration case keeps its wording.
   assert.match(ISCN.parse('46,XY,rob(14;21)(q10;q10),-21').warnings.join(' '), /changes listed after it/);
 });
+
+// A trailing period from a sentence or a copy-paste. "47-49,XY,+8,+21[cp10]." got
+// "“+21[cp10].” is not a change KaryoDraw recognizes", which names the token that failed
+// instead of the mistake: the cell-count pattern is anchored to the end of the field, so
+// the stray period kept it from matching and swallowed the whole change with it.
+test('a trailing period is named and removed, not reported as a bad change', () => {
+  const cases = [
+    ['47-49,XY,+8,+21[cp10].', '47-49,XY,+8,+21[cp10]'],
+    ['46,XY,+21.', '46,XY,+21'],
+    ['46,XY.', '46,XY'],
+    ['46,XY,t(9;22)(q34;q11.2).', '46,XY,t(9;22)(q34;q11.2)'],
+    ['46,XY;', '46,XY'],
+    ['46,XY,del(5)(p15.2):', '46,XY,del(5)(p15.2)'],
+  ];
+  cases.forEach(([bad, want]) => {
+    assert.equal(ISCN.parse(bad).suggestion, want, bad);
+    const w = ISCN.parse(bad).warnings.join(' ');
+    assert.ok(!/is not a change KaryoDraw recognizes/.test(w),
+      `should name the trailing punctuation, not blame the change: ${w}`);
+  });
+});
+
+test('punctuation that is part of the notation is left alone', () => {
+  // A sub-band ends in a digit after a period, a cell count in "]", a qualifier in a
+  // letter. Only a mark at the very end of the whole designation is stray.
+  ['46,XY,del(11)(q24.1)', '46,XY,del(5)(p15.2)', '46,XY,t(9;22)(q34;q11.2)[20]',
+   '46,XY,del(22)(q11.2)mat', '47~49,XY,+8', '47-49,XY,+8', '46,XY,+21c']
+    .forEach((k) => assert.equal(ISCN.parse(k).suggestion, null, k));
+});

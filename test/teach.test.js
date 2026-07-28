@@ -204,3 +204,21 @@ test('the rob note says why losing the acrocentric short arms is harmless', () =
   // "45 chromosomes" reads as a monosomy until you know what is on those short arms.
   assert.match(decodeText('46,XX,t(13;15)(q10;q10)'), /ribosomal RNA gene repeats/);
 });
+
+test('the decoded count echoes the range separator that was typed', () => {
+  // The decode rebuilt the code as N~M whatever was written, so typing 47-49 showed
+  // 47~49 and read as if the app had silently edited the input.
+  const codeOf = (k) => Teach.decode(ISCN.parse(k).clones[0]).filter((r) => r.tag === 'count')[0];
+  assert.equal(codeOf('47-49,XY,+8').code, '47-49');
+  assert.equal(codeOf('47~49,XY,+8').code, '47~49');
+  assert.equal(codeOf('46,XY').code, '46');
+  assert.equal(codeOf('45<2n>,XY,der(14;21)(q10;q10)').code, '45<2n>');
+});
+
+test('the decoded count names the tilde as the ISCN spelling of a range', () => {
+  const textOf = (k) => Teach.decode(ISCN.parse(k).clones[0]).filter((r) => r.tag === 'count')[0].text;
+  assert.match(textOf('47-49,XY,+8'), /47~49/, 'a dash range should point at the tilde form');
+  // Already canonical: no need to tell the reader to write what they wrote.
+  assert.ok(!/ISCN/.test(textOf('47~49,XY,+8')), textOf('47~49,XY,+8'));
+  assert.ok(!/~/.test(textOf('46,XY')), textOf('46,XY'));
+});

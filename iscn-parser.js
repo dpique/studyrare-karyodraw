@@ -707,6 +707,23 @@
   // "did you mean" string.
   function diagnose(raw, result, warnings) {
     var suggestion = raw;
+
+    // Sentence punctuation at the very end, from prose or a copy-paste. Stripped first so
+    // every rule below sees clean text, and because the damage it does is out of all
+    // proportion to the character: the cell-count pattern is anchored to the end of the
+    // field, so "+21[cp10]." never matched it, and the whole change was reported as an
+    // unrecognized token. That named the change rather than the period.
+    //
+    // Safe at the END of the whole designation only. A sub-band ends in a digit after its
+    // period (q24.1), a cell count in "]", a qualifier in a letter; nothing legal ends in
+    // one of these marks, and a period INSIDE the text is left untouched.
+    var tailMark = /([.;:]+)$/.exec(suggestion);
+    if (tailMark) {
+      suggestion = suggestion.slice(0, -tailMark[1].length).trim();
+      warnings.push("A karyotype ends with the last change or its cell count, so the “" +
+        tailMark[1] + "” at the end does not belong to it.");
+    }
+
     var opens = (raw.match(/\(/g) || []).length, closes = (raw.match(/\)/g) || []).length;
     if (opens !== closes) {
       warnings.push("Unbalanced parentheses, " + opens + " “(” but " + closes + " “)”. Make sure every “(” has a matching “)”.");
@@ -821,6 +838,12 @@
     // them ("r(13) (p11q34) dn", "47, XX, +21"). The one meaningful space — after a
     // mos/chi prefix — is already consumed above, so treat the rest as insignificant.
     s = s.replace(/\s+/g, "");
+    // Trailing sentence punctuation, dropped here as well as in diagnose(). diagnose only
+    // builds the repair string; parsing has to see the clean text too, or the aberration
+    // that the period is stuck to still reports itself as unrecognized and the reader gets
+    // two messages for one stray character. Dropping it before parseClone also keeps the
+    // round-trip honest, since clone.raw is then the text actually interpreted.
+    s = s.replace(/[.;:]+$/, "");
     // The canonical, whitespace-normalized designation — for display and the URL.
     result.normalized = (q ? q[1].toLowerCase() + " " : "") + s;
 
