@@ -558,9 +558,16 @@
       //
       // And it names the rule, since a learner who does not already know the leading
       // number is the cell's total cannot act on "these two disagree".
-      warnings.push("The number at the start says " + want + ", but the changes listed after it add up to " +
+      // Name the thing that actually disagrees with the number. "the changes listed
+      // after it" is wrong for 50,XXXXXXX, which lists no changes at all: there the
+      // number disagrees with the sex chromosomes.
+      var disagrees = clone.aberrations.length
+        ? "the changes listed after it"
+        : (22 * clone.ploidy) + " autosomes and the " + clone.sex.tokens.length +
+          " sex chromosomes listed after it";
+      warnings.push("The number at the start says " + want + ", but " + disagrees + " add up to " +
         actual + " chromosomes. That first number is the cell's total chromosome count, so either it or the " +
-        "changes needs fixing.");
+        (clone.aberrations.length ? "changes" : "sex chromosomes") + " needs fixing.");
     }
   }
 
@@ -794,10 +801,14 @@
     if (suggestion !== raw) result.suggestion = suggestion;
   }
 
-  function parse(input) {
+  // depth: 0 for a real call. Vetting a candidate re-parses it at depth 1, where the
+  // candidate's own fixes are still listed (the vet asks whether it has any) but are no
+  // longer vetted themselves, which is what stops the recursion at one level.
+  function parse(input, depth) {
+    depth = depth || 0;
     var raw = (input || "").trim();
     var warnings = [];
-    var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [], suggestion: null, countFix: null, orderFix: null, sexFix: null, note: null };
+    var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [], suggestion: null, countFix: null, orderFix: null, sexFix: null, sexCountFix: null, fixes: [], note: null };
     if (!raw) { warnings.push("Type a karyotype to begin, e.g. 46,XY, 47,XX,+21, or 46,XY,t(9;22)(q34;q11.2)."); return result; }
     diagnose(raw, result, warnings);
 
@@ -820,14 +831,6 @@
     // Resolve clonal-evolution references now that all clones are parsed.
     result.clones.forEach(function (cl, ci) { if (cl.pendingIdem) expandIdem(result.clones, ci, warnings); });
     result.ok = result.clones.length > 0 && result.clones.every(function (c) { return c.modalNumber != null; });
-
-    // A clone that never stated its sex chromosomes. One message per mistake: when
-    // diagnose() already named a mistyped separator and offered the repair, that IS
-    // this mistake, and stating the rule again reads as a second thing to fix.
-    if (!result.suggestion && result.clones.some(function (c) { return c.sexMissing; })) {
-      warnings.push("A karyotype starts with the chromosome count, then the sex chromosomes: " +
-        "46,XY, 45,X, 69,XXX.");
-    }
 
     // If a single clone's stated count is off, offer the corrected count as a fix.
     if (!result.suggestion && result.clones.length === 1) {
@@ -934,6 +937,70 @@
         }
       }
     }
+
+    // The OTHER reading of a contradicted count. "50,XXXXXXX" says 50 and lists seven X,
+    // which with 44 autosomes comes to 51. Changing the number to 51 is one repair;
+    // dropping an X to reach the 50 that was written is the other, and nothing in the
+    // input says which was meant. Offering only the first presented one guess as the
+    // answer.
+    //
+    // Narrow on purpose, because "adjust the content instead" is ambiguous in general:
+    //   - no aberrations, so the discrepancy cannot be blamed on a change instead of the
+    //     sex field ("50,XXXXXXX,+21" could be either);
+    //   - one repeated sex letter, so there is only one thing to add or drop
+    //     ("50,XXXXXXY" could lose an X or the Y, and they are different karyotypes);
+    //   - a single stated count, since a range gives no one number to satisfy.
+    if (!result.suggestion && result.clones.length === 1) {
+      var xc = result.clones[0];
+      var oneLetter = xc.sex.tokens.length > 0 && xc.sex.tokens.every(function (t) { return t === xc.sex.tokens[0]; });
+      if (xc.countWrong && xc.modalHigh == null && !xc.aberrations.length && oneLetter &&
+          !(xc.sex.dropped || []).length) {
+        var wantSex = xc.modalNumber - 22 * xc.ploidy;
+        if (wantSex >= 1 && wantSex <= 12) {
+          var cand = xc.modalGiven + "," + new Array(wantSex + 1).join(xc.sex.tokens[0]) + (xc.cellGiven || "");
+          result.sexCountFix = (result.isMosaic ? "mos " : "") + cand;
+        }
+      }
+    }
+
+    // A clone that never stated its sex chromosomes. Pushed here, after every repair is
+    // decided, because the message depends on whether one was found: the mistyped
+    // separator and the rearrangement-only paths each name this mistake better and more
+    // specifically, and a second, more general restatement of the rule reads as a second
+    // thing to fix. Pushing it earlier (#122) put it underneath the rearrangement-only
+    // message, which is set further down.
+    if (!result.suggestion && result.clones.some(function (c) { return c.sexMissing; })) {
+      warnings.push("A karyotype starts with the chromosome count, then the sex chromosomes: " +
+        "46,XY, 45,X, 69,XXX.");
+    }
+
+    // Every repair on offer, in the order the reader should weigh them: the smallest edit
+    // first. The named fields above stay the single place each one is decided; this is the
+    // list the page renders.
+    //
+    // Vetted, but on "does this get the reader somewhere" rather than "does this draw".
+    // A repair only has to fix the mistake it addresses; the app names one mistake at a
+    // time, so landing on a different one is progress, not failure. "69.XX" repairs to
+    // "69,XX", which is refused for its count and then offers "68,XX" and "69,XXX" (the
+    // triploidy that was probably meant) — two clicks, each naming one thing.
+    //
+    // What is dropped is a DEAD END: refused with nothing further to click. "46,,"
+    // collapsed to "46", which #122 made a refusal with no onward repair, so clicking it
+    // bought a second refusal and no information. Its own message already says what to do.
+    //
+    // The gate's band check lives in the page and is not repeated here. A fix inherits its
+    // input's bands, and a bad band already stops every fix above from being offered.
+    var candidates = [result.suggestion, result.countFix, result.sexCountFix, result.sexFix, result.orderFix]
+      .filter(function (f) { return f && f !== raw; })
+      .filter(function (f, i, a) { return a.indexOf(f) === i; });
+    result.fixes = depth > 0 ? candidates : candidates.filter(function (f) {
+      var t = parse(f, depth + 1);
+      var drawable = t.clones.length > 0 &&
+        !t.clones.every(function (c) { return c.modalNumber == null; }) &&
+        !t.suggestion &&
+        !t.clones.some(function (c) { return c.unreadable || c.countWrong || c.unaccounted; });
+      return drawable || t.fixes.length > 0;
+    });
     return result;
   }
 

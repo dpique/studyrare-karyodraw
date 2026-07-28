@@ -3,6 +3,44 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-28 (a contradicted count has two readings, and both are offered)
+
+- **"Did you mean" showed one repair where there were two.** `50,XXXXXXX` states 50 and lists seven
+  X, which with 44 autosomes comes to 51. Changing the number to 51 is one reading; dropping an X to
+  reach the 50 that was written is the other. Nothing in the input says which was meant, so offering
+  only the first presented a guess as the answer. It now reads "Did you mean 51,XXXXXXX or
+  50,XXXXXX?" and either chip draws.
+
+  `result.fixes` is the general mechanism: an ordered, deduplicated, vetted list, smallest edit
+  first. Each repair is still decided in exactly one place; the list is derived from them.
+
+  The second reading is deliberately narrow, because "adjust the content instead" is ambiguous in
+  general. It needs no aberrations (in `50,XXXXXXX,+21` the excess could be the `+21`), one repeated
+  sex letter (`50,XXXXXXY` could lose an X or the Y, and those are different karyotypes), and a
+  single stated count.
+
+- **A repair no longer has to draw, but it does have to go somewhere.** The app names one mistake at
+  a time, so a repair that fixes its own mistake and lands on a different one is progress: `69.XX`
+  offers `69,XX`, which is refused for its count and in turn offers `69,XXX`, the triploidy that was
+  probably meant. What is dropped is a dead end. `46,,` collapsed to `46`, which since yesterday
+  states no sex chromosomes, so clicking it bought a second refusal and no information; that
+  karyotype now carries its message alone. A test follows every chain and requires it to reach a
+  karyogram within three steps.
+
+- **The count message named the wrong culprit when there were no changes to blame.** "The number at
+  the start says 50, but the changes listed after it add up to 51" was describing changes that
+  `50,XXXXXXX` does not have. It now says "44 autosomes and the 7 sex chromosomes listed after it",
+  and closes on the sex chromosomes rather than the changes.
+
+- **Fixed a duplicate message introduced the same day.** Typing only a rearrangement
+  (`t(9;22)(q34;q11.2)`) drew both "It looks like you typed only the rearrangement" and the new
+  "A karyotype starts with the chromosome count" line, because the second was pushed before the
+  repair for the first had been decided. The message now waits until every repair is settled.
+
+  A differential run of the old and new parser over 93 inputs found three changes in total, all
+  intended: the two second readings added, and the `46,,` dead end removed. No input changed whether
+  it draws.
+
 ## 2026-07-28 (a karyotype has to say what the sex chromosomes are)
 
 - **`69.XX` drew 69 chromosomes with both sex slots labelled "missing", and said nothing.** A period

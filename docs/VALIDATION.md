@@ -86,6 +86,35 @@ own segregation model emits for a 3:1 product, checked against ISCN 2024 Table 5
 order]". `test/segregation.test.js` pins the model's output against the check so the two
 halves of the app cannot take opposite positions again.
 
+## Offering a repair
+
+`result.fixes` is the ordered list of repairs the page renders as "Did you mean X or Y?".
+It is derived, never assigned to: each repair is still decided in exactly one place
+(`suggestion`, `countFix`, `sexCountFix`, `sexFix`, `orderFix`) and `fixes` collects them
+smallest-edit-first, drops empties and duplicates, and vets what is left.
+
+**More than one reading.** A contradicted count has two honest repairs: change the number,
+or change what follows it. `50,XXXXXXX` says 50 and lists seven X, which with 44 autosomes
+comes to 51, so `51,XXXXXXX` and `50,XXXXXX` are equally plausible and nothing in the input
+says which was meant. Offering only the first presented a guess as the answer.
+
+`sexCountFix` is the second reading, and it is deliberately narrow, because "adjust the
+content instead" is ambiguous in general. It requires **no aberrations** (in
+`50,XXXXXXX,+21` the excess could be the `+21`), **one repeated sex letter**
+(`50,XXXXXXY` could lose an X or the Y, and those are different karyotypes), and a **single
+stated count** (a range gives no one number to satisfy).
+
+**A repair does not have to draw; it has to go somewhere.** The app names one mistake at a
+time, so a repair that fixes its own mistake and lands on a different one is progress:
+`69.XX` → `69,XX` (refused for its count) → `69,XXX`, the triploidy that was probably
+meant. What is dropped is a **dead end**, a repair that is refused with nothing further to
+click: `46,,` collapses to `46`, which states no sex chromosomes, so clicking it buys a
+second refusal and no information. `test/draw-gate.test.js` pins both halves, including
+that following the chain reaches a karyogram within three steps.
+
+Vetting re-parses each candidate one level deep (`parse(input, depth)`); the candidate's own
+fixes are listed but not vetted, which is what terminates the recursion.
+
 ## Known holes
 
 Input that is not correct ISCN and still draws. None is a regression; none has been
