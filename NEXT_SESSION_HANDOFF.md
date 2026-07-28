@@ -24,16 +24,28 @@ reasoning behind each; `docs/VALIDATION.md` is the standing reference for the dr
 - **Layout (#119):** the homepage footer was inside `<main>`, so `main`'s 60px bottom
   padding painted below it. The footer is now a sibling of `main`, `main` has no bottom
   padding, and `test/layout.test.js` holds the three invariants.
+- **Print (#121):** all 36 generated pages printed a blank sheet, because they inherit the
+  app page's print rule that hides `main` and have no `#printsheet` to replace it. They now
+  print their own article; the app page is unchanged.
+- **Draw gate (#122):** `69.XX` drew 69 chromosomes with both sex slots "missing" and said
+  nothing. Any separator but a comma before the sex field made the designation one field, so
+  the sex chromosomes were never read. The comma is now required and repaired, and a clone
+  stating no sex field at all is refused (`clone.sexMissing`). See `docs/VALIDATION.md`,
+  including the note on why the known-holes survey could not have found this.
 
-324 tests pass (`npm test`). Verified live with a headless browser after each merge.
+330 tests pass (`npm test`). Verified live with a headless browser after each merge.
 
 ## In flight
 Nothing. Working tree clean, no open PRs, no worktrees, `main` at the last merge.
 
 ## Land mines
 - **The CDN serves mixed versions for 1-3 minutes after a merge.** A single post-deploy
-  check can pass against a stale asset. Hit twice this session. Fetch the changed file
-  3x and require all 3 to contain the change before believing it.
+  check can pass against a stale asset. Fetch the changed file 3x and require all 3 to
+  contain the change before believing it. **Three agreeing curls are still not enough for
+  the browser check:** a page load fetches its own `<script src>` on a separate cache path
+  and can run the old file while every cache-busted curl returns the new one. It looks
+  exactly like a half-working fix, one input behaving and a sibling input not. Always set
+  `page.setCacheEnabled(false)` in the verification browser.
 - **`assert.deepEqual` fails across the vm realm** the tests load the modules into.
   Compare `.length` or `.join()`, not arrays.
 - **A guard can pass without the code it guards.** Two tests here did: one checked flags
