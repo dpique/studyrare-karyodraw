@@ -523,7 +523,10 @@
     // whether the tally can be trusted.
     clone.unreadable = clone.aberrations.some(function (ab) {
       return (ab.badBands || []).length > 0 || ab.kind === "unknown" || ab.unread;
-    });
+    // A sex field the app had to edit to use. 43,XZY,… dropped the Z and drew, and
+    // 46,QQ,+21 drew a karyogram with no sex chromosomes at all.
+    }) || (clone.sex && ((clone.sex.dropped || []).length > 0 ||
+      (clone.sexGiven && !clone.sex.tokens.length)));
     if (clone.outOfOrder) {
       warnings.push("Whole-chromosome gains and losses are listed in chromosome order, so “" +
         clone.outOfOrder.before + "” comes before “" + clone.outOfOrder.after + "”.");
@@ -567,9 +570,10 @@
       else bad.push(field[i]);
     }
     if (tokens.length === 0) {
-      warnings.push("The 2nd field should be the sex chromosomes (XX, XY, X, …), “" + field + "” has no X or Y. Did you skip the sex chromosomes?");
+      warnings.push("The 2nd field is the sex chromosomes, written with X and Y: XX, XY, X, XXY. “" +
+        field + "” has neither, so the sex chromosomes may have been skipped.");
     } else if (bad.length) {
-      warnings.push("Only X and Y belong in the sex chromosomes, so “" + bad.join("") + "” in “" + field + "” is left out of the drawing.");
+      warnings.push("The sex chromosomes are written with X and Y only, so “" + bad.join("") + "” in “" + field + "” is not one of them.");
     }
     var label = tokens.join("");
     var SEX_NOTE = {
@@ -579,7 +583,10 @@
       "XXYY": "two X + two Y", "XXXX": "four X", "XXXY": "three X + one Y"
     };
     var note = SEX_NOTE[label] || (tokens.length + " sex chromosome" + (tokens.length === 1 ? "" : "s"));
-    return { tokens: tokens, label: label, note: note };
+    // Recorded so the drawing can be refused. This is the one dropped-input case the
+    // round-trip cannot see: it compares each field AS WRITTEN, so "XZY" round-trips
+    // intact while the Z is quietly discarded INSIDE the field.
+    return { tokens: tokens, label: label, note: note, dropped: bad };
   }
 
   function parseClone(cloneStr, warnings) {
@@ -727,7 +734,7 @@
   function parse(input) {
     var raw = (input || "").trim();
     var warnings = [];
-    var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [], suggestion: null, countFix: null, orderFix: null, note: null };
+    var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [], suggestion: null, countFix: null, orderFix: null, sexFix: null, note: null };
     if (!raw) { warnings.push("Type a karyotype to begin, e.g. 46,XY, 47,XX,+21, or 46,XY,t(9;22)(q34;q11.2)."); return result; }
     diagnose(raw, result, warnings);
 
@@ -777,6 +784,21 @@
         } else {
           result.countFix = raw.replace(/\d+/, String(cl0.counts.actual));
         }
+      }
+    }
+
+    // The karyotype with the junk taken out of the sex field. Only when something is
+    // left to keep: "QQ" has no reading to offer, so that one is refused with the
+    // message alone.
+    if (!result.suggestion && result.clones.length === 1) {
+      var sc = result.clones[0];
+      if (sc.sexGiven && (sc.sex.dropped || []).length && sc.sex.tokens.length) {
+        var sp = [];
+        if (sc.modalGiven) sp.push(sc.modalGiven);
+        sp.push(sc.sex.tokens.join(""));
+        sc.aberrations.forEach(function (ab) { sp.push(ab.raw); });
+        result.sexFix = sp.join(",") + (sc.cellGiven || "");
+        if (result.isMosaic) result.sexFix = "mos " + result.sexFix;
       }
     }
 
