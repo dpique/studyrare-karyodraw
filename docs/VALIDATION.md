@@ -124,6 +124,15 @@ Only at the very END of the designation. A sub-band ends in a digit after its pe
 (`del(11)(q24.1)`), a cell count in `]`, a qualifier in a letter, so nothing legal ends in
 one of these marks and a period inside the text is never touched.
 
+### The `k` parameter is not a form field
+
+`?k=` carries a karyotype, and `+` there is an ISCN symbol. The generic query decode turns
+`+` into a space, so `karyodraw.com/?k=47,XX,+21` typed by hand arrived as `47,XX, 21` and
+was answered with "“21” needs a sign", about a sign the reader had written.
+`getKaryotypeParam()` in `index.html` decodes it as a plus, and puts back the one space
+ISCN writes (after `mos`/`chi`, 4.4.1 m) in case the link was form-encoded. Links the app
+makes encode the plus as `%2B` and the space as `%20`, so they are unaffected either way.
+
 ### `result.normalized` is the whitespace pass and nothing else
 
 The page puts `result.normalized` in the input box, the drawing and the share URL, so it

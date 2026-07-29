@@ -193,3 +193,22 @@ test('the About page does not repeat itself in the footer', () => {
   ['how-to-read-a-karyotype/index.html', 'karyotype/down-syndrome/index.html', 'karyotype/index.html']
     .forEach((f) => assert.match(read(f), /<div class="lp-foot">/, `${f} keeps the footer`));
 });
+
+// ---- the k parameter carries a karyotype, not a form field --------------------
+// karyodraw.com/?k=46,XY,der(13;14)(q10;q10),+14, typed by hand or pasted out of a
+// message, arrived as ",_14": the generic query decode turns "+" into a space, which is
+// right for a form and wrong for a field where "+" is an ISCN symbol. The app then said
+// "“14” needs a sign", about a sign the reader had written.
+test('a plus in ?k= is a plus', () => {
+  const html = read('index.html');
+  assert.match(html, /function getKaryotypeParam\(\)/, 'the k parameter has its own decode');
+  const fn = html.match(/function getKaryotypeParam\(\) \{[\s\S]*?\n {2}\}/)[0];
+  assert.ok(!/replace\(\/\\\+\/g, " "\)/.test(fn), 'it must not turn "+" into a space');
+  // ISCN writes exactly one space, after a mos/chi prefix, so that is the one "+" that
+  // could have meant a space.
+  assert.match(fn, /\^\(mos\|chi\)\\\+/, 'and it puts that one back');
+  // Every read of k goes through it, including the one on Back.
+  assert.ok(!/getParam\("k"\)/.test(html), 'no k read may use the form decode');
+  // The generic decode is still what the view parameters want.
+  assert.match(html, /getParam\("style"\)|getParam\("bands"\)|getParam\("show"\)/, 'view params keep it');
+});

@@ -3,6 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-29 (a plus in a link is a plus)
+
+- **`karyodraw.com/?k=47,XX,+21`, typed by hand or pasted out of a message, lost its
+  sign.** The query decode turned `+` into a space, which is the form-encoding convention
+  and the wrong one for a field where `+` is an ISCN symbol. The karyotype arrived as
+  `47,XX, 21` and the app answered `“21” needs a sign`, about a sign the reader had
+  written.
+
+  The `k` parameter now decodes `+` as a plus. Every link the app makes encodes the plus
+  as `%2B` and a space as `%20`, so nothing it hands out changes; the one space ISCN
+  writes, after a `mos`/`chi` prefix, is put back, so a form-encoded
+  `?k=mos+45,X[12]/46,XX[18]` still works. The view parameters keep the generic decode.
+
 ## 2026-07-29 (a repair you could have typed, and a message you can read)
 
 Pasting `46,XY,der(13;14)(q10;q10), “+14”` out of a document, which is how a karyotype
