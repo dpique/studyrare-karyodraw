@@ -281,6 +281,17 @@
     var signM = /^([+\-−–])/.exec(tok);
     if (signM) { ab.sign = (signM[1] === "+") ? "+" : "-"; tok = tok.slice(1); }
 
+    // ISCN 4.2.1 k: a question mark marks the identification as uncertain, and it is
+    // "placed either before the uncertain item, or it may replace a chromosome, region,
+    // band or subband designation". The two placements mean different things to a
+    // drawing, and this is the first: +?8 and ?del(1)(p36.1) say what was seen and add
+    // that the caller is not certain of it. Everything needed to draw is there, so it
+    // draws, and the decode carries the doubt. The replacing form is handled further
+    // down, where there is genuinely nothing to draw.
+    //
+    // After the sign, because ISCN writes it -?21 and +?8.
+    if (tok.charAt(0) === "?") { ab.uncertain = true; tok = tok.slice(1); }
+
     // Pure numerical: +21, -X, +der(...) handled below.
     if (ab.sign && /^(\d+|X|Y)$/.test(tok)) {
       ab.kind = ab.sign === "+" ? "gain" : "loss";
@@ -329,6 +340,10 @@
     var rest = tok.slice(opM[0].length); // trailing sub-ops (der chains)
 
     ab.chroms = splitTop(chromGroup, ";").map(function (x) { return x.trim(); }).filter(Boolean);
+    // The same mark standing in for a whole chromosome: der(?), t(?;5), dic(17;?).
+    // The partner was not identified, which is a statement about the sample and not a
+    // mistake in the notation.
+    ab.uncertainChroms = ab.chroms.filter(function (c) { return c.indexOf("?") >= 0; });
     // Breakpoints: one group per chromosome (translocation), or one group with
     // multiple bands (del/dup/inv interstitial).
     var bpParts = splitTop(bpGroup, ";");
@@ -340,8 +355,17 @@
     // index.html's band check could not catch it either, since by then there was no
     // band left to check. Keep the raw text so it can be reported and can block the
     // drawing. An empty group (del(5), r(13)) is legal and is not flagged.
+    // A group carrying a question mark is the second placement in 4.2.1 k: the band,
+    // region or subband was not determined. Distinct from gibberish, and distinct from
+    // an empty group, because the notation is correct and is deliberately withholding
+    // the position. splitBands drops the "?" (its pattern wants digits after p or q),
+    // so q2?3 came back as q2 and q22.?1 as q22: the app was drawing a precise cut at
+    // a band the report had explicitly declined to pin down, which is the one thing
+    // this parser exists not to do.
+    ab.uncertainBands = bpParts.map(function (p) { return p.trim(); })
+      .filter(function (p) { return p.indexOf("?") >= 0; });
     ab.badBands = bpParts.map(function (p) { return p.trim(); })
-      .filter(function (p, i) { return p && !ab.breakpoints[i].length; });
+      .filter(function (p, i) { return p && p.indexOf("?") < 0 && !ab.breakpoints[i].length; });
 
     switch (op) {
       case "del": ab.kind = "del"; break;
@@ -380,14 +404,19 @@
         if (rest) {
           ab.note = "der(" + ab.chroms.join(";") + ")" + rest;
           var sub = [], cursor = 0, unread = "";
-          var subRe = /([a-zA-Z]+)\(([^)]*)\)(?:\(([^)]*)\))?/g, sm;
+          // The leading "?" of 4.2.1 k can sit on a sub-op too: der(1)?t(1;3)(p22;q13)
+          // is a derivative 1 whose translocation is the uncertain part. Consumed here
+          // rather than left in `unread`, where it was being reported as text the app
+          // could not place.
+          var subRe = /(\??)([a-zA-Z]+)\(([^)]*)\)(?:\(([^)]*)\))?/g, sm;
           while ((sm = subRe.exec(rest)) !== null) {
             unread += rest.slice(cursor, sm.index);
             cursor = sm.index + sm[0].length;
+            if (sm[1]) ab.uncertain = true;
             sub.push({
-              op: sm[1].toLowerCase(),
-              chroms: splitTop(sm[2], ";").map(function (x) { return x.trim(); }),
-              breakpoints: splitTop(sm[3] || "", ";").map(function (p) { return splitBands(p.trim()); })
+              op: sm[2].toLowerCase(),
+              chroms: splitTop(sm[3], ";").map(function (x) { return x.trim(); }),
+              breakpoints: splitTop(sm[4] || "", ";").map(function (p) { return splitBands(p.trim()); })
             });
           }
           unread += rest.slice(cursor);
@@ -433,6 +462,17 @@
     if (op !== "der" && ab.kind !== "unknown" && rest && rest.trim()) {
       ab.unread = rest.trim();
       warnings.push(leftoverWarning(raw, ab.unread));
+    }
+    // Said once per aberration, not once per group: der(?)t(?;5)(?;q13) carries three
+    // marks and they are all the same fact.
+    if ((ab.uncertainChroms || []).length) {
+      warnings.push("The question mark in “" + raw + "” records that the chromosome was not identified, " +
+        "which is what ISCN uses it for. KaryoDraw draws the chromosomes it can name, so there is nothing " +
+        "here for it to draw. The notation is correct.");
+    } else if ((ab.uncertainBands || []).length) {
+      warnings.push("The question mark in “" + ab.uncertainBands[0] + "” records that the breakpoint was not " +
+        "determined, which is what ISCN uses it for. KaryoDraw cuts a chromosome where it is told to, so " +
+        "there is nothing here for it to draw. The notation is correct.");
     }
     ab.badBands.forEach(function (b) {
       warnings.push("“" + b + "” in “" + raw + "” is not a breakpoint. A breakpoint is an arm letter " +
@@ -562,12 +602,12 @@
         for (var dj = 0; dj < ndm; dj++) slots["dmin"].push({ chrom: "dmin", kind: "dmin", label: "dmin", aberration: ab, primary: "dmin" });
       } else if (ab.kind === "gain") {
         var g = ab.chroms[0];
-        if (comp[g] === undefined) { warnings.push("“" + g + "” isn’t a human chromosome, use 1–22, X, or Y (e.g. +21)."); clone.badChrom = true; return; }
+        if (comp[g] === undefined) { warnings.push("“" + g + "” is not a human chromosome. They are numbered 1 to 22, plus X and Y, like +21."); clone.badChrom = true; return; }
         comp[g] += mult;
         for (var gj = 0; gj < mult; gj++) slots[g].push({ chrom: g, kind: "gain", label: g, aberration: ab, primary: g });
       } else if (ab.kind === "loss") {
         var l = ab.chroms[0];
-        if (comp[l] === undefined) { warnings.push("“" + l + "” isn’t a human chromosome, use 1–22, X, or Y (e.g. -7)."); clone.badChrom = true; return; }
+        if (comp[l] === undefined) { warnings.push("“" + l + "” is not a human chromosome. They are numbered 1 to 22, plus X and Y, like -7."); clone.badChrom = true; return; }
         // A stated loss of a SEX chromosome has already happened to the sex field.
         //
         // ISCN 5.3.1.2 ix: "an acquired abnormality is presented in relation to the
@@ -618,7 +658,7 @@
         // chromosome into a derivative (count unchanged unless signed). A single-
         // chromosome idic falls here too (it replaces one homolog, count unchanged).
         ab.chroms.forEach(function (c, ci) {
-          if (comp[c] === undefined) { warnings.push("“" + c + "” isn’t a human chromosome, use 1–22, X, or Y."); clone.badChrom = true; return; }
+          if (comp[c] === undefined) { if (String(c).indexOf("?") < 0) { warnings.push("“" + c + "” is not a human chromosome. They are numbered 1 to 22, plus X and Y."); clone.badChrom = true; } return; }
           if (ab.sign === "+") { for (var sj = 0; sj < mult; sj++) { comp[c] += 1; slots[c].push(mkDer(c, ab)); } return; }
           var idx = firstNormal(slots[c]);
           // convention: normal homolog stays on the left, derivative on the right
@@ -635,7 +675,7 @@
           if (comp[dp] !== undefined) { for (var wj = 0; wj < mult; wj++) { comp[dp] += 1; slots[dp].push(mkDer(dp, ab)); } }
         } else {
           ab.chroms.forEach(function (c) {
-            if (comp[c] === undefined) { warnings.push("“" + c + "” isn’t a human chromosome, use 1–22, X, or Y."); clone.badChrom = true; return; }
+            if (comp[c] === undefined) { if (String(c).indexOf("?") < 0) { warnings.push("“" + c + "” is not a human chromosome. They are numbered 1 to 22, plus X and Y."); clone.badChrom = true; } return; }
             var ridx = firstNormal(slots[c]);
             if (ridx >= 0) { slots[c].splice(ridx, 1); comp[c] -= 1; }
           });
@@ -644,7 +684,7 @@
         }
       } else if (["del", "dup", "inv", "add", "ring", "iso", "der", "fra", "trp", "hsr"].indexOf(ab.kind) >= 0) {
         var c0 = ab.chroms[0];
-        if (comp[c0] === undefined) { warnings.push("“" + c0 + "” isn’t a human chromosome, use 1–22, X, or Y."); clone.badChrom = true; return; }
+        if (comp[c0] === undefined) { if (String(c0).indexOf("?") < 0) { warnings.push("“" + c0 + "” is not a human chromosome. They are numbered 1 to 22, plus X and Y."); clone.badChrom = true; } return; }
         if (ab.sign === "+") { for (var pj = 0; pj < mult; pj++) { comp[c0] += 1; slots[c0].push(mkDer(c0, ab)); } return; }
         if (ab.sign === "-") {
           comp[c0] -= 1;
@@ -817,7 +857,13 @@
       // ab.arity: the operation was given fewer breakpoints than it takes, so the
       // drawing would have to invent the rest. Same consequence as a breakpoint that
       // could not be read, and for the same reason.
-      return (ab.badBands || []).length > 0 || ab.kind === "unknown" || ab.unread || ab.arity;
+      // ab.uncertainChroms / ab.uncertainBands: the notation is correct and says the
+      // designation was not determined (ISCN 4.2.1 k). Nothing to draw, for the
+      // opposite reason to the others here: not that the app could not read it, but
+      // that the report declined to say. A LEADING "?" (ab.uncertain) is different and
+      // still draws, because everything needed is there.
+      return (ab.badBands || []).length > 0 || ab.kind === "unknown" || ab.unread || ab.arity ||
+        (ab.uncertainChroms || []).length > 0 || (ab.uncertainBands || []).length > 0;
     // A sex field the app had to edit to use. 43,XZY,… dropped the Z and drew, and
     // 46,QQ,+21 drew a karyogram with no sex chromosomes at all.
     }) || (clone.sex && ((clone.sex.dropped || []).length > 0 ||
@@ -987,7 +1033,7 @@
     if (mn) {
       clone.modalNumber = parseInt(mn[1], 10);
       if (mn[2]) clone.modalHigh = parseInt(mn[2], 10);
-    } else warnings.push("A karyotype starts with the chromosome count (a number like 46). “" + fields[0] + "” isn’t a number.");
+    } else warnings.push("A karyotype starts with the chromosome count (a number like 46). “" + fields[0] + "” is not a number.");
 
     // sex field (second) — UNLESS the second field is a clonal-evolution marker
     // (idem/sl/sdl). The standard subclone form omits the repeated sex field, e.g.

@@ -909,8 +909,8 @@ test('it works on sex chromosomes too', () => {
 // is written keeps its drawing and is told the rule (see "Adding a check").
 test('input that cannot be drawn honestly is refused', () => {
   [
-    ['46,XY,+0', /isn.t a human chromosome/, 'there is no chromosome 0'],
-    ['46,XY,+99', /isn.t a human chromosome/, 'nor a 99'],
+    ['46,XY,+0', /is not a human chromosome/, 'there is no chromosome 0'],
+    ['46,XY,+99', /is not a human chromosome/, 'nor a 99'],
     ['46,XY,t(9;9)(q34;q11)', /exchange between two different chromosomes/, 'a t within one chromosome'],
     ['45,XY,rob(1;2)(q10;q10)', /fuses two acrocentric chromosomes/, 'a rob between metacentrics'],
     ['47,idem,+8', /no earlier clone/, 'a subclone with no stemline'],

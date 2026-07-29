@@ -80,8 +80,10 @@ test('every warning tells the reader something to do or a rule to follow', () =>
   // give an example, or state a rule. One that only reports a problem fails.
   // "have to" as well as "has to": a rule stated about two things ("the two have to
   // describe the same cell") is as much a rule as one stated about one, and the
-  // singular-only pattern failed the ploidy message for its grammar.
-  const TEACHES = /\b(needs?|must|ha(?:s|ve) to|use|write|written|should|belongs?|separated?|starts? with|comes? first|comes? before|listed in|add|make sure|for example|e\.g\.|like|look like|is a|are not supported|not an ISCN|takes? one|draws? one|left out of the drawing|capped|Type a karyotype)\b/i;
+  // singular-only pattern failed the ploidy message for its grammar. "numbered" for
+  // the same reason: "chromosomes are numbered 1 to 22, plus X and Y" is a rule, and
+  // is the whole useful content of the message it appears in.
+  const TEACHES = /\b(needs?|must|ha(?:s|ve) to|use|write|written|should|belongs?|separated?|starts? with|comes? first|comes? before|listed in|add|make sure|for example|e\.g\.|like|look like|is a|are not supported|not an ISCN|takes? one|draws? one|left out of the drawing|capped|numbered|Type a karyotype)\b/i;
   allWarnings().forEach(function (x) {
     assert.ok(TEACHES.test(x.w), `message for "${x.k}" reports a problem without teaching anything:\n    ${x.w}`);
   });
@@ -145,4 +147,31 @@ test('the empty state does not promise the problem will resolve itself', () => {
   const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.ok(!/as a karyotype yet/.test(page), 'no "yet" in the summary line');
   assert.ok(!/karyogram to display yet/.test(page), 'no "yet" in the aria label');
+});
+
+test('no message uses a contraction', () => {
+  // House style, and it is not a stylistic nicety here: this copy is read by students
+  // preparing for a board exam, alongside a standard that does not use them either.
+  // Possessives are not contractions and are left alone.
+  const CONTRACTION = /\b[A-Za-z]+[’'](s|t|re|ll|ve|d|m)\b/;
+  const POSSESSIVE = /\b(cell|clone|chromosome|karyotype|parent|carrier|app|reader|writer|it)[’']s\b/i;
+  allWarnings().forEach(function (x) {
+    const hit = CONTRACTION.exec(x.w);
+    if (hit && !POSSESSIVE.test(hit[0])) {
+      assert.fail(`contraction "${hit[0]}" in message for "${x.k}":\n    ${x.w}`);
+    }
+  });
+});
+
+test('the page copy a student reads uses no contractions either', () => {
+  // The warning corpus above cannot reach the strings that live in index.html: the
+  // band advice, the count pill, the box headings, the button labels.
+  //
+  // Line comments are stripped first. Several of them quote the copy they replaced,
+  // which is the only way to explain why it changed, and a rule that forbids naming
+  // the old wording makes the reason for the change unwriteable.
+  const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8')
+    .split('\n').map((l) => l.replace(/^\s*\/\/.*$/, '')).join('\n');
+  [/\bisn[’']t\b/, /\baren[’']t\b/, /\bdoesn[’']t add up/, /Let[’']s sort/, /Doesn[’']t look right/]
+    .forEach((re) => assert.ok(!re.test(page), `contraction ${re} is still in index.html`));
 });

@@ -152,6 +152,34 @@ that following the chain reaches a karyogram within three steps.
 Vetting re-parses each candidate one level deep (`parse(input, depth)`); the candidate's own
 fixes are listed but not vetted, which is what terminates the recursion.
 
+## The question mark
+
+ISCN 4.2.1 k: the mark "is placed either before the uncertain item, or it may replace a
+chromosome, region, band or subband designation". Those mean different things to a drawing.
+
+| placement | example | what happens |
+| --- | --- | --- |
+| before the item | `+?8`, `?del(1)(p36.1)`, `der(1)?t(1;3)(p22;q13)` | everything needed is there, so it draws, and the decode says the identification is not certain |
+| replacing a designation | `del(5)(q?)`, `der(?)`, `dic(17;?)` | the report declined to say, so there is nothing to draw. The message says that, and that the notation is correct |
+
+**The one that was silently wrong.** `splitBands` wants digits after `p` or `q`, so `q2?3`
+came back as `q2` and `q22.?1` as `q22`. The app was drawing a precise cut at a band the
+report had explicitly declined to pin down, which is the exact failure this parser exists
+to prevent, and it looked like success. Those now refuse. Going from "drew a lie" to
+"refused honestly" reads as a lost feature in the conformance count and is the opposite.
+
+Gibberish where a band goes is still gibberish: `del(5)(zzz)` gets the breakpoint message,
+not the uncertainty one.
+
+## No contractions
+
+House style, and not a nicety here: this copy is read by students preparing for a board
+exam, beside a standard that does not use them either. `test/message-voice.test.js` fails
+on a contraction in any warning and on the page strings the warning corpus cannot reach.
+Possessives are not contractions and are left alone. Line comments are stripped before the
+page check, because several of them quote the copy they replaced and a rule that forbids
+naming the old wording makes the reason for a change unwriteable.
+
 ## "Cannot be drawn" is not "is wrong"
 
 Three things can be true of an input, and the app has to say which:

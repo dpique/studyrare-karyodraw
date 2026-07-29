@@ -242,3 +242,44 @@ test('near-haploid and polyploid clones are counted against the right baseline',
     assert.equal(c.countWrong, false, `${k} counts up against that baseline`);
   });
 });
+
+test('a question mark is read as uncertainty, in both of its placements', () => {
+  // ISCN 4.2.1 k: the mark "is placed either before the uncertain item, or it may
+  // replace a chromosome, region, band or subband designation". The two mean different
+  // things to a drawing, and the app has to tell them apart.
+  //
+  // Before the item: everything needed to draw is there, and the caller is saying they
+  // are not sure of it. It draws, and the decode carries the doubt.
+  ['47,XX,+?8', '45,XX,-?21', '46,XY,?del(1)(p36.1)', '46,XX,der(1)?t(1;3)(p22;q13)']
+    .forEach((k) => {
+      assert.equal(refused(k), false, `${k} has everything it needs to draw`);
+      assert.equal(ISCN.parse(k).clones[0].aberrations.some((a) => a.uncertain), true,
+        `${k} is remembered as uncertain`);
+    });
+  // Replacing a designation: the report declined to say, so there is nothing to draw.
+  // The message has to say that, and not that the input was unreadable.
+  [['46,XY,del(5)(q?)', /breakpoint was not determined/],
+    ['46,XX,del(19)(?q)', /breakpoint was not determined/],
+    ['46,XY,-5,+der(?)t(?;5)(?;q13)', /chromosome was not identified/],
+    ['47,XY,+dic(17;?)(q22;?)', /chromosome was not identified/]].forEach(([k, re]) => {
+    const m = ISCN.parse(k);
+    assert.equal(refused(k), true, `${k} cannot be drawn`);
+    assert.match(m.warnings.join(' '), re, `${k} says why`);
+    assert.match(m.warnings.join(' '), /The notation is correct/, `${k} does not blame the reader`);
+    assert.doesNotMatch(m.warnings.join(' '), /is not a breakpoint|is not a human chromosome/,
+      `${k} is uncertainty, not gibberish`);
+  });
+});
+
+test('a question mark inside a band is no longer dropped', () => {
+  // This is the one that was silently wrong rather than noisily wrong. splitBands wants
+  // digits after p or q, so q2?3 came back as q2 and q22.?1 as q22, and the app drew a
+  // precise cut at a band the report had explicitly declined to pin down. Refusing
+  // these is a correction, not a regression: they used to "work" by drawing a lie.
+  ['46,XX,del(1)(q2?)', '46,XY,del(1)(q2?3)', '46,XY,t(5;6)(q31.1;q22.?1)'].forEach((k) => {
+    assert.equal(refused(k), true, k);
+    assert.match(ISCN.parse(k).warnings.join(' '), /not determined/, k);
+  });
+  // Gibberish that happens to sit where a band goes is still gibberish.
+  assert.match(ISCN.parse('46,XY,del(5)(zzz)').warnings.join(' '), /is not a breakpoint/);
+});

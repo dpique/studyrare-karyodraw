@@ -374,6 +374,17 @@ export const CORPUS = [
   { k: '46,XX,t(9;22)', group: 'typo', expect: 'refuse', why: 'A translocation with no breakpoint group at all, which is how an exam question written from memory usually reads.', watch: 'Currently draws. Also new, also the arity family. The breakpoints in the drawing are invented.' },
   { k: '43,XY,rob(14;21)(q10;q10),-21,-20', group: 'typo', expect: 'draw', why: 'Losses listed out of chromosome order. ISCN orders them, but the order changes only how it is written, never what is drawn.', watch: 'Draws, with a warning offering the reordered string. A refusal here would be wrong.' },
 
+  // ISCN 4.2.1 k, both placements. A question mark before the change says the caller
+  // is not sure of an identification that is otherwise complete; one that REPLACES a
+  // designation says the lab could not determine it. The first draws, the second
+  // cannot, and the difference is the whole point of these cards.
+  { k: '47,XX,+?8', group: 'unusual', expect: 'draw', why: 'ISCN 4.2.1 k ii: an extra chromosome, probably 8. Everything needed to draw is there and the doubt is about the identification.', watch: 'Draws trisomy 8, and the decode must say the identification is not certain. A drawing with no hedge in the text would present a doubt-free picture of a hedged report.' },
+  { k: '45,XX,-?21', group: 'unusual', expect: 'draw', why: 'ISCN 4.2.1 k i: a missing chromosome, probably 21.', watch: 'Same, in the other direction.' },
+  { k: '46,XY,?del(1)(p36.1)', group: 'unusual', expect: 'draw', why: 'ISCN 4.2.1 k iii: the deletion is uncertain, but if present it is 1p36.1 to 1pter.', watch: 'The mark can sit before a whole operation, not just a chromosome.' },
+  { k: '46,XY,del(5)(q?)', group: 'notdrawn', expect: 'refuse', why: 'ISCN 5.5.2 b.v, verbatim: a deletion of 5q where it is unclear whether it is terminal or interstitial and the breakpoints are unknown.', watch: 'Must say the breakpoint was not determined and that the notation is correct. It used to say “q?” is not a breakpoint, which blames the reader for a hedge the lab made deliberately.' },
+  { k: '46,XY,del(1)(q2?3)', group: 'notdrawn', expect: 'refuse', why: 'A band with the region determined and the rest not.', watch: 'The quiet one. This drew until now, because the question mark was dropped and the band read as q2: a precise cut at a position the report declined to pin down. Refusing it is a correction, not a loss.' },
+  { k: '46,XY,-5,+der(?)t(?;5)(?;q13)', group: 'notdrawn', expect: 'refuse', why: 'A derivative whose partner chromosome was never identified, which is a common real result before FISH.', watch: 'Should say the chromosome was not identified, not that “?” is not a human chromosome.' },
+
   // ------------------------------------------------------------- notdrawn --
   // Every one of these is correct ISCN. The app has no drawing for it, which is a
   // different thing from the karyotype being wrong, and until this batch the app said
