@@ -39,6 +39,8 @@ const BAD_INPUTS = [
   '45,XY,rob(1;2)(q10;q10)', '46,XY,+0', '46,XY,del(5)(p15.3p15.2)',
   '46,XY,del(5)(p15.2),del(5)(p15.2)', '46<3n>,XY', '46c,XY',
   '46,XY,t(9;22)(q34;q11.2)[0]', '46,YX',
+  // The cell count in square brackets, written as something that is not one.
+  '46,XY,t(9;22)(q34;q11.2)[-1]', '47,XX,+21[2.5]', '47,XX,+21[20', '47,XX,+21[cp-1]',
 ];
 
 const allWarnings = () => {

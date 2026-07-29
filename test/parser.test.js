@@ -915,6 +915,7 @@ test('input that cannot be drawn honestly is refused', () => {
     ['45,XY,rob(1;2)(q10;q10)', /fuses two acrocentric chromosomes/, 'a rob between metacentrics'],
     ['47,idem,+8', /no earlier clone/, 'a subclone with no stemline'],
     ['46,XY,t(9;22)(q34;q11.2)[0]', /seen in none of them/, 'a clone observed in no cells'],
+    ['46,XY,t(9;22)(q34;q11.2)[-1]', /not a count of cells/, 'cells cannot be counted backwards'],
   ].forEach(([k, re, why]) => {
     const m = ISCN.parse(k);
     assert.equal(m.clones[0].unreadable, true, `${k}: ${why}`);
@@ -998,4 +999,64 @@ test('the sex chromosomes are reordered, never edited', () => {
   // these would be editing a correct karyotype.
   ['46,XY', '45,X', '47,XXY', '47,XYY', '49,XXXXY', '48,XXYY', '46,XX', '69,XXY', '47,XXY[20]']
     .forEach((k) => assert.equal(ISCN.parse(k).suggestion, null, k));
+});
+
+// ---- the cell count in square brackets ---------------------------------------
+// ISCN 4.4.1 d: "Absolute cell numbers are given in square brackets ([ ])", and in a
+// karyotype designation that is the only thing they hold. Anything else in there is
+// diagnosable on sight, and before this it was not diagnosed at all: the count pattern
+// wants digits, so "[-1]" never registered as the cell count. It stayed stuck to the
+// last change, and the reader was told “[-1]” in “t(9;22)(q34;q11.2)[-1]” is not one
+// KaryoDraw can place — the wrong field, and a rule about commas they had not broken.
+test('brackets that are not a cell count are named as the cell count', () => {
+  [
+    ['46,XY,t(9;22)(q34;q11.2)[-1]', /how many cells were counted/],
+    ['47,XX,+21[-1]', /how many cells were counted/],
+    ['47,XX,+21[2.5]', /whole number/],
+    ['47,XX,+21[abc]', /how many cells were counted/],
+    ['47,XX,+21[]', /how many cells were counted/],
+    ['46,XX[10]/47,XX,+21[-1]', /how many cells were counted/],
+  ].forEach(([k, re]) => {
+    const w = ISCN.parse(k).warnings.join(' ');
+    assert.match(w, re, k);
+    // The change itself is fine. Blaming it sends the reader to rewrite the one part
+    // of the designation that was right.
+    assert.ok(!/is not one KaryoDraw can place|is not a change KaryoDraw recognizes/.test(w),
+      `${k} should name the count, not the change: ${w}`);
+  });
+});
+
+test('an unclosed bracket is told to close, and a composite keeps its own rule', () => {
+  assert.match(ISCN.parse("47,XX,+21[20").warnings.join(" "), /needs its closing bracket: “\[20\]”/);
+  assert.match(ISCN.parse('47,XX,+21[cp-1]').warnings.join(' '), /composite karyotype/);
+});
+
+// The missing-comma repair used to split inside the brackets: "+21[-1]" came back as
+// "+21[,-1]", a string with no reading at all, offered as the karyotype the reader meant.
+test('a sign inside the cell count is not read as a missing comma', () => {
+  const m = ISCN.parse('47,XX,+21[-1]');
+  assert.ok(!/\[,/.test(m.suggestion || ''), `no repair may split the brackets: ${m.suggestion}`);
+  assert.ok(!/is two of them/.test(m.warnings.join(' ')), 'and none may claim two changes');
+  // The rule this one guards still works where it belongs.
+  assert.equal(ISCN.parse('43,XY,-2-21').suggestion, '43,XY,-2,-21');
+});
+
+test('a real cell count is left alone', () => {
+  ['46,XY[20]', '47,XY,+8[cp10]', 'mos 45,X[12]/46,XX[18]', '46,XX,t(9;22)(q34;q11.2)[10]/46,XX[10]',
+    '48,XX,+8,+21c[20]', '46,XXYc,-X[10]/47,XXYc[2]', '46,XY'].forEach((k) => {
+    const m = ISCN.parse(k);
+    assert.equal(m.warnings.length, 0, `${k}: ${JSON.stringify(m.warnings)}`);
+    assert.ok(m.clones.every((c) => !c.badCells), k);
+  });
+  assert.equal(ISCN.parse('47,XY,+8[cp10]').clones[0].cellCount, 10);
+  assert.equal(ISCN.parse('47,XY,+8[cp10]').clones[0].composite, true);
+});
+
+// A genome build and a nuclei-scored fraction are also square brackets, and neither is
+// a cell count. They belong to descriptions this app does not draw (ISCN Chapters 7 and
+// 8), which carry their own message, so the count rule must not be aimed at them.
+test('brackets outside a karyotype designation keep their own message', () => {
+  ['arr[GRCh38]', 'nuc ish 21q22(RUNX1x3)[100/200]'].forEach((k) => {
+    assert.ok(!/how many cells were counted/.test(ISCN.parse(k).warnings.join(' ')), k);
+  });
 });

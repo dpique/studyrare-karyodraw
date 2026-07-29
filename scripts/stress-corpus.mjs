@@ -348,6 +348,7 @@ export const CORPUS = [
   { k: '46,XX,inv(9)(p12q13)mat', group: 'unusual', expect: 'draw', why: 'The maternal-inheritance qualifier.', watch: 'mat preserved and explained.' },
   { k: '45<2n>,XY,-21', group: 'unusual', expect: 'draw', why: 'An explicit ploidy note.', watch: '<2n> must survive to the count chip; it was being dropped before.' },
   { k: '46,XX,del(5)(p15.2)[20]', group: 'unusual', expect: 'draw', why: 'A cell count on a constitutional karyotype.', watch: 'Accepted without comment.' },
+  { k: '46,XY,t(9;22)(q34;q11.2)[-1]', group: 'unusual', expect: 'refuse', why: 'Square brackets holding something that is not a count of cells. ISCN 4.4.1 d: absolute cell numbers go in brackets, and in a karyotype that is all they hold.', watch: 'The message must be about the cell count. Until PR #136 it named the translocation, the one correct part, and taught a rule about commas.' },
   { k: '46,XY,t(2;5)(q21;q31)', group: 'unusual', expect: 'draw', why: 'A plain balanced reciprocal translocation, the segregation-panel workhorse.', watch: 'The segregation panel: alternate, adjacent-1, adjacent-2, 3:1. Spot-check that the unbalanced products are written correctly.' },
 
   // ----------------------------------------------------------------- typo --

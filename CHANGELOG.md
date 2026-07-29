@@ -3,6 +3,36 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-29 (the brackets hold a count of cells)
+
+- **`46,XY,t(9;22)(q34;q11.2)[-1]` was answered with a rule about commas.** The message
+  read `“[-1]” in “t(9;22)(q34;q11.2)[-1]” is not one KaryoDraw can place. Changes look
+  like +21, del(5)(p15.2), or t(9;22)(q34;q11.2)`, which names the translocation, the one
+  part of that designation that was correct, and teaches the reader to look for a missing
+  comma they had not missed.
+
+  The cause: the cell-count pattern wants digits between the brackets, so `[-1]` never
+  registered as the cell count at all. It stayed attached to the last change and came out
+  as leftover text, where the general "not a change" message picked it up.
+
+  Square brackets at the end of a karyotype now get read as the cell count whatever is
+  inside them, and the message is about that field: **the number in brackets is how many
+  cells were counted with this karyotype, so it is a whole number of them, like [20], or
+  [cp10] for a composite.** `[2.5]`, `[abc]` and `[]` get the same message; `[cp-1]` gets
+  the composite form of it; and an unclosed `[20` is told to close the bracket. Like `[0]`,
+  none of them draws.
+
+- **`47,XX,+21[-1]` was also offered `+21[,-1]` as the karyotype it meant.** The
+  missing-comma repair splits a field on a sign that follows another character, and the
+  minus inside the brackets looked like one. It now steps over the bracketed tail, so the
+  count keeps its own diagnosis and no repair is offered that cannot be read.
+
+  ISCN 4.4.1 d, "Absolute cell numbers are given in square brackets ([ ])". Aimed only at
+  a clone that opens with a chromosome count, so the other bracket forms keep their own
+  messages: `[GRCh38]` is the genome build (Chapter 8) and `[100/200]` is nuclei scored
+  (Chapter 7). All 531 karyotypes in the stress corpus and the ISCN 2024 example set
+  produce byte-identical warnings to before.
+
 ## 2026-07-29 (the affected view sits on a baseline)
 
 - **Switching Show from All to Affected moved every chromosome.** The affected view hung

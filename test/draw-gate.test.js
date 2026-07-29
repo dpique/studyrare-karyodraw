@@ -65,6 +65,14 @@ test('a breakpoint that is not a breakpoint is refused', () => {
   assert.equal(refused('47,XY,del(5)(zzqewdf2315.2)'), true);
 });
 
+// The count of cells is part of the designation, so a bracket that holds something
+// else is not valid ISCN and the same call as [0]. The changes may be perfectly good,
+// which is why the message says the brackets can come off.
+test('brackets that hold something other than a cell count are refused', () => {
+  ['46,XY,t(9;22)(q34;q11.2)[-1]', '47,XX,+21[2.5]', '47,XX,+21[abc]', '47,XX,+21[20',
+   '47,XX,+21[cp-1]'].forEach((k) => assert.equal(refused(k), true, k));
+});
+
 test('a count the app is willing to call wrong is refused', () => {
   ['46,XY,rob(14;21)(q10;q10),-21', '40,XY,rob(14;21)(q10;q10),-21', '45,XX,t(13;15)(q10;q10)',
    '47,XY,rob(14;21)(q10;q10),+21'].forEach((k) => assert.equal(refused(k), true, k));
