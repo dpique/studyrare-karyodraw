@@ -1178,6 +1178,22 @@
     buildComplement(cl, warnings);
   }
 
+  // A stray character, said in a way the reader can act on.
+  //
+  // Every message in this app quotes what it is talking about with curly quotes, which
+  // works until the thing being quoted IS a curly quote: pasting a karyotype out of a
+  // document produced “These are not characters ISCN uses: ““”, “””.”, where the two
+  // characters to remove are invisible inside the quotes reporting them. Anything that
+  // cannot survive being quoted is named in words instead.
+  var STRAY_NAME = {
+    "\u201C": "a curly opening quotation mark", "\u201D": "a curly closing quotation mark",
+    "\u2018": "a curly opening apostrophe", "\u2019": "a curly closing apostrophe",
+    "\"": "a straight quotation mark", "'": "a straight apostrophe", "`": "a backtick",
+    "\u00AB": "a left angle quotation mark", "\u00BB": "a right angle quotation mark"
+  };
+  function strayName(c) { return STRAY_NAME[c] || "“" + c + "”"; }
+  function sentenceCase(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
   // Spot common typos in the raw text and, where possible, build a corrected
   // "did you mean" string.
   function diagnose(raw, result, warnings) {
@@ -1217,8 +1233,8 @@
       var uniq = strays.filter(function (c, i) { return strays.indexOf(c) === i; });
       suggestion = suggestion.replace(STRAY, "");
       warnings.push((uniq.length === 1
-        ? "“" + uniq[0] + "” is not a character ISCN uses."
-        : "These are not characters ISCN uses: " + uniq.map(function (c) { return "“" + c + "”"; }).join(", ") + ".") +
+        ? sentenceCase(strayName(uniq[0])) + " is not a character ISCN uses."
+        : "These are not characters ISCN uses: " + uniq.map(strayName).join(", ") + ".") +
         " A karyotype is written with letters, numbers, and the marks , ; ( ) [ ] + - ? ~ and the decimal point.");
     }
 
@@ -1362,7 +1378,26 @@
       warnings.push("Inside parentheses, separate values with a semicolon “;”, not a comma, e.g. t(9;22)(q34;q11.2).");
       suggestion = fixed;
     }
-    if (suggestion !== raw) result.suggestion = suggestion;
+    if (suggestion !== raw) {
+      // A repair is the karyotype the reader is being asked to accept, so it has to be
+      // one they could have typed. ISCN 4.4.1 a: there are no spaces in a designation.
+      // Offered as typed, it kept whatever whitespace was in the input, and the strip
+      // above can leave a space behind where a stray character was: “46,XY,der(13;14)
+      // (q10;q10), “+14”” came back as a suggestion with a space in the middle of it.
+      //
+      // Whitespace only, and only once a repair is warranted for some other reason.
+      // Normalizing before that test would turn "47, XX, +21" into a repair, and spaces
+      // are deliberately not an error here (see docs/VALIDATION.md).
+      //
+      // Two spaces are real ISCN and are kept: the one after a mos/chi prefix (4.4.1 m)
+      // and the ones around "or" (4.4.1 i).
+      var sLead = (/^(?:mos|chi)\s+/i.exec(suggestion) || [""])[0];
+      suggestion = sLead + suggestion.slice(sLead.length)
+        .replace(/\s+or\s+/gi, "\u0001")
+        .replace(/\s+/g, "")
+        .replace(/\u0001/g, " or ");
+      result.suggestion = suggestion;
+    }
   }
 
   // depth: 0 for a real call. Vetting a candidate re-parses it at depth 1, where the
@@ -1385,6 +1420,17 @@
     // them ("r(13) (p11q34) dn", "47, XX, +21"). The one meaningful space — after a
     // mos/chi prefix — is already consumed above, so treat the rest as insignificant.
     s = s.replace(/\s+/g, "");
+    // The canonical designation, for the input box, the drawing and the share URL. It is
+    // the whitespace normalization and NOTHING ELSE, on purpose.
+    //
+    // It used to be taken after the two strips below, so a pasted “46,XY,der(13;14)
+    // (q10;q10), “+14”” was silently rewritten in the box to the clean karyotype while
+    // the warning still named the quotation marks and the repair still offered a string
+    // that differed from the box by one space. The reader was told to remove characters
+    // that were no longer on screen, and offered a fix that looked identical to what they
+    // already had, on a karyotype the app then refused to draw. Whitespace is the one
+    // thing this app fixes silently, because it is the one thing it does not object to.
+    result.normalized = (q ? q[1].toLowerCase() + " " : "") + s;
     // Trailing sentence punctuation, dropped here as well as in diagnose(). diagnose only
     // builds the repair string; parsing has to see the clean text too, or the aberration
     // that the period is stuck to still reports itself as unrecognized and the reader gets
@@ -1404,8 +1450,6 @@
     // message about a rule the reader did not break, under the one that names the
     // mistake. The drawing is refused either way, since a repair is on offer.
     s = joinSameChrom(s).text;
-    // The canonical, whitespace-normalized designation — for display and the URL.
-    result.normalized = (q ? q[1].toLowerCase() + " " : "") + s;
 
     var cloneStrs = splitTop(s, "/").map(function (x) { return x.trim(); }).filter(Boolean);
     if (cloneStrs.length > 1) result.isMosaic = true;

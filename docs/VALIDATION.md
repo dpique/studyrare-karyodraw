@@ -124,6 +124,20 @@ Only at the very END of the designation. A sub-band ends in a digit after its pe
 (`del(11)(q24.1)`), a cell count in `]`, a qualifier in a letter, so nothing legal ends in
 one of these marks and a period inside the text is never touched.
 
+### `result.normalized` is the whitespace pass and nothing else
+
+The page puts `result.normalized` in the input box, the drawing and the share URL, so it
+must never contain a cleanup the app is about to complain about. It used to be taken after
+all of them, and pasting `46,XY,der(13;14)(q10;q10), “+14”` out of a document produced a
+state with no way out of it: the box was silently rewritten to the clean karyotype, the
+message still named quotation marks that were no longer on screen, the repair differed
+from the box by one invisible space, and the drawing was refused because a repair was on
+offer. Three of those four were the same mistake, which is fixing something quietly and
+then objecting to it loudly.
+
+Whitespace is fixed silently because it is the one thing this app does not object to.
+Everything else stays in the box until the reader accepts the repair.
+
 ## What the decode echoes
 
 Each decode chip shows the field **as written**, not a rebuilt canonical form. The count
@@ -146,6 +160,24 @@ Robertsonian wording, which was the only note there was, and it holds one note a
 whichever branch runs first keeps the slot, and later branches check `!result.note`.
 
 ## Offering a repair
+
+**A repair has to be a karyotype the reader could have typed.** It is offered for one
+click, so whatever is wrong with it lands in the input box as their karyotype. It is
+whitespace-normalized for that reason (ISCN 4.4.1 a), keeping the two spaces ISCN does
+write: after a `mos`/`chi` prefix (4.4.1 m) and around `or` (4.4.1 i). Offered as typed,
+it carried whatever whitespace was in the input, including a space left behind where a
+stray character was removed.
+
+The normalization runs only once a repair is warranted for some other reason. Applied
+before that test, every spaced karyotype would become a "did you mean", and a repair on
+offer refuses the drawing, so `47, XX, +21` would stop drawing over its spaces.
+
+**A message has to be readable.** Every message quotes what it is about with curly quotes,
+which works until the thing quoted IS a curly quote: `These are not characters ISCN uses:
+““”, “””` names two characters the reader cannot see. `STRAY_NAME` in `iscn-parser.js`
+names those in words instead ("a curly opening quotation mark"), and anything not in it is
+still shown quoted.
+
 
 `result.fixes` is the ordered list of repairs the page renders as "Did you mean X or Y?".
 It is derived, never assigned to: each repair is still decided in exactly one place
