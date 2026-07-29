@@ -1116,3 +1116,54 @@ test('a chromosome pair written with a comma is still the comma rule', () => {
   // semicolon. The single-chromosome rule must not reach it and join the bands.
   assert.equal(ISCN.parse('46,XY,t(9,22)(q34;q11.2)').suggestion, '46,XY,t(9;22)(q34;q11.2)');
 });
+
+// ---- a repair has to be a karyotype you could have typed ----------------------
+// Pasting `46,XY,der(13;14)(q10;q10), “+14”` out of a document produced all three of
+// these at once: a suggestion with a space in the middle of it, a message naming two
+// characters that rendered as “”, “” because they were quoted with the very marks they
+// were about, and an input box silently rewritten to the clean karyotype, so the reader
+// was told to remove characters that were no longer on screen and offered a fix that
+// looked identical to what they already had.
+test('a repair carries no whitespace', () => {
+  [['46,XY,der(13;14)(q10;q10), “+14”', '46,XY,der(13;14)(q10;q10),+14'],
+   ['46,XY, +21.', '46,XY,+21'],
+   ['46, XY, der(13;14)(q10;q10) “x”', '46,XY,der(13;14)(q10;q10)x'],
+  ].forEach(([bad, want]) => assert.equal(ISCN.parse(bad).suggestion, want, bad));
+});
+
+test('the two spaces ISCN does write survive a repair', () => {
+  // 4.4.1 m: mos/chi is followed by a space. 4.4.1 i: "or" is written with spaces.
+  assert.equal(ISCN.parse('mos 45,X[12]/46,XX[18].').suggestion, 'mos 45,X[12]/46,XX[18]');
+  assert.equal(ISCN.parse('46,XX,add(19)(p13.3 or q13.3).').suggestion, '46,XX,add(19)(p13.3 or q13.3)');
+});
+
+test('spaces on their own are still not a fault', () => {
+  // The normalization is applied only once a repair is warranted for another reason.
+  // Applied before that test, every spaced karyotype would become a "did you mean",
+  // and a repair on offer refuses the drawing.
+  ['47, XX, +21', '46,XY,r(13) (p11q34)', 'mos 45,X[12]/46,XX[18]', '46, XY']
+    .forEach((k) => assert.equal(ISCN.parse(k).suggestion, null, k));
+});
+
+test('a character that cannot be quoted is named instead', () => {
+  const w = ISCN.parse('46,XY,+21“”').warnings.join(' ');
+  assert.match(w, /a curly opening quotation mark/, w);
+  assert.match(w, /a curly closing quotation mark/, w);
+  assert.ok(!/[“”]{2}/.test(w), `the marks must not be quoted with themselves: ${w}`);
+  // One stray, named, still reads as a sentence.
+  assert.match(ISCN.parse('46,XY,+21"').warnings.join(' '), /^A straight quotation mark is not a character ISCN uses/);
+  // A character that survives being quoted is still shown.
+  assert.match(ISCN.parse('46,XY,+21%').warnings.join(' '), /“%” is not a character ISCN uses/);
+});
+
+test('the canonical designation fixes whitespace and nothing else', () => {
+  // It is what the page puts in the input box, the drawing and the share URL. Anything
+  // else it silently removed would be a fault the app is about to name, pointing the
+  // reader at characters they can no longer see.
+  assert.equal(ISCN.parse('46,XY, +21.').normalized, '46,XY,+21.', 'the period stays to be named');
+  assert.equal(ISCN.parse('46,XY,+21“”').normalized, '46,XY,+21“”', 'and so do the quotation marks');
+  assert.equal(ISCN.parse('46,XX,del(15)(q11.2;q13)').normalized, '46,XX,del(15)(q11.2;q13)');
+  // Whitespace, though, is fixed silently: it is the one thing the app does not object to.
+  assert.equal(ISCN.parse('47, XX, +21').normalized, '47,XX,+21');
+  assert.equal(ISCN.parse('mos 45,X[12] / 46,XX[18]').normalized, 'mos 45,X[12]/46,XX[18]');
+});

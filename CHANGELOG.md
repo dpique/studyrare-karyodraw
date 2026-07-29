@@ -3,6 +3,34 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-29 (a repair you could have typed, and a message you can read)
+
+Pasting `46,XY,der(13;14)(q10;q10), “+14”` out of a document, which is how a karyotype
+usually arrives, produced three faults at once and no way out of them.
+
+- **The repair had a space in the middle of it.** It was offered as typed, so it carried
+  whatever whitespace was in the input, plus the space left behind where the stray
+  character had been removed. A repair is a karyotype the reader is being asked to accept
+  in one click, so it has to be one they could have typed: ISCN 4.4.1 a, no spaces. The
+  two spaces ISCN does write are kept, after a `mos`/`chi` prefix and around `or`.
+
+  The normalization runs only once a repair is warranted for something else. Before that
+  test, `47, XX, +21` would become a "did you mean" and stop drawing over its spaces.
+
+- **The message named two characters it could not show.** Every message quotes what it is
+  about with curly quotes, which works until the thing quoted is a curly quote:
+  `These are not characters ISCN uses: ““”, “””`. Those are now named in words: "a curly
+  opening quotation mark, a curly closing quotation mark". Anything that survives being
+  quoted is still shown that way.
+
+- **The input box was silently rewritten to the clean karyotype**, because
+  `result.normalized` was taken after every cleanup rather than after the whitespace pass
+  alone. The reader was told to remove characters that were no longer on screen, offered a
+  repair that looked identical to what they already had, and refused a drawing of a box
+  that by then held a perfectly good karyotype. The box now keeps what was pasted until
+  the repair is accepted; whitespace is still fixed silently, because it is the one thing
+  the app does not object to.
+
 ## 2026-07-29 (the first screen, and what is on it when nothing draws)
 
 - **On a phone the karyogram started below the fold.** At 390x844 the input, three
