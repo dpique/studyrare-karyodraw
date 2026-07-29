@@ -124,7 +124,8 @@ test('idic(Y) counts as a chromosome — 46,X,idic(Y)(q11)', () => {
 
 test('"or" alternative warns instead of silently dropping', () => {
   const r = ISCN.parse('46,XY,del(5)(q13q33) or del(5)(q14q34)');
-  assert.ok(r.warnings.some((w) => /one karyotype at a time|not supported/i.test(w)));
+  assert.ok(r.warnings.some((w) => /one karyotype at a time/i.test(w)), 'says only one can be drawn');
+  assert.ok(r.warnings.some((w) => /del\(5\)\(q14q34\)/.test(w)), 'and names the alternative to enter on its own');
 });
 
 // The renderer distinguishes a direct (tandem) duplication from an inverted one
@@ -484,6 +485,38 @@ test('genuine unreadable trailing text still gets the "only the first part" note
   const w = ISCN.parse('46,XY,t(9;22)(q34;q11.2)ort(1;2)(p10;q10)').warnings.join(' ');
   assert.match(w, /one karyotype at a time/);
 });
+// Each leftover gets the message that fits it. The catch-all used to name two ISCN
+// features, "or" alternatives and uncertainty markers, whatever the leftover was: a
+// student who typed a stray "%" before "14" was answered with a paragraph about
+// notation she had never used, and no mention of the comma or the sign she was missing.
+test('the leftover message names what is missing from that leftover', () => {
+  const w = (k) => ISCN.parse(k).warnings.join(' ');
+  // A chromosome with neither a comma nor a sign needs both, and naming one sends the
+  // reader round again for the other.
+  const bare = w('46,XY,der(13;14)(q10;q10)14');
+  assert.match(bare, /gained or lost/, 'names the sign');
+  assert.match(bare, /separated by commas/, 'and the comma');
+  assert.match(bare, /“,\+14”/, 'and shows both corrections');
+  assert.match(bare, /“,-14”/);
+  assert.doesNotMatch(bare, /uncertainty|alternative/i, 'and nothing about features it does not involve');
+  // A sign but no comma is the narrower case and keeps its narrower message.
+  assert.match(w('46,XY,rob(14;21)(q10;q10)+21'), /^Changes are separated by commas/);
+  // Genuine gibberish claims no diagnosis it does not have.
+  const junk = w('46,XY,inv(9)(p11q13)zzz');
+  assert.match(junk, /Changes look like/, 'shows the shape of a change');
+  assert.doesNotMatch(junk, /uncertainty|“or”/i, 'without blaming a feature at random');
+});
+
+test('a stray character is answered once, and then on its own terms', () => {
+  // The whole chain: "%" is named and removed, and what is left ("14") is then
+  // diagnosed as a chromosome missing its comma and its sign. Two messages, each
+  // about something the reader actually typed.
+  const w = ISCN.parse('46,XY,der(13;14)(q10;q10) %14').warnings.join(' ');
+  assert.match(w, /“%” is not a character ISCN uses/);
+  assert.match(w, /“,\+14”/);
+  assert.doesNotMatch(w, /uncertainty markers/, 'the message that sent a student to the wrong page');
+});
+
 test('a legitimate der sub-op chain warns about nothing', () => {
   assert.equal(ISCN.parse('46,XX,der(9)t(9;22)(q34;q11.2)').warnings.length, 0);
   assert.equal(ISCN.parse('46,X,der(X)t(X;5)(p22.1;p13)').warnings.length, 0);
