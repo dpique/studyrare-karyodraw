@@ -3,6 +3,35 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-29 (the question mark, and no contractions)
+
+- **A question mark inside a band was being dropped, and the drawing invented the
+  precision.** `splitBands` wants digits after `p` or `q`, so `del(1)(q2?3)` came back as
+  `q2` and `t(5;6)(q31.1;q22.?1)` as `q22`. The app drew a precise cut at a band the report
+  had explicitly declined to pin down. It looked like success, which is why it lasted.
+
+- **ISCN 4.2.1 k is now read properly, in both of its placements.** The mark "is placed
+  either before the uncertain item, or it may replace a chromosome, region, band or subband
+  designation", and those mean different things to a drawing:
+
+  `+?8`, `-?21`, `?del(1)(p36.1)` and `der(1)?t(1;3)(p22;q13)` have everything needed to
+  draw and the doubt is about the identification, so they draw, and the decode says the
+  identification is not certain. A drawing with no hedge in the text would present a
+  doubt-free picture of a hedged report.
+
+  `del(5)(q?)`, `der(?)`, `dic(17;?)` replace the designation, so the lab is saying it was
+  not determined and there is nothing to draw. Each now says exactly that, plus that the
+  notation is correct. They used to be told `"q?" is not a breakpoint` and `"?" is not a
+  human chromosome`, which blames the reader for a hedge the lab made deliberately.
+
+  Gibberish where a band goes is still gibberish: `del(5)(zzz)` keeps its own message.
+
+- **No contractions in anything a student reads.** "It's chromosome X" in the decode,
+  "isn't a human chromosome", "These aren't real bands", "count doesn't add up", "Let's
+  sort this out:" and the "Doesn't look right?" button are all rewritten.
+  `test/message-voice.test.js` now fails on a contraction in any warning, and on the page
+  strings the warning corpus cannot reach. Possessives are left alone.
+
 ## 2026-07-29 ("KaryoDraw does not draw this" is not "this is wrong")
 
 - **The app was telling students that valid ISCN is not ISCN.** `rec`, `ider`, `tas`,

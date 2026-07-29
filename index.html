@@ -607,7 +607,7 @@
           <div class="kactions" id="kactions">
             <button class="pbtn" id="copyimg" title="Copy the karyogram as an image, ready to paste into slides, notes, or a message">⧉ Copy image</button>
             <button class="pbtn" id="dlimg" title="Download the karyogram as a PNG file">↓ PNG</button>
-            <button class="sharelink flagbtn" id="flagbtn" type="button" title="Something in this karyogram or explanation looks wrong? One click flags it; then add detail if you like.">⚠ Doesn't look right?</button>
+            <button class="sharelink flagbtn" id="flagbtn" type="button" title="Something in this karyogram or explanation looks wrong? One click flags it; then add detail if you like.">⚠ Not right?</button>
             <span class="spacer"></span>
             <button class="sharelink" id="copyhint" type="button" title="Copy a link that reproduces this exact view. It updates as you edit.">🔗 Copy link to this view</button>
             <button class="sharelink" id="printbtn" type="button" title="Print, or save as a 1-page PDF summary for a genetic counselor">🖨 Print summary</button>
@@ -1032,7 +1032,7 @@
     var pill = !off.length ? ''
       : (model.clones.length === 1
         ? '<span class="pill warn">written ' + off[0].modalNumber + ' · drawn ' + off[0].counts.actual + '</span>'
-        : '<span class="pill warn">count doesn’t add up</span>');
+        : '<span class="pill warn">count does not add up</span>');
     var meta = model.isMosaic ? "mosaic (" + model.clones.length + " clones)" : "";
     box.innerHTML = '<span class="kt">' + escapeHtml(kt) + '</span>' +
       (meta ? '<span class="sex">' + meta + '</span>' : '') +
@@ -1227,7 +1227,7 @@
     var arm = String(b.band)[0];
     var ext = window.Karyo.armExtent(b.chrom, arm);
     var near = window.Karyo.nearestBand(b.chrom, b.band);
-    var msg = "“" + b.label + "” isn’t a real band on chromosome " + b.chrom + ".";
+    var msg = "“" + b.label + "” is not a real band on chromosome " + b.chrom + ".";
     if (ext && near === ext.last) return msg + " " + b.chrom + arm + " ends at " + b.chrom + ext.last + ".";
     if (ext && near) {
       return msg + " " + b.chrom + arm + " runs from " + b.chrom + ext.first + " to " + b.chrom + ext.last +
@@ -1255,7 +1255,7 @@
     if (bad.length && bad.length <= 3) {
       bad.forEach(function (b) { model.warnings.push(bandAdvice(b)); });
     } else if (bad.length) {
-      model.warnings.push("These aren’t real bands: " +
+      model.warnings.push("These are not real bands: " +
         bad.map(function (b) { return b.label; }).join(", ") + ". Check them against the band map.");
     }
     AFFECTED = window.Karyo.computeAffected(model.clones);
@@ -1440,7 +1440,7 @@
       parts.push('<div class="warn-title">' +
         (allNotDrawn ? (w.length === 1 ? "This one KaryoDraw cannot draw:" : "These KaryoDraw cannot draw:")
           : fix ? (w.length === 1 ? "One thing to check:" : "A couple of things to check:")
-          : "Let’s sort this out:") + '</div>');
+          : "Let us sort this out:") + '</div>');
       parts.push('<ul>' + w.map(function (x) { return "<li>" + escapeHtml(x) + "</li>"; }).join("") + '</ul>');
     }
     parts.push('</div>');

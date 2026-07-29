@@ -109,6 +109,13 @@
     return null;
   }
   function describeAberration(ab) {
+    var out = describeAberrationBase(ab);
+    // Appended once, here, rather than threaded through forty return statements.
+    if (out && ab && ab.uncertain) out = { text: out.text + uncertainSuffix(ab), tag: out.tag };
+    return out;
+  }
+
+  function describeAberrationBase(ab) {
     var k = ab.kind, c = ab.chroms[0], bp = ab.breakpoints, mult = ab.multiplier || 1;
     if (k === "idem") {
       var refName = ab.ref === "sdl" ? "the sideline (the clone before it)" : "the stemline (the first clone)";
@@ -212,7 +219,7 @@
         var di = td.chroms.indexOf(c); if (di < 0) di = 0;
         var partner = td.chroms[1 - di];
         var bpDer = (td.breakpoints[di] || [])[0], bpPar = (td.breakpoints[1 - di] || [])[0];
-        return { text: base + ". It’s chromosome " + c + throughShort(c, bpDer) + " with " + endShort(partner, bpPar) + " attached." + extraText, tag: "der" };
+        return { text: base + ". This is chromosome " + c + throughShort(c, bpDer) + " with " + endShort(partner, bpPar) + " attached." + extraText, tag: "der" };
       }
       return { text: base + "." + extraText, tag: "der" };
     }
@@ -487,6 +494,16 @@
       clone.aberrations.forEach(function (ab) { out.push(plainAb(ab)); });
     }
     return out;
+  }
+
+  // ISCN 4.2.1 k, the placement that still draws: a question mark BEFORE the change
+  // says the caller is not certain of the identification, while everything needed to
+  // draw it is there. The drawing would otherwise present a doubt-free picture of
+  // something the report hedged, so the decode carries the hedge.
+  function uncertainSuffix(ab) {
+    return (ab && ab.uncertain)
+      ? ". The question mark says this identification is not certain"
+      : "";
   }
 
   window.Teach = {
