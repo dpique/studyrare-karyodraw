@@ -232,6 +232,26 @@
     return rule.msg;
   }
 
+  // ISCN abbreviations this app does not model. Each is in the symbol list in Chapter
+  // 3 and is perfectly correct to write; the app simply has no drawing for it. Kept
+  // apart from the drawn operations so the message can say which of the two it is,
+  // because "KaryoDraw does not draw this" and "this is not ISCN" are different
+  // sentences and only one of them is true here.
+  var NOT_DRAWN = {
+    rec: { what: "a recombinant chromosome from a parental inversion", sec: "ISCN 5.5.15" },
+    ider: { what: "an isoderivative chromosome", sec: "ISCN 5.5.3" },
+    tas: { what: "a telomeric association", sec: "ISCN 5.5.17" },
+    trc: { what: "a tricentric chromosome", sec: "ISCN 5.5.19" },
+    fis: { what: "a fission at the centromere", sec: "ISCN 5.5.6" },
+    qdp: { what: "a quadruplication", sec: "ISCN 5.5.14" },
+    psu: { what: "a pseudo-dicentric or pseudo-isodicentric", sec: "ISCN 5.5.4" },
+    neo: { what: "a neocentromere", sec: "ISCN 5.5.13" },
+    ish: { what: "in situ hybridization", sec: "ISCN Chapter 7" },
+    arr: { what: "a microarray result", sec: "ISCN Chapter 8" },
+    seq: { what: "a sequencing result", sec: "ISCN Chapter 11" },
+    ogm: { what: "an optical genome mapping result", sec: "ISCN Chapter 9" }
+  };
+
   function parseAberration(tok, warnings, statedFully) {
     statedFully = statedFully || {};
     var raw = tok;
@@ -380,7 +400,22 @@
         break;
       default:
         ab.kind = "unknown";
-        warnings.push("“" + op + "” in “" + raw + "” is not an ISCN abbreviation. The ones KaryoDraw draws: del, dup, inv, t, i, r, der, add, ins, dic, fra, mar.");
+        // "Not drawn here" and "not ISCN" are different things, and saying the first
+        // as the second is the worst error this app can make. rec, ider, tas, trc,
+        // fis and qdp are all in ISCN's own symbol list (Chapter 3); telling a student
+        // they are "not an ISCN abbreviation" asserts something false about the
+        // standard, in the one place they came to check themselves against it.
+        //
+        // Section numbers are carried so the reader can go and look, which is the
+        // whole of what the app can usefully offer for notation it cannot draw.
+        if (NOT_DRAWN[op]) {
+          ab.notDrawn = op;
+          warnings.push("“" + op + "” is correct ISCN, " + NOT_DRAWN[op].what +
+            " (" + NOT_DRAWN[op].sec + "), and KaryoDraw does not draw it yet. " +
+            "The rest of the karyotype is fine; nothing is wrong with what you typed.");
+        } else {
+          warnings.push("“" + op + "” in “" + raw + "” is not an ISCN abbreviation. The ones KaryoDraw draws: del, dup, inv, t, i, r, der, add, ins, dic, fra, mar.");
+        }
     }
     // Every op except der() should consume its whole token; leftover text (an "or"
     // alternative, an uncertainty marker, a trailing qualifier) is not modeled, so
@@ -481,12 +516,21 @@
     // triploid/tetraploid when the count is close to a clean multiple, so a
     // hyperdiploid cancer karyotype is not mistaken for a polyploid.
     var ploidy = 2;
-    if (clone.modalNumber != null) {
+    // A stated ploidy level is not a guess: 58<2n> and 81<3n> say outright which
+    // baseline the gains and losses are expressed against (ISCN 6.3.7 e-f), and it is
+    // exactly the near-triploid clones where inferring it from the count goes wrong.
+    // Believe the notation over the arithmetic.
+    var stated = /<(\d+)n>/.exec(clone.modalGiven || "");
+    if (stated && +stated[1] >= 1 && +stated[1] <= 8) {
+      ploidy = +stated[1];
+    } else if (clone.modalNumber != null) {
       var p = Math.round(clone.modalNumber / 23);
-      // Accept triploid through octaploid; a larger p is not a real ploidy but a
-      // huge or mistyped count, so stay diploid and let the count-mismatch warning
-      // speak instead of allocating p copies of every chromosome.
-      if (p >= 3 && p <= 8 && Math.abs(clone.modalNumber - 23 * p) <= 3) ploidy = p;
+      // Haploid through octaploid. Haploid is here because near-haploid ALL is real
+      // (26,X,+4,+6,+21 is ISCN's own example) and reading it as diploid made the app
+      // announce that the changes came to 48 against a stated 26. A larger p is not a
+      // real ploidy but a huge or mistyped count, so stay diploid and let the count
+      // warning speak rather than allocating p copies of everything.
+      if (p >= 1 && p <= 8 && Math.abs(clone.modalNumber - 23 * p) <= 3) ploidy = p;
     }
     clone.ploidy = ploidy;   // exposed so the renderer can spot sex-chromosome aneuploidy
     ALL.forEach(function (c) { comp[c] = 0; });
@@ -747,6 +791,11 @@
     var seenAb = {};
     clone.aberrations.forEach(function (ab) {
       if (!ab.raw || ab.kind === "unknown" || ab.multiplier > 1) return;
+      // Gains and losses are exempt. Listing +21 twice is how ISCN writes two extra
+      // copies, and 6.3.7 f prints a triploid clone carrying +X five times and +14
+      // three times. The rule is about a STRUCTURAL change repeated instead of
+      // written with a multiplier, del(5)(p15.2)x2, which is a different thing.
+      if (ab.kind === "gain" || ab.kind === "loss") return;
       var key = String(ab.raw).toLowerCase();
       if (seenAb[key]) { if (!clone.repeatedAb) clone.repeatedAb = ab.raw; return; }
       seenAb[key] = 1;
@@ -790,8 +839,16 @@
     // point the warning is pushed so the two can never disagree. It is NOT the same as
     // !counts.ok: 48,XY,+8,inc says there are further unidentified changes, so its
     // tally is legitimately short and the app has no business calling that an error.
+    //
+    // A COMPOSITE karyotype (cp) is the same case for a different reason: the changes
+    // listed are the union of what was seen across several cells and no single cell
+    // carried all of them, so the modal number and the tally are describing different
+    // things (ISCN 6.3.5). 48,XX,+7,+9,+11,+13[cp5] is ISCN's own example, and the app
+    // was announcing that it came to 50. A range (45~48,XX,+8[cp10]) hid this, because
+    // the range happened to cover the difference.
     clone.countWrong = false;
-    if (!clone.counts.ok && clone.sex.tokens.length > 0 && !clone.incomplete && !clone.uncounted) {
+    if (!clone.counts.ok && clone.sex.tokens.length > 0 && !clone.incomplete &&
+        !clone.composite && !clone.uncounted) {
       clone.countWrong = true;
       var want = clone.modalHigh != null ? (clone.modalNumber + "–" + clone.modalHigh) : String(clone.modalNumber);
       // Two things this has to get right.

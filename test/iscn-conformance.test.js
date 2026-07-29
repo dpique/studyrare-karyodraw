@@ -94,8 +94,14 @@ test('a ploidy level is a reporting baseline, never checked against the count', 
     .forEach((k) => assert.equal(
       ISCN.parse(k).warnings.filter((w) => /\bn is 23 chromosomes|ploidy/i.test(w)).length, 0,
       `${k}: the ploidy level is not the app's to check`));
-  // The ones that are diploid-baselined do have to draw.
-  ['45<2n>,XY,-21', '46<3n>,XY'].forEach((k) => assert.equal(refused(k), false, k));
+  ['45<2n>,XY,-21'].forEach((k) => assert.equal(refused(k), false, k));
+  // The stated level is now BELIEVED rather than inferred from the count, which is
+  // what fixed the polyploid examples above: 81<3n> allocates three of each autosome
+  // and its tally comes out right. The consequence is that 46<3n>,XY, which states a
+  // triploid baseline and then lists nothing, is answered by the ordinary count check
+  // ("you wrote 46; 66 autosomes and 2 sex chromosomes come to 68") rather than by a
+  // hand-rolled rule about ploidy. That is the honest way to reach it.
+  assert.match(ISCN.parse('46<3n>,XY').warnings.join(' '), /says 46, but 66 autosomes/);
 });
 
 test('an insertion takes at least three breaks, and four is a real form', () => {
@@ -176,4 +182,63 @@ test('c on the sex complement marks the whole complement', () => {
   // A stray letter that is NOT this is still refused.
   assert.equal(refused('46,XZY'), true);
   assert.equal(refused('46,QQ'), true);
+});
+
+test('notation the app cannot draw is not called a mistake', () => {
+  // The worst error this app can make, and it was making it: rec, ider, tas, trc, fis
+  // and qdp are all in ISCN's symbol list (Chapter 3), and the app said each was "not
+  // an ISCN abbreviation" — asserting something false about the standard, in the one
+  // place a student came to check themselves against it.
+  [['46,XX,rec(2)dup(2p)inv(2)(p21q31)', /recombinant chromosome/],
+    ['46,XX,ider(22)(q10)t(9;22)(q34;q11.2)', /isoderivative/],
+    ['46,XX,tas(12;13)(q24.3;q34)', /telomeric association/],
+    ['44,XX,trc(4;12;9)(q31.2;q22p13;q34)', /tricentric/],
+    ['47,XY,-10,+fis(10)(p10),+fis(10)(q10)', /fission at the centromere/],
+    ['46,XX,qdp(1)(q23q32)', /quadruplication/]].forEach(([k, re]) => {
+    const w = ISCN.parse(k).warnings.join(' ');
+    assert.match(w, /is correct ISCN/, `${k}: says so plainly`);
+    assert.match(w, re, `${k}: names what it is`);
+    assert.match(w, /ISCN 5\.5\./, `${k}: cites the section so it can be looked up`);
+    assert.doesNotMatch(w, /is not an ISCN abbreviation/, `${k}: and never the opposite`);
+  });
+  // Something that really is not ISCN still gets told so.
+  const junk = ISCN.parse('46,XY,zzz(9)(q34)').warnings.join(' ');
+  assert.match(junk, /is not an ISCN abbreviation/);
+  assert.doesNotMatch(junk, /is correct ISCN/);
+});
+
+test('a repeated gain is how ISCN writes two extra copies', () => {
+  // 6.3.7 f prints a triploid clone carrying +X five times and +14 three times. The
+  // "written once with a multiplier" rule was accusing it of a mistake. That rule is
+  // about a STRUCTURAL change repeated instead of written x2, which is a different
+  // thing, so gains and losses are exempt.
+  ['81<3n>,XXX,+X,+X,+X,+X,+X,+1,+1,+3,+3,+14,+14,+14,-15,+21', '48,XX,+21,+21', '44,XY,-7,-7']
+    .forEach((k) => assert.equal(
+      ISCN.parse(k).warnings.filter((w) => /multiplier/.test(w)).length, 0, k));
+  assert.match(ISCN.parse('46,XY,del(5)(p15.2),del(5)(p15.2)').warnings.join(' '), /multiplier/,
+    'a structural change repeated is still worth saying');
+});
+
+test('a composite karyotype is not held to its own count', () => {
+  // ISCN 6.3.5: in a cp karyotype the changes listed are the union across cells and no
+  // single cell carried all of them, so the modal number and the tally describe
+  // different things. 48,XX,+7,+9,+11,+13[cp5] is ISCN's own example and the app was
+  // announcing that it came to 50. The same exemption inc has, for the same reason.
+  ['48,XX,+7,+9,+11,+13[cp5]', '43~46,XX,-7,+8[cp4]', '47,XY,+8[cp10]']
+    .forEach((k) => assert.equal(ISCN.parse(k).clones[0].countWrong, false, k));
+  // A plain clone is still checked.
+  assert.equal(ISCN.parse('47,XX,+21,+21').clones[0].countWrong, true);
+});
+
+test('near-haploid and polyploid clones are counted against the right baseline', () => {
+  // 26,X,+4,+6,+21 is near-haploid ALL, printed in ISCN. Read as diploid it produced
+  // "you wrote 26 but the changes add up to 48", which is the app stating its own
+  // wrong arithmetic as the reader's error.
+  [['26,X,+4,+6,+21', 1], ['46,XY', 2], ['69,XXX', 3], ['92,XXYY', 4],
+    ['81<3n>,XXX,+X,+X,+X,+X,+X,+1,+1,+3,+3,+14,+14,+14,-15,+21', 3],
+    ['58<2n>,XY,+X,+4,+6,+8,+9,+10,+14,+14,+17,+18,+21,+21', 2]].forEach(([k, n]) => {
+    const c = ISCN.parse(k).clones[0];
+    assert.equal(c.ploidy, n, `${k} is ${n}n`);
+    assert.equal(c.countWrong, false, `${k} counts up against that baseline`);
+  });
 });

@@ -3,6 +3,36 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-29 ("KaryoDraw does not draw this" is not "this is wrong")
+
+- **The app was telling students that valid ISCN is not ISCN.** `rec`, `ider`, `tas`,
+  `trc`, `fis` and `qdp` are all in ISCN's symbol list (Chapter 3), and each was answered
+  with "«rec» in «rec(2)dup(2p)inv(2)(p21q31)» is not an ISCN abbreviation". That asserts
+  something false about the standard, in the one place someone came to check themselves
+  against it, and it is the worst error this app can make.
+
+  Each now says it is correct ISCN, what it is, and which section to look it up in, plus
+  that KaryoDraw has no drawing for it yet. An operation that really is not ISCN,
+  `zzz(9)(q34)`, still gets told so; a test pins that the two cannot collapse into one
+  message.
+
+- **Three more messages blamed the reader for the app's own model being wrong.**
+  - `+X` five times is how ISCN writes five extra copies, and 6.3.7 f prints exactly that.
+    The "written once with a multiplier" rule was accusing a printed example of a mistake.
+    Gains and losses are now exempt; the rule is about a structural change repeated
+    instead of written `x2`.
+  - In a composite karyotype the changes are the union across several cells and no one
+    cell carried all of them (6.3.5), so `48,XX,+7,+9,+11,+13[cp5]` cannot be held to its
+    own count. It was being told the changes came to 50. Same exemption `inc` has.
+  - A stated ploidy level is believed rather than inferred from the count, and haploid is
+    allowed. Near-haploid ALL, `26,X,+4,+6,+21`, was answered with "you wrote 26 but the
+    changes add up to 48", which is the app stating its own wrong arithmetic as the
+    reader's error. It draws.
+
+- **330 of the 394 ISCN 2024 examples pass**, up from 326, and the ones that remain now
+  read as coverage gaps rather than as accusations. The stress sheet has a section for
+  them, with `zzz(9)(q34)` beside them as the control.
+
 ## 2026-07-29 (45,X,-Y is not a count error)
 
 - **Acquired loss of a sex chromosome was being counted twice.** `45,X,-Y` is loss of the

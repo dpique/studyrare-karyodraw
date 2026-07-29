@@ -152,6 +152,41 @@ that following the chain reaches a karyogram within three steps.
 Vetting re-parses each candidate one level deep (`parse(input, depth)`); the candidate's own
 fixes are listed but not vetted, which is what terminates the recursion.
 
+## "Cannot be drawn" is not "is wrong"
+
+Three things can be true of an input, and the app has to say which:
+
+| | example | what it says |
+| --- | --- | --- |
+| not ISCN | `zzz(9)(q34)` | not an ISCN abbreviation, with the ones that are |
+| correct ISCN, no drawing for it | `rec(2)dup(2p)inv(2)(p21q31)` | correct ISCN, what it is, the section, and that KaryoDraw does not draw it yet |
+| correct ISCN, drawn | `t(9;22)(q34;q11.2)` | nothing |
+
+The middle row was being reported as the top one. `rec`, `ider`, `tas`, `trc`, `fis` and
+`qdp` are all in ISCN's symbol list, and the app said each was "not an ISCN abbreviation",
+which asserts something false about the standard in the one place a student came to check
+themselves against it. `NOT_DRAWN` in `iscn-parser.js` carries the term, what it is, and
+its section, so the message can point at the book.
+
+Three more of the same kind, each a case where the app's own model was wrong and the
+message blamed the reader:
+
+- **A repeated gain.** `+X` five times is how ISCN writes five extra copies (6.3.7 f). The
+  "written once with a multiplier" rule was accusing a printed example of a mistake. That
+  rule is about a *structural* change repeated instead of written `x2`, so gains and losses
+  are exempt.
+- **A composite karyotype.** In `48,XX,+7,+9,+11,+13[cp5]` the changes are the union across
+  five cells and no one cell carried all of them (6.3.5), so the modal number and the tally
+  describe different things. The count is not checked, the same exemption `inc` has.
+- **The ploidy baseline.** A stated `<2n>`/`<3n>` is now believed rather than inferred from
+  the count, and haploid is allowed, so near-haploid ALL (`26,X,+4,+6,+21`) and near-triploid
+  clones count up against the right baseline. Read as diploid, `26,X,+4,+6,+21` produced
+  "you wrote 26 but the changes add up to 48", which is the app stating its own wrong
+  arithmetic as the reader's error.
+
+The general rule: **before a message calls something wrong, check that the app is right.**
+Every one of these was the app's model failing and the message blaming the input.
+
 ## Checking against ISCN itself
 
 `test/iscn-2024-examples.js` holds 394 karyotype-format examples printed in ISCN 2024
