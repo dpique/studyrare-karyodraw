@@ -690,3 +690,42 @@ test('the word nullisomy is gone from the renderer', () => {
   const code = src.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
   assert.ok(!/nullisomy/.test(code), 'no remaining nullisomy label in code');
 });
+
+// --- Cells sit on a common baseline in the affected view ---------------------
+// Two different axes, and they are easy to confuse. WITHIN a cell, a derivative is
+// aligned to its homolog on the centromere (the tests above): that is the comparison
+// the reader is making, and the shared line earns its keep. ACROSS cells, the affected
+// view used to hang every cell off one shared centromere line too, which disagreed
+// with the full 24-chromosome view and, with only two or three cells on screen, read
+// as a short chromosome floating above the others rather than aligned with them.
+test('affected-view cells share a baseline, as the full view does', () => {
+  // t(1;21): chromosome 1 is the longest and 21 is nearly the shortest, so a shared
+  // centromere line separates their baselines by a wide margin and any regression is
+  // obvious rather than a rounding difference.
+  const c = ISCN.parse('46,XX,t(1;21)(p36.3;q22)').clones[0];
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, c, { theme: 'simple', level: 1, affected: Karyo.computeAffected([c]), only: ['1', '21'] });
+
+  // The across-cell shift is the margin-top on .kcell-copies; the within-cell shifts
+  // are on .kchrom and are a separate mechanism.
+  const offsets = [...cont.innerHTML.matchAll(/class="kcell-copies"(?: style="margin-top:([\d.]+)px")?/g)]
+    .map((m) => (m[1] ? parseFloat(m[1]) : 0));
+  assert.equal(offsets.length, 2, 'one cell per involved chromosome');
+
+  // Each cell's own height, measured the way the renderer measures it.
+  const heightOf = (chrom) => Math.max(...c.slots[chrom].map(
+    (i) => Karyo.drawInstance(i, { theme: 'simple', level: 1, affected: {} }).height));
+  const h1 = heightOf('1'), h21 = heightOf('21');
+  const maxH = Math.max(h1, h21);
+
+  assert.ok(Math.abs(offsets[0] - (maxH - h1)) < 1, 'chromosome 1 is pushed down to the baseline');
+  assert.ok(Math.abs(offsets[1] - (maxH - h21)) < 1, 'and so is 21');
+  // The property that matters, stated directly: both cells end at the same y.
+  assert.ok(Math.abs((offsets[0] + h1) - (offsets[1] + h21)) < 1, 'the two cells share a bottom');
+  // And it is genuinely a different answer from centromere alignment here, so this
+  // cannot pass by coincidence.
+  const cenOf = (chrom) => Math.max(...c.slots[chrom].map(
+    (i) => Karyo.drawInstance(i, { theme: 'simple', level: 1, affected: {} }).cenY));
+  const cenShift = Math.abs((cenOf('1') - h1) - (cenOf('21') - h21));
+  assert.ok(cenShift > 5, 'a shared centromere line would put these cells visibly apart');
+});

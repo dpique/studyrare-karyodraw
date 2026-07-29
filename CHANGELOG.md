@@ -3,6 +3,26 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-29 (the affected view sits on a baseline)
+
+- **Switching Show from All to Affected moved every chromosome.** The affected view hung
+  each cell off one shared horizontal centromere line while the full 24-chromosome view
+  simply bottom-aligned them, so toggling between the two rearranged the picture for a
+  reason the reader has no way to infer, and a shorter chromosome read as floating above
+  its neighbours rather than as aligned with them.
+
+  Cells now share a baseline in both views. On `46,X,der(X)t(X;5)(p22.1;p15.2)` the X pair
+  sat 72px above the chromosome 5 pair; it is 0 now.
+
+  A shared centromere line is the classic karyogram convention, and ISCN's own plates draw
+  it, but it needs a row of neighbours to be read against. With two or three cells on
+  screen there is nothing to read it against and it only looks like drift.
+
+  **Within** a cell nothing changes: a derivative is still aligned to its homolog on the
+  centromere, which is where that comparison is actually being made. The three existing
+  tests cover that axis and a new one covers the other, on `t(1;21)` where the longest and
+  nearly-shortest chromosomes make the two schemes disagree by a wide margin.
+
 ## 2026-07-29 (the question mark, and no contractions)
 
 - **A question mark inside a band was being dropped, and the drawing invented the

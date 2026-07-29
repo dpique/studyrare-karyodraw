@@ -1146,21 +1146,31 @@
         if (s.insts.length) s.m = cellMetrics(s.insts, ctx);
         else if (s.chrom && s.opts.missing > 0) s.m = cellMetrics([normalInst(s.chrom)], ctx);
       });
-      var withCen = specs.filter(function (s) { return s.m && s.m.cenLine != null; });
-      var above = withCen.length ? Math.max.apply(null, withCen.map(function (s) { return s.m.cenLine; })) : 0;
-      var below = withCen.length ? Math.max.apply(null, withCen.map(function (s) { return s.m.height - s.m.cenLine; })) : 0;
-      var totalH = above + below;
+      // Cells sit on a common baseline, the same as the full 24-chromosome view.
+      //
+      // They used to hang off one shared horizontal centromere line, which is the
+      // classic karyogram convention and is what ISCN's own plates show. Two things
+      // were wrong with it here. It disagreed with the other view, so toggling Show
+      // moved every chromosome for a reason the reader has no way to infer; and with
+      // only two or three cells on screen there is no row of neighbours to read the
+      // shared line against, so a shorter chromosome simply reads as floating above
+      // the others rather than as aligned with them.
+      //
+      // Within a cell, a derivative is still aligned to its homolog on the centromere
+      // (alignMode), which is where that comparison is actually made and where the
+      // shared line does earn its keep. seamCen stays for the same reason.
+      var maxH = specs.reduce(function (h, s) { return s.m && s.m.height > h ? s.m.height : h; }, 0);
       var oh = ['<div class="karyogram affected-only"><div class="kgroup">'];
       var sexOffset = 0;
       specs.forEach(function (s) {
         var off;
         if (!s.m) {
           // The placeholder inherits the offset of the sex cell it stands beside, so
-          // the gap lines up with its surviving partner instead of the row top. It is
-          // always emitted after X/Y, so sexOffset is already set.
+          // the gap lines up with its surviving partner. It is always emitted after
+          // X/Y, so sexOffset is already set.
           off = sexOffset;
         } else {
-          off = s.m.cenLine != null ? (above - s.m.cenLine) : Math.max(0, totalH - s.m.height);
+          off = Math.max(0, maxH - s.m.height);
           if (s.sexcell) sexOffset = off;
         }
         oh.push(cellHtml(s.chrom, s.insts, cellOpts(s, { cenOffset: off, seamCen: true }), ctx));
