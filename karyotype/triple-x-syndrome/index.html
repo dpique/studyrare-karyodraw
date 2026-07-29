@@ -495,6 +495,16 @@
   .lp-fig .karyogram { transform: none !important; }
   .lp-karyo-img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
   .lp-figcap { font-size: 12.5px; color: var(--muted); margin: 8px 4px 0; }
+  /* What banding actually sees. Directly under the drawing, because that is the claim
+     it qualifies: KaryoDraw draws every deletion at the same crispness whatever its
+     size, and for a submicroscopic one the picture is a map and not a micrograph.
+     Periwinkle and not the amber of the app's warning box, for the reason index.html
+     gives where it draws that line: the karyotype on this page is correct and is drawn
+     correctly, so the note must not read as an error. */
+  .lp-res { margin: -8px 0 22px; padding: 11px 14px; border: 1px solid var(--peri-300);
+    border-radius: 12px; background: var(--peri-50); font-size: 14.5px; line-height: 1.6;
+    color: var(--ink-2); }
+  .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
@@ -563,6 +573,7 @@
     <p class="lp-intro">47,XXX, sometimes called triple X syndrome, is an extra X chromosome in a female. Many individuals are only mildly affected or have no obvious features.</p>
     <p class="lp-cta"><a class="btn" href="/?k=47%2CXXX&amp;style=highlight&amp;bands=550&amp;show=all">Open in the interactive visualizer &rarr;</a></p>
     <figure class="lp-fig"><img class="lp-karyo-img" src="karyogram.png" alt="Karyotype of Triple X syndrome (47,XXX)" width="180" height="265" decoding="async" /><figcaption class="lp-figcap">Triple X syndrome (47,XXX) drawn by KaryoDraw, showing the involved chromosomes with their normal homolog.</figcaption></figure>
+    
     <section class="lp-sec"><h2>What the notation means</h2><dl class="lp-decode"><dt><code>47</code></dt><dd>total chromosome count (normal is 46)</dd><dt><code>XXX</code></dt><dd>sex chromosomes: three X</dd></dl></section>
     <section class="lp-sec"><h2>Clinical notes</h2><div class="lp-syn"><h3>47,XXX, Triple X</h3><p>An extra X in a female. Often mild/absent phenotype; tall stature, sometimes learning difficulties. Two Barr bodies.</p></div></section>
     <section class="lp-sec lp-related"><h2>Related karyotypes</h2><ul><li><a href="/karyotype/klinefelter-syndrome/"><code>47,XXY</code> <span>Klinefelter syndrome</span></a></li><li><a href="/karyotype/xyy-syndrome/"><code>47,XYY</code> <span>XYY syndrome</span></a></li><li><a href="/karyotype/turner-syndrome/"><code>45,X</code> <span>Turner syndrome</span></a></li></ul></section>

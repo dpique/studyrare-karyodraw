@@ -87,3 +87,23 @@ test('the hub page targets "karyotype examples"', () => {
   assert.match(titleOf(html), /^Karyotype examples/i, 'hub title should lead with "Karyotype examples"');
   assert.match(html, /<h1>Karyotype examples[^<]*<\/h1>/, 'hub h1 should contain "Karyotype examples"');
 });
+
+// The resolution note. KaryoDraw draws every deletion at the same crispness whatever
+// its size, so a page for a submicroscopic deletion shows a picture no microscope would
+// produce. Where that is true the page says so, directly under the drawing.
+test('a submicroscopic deletion page says what banding actually sees', () => {
+  const CONTENT = require('../content/karyotypes.js').CONTENT || require('../content/karyotypes.js');
+  const withNote = CONTENT.filter((e) => e.resolution).map((e) => e.slug);
+  assert.ok(withNote.includes('chromosome-1p36-deletion'), '1p36 is mostly submicroscopic');
+  assert.ok(withNote.includes('wolf-hirschhorn-syndrome'), 'many 4p16.3 deletions are too');
+  withNote.forEach((slug) => {
+    const html = read(`karyotype/${slug}/index.html`);
+    assert.match(html, /<p class="lp-res">/, `${slug} should carry the note`);
+    // Under the karyogram, not above it: the note qualifies the picture.
+    assert.ok(html.indexOf('</figure>') < html.indexOf('<p class="lp-res">'), `${slug}: note goes below the figure`);
+    assert.match(html, /not what would be visible down a microscope/, `${slug}: the shared sentence`);
+  });
+  // And a deletion a karyotype does show is left alone.
+  ['cri-du-chat-syndrome', 'jacobsen-syndrome', 'mds-5q-deletion'].forEach((slug) =>
+    assert.ok(!/<p class="lp-res">/.test(read(`karyotype/${slug}/index.html`)), `${slug} needs no caveat`));
+});

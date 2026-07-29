@@ -14,6 +14,13 @@
 //   intro     1-2 sentence page lead (HTML). The rest of each page (decoded
 //             symbols, syndrome notes, karyogram) is generated from the render
 //             modules, so it never drifts from the tool itself.
+//   resolution  optional. What banding actually sees for this change, for the
+//             entries where a karyotype is not how the diagnosis is usually made.
+//             KaryoDraw draws every deletion at the same crispness whatever its
+//             size, so a page for a submicroscopic deletion shows a picture no
+//             microscope would produce, and says so here. One syndrome-specific
+//             sentence; build-pages.mjs adds the shared sentence about what the
+//             drawing is for, so that wording lives in one place.
 //   related   slugs of related pages to cross-link
 (function (root) {
   var CONTENT = [
@@ -97,6 +104,7 @@
     { slug: "wolf-hirschhorn-syndrome", k: "46,XX,del(4)(p16.3)", name: "Wolf-Hirschhorn syndrome", aka: ["4p deletion", "4p minus"],
       concept: "Deletion", tour: false,
       intro: "46,XX,del(4)(p16.3) is the karyotype of Wolf-Hirschhorn syndrome, a deletion of the tip of the short arm of chromosome 4. It causes a distinctive facial appearance with severe growth and developmental delay.",
+      resolution: "Many 4p16.3 deletions are too small to see with banding, so a normal karyotype does not rule Wolf-Hirschhorn syndrome out. FISH or a microarray is what confirms it.",
       related: ["cri-du-chat-syndrome", "chromosome-1p36-deletion", "jacobsen-syndrome"] },
     { slug: "chromosome-1q-duplication", k: "46,XY,dup(1)(q22q25)", name: "Chromosome 1q duplication", aka: ["partial trisomy 1q", "dup(1q)"],
       concept: "Duplication", tour: false,
@@ -113,6 +121,7 @@
     { slug: "chromosome-1p36-deletion", k: "46,XX,del(1)(p36.3)", name: "1p36 deletion syndrome", aka: ["1p36 minus", "monosomy 1p36"],
       concept: "Deletion", tour: false,
       intro: "46,XX,del(1)(p36.3) is the karyotype of 1p36 deletion syndrome, the most common terminal deletion syndrome in humans. It is a loss of the tip of the short arm of chromosome 1.",
+      resolution: "Most 1p36 deletions are too small to see with banding, so the diagnosis is usually made by microarray or FISH rather than by a karyotype.",
       related: ["cri-du-chat-syndrome", "wolf-hirschhorn-syndrome", "ring-chromosome-13"] },
     { slug: "marker-chromosome", k: "47,XX,+mar", name: "Marker chromosome", aka: ["+mar", "supernumerary marker", "ESAC"],
       concept: "Marker chromosome", tour: false,

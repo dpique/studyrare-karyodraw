@@ -495,6 +495,16 @@
   .lp-fig .karyogram { transform: none !important; }
   .lp-karyo-img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
   .lp-figcap { font-size: 12.5px; color: var(--muted); margin: 8px 4px 0; }
+  /* What banding actually sees. Directly under the drawing, because that is the claim
+     it qualifies: KaryoDraw draws every deletion at the same crispness whatever its
+     size, and for a submicroscopic one the picture is a map and not a micrograph.
+     Periwinkle and not the amber of the app's warning box, for the reason index.html
+     gives where it draws that line: the karyotype on this page is correct and is drawn
+     correctly, so the note must not read as an error. */
+  .lp-res { margin: -8px 0 22px; padding: 11px 14px; border: 1px solid var(--peri-300);
+    border-radius: 12px; background: var(--peri-50); font-size: 14.5px; line-height: 1.6;
+    color: var(--ink-2); }
+  .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
@@ -563,6 +573,7 @@
     <p class="lp-intro">46,XY,del(5)(p15.2) is the karyotype of cri-du-chat syndrome, a deletion of the tip of the short arm of chromosome 5. The name comes from the high-pitched, cat-like cry in infancy.</p>
     <p class="lp-cta"><a class="btn" href="/?k=46%2CXY%2Cdel(5)(p15.2)&amp;style=highlight&amp;bands=550&amp;show=all">Open in the interactive visualizer &rarr;</a></p>
     <figure class="lp-fig"><img class="lp-karyo-img" src="karyogram.png" alt="Karyotype of Cri-du-chat syndrome (46,XY,del(5)(p15.2))" width="139" height="308" decoding="async" /><figcaption class="lp-figcap">Cri-du-chat syndrome (46,XY,del(5)(p15.2)) drawn by KaryoDraw, showing the involved chromosomes with their normal homolog.</figcaption></figure>
+    
     <section class="lp-sec"><h2>What the notation means</h2><dl class="lp-decode"><dt><code>46</code></dt><dd>total chromosome count (the normal human number)</dd><dt><code>XY</code></dt><dd>sex chromosomes: one X, one Y (usual male karyotype)</dd><dt><code>del(5)(p15.2)</code></dt><dd>a terminal DELETION of chromosome 5: everything distal to 5p15.2 (out to the tip) is lost</dd></dl></section>
     <section class="lp-sec"><h2>Clinical notes</h2><div class="lp-syn"><h3>del(5p), Cri-du-chat syndrome</h3><p>Terminal deletion of 5p ('5p−'). High-pitched cat-like cry in infancy, microcephaly, hypotonia, intellectual disability.</p></div></section>
     <section class="lp-sec lp-related"><h2>Related karyotypes</h2><ul><li><a href="/karyotype/wolf-hirschhorn-syndrome/"><code>46,XX,del(4)(p16.3)</code> <span>Wolf-Hirschhorn syndrome</span></a></li><li><a href="/karyotype/chromosome-1p36-deletion/"><code>46,XX,del(1)(p36.3)</code> <span>1p36 deletion syndrome</span></a></li><li><a href="/karyotype/jacobsen-syndrome/"><code>46,XY,del(11)(q24.1)</code> <span>Jacobsen syndrome</span></a></li></ul></section>

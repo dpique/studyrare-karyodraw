@@ -495,6 +495,16 @@
   .lp-fig .karyogram { transform: none !important; }
   .lp-karyo-img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
   .lp-figcap { font-size: 12.5px; color: var(--muted); margin: 8px 4px 0; }
+  /* What banding actually sees. Directly under the drawing, because that is the claim
+     it qualifies: KaryoDraw draws every deletion at the same crispness whatever its
+     size, and for a submicroscopic one the picture is a map and not a micrograph.
+     Periwinkle and not the amber of the app's warning box, for the reason index.html
+     gives where it draws that line: the karyotype on this page is correct and is drawn
+     correctly, so the note must not read as an error. */
+  .lp-res { margin: -8px 0 22px; padding: 11px 14px; border: 1px solid var(--peri-300);
+    border-radius: 12px; background: var(--peri-50); font-size: 14.5px; line-height: 1.6;
+    color: var(--ink-2); }
+  .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
@@ -563,6 +573,7 @@
     <p class="lp-intro">46,XX,t(8;21)(q22;q22) is a recurrent translocation in acute myeloid leukemia that fuses <i>RUNX1</i> with <i>RUNX1T1</i>. It is one of the core-binding-factor leukemias and generally carries a favorable prognosis.</p>
     <p class="lp-cta"><a class="btn" href="/?k=46%2CXX%2Ct(8%3B21)(q22%3Bq22)&amp;style=highlight&amp;bands=550&amp;show=all">Open in the interactive visualizer &rarr;</a></p>
     <figure class="lp-fig"><img class="lp-karyo-img" src="karyogram.png" alt="Karyotype of AML with t(8;21) (46,XX,t(8;21)(q22;q22))" width="229" height="267" decoding="async" /><figcaption class="lp-figcap">AML with t(8;21) (46,XX,t(8;21)(q22;q22)) drawn by KaryoDraw, showing the involved chromosomes with their normal homolog.</figcaption></figure>
+    
     <section class="lp-sec"><h2>What the notation means</h2><dl class="lp-decode"><dt><code>46</code></dt><dd>total chromosome count (the normal human number)</dd><dt><code>XX</code></dt><dd>sex chromosomes: two X (usual female karyotype)</dd><dt><code>t(8;21)(q22;q22)</code></dt><dd>a reciprocal TRANSLOCATION: chromosomes 8 and 21 break (at 8q22 and 21q22) and swap the pieces beyond those breaks, giving two derivative chromosomes der(8) and der(21)</dd></dl></section>
     <section class="lp-sec"><h2>Clinical notes</h2><div class="lp-syn"><h3>t(8;21), AML</h3><p>t(8;21)(q22;q22) <i>RUNX1::RUNX1T1</i>; a core-binding-factor AML with generally favorable prognosis.</p></div></section>
     <section class="lp-sec lp-related"><h2>Related karyotypes</h2><ul><li><a href="/karyotype/aml-inv-16/"><code>46,XY,inv(16)(p13q22)</code> <span>AML with inv(16)</span></a></li><li><a href="/karyotype/acute-promyelocytic-leukemia/"><code>46,XY,t(15;17)(q24;q21)</code> <span>Acute promyelocytic leukemia t(15;17)</span></a></li><li><a href="/karyotype/philadelphia-chromosome/"><code>46,XY,t(9;22)(q34;q11.2)</code> <span>Philadelphia chromosome</span></a></li></ul></section>

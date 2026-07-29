@@ -495,6 +495,16 @@
   .lp-fig .karyogram { transform: none !important; }
   .lp-karyo-img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
   .lp-figcap { font-size: 12.5px; color: var(--muted); margin: 8px 4px 0; }
+  /* What banding actually sees. Directly under the drawing, because that is the claim
+     it qualifies: KaryoDraw draws every deletion at the same crispness whatever its
+     size, and for a submicroscopic one the picture is a map and not a micrograph.
+     Periwinkle and not the amber of the app's warning box, for the reason index.html
+     gives where it draws that line: the karyotype on this page is correct and is drawn
+     correctly, so the note must not read as an error. */
+  .lp-res { margin: -8px 0 22px; padding: 11px 14px; border: 1px solid var(--peri-300);
+    border-radius: 12px; background: var(--peri-50); font-size: 14.5px; line-height: 1.6;
+    color: var(--ink-2); }
+  .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
@@ -563,6 +573,7 @@
     <p class="lp-intro">47,XX,+21 is the karyotype of Down syndrome, caused by a third copy of chromosome 21. It is the most common autosomal trisomy compatible with live birth.</p>
     <p class="lp-cta"><a class="btn" href="/?k=47%2CXX%2C%2B21&amp;style=highlight&amp;bands=550&amp;show=all">Open in the interactive visualizer &rarr;</a></p>
     <figure class="lp-fig"><img class="lp-karyo-img" src="karyogram.png" alt="Karyotype of Down syndrome (47,XX,+21)" width="180" height="157" decoding="async" /><figcaption class="lp-figcap">Down syndrome (47,XX,+21) drawn by KaryoDraw, showing the involved chromosomes with their normal homolog.</figcaption></figure>
+    
     <section class="lp-sec"><h2>What the notation means</h2><dl class="lp-decode"><dt><code>47</code></dt><dd>total chromosome count (normal is 46)</dd><dt><code>XX</code></dt><dd>sex chromosomes: two X (usual female karyotype)</dd><dt><code>+21</code></dt><dd>an EXTRA copy of chromosome 21 (three copies = trisomy 21)</dd></dl></section>
     <section class="lp-sec"><h2>Clinical notes</h2><div class="lp-syn"><h3>Trisomy 21, Down syndrome</h3><p>The most common autosomal trisomy compatible with life (~1/700 births). Three copies of chromosome 21. Features: characteristic facies, hypotonia, intellectual disability, ~50% congenital heart disease (AV canal), ↑ risk of AML/ALL and early Alzheimer disease. ~95% free trisomy (nondisjunction, ↑ with maternal age), ~4% Robertsonian translocation, ~1% mosaic.</p></div></section>
     <section class="lp-sec lp-related"><h2>Related karyotypes</h2><ul><li><a href="/karyotype/edwards-syndrome/"><code>47,XY,+18</code> <span>Edwards syndrome</span></a></li><li><a href="/karyotype/patau-syndrome/"><code>47,XX,+13</code> <span>Patau syndrome</span></a></li><li><a href="/karyotype/robertsonian-translocation-14-21/"><code>45,XY,rob(14;21)(q10;q10)</code> <span>Robertsonian translocation 14;21</span></a></li></ul></section>

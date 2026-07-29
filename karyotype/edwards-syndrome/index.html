@@ -495,6 +495,16 @@
   .lp-fig .karyogram { transform: none !important; }
   .lp-karyo-img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
   .lp-figcap { font-size: 12.5px; color: var(--muted); margin: 8px 4px 0; }
+  /* What banding actually sees. Directly under the drawing, because that is the claim
+     it qualifies: KaryoDraw draws every deletion at the same crispness whatever its
+     size, and for a submicroscopic one the picture is a map and not a micrograph.
+     Periwinkle and not the amber of the app's warning box, for the reason index.html
+     gives where it draws that line: the karyotype on this page is correct and is drawn
+     correctly, so the note must not read as an error. */
+  .lp-res { margin: -8px 0 22px; padding: 11px 14px; border: 1px solid var(--peri-300);
+    border-radius: 12px; background: var(--peri-50); font-size: 14.5px; line-height: 1.6;
+    color: var(--ink-2); }
+  .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
@@ -563,6 +573,7 @@
     <p class="lp-intro">47,XY,+18 is the karyotype of Edwards syndrome, a trisomy of chromosome 18. It is the second most common autosomal trisomy and carries a severe prognosis.</p>
     <p class="lp-cta"><a class="btn" href="/?k=47%2CXY%2C%2B18&amp;style=highlight&amp;bands=550&amp;show=all">Open in the interactive visualizer &rarr;</a></p>
     <figure class="lp-fig"><img class="lp-karyo-img" src="karyogram.png" alt="Karyotype of Edwards syndrome (47,XY,+18)" width="180" height="194" decoding="async" /><figcaption class="lp-figcap">Edwards syndrome (47,XY,+18) drawn by KaryoDraw, showing the involved chromosomes with their normal homolog.</figcaption></figure>
+    
     <section class="lp-sec"><h2>What the notation means</h2><dl class="lp-decode"><dt><code>47</code></dt><dd>total chromosome count (normal is 46)</dd><dt><code>XY</code></dt><dd>sex chromosomes: one X, one Y (usual male karyotype)</dd><dt><code>+18</code></dt><dd>an EXTRA copy of chromosome 18 (three copies = trisomy 18)</dd></dl></section>
     <section class="lp-sec"><h2>Clinical notes</h2><div class="lp-syn"><h3>Trisomy 18, Edwards syndrome</h3><p>Three copies of chromosome 18. Clenched fists with overlapping fingers, rocker-bottom feet, micrognathia, congenital heart disease; most die in the first year.</p></div></section>
     <section class="lp-sec lp-related"><h2>Related karyotypes</h2><ul><li><a href="/karyotype/patau-syndrome/"><code>47,XX,+13</code> <span>Patau syndrome</span></a></li><li><a href="/karyotype/down-syndrome/"><code>47,XX,+21</code> <span>Down syndrome</span></a></li><li><a href="/karyotype/triploidy/"><code>69,XXY</code> <span>Triploidy</span></a></li></ul></section>
