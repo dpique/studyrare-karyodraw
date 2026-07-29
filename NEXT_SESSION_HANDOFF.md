@@ -33,7 +33,7 @@ reasoning behind each; `docs/VALIDATION.md` is the standing reference for the dr
   stating no sex field at all is refused (`clone.sexMissing`). See `docs/VALIDATION.md`,
   including the note on why the known-holes survey could not have found this.
 
-372 tests pass (`npm test`). Verified live with a headless browser after each merge.
+376 tests pass (`npm test`). Verified live with a headless browser after each merge.
 
 - **Stress sheet:** `npm run stress` types the 138 karyotypes in `scripts/stress-corpus.mjs`
   into the real page and writes `karyotype-stress-test.html` — drawing, warning box, decode,

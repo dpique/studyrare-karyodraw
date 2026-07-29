@@ -32,6 +32,7 @@ export const GROUPS = [
   ['cancer', 'Acquired / cancer cytogenetics'],
   ['unusual', 'Correct ISCN, unusual spelling'],
   ['typo', 'Typing mistakes a student makes'],
+  ['notdrawn', 'Correct ISCN that KaryoDraw does not draw'],
   ['hole', 'Not correct ISCN, known to still draw'],
 ];
 
@@ -373,6 +374,22 @@ export const CORPUS = [
   { k: '46,XX,t(9;22)', group: 'typo', expect: 'refuse', why: 'A translocation with no breakpoint group at all, which is how an exam question written from memory usually reads.', watch: 'Currently draws. Also new, also the arity family. The breakpoints in the drawing are invented.' },
   { k: '43,XY,rob(14;21)(q10;q10),-21,-20', group: 'typo', expect: 'draw', why: 'Losses listed out of chromosome order. ISCN orders them, but the order changes only how it is written, never what is drawn.', watch: 'Draws, with a warning offering the reordered string. A refusal here would be wrong.' },
 
+  // ------------------------------------------------------------- notdrawn --
+  // Every one of these is correct ISCN. The app has no drawing for it, which is a
+  // different thing from the karyotype being wrong, and until this batch the app said
+  // the second when it meant the first: "rec is not an ISCN abbreviation", about a
+  // term printed in ISCN's own symbol list. Read these for the wording.
+  { k: '46,XX,rec(2)dup(2p)inv(2)(p21q31)', group: 'notdrawn', expect: 'refuse', why: 'A recombinant chromosome from a parental pericentric inversion (ISCN 5.5.15), and the reason inversion carriers get counselled at all.', watch: 'Must say it is correct ISCN and name the section. It used to say rec is not an ISCN abbreviation, which is false and told a student their right answer was wrong.' },
+  { k: '46,XX,ider(22)(q10)t(9;22)(q34;q11.2)', group: 'notdrawn', expect: 'refuse', why: 'An isoderivative chromosome (ISCN 5.5.3): the isochromosome of a derivative, seen in CML blast crisis.', watch: 'Same wording test. The t(9;22) inside it is understood and only the ider is not.' },
+  { k: '46,XX,tas(12;13)(q24.3;q34)', group: 'notdrawn', expect: 'refuse', why: 'A telomeric association (ISCN 5.5.17).', watch: 'Named and cited, not called a mistake.' },
+  { k: '44,XX,trc(4;12;9)(q31.2;q22p13;q34)', group: 'notdrawn', expect: 'refuse', why: 'A tricentric chromosome (ISCN 5.5.19).', watch: 'Same.' },
+  { k: '46,XX,qdp(1)(q23q32)', group: 'notdrawn', expect: 'refuse', why: 'A quadruplication (ISCN 5.5.14). The app draws dup and trp but not this.', watch: 'The gap is in the drawing, and the message should make that obvious rather than implying the notation is wrong.' },
+  { k: '46,XY,zzz(9)(q34)', group: 'notdrawn', expect: 'refuse', why: 'The control: an operation that really is not ISCN.', watch: 'This one SHOULD say it is not an ISCN abbreviation. If both cards read the same, the distinction has been lost.' },
+  { k: '46,Y,del(X)(q22) or i(X)(p10)', group: 'notdrawn', expect: 'refuse', why: 'Two readings of one result, written with or (ISCN 4.2.1 i). Correct ISCN, and the app draws one karyotype at a time.', watch: 'Should name the alternative and say to enter it on its own, not imply that or is unsupported notation.' },
+  { k: '81<3n>,XXX,+X,+X,+X,+X,+X,+1,+1,+3,+3,+14,+14,+14,-15,+21', group: 'notdrawn', expect: 'draw', why: 'ISCN 6.3.7 f, verbatim: a near-tetraploid count reported against a triploid baseline because that is what is biologically meaningful.', watch: 'Draws, with no complaint about the count or about +X appearing five times. Both were being reported as errors: the stated ploidy is now believed rather than inferred, and a repeated gain is how ISCN writes extra copies.' },
+  { k: '26,X,+4,+6,+21', group: 'notdrawn', expect: 'draw', why: 'Near-haploid ALL, a real and prognostically important karyotype.', watch: 'Draws. Read as diploid it produced "you wrote 26 but the changes add up to 48", which is the app stating its own wrong arithmetic as the reader mistake.' },
+  { k: '48,XX,+7,+9,+11,+13[cp5]', group: 'notdrawn', expect: 'draw', why: 'A composite karyotype (ISCN 6.3.5): the changes are the union across five cells and no one cell carried all of them.', watch: 'Draws, with nothing said about the count. The modal number and the tally are describing different things here, so the count cannot be checked.' },
+
   // ----------------------------------------------------------------- hole --
   { k: '46,XY,t(9;22)(q34)', group: 'hole', expect: 'refuse', why: 'Known hole. Two chromosomes, one breakpoint. The second breakpoint is invented by the drawing.', watch: 'Currently draws. The drawn der(22) breakpoint is a guess presented as an answer.' },
   { k: '46,XY,inv(9)(p11)', group: 'hole', expect: 'refuse', why: 'Known hole. An inversion needs two breakpoints; one cannot define an inverted segment.', watch: 'Currently draws.' },
@@ -385,7 +402,7 @@ export const CORPUS = [
   { k: '46,XY,+0', group: 'hole', expect: 'refuse', why: 'Known hole. There is no chromosome 0.', watch: 'Currently draws.' },
   { k: '46,XY,del(5)(p15.2),del(5)(p15.2)', group: 'hole', expect: 'draw', why: 'The same deletion listed twice. ISCN writes del(5)(p15.2)x2 for a change on both homologs, which is exactly what listing it twice produces, so the drawing is right and the notation is not.', watch: 'Draws both deletions, with the multiplier offered. Check that the picture really is one deletion per homolog, since that is the claim the warning rests on.' },
   { k: '47,idem,+8', group: 'hole', expect: 'refuse', why: 'Known hole. idem refers to a stemline, and there is no preceding clone here.', watch: 'Currently draws, from a stemline that does not exist.' },
-  { k: '46<3n>,XY', group: 'hole', expect: 'draw', why: 'The angle brackets state the ploidy level the gains and losses are expressed against, not a claim about the count. ISCN 6.3.7 f prints 81<3n> and 58<2n> as correct and says exceptions are made where biologically significant.', watch: 'Draws, with nothing said about the ploidy. A rule that refused this was added here and removed once the standard was actually read: it was checking arithmetic that ISCN does not require to hold.' },
+  { k: '46<3n>,XY', group: 'notdrawn', expect: 'refuse', why: 'A triploid baseline stated, and then nothing listed: a triploid cell with no changes has 69 chromosomes, not 46. Synthetic, not from ISCN.', watch: 'Refused by the ordinary count check now that the stated ploidy is believed: "you wrote 46; 66 autosomes and 2 sex chromosomes come to 68". A hand-rolled rule about ploidy got here first and was removed as unjustifiable; this route is the honest one, and the message says whose arithmetic it is.' },
   { k: '46c,XY', group: 'hole', expect: 'draw', why: 'c marks a change as constitutional rather than acquired, and it belongs on the change it describes, not on the count.', watch: 'Draws, with the rule stated. Refused elsewhere would be defensible; confidence in exactly where ISCN permits c is lower than for the rest of this section, and the rule is to warn rather than refuse when that is true.' },
   { k: '46,XY,t(9;22)(q34;q11.2)[0]', group: 'hole', expect: 'refuse', why: 'Known hole. Zero cells means the clone was not seen.', watch: 'Currently draws a clone that was observed in no cells.' },
   { k: '46,YX', group: 'hole', expect: 'refuse', why: 'Known hole. ISCN writes X first.', watch: 'Currently draws. Arguably a repair rather than a refusal, like the comma cases.' },
