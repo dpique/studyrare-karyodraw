@@ -117,6 +117,9 @@ const LANDING_CSS = `
   .lp-intro { font-size: 16px; line-height: 1.6; color: var(--ink-2); margin: 0 0 18px; }
   .lp-cta { margin: 0 0 20px; }
   .lp-cta .btn { display: inline-block; text-decoration: none; }
+  /* The sentence beside a call to action, saying what is on the other side of it. */
+  .lp-cta-note { display: inline-block; margin-left: 10px; font-size: 13.5px; color: var(--muted); }
+  @media (max-width: 560px) { .lp-cta-note { display: block; margin: 8px 0 0; } }
   .lp-fig { margin: 0 0 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); box-shadow: var(--shadow); padding: 12px; overflow-x: auto; }
   .lp-fig .karyogram { transform: none !important; }
   .lp-karyo-img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
@@ -187,11 +190,18 @@ const LANDING_CSS = `
 // Site chrome, single-sourced here and injected into index.html (KD:NAV / KD:FOOT
 // markers) too, so the SPA and the generated pages can never drift.
 const LINKS = { studyrare: 'https://studyrare.com', github: 'https://github.com/dpique/studyrare-karyodraw', kofi: 'https://ko-fi.com/studyrare' };
-// The tour is a destination like Guide, so it lives in the nav rather than as a
-// button in the typing path on the homepage. Being here also makes it reachable from
-// every landing page, which it never was before. No `active` key: it is a mode of the
-// homepage, not a page of its own, so it never highlights.
-const NAV_ITEMS = [['/karyotype/', 'Karyotypes', 'karyotypes'], ['/?tour=1', 'Tour', 'tour'], ['/how-to-read-a-karyotype/', 'Guide', 'guide'], ['/about/', 'About', 'about']];
+// The tour is NOT in the nav. It used to be, on the reasoning that it is a destination
+// like Guide and that the nav made it reachable from every landing page. Both are true
+// and it still read wrong: "Tour" and "Guide" sat side by side promising the same thing
+// in different words, with nothing to say that one is an eleven-step walk through the
+// running app and the other is an article. Three of the four items were places to learn,
+// and a reader had no way to pick.
+//
+// It now starts from a line beside the input on the homepage, which is the only place it
+// can run, and from the top of the Guide, which is the teaching destination that stayed
+// in the nav. So it is still one click from any page, and the nav says one thing per item.
+// The /?tour=1 deep link is unchanged.
+const NAV_ITEMS = [['/karyotype/', 'Karyotypes', 'karyotypes'], ['/how-to-read-a-karyotype/', 'Guide', 'guide'], ['/about/', 'About', 'about']];
 
 function siteHeader(active) {
   const link = (href, label, key) => `<a href="${href}"${active === key ? ' aria-current="page"' : ''}>${label}</a>`;

@@ -104,6 +104,10 @@
   }
   .btn:hover { background: var(--amber-600); }
   .examples { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tourcta { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
+  .linklike { background: none; border: 0; padding: 0; font: inherit; font-weight: 600;
+    color: var(--peri-700); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .linklike:hover { color: var(--navy); }
   .chip {
     font: 12.5px var(--font-mono); padding: 5px 10px; border-radius: 999px; margin: 0;
     background: #f0f2f7; color: var(--ink-2); border: 1px solid var(--line); cursor: pointer;
@@ -528,7 +532,6 @@
     <nav class="sitebar-nav" aria-label="Primary">
       <!-- KD:NAV:START -->
       <a href="/karyotype/">Karyotypes</a>
-      <a href="/?tour=1">Tour</a>
       <a href="/how-to-read-a-karyotype/">Guide</a>
       <a href="/about/">About</a>
       <!-- KD:NAV:END -->
@@ -548,6 +551,14 @@
       <button class="btn" id="draw">Draw &amp; explain</button>
     </div>
     <div class="examples" id="examples" role="group" aria-label="Example karyotypes to try"></div>
+    <!-- The tour starts here rather than from the nav. It is a mode of this page, not a
+         page of its own, and in the nav it sat next to "Guide" promising the same thing
+         in different words. A text link and not a button: it must not compete with
+         "Draw & explain", which is what most people came to press. The step count is
+         filled in from the curriculum so it cannot drift from it. -->
+    <p class="tourcta" id="tourcta">New to the notation?
+      <button type="button" class="linklike" id="tour-start">Take the guided tour</button>
+    </p>
     <div class="viewopts">
       <!-- Ordered by how often a viewer reaches for it, which happens to be the same
            order as the question each one answers: which chromosomes, then how much
@@ -901,8 +912,11 @@
     $("#tour-prev").disabled = tourIdx === 0;
     $("#tour-next").textContent = atEnd ? "Finish" : "Next →";
   }
-  function startTour() { if (!TOUR.length) return; $("#tourcard").style.display = ""; loadTourStep(tourIdx); }
-  function exitTour() { $("#tourcard").style.display = "none"; }
+  // The launcher beside the input hides while the tour is open: the tour card carries
+  // its own Exit, and two controls for one mode is one too many.
+  function showTourCta(on) { var el = $("#tourcta"); if (el) el.style.display = on ? "" : "none"; }
+  function startTour() { if (!TOUR.length) return; $("#tourcard").style.display = ""; showTourCta(false); loadTourStep(tourIdx); }
+  function exitTour() { $("#tourcard").style.display = "none"; showTourCta(true); }
   function tourActive() { return $("#tourcard").style.display !== "none"; }
   function toggleTour() { tourActive() ? exitTour() : startTour(); }
   // Leave the tour when the viewer draws their own karyotype (an example chip, or
@@ -1923,6 +1937,15 @@
   // After the first draw, so the tour opens over a karyogram rather than an empty
   // page. run() has already rewritten the URL without ?tour=1, so a refresh or a
   // shared link does not silently restart it.
+  // The launcher, and the step count taken from the curriculum rather than typed into
+  // the markup, so adding a tour entry cannot leave the number behind.
+  (function () {
+    var btn = $("#tour-start");
+    if (!btn) return;
+    if (!TOUR.length) { showTourCta(false); return; }
+    btn.textContent = "Take the guided tour (" + TOUR.length + " steps)";
+    btn.addEventListener("click", function () { startTour(); $("#tourcard").scrollIntoView({ behavior: "smooth", block: "start" }); });
+  })();
   if (wantsTour) startTour();
   try { var _ref = ""; if (document.referrer) { try { _ref = new URL(document.referrer).host; } catch (e) {} } beacon({ type: "pageview", ref: _ref }); } catch (e) {}
 })();
