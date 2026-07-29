@@ -105,6 +105,10 @@
   .btn:hover { background: var(--amber-600); }
   .examples { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
   .tourcta { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
+  .tourcta .sep { margin: 0 4px; color: var(--line); }
+  /* On a phone the question wrapped the line to three rows for four words that the two
+     links already imply. The links keep their own wording. */
+  @media (max-width: 560px) { .tourcta-lead { display: none; } }
   .linklike { background: none; border: 0; padding: 0; font: inherit; font-weight: 600;
     color: var(--peri-700); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
   .linklike:hover { color: var(--navy); }
@@ -116,6 +120,7 @@
   .chip:hover { background: var(--peri-50); border-color: var(--peri-300); color: var(--peri-700); }
   .chip b { color: var(--peri-700); font-weight: 700; }
 
+
   /* Visible keyboard focus on every interactive control. :focus-visible keeps the
      ring for keyboard users while leaving mouse clicks clean. */
   a:focus-visible, button:focus-visible, input:focus-visible,
@@ -124,6 +129,25 @@
   }
   .seg button:focus-visible { outline-offset: -2px; }
 
+  /* The view options, and the control that folds them away on a phone.
+     At 390px the three rows of segmented buttons plus their hint ran to about 190px
+     of the first screen, which is why the karyogram started below the fold: someone
+     arriving from a search saw a form and no drawing. They collapse behind one row
+     under 700px, and the row carries the current setting so the state is still legible
+     while folded. The toggle is hidden and the body is open above that width, and the
+     body is visible by default, so if the script never runs the options are simply
+     there rather than unreachable. */
+  .viewtoggle { display: none; }
+  @media (max-width: 700px) {
+    .viewtoggle {
+      display: inline-flex; align-items: baseline; gap: 8px; margin-top: 12px;
+      background: none; border: 0; padding: 0; font: inherit; font-size: 12px; cursor: pointer;
+      color: var(--muted); text-transform: uppercase; letter-spacing: .05em;
+    }
+    .viewtoggle .caret { font-size: 10px; text-transform: none; letter-spacing: 0; }
+    .viewtoggle .viewstate { font: 600 12.5px var(--font-sans); color: var(--ink-2); text-transform: none; letter-spacing: 0; }
+    .viewwrap.collapsed .viewbody { display: none; }
+  }
   .viewopts { display: flex; align-items: center; gap: 8px 16px; margin-top: 12px; flex-wrap: wrap; }
   .viewopt { display: inline-flex; align-items: center; gap: 8px; }   /* keep each label with its toggle when the row wraps */
   .viewopts .vlabel { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
@@ -152,6 +176,12 @@
   @media (max-width: 640px) {
     .wrap, .sitebar-inner { padding-left: 16px; padding-right: 16px; }
     .card .body { padding: 12px 12px; }
+    /* Brand and nav on one row rather than two. Two rows cost about 45px of the first
+       screen on every page, for a header that fits across once the padding tightens. */
+    .sitebar-inner { flex-wrap: nowrap; gap: 10px; padding-top: 9px; padding-bottom: 9px; }
+    .sitebar-nav { flex-wrap: nowrap; margin-left: auto; }
+    .sitebar-nav a { padding: 6px 7px; font-size: 13px; }
+    .sitebar-word { font-size: 18px; }
   }
 
   /* Respect a reduced-motion preference: strip transitions and animations for
@@ -180,6 +210,10 @@
     .grid > section { grid-column: 1; grid-row: 1; }
     .grid > aside { grid-column: 2; grid-row: 1 / span 2; }
     .grid > .col1-extra { grid-column: 1; grid-row: 2; }
+    /* Nothing drew, so the right column has nothing in it (see showAsideCards). Keeping
+       the 360px track would hold a third of the page open for cards that are not there. */
+    .grid.solo { grid-template-columns: minmax(0, 1fr); }
+    .grid.solo > .col1-extra { grid-row: auto; }
   }
   .card h2 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 13px 16px; border-bottom: 1px solid var(--line); }
   .card .body { padding: 14px 16px; min-width: 0; }
@@ -556,38 +590,53 @@
          in different words. A text link and not a button: it must not compete with
          "Draw & explain", which is what most people came to press. The step count is
          filled in from the curriculum so it cannot drift from it. -->
-    <p class="tourcta" id="tourcta">New to the notation?
-      <button type="button" class="linklike" id="tour-start">Take the guided tour</button>
+    <!-- The two ways out of the chip row: the ordered walk for someone who does not know
+         the notation, and the full list for someone who saw an example, reloaded, and
+         found it gone (the chips are re-dealt every load on purpose). Both live on this
+         one line so neither costs a row of the first screen. -->
+    <p class="tourcta" id="tourcta">
+      <span id="tourcta-tour"><span class="tourcta-lead">New to the notation?</span>
+        <button type="button" class="linklike" id="tour-start">Take the guided tour</button></span>
+      <span class="sep" id="tourcta-sep" aria-hidden="true">·</span>
+      <a class="linklike" id="all-examples" href="/karyotype/">See all examples</a>
     </p>
-    <div class="viewopts">
-      <!-- Ordered by how often a viewer reaches for it, which happens to be the same
-           order as the question each one answers: which chromosomes, then how much
-           detail, then how they are coloured. Style is close to a one-time preference,
-           so it sits last. -->
-      <div class="viewopt">
-        <span class="vlabel" id="show-lbl">Show</span>
-        <div class="seg" id="showseg" role="group" aria-labelledby="show-lbl">
-          <button data-show="all" title="The full karyogram, all 46 chromosomes.">All</button>
-          <button data-show="affected" title="Only the chromosomes involved in the abnormality, each with its normal homolog.">Affected</button>
+    <div class="viewwrap" id="viewwrap">
+      <button type="button" class="viewtoggle" id="viewtoggle" aria-expanded="true" aria-controls="viewbody">
+        <span class="caret" id="viewcaret" aria-hidden="true">▸</span>View options
+        <span class="viewstate" id="viewstate"></span>
+      </button>
+      <div class="viewbody" id="viewbody">
+      <div class="viewopts">
+        <!-- Ordered by how often a viewer reaches for it, which happens to be the same
+             order as the question each one answers: which chromosomes, then how much
+             detail, then how they are coloured. Style is close to a one-time preference,
+             so it sits last. -->
+        <div class="viewopt">
+          <span class="vlabel" id="show-lbl">Show</span>
+          <div class="seg" id="showseg" role="group" aria-labelledby="show-lbl">
+            <button data-show="all" title="The full karyogram, all 46 chromosomes.">All</button>
+            <button data-show="affected" title="Only the chromosomes involved in the abnormality, each with its normal homolog.">Affected</button>
+          </div>
+        </div>
+        <div class="viewopt">
+          <span class="vlabel" id="bands-lbl">Bands</span>
+          <div class="seg" id="levelseg" role="group" aria-labelledby="bands-lbl">
+            <button data-level="0" title="~400-band resolution: fewer, wider bands, easiest to read.">Low · ~400</button>
+            <button data-level="1" title="~550-band resolution: the usual clinical level.">Std · ~550</button>
+            <button data-level="99" title="~850-band resolution: maximum detail.">High · ~850</button>
+          </div>
+        </div>
+        <div class="viewopt">
+          <span class="vlabel" id="style-lbl">Style</span>
+          <div class="seg" id="modeseg" role="group" aria-labelledby="style-lbl">
+            <button data-mode="simple" title="Colors the chromosomes involved in the abnormality; everything else stays quiet gray.">Highlight</button>
+            <button data-mode="detailed" title="True-to-life Giemsa banding on every chromosome, nothing highlighted. Spot the abnormality yourself.">Realistic</button>
+          </div>
         </div>
       </div>
-      <div class="viewopt">
-        <span class="vlabel" id="bands-lbl">Bands</span>
-        <div class="seg" id="levelseg" role="group" aria-labelledby="bands-lbl">
-          <button data-level="0" title="~400-band resolution: fewer, wider bands, easiest to read.">Low · ~400</button>
-          <button data-level="1" title="~550-band resolution: the usual clinical level.">Std · ~550</button>
-          <button data-level="99" title="~850-band resolution: maximum detail.">High · ~850</button>
-        </div>
-      </div>
-      <div class="viewopt">
-        <span class="vlabel" id="style-lbl">Style</span>
-        <div class="seg" id="modeseg" role="group" aria-labelledby="style-lbl">
-          <button data-mode="simple" title="Colors the chromosomes involved in the abnormality; everything else stays quiet gray.">Highlight</button>
-          <button data-mode="detailed" title="True-to-life Giemsa banding on every chromosome, nothing highlighted. Spot the abnormality yourself.">Realistic</button>
-        </div>
+      <div class="viewhint" id="viewhint"></div>
       </div>
     </div>
-    <div class="viewhint" id="viewhint"></div>
   </div>
 </header>
 
@@ -626,14 +675,14 @@
           </div>
           <div id="karyo" role="group" aria-label="Karyogram" aria-describedby="decode"></div>
         </div>
-        <div class="card">
+        <div class="card" id="legend-card">
           <h2>Band &amp; stain legend</h2>
           <div class="body"><div class="legend" id="legend"></div></div>
         </div>
       </section>
 
       <aside>
-        <div class="card">
+        <div class="card" id="decode-card">
           <h2 class="withaction">Karyotype decoded
             <button class="speak" id="speakbtn" type="button" title="Hear the karyotype read aloud" aria-label="Hear the karyotype read aloud">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a9 9 0 0 1 0 14"/></svg>
@@ -642,7 +691,7 @@
           </h2>
           <div class="body" id="decode"></div>
         </div>
-        <div class="card">
+        <div class="card" id="detail-card">
           <h2 id="detail-title">Anatomy of a chromosome</h2>
           <div class="body">
             <div class="detail-wrap">
@@ -870,10 +919,22 @@
   }
 
   function paintExamples() {
-    $("#examples").innerHTML = dealExamples(Math.min(EXAMPLES_SHOWN, EXAMPLES.length)).map(function (e) {
+    $("#examples").innerHTML = dealExamples(chipsToShow()).map(function (e) {
       return '<button type="button" class="chip" data-k="' + e[0].replace(/"/g, "&quot;") +
         '" aria-label="Draw ' + e[0].replace(/"/g, "&quot;") + ', ' + e[1] + '"><b>' + e[0] + '</b> · ' + e[1] + '</button>';
     }).join("");
+  }
+  // Two chips on a phone rather than three. Each one wraps to two lines at 390px, so the
+  // third row cost about 35px of the first screen for an example nobody asked for. The
+  // deck still deals the whole list across reloads, two at a time, and the line above the
+  // options carries the link to all of them for anyone who lost one to a reload.
+  //
+  // Declared after paintExamples on purpose: test/examples.test.js lifts the deck out of
+  // this file and runs it in a sandbox with no `window`, so nothing that touches `window`
+  // may sit inside the region it takes.
+  function chipsToShow() {
+    var narrow = window.matchMedia && window.matchMedia("(max-width: 560px)").matches;
+    return Math.min(narrow ? 2 : EXAMPLES_SHOWN, EXAMPLES.length);
   }
 
   function buildExamples() {
@@ -914,7 +975,11 @@
   }
   // The launcher beside the input hides while the tour is open: the tour card carries
   // its own Exit, and two controls for one mode is one too many.
-  function showTourCta(on) { var el = $("#tourcta"); if (el) el.style.display = on ? "" : "none"; }
+  function showTourCta(on) {
+    ["#tourcta-tour", "#tourcta-sep"].forEach(function (sel) {
+      var el = $(sel); if (el) el.style.display = on ? "" : "none";
+    });
+  }
   function startTour() { if (!TOUR.length) return; $("#tourcard").style.display = ""; showTourCta(false); loadTourStep(tourIdx); }
   function exitTour() { $("#tourcard").style.display = "none"; showTourCta(true); }
   function tourActive() { return $("#tourcard").style.display !== "none"; }
@@ -1314,7 +1379,13 @@
       $("#summary").innerHTML = '<span class="kt">' + escapeHtml(val) + '</span><span class="sex">not a readable karyotype</span>';
       $("#karyo").innerHTML = '<div class="emptystate">Fix the karyotype above and the drawing appears here.</div>';
       $("#karyo").setAttribute("aria-label", "No karyogram to display");
-      $("#decode").innerHTML = '<div class="muted">…</div>';
+      // Put away everything that describes a drawing there is not. The decode card was
+      // showing a bare "…", and the band map and legend were left over from the last
+      // karyotype that DID draw, so a refused input sat beside a band map of a
+      // chromosome from a karyotype no longer on screen. Nothing to say is better said
+      // by saying nothing; the warning box above carries the whole message.
+      showAsideCards(false);
+      $("#decode").innerHTML = "";
       $("#clinical-card").style.display = "none";
       $("#printsheet").innerHTML = "";
       currentModel = null;
@@ -1323,6 +1394,7 @@
       return;
     }
     currentModel = model;
+    showAsideCards(true);
     var kaShow = $("#kactions"); if (kaShow) kaShow.style.display = "flex";
     renderSummary(model);
     renderKaryogram(model);
@@ -1496,6 +1568,42 @@
     var m = new RegExp("[?&]" + name + "=([^&]+)").exec(location.search);
     return m ? decodeURIComponent(m[1].replace(/\+/g, " ")) : null;
   }
+  // The view options fold away under 700px (see the .viewtoggle rules). Collapsed by
+  // script and not by CSS alone, so a page whose script failed shows the options rather
+  // than hiding them behind a control that cannot open.
+  // The cards that only make sense beside a drawing: the decode, the band map, and the
+  // legend that names the drawing's conventions.
+  function showAsideCards(on) {
+    ["#decode-card", "#detail-card", "#legend-card"].forEach(function (sel) {
+      var el = $(sel); if (el) el.style.display = on ? "" : "none";
+    });
+    var grid = document.querySelector(".grid");
+    if (grid) grid.classList.toggle("solo", !on);
+  }
+
+  var VIEW_NARROW = "(max-width: 700px)";
+  var viewToggledByHand = false;
+  function viewCollapse(on) {
+    var wrap = $("#viewwrap"), btn = $("#viewtoggle"), caret = $("#viewcaret");
+    if (!wrap || !btn) return;
+    wrap.classList.toggle("collapsed", !!on);
+    btn.setAttribute("aria-expanded", on ? "false" : "true");
+    if (caret) caret.textContent = on ? "▸" : "▾";
+  }
+  function viewCollapsed() { var w = $("#viewwrap"); return !!w && w.classList.contains("collapsed"); }
+  function wireViewToggle() {
+    var btn = $("#viewtoggle");
+    if (!btn) return;
+    var mq = window.matchMedia ? window.matchMedia(VIEW_NARROW) : null;
+    viewCollapse(!!(mq && mq.matches));
+    btn.addEventListener("click", function () { viewToggledByHand = true; viewCollapse(!viewCollapsed()); });
+    // Rotating a phone, or dragging a desktop window narrow, re-decides it — unless the
+    // viewer has already said what they want on this page.
+    if (mq && mq.addEventListener) {
+      mq.addEventListener("change", function (e) { if (!viewToggledByHand) viewCollapse(e.matches); });
+    }
+  }
+
   function syncSeg() {
     function segState(sel, attr, want) {
       Array.prototype.forEach.call(document.querySelectorAll(sel), function (b) {
@@ -1511,6 +1619,18 @@
     if (vh) vh.innerHTML = MODE === "simple"
       ? "<b>Highlight</b>: the chromosomes involved in the abnormality are colored."
       : "<b>Realistic</b>: true-to-life Giemsa banding on every chromosome, nothing highlighted. Try to spot the abnormality yourself.";
+    // What the folded row says. The three settings in the order they sit in, so the
+    // collapsed control still answers "what am I looking at". The band button's own
+    // label carries a "·" ("Std · ~550"), which would make the separator ambiguous, so
+    // that one is reduced to the number it is really about. Read off the buttons rather
+    // than from a second copy of the labels, which would be a copy to keep in step.
+    var vs = $("#viewstate");
+    if (vs) {
+      var lbl = function (sel) { var b = document.querySelector(sel + " button.on"); return b ? b.textContent.trim() : ""; };
+      var lvl = lbl("#levelseg");
+      if (lvl.indexOf("·") >= 0) lvl = lvl.split("·").pop().trim() + " bands";
+      vs.textContent = [lbl("#showseg"), lvl, lbl("#modeseg")].filter(Boolean).join(" · ");
+    }
   }
 
   // ---- image export + share -------------------------------------------------
@@ -1937,6 +2057,7 @@
   // After the first draw, so the tour opens over a karyogram rather than an empty
   // page. run() has already rewritten the URL without ?tour=1, so a refresh or a
   // shared link does not silently restart it.
+  wireViewToggle();
   // The launcher, and the step count taken from the curriculum rather than typed into
   // the markup, so adding a tour entry cannot leave the number behind.
   (function () {
@@ -1944,6 +2065,13 @@
     if (!btn) return;
     if (!TOUR.length) { showTourCta(false); return; }
     btn.textContent = "Take the guided tour (" + TOUR.length + " steps)";
+    // The example count comes from the same curriculum the landing pages are generated
+    // from, so the link cannot claim a number of pages that does not exist.
+    var all = $("#all-examples");
+    var pages = (window.KDContent && window.KDContent.CONTENT && window.KDContent.CONTENT.length) || 0;
+    if (all && pages) all.textContent = "See all " + pages + " examples";
+    var all = $("#all-examples");
+    if (all && KD_PAGE_COUNT) all.textContent = "See all " + KD_PAGE_COUNT + " examples";
     btn.addEventListener("click", function () { startTour(); $("#tourcard").scrollIntoView({ behavior: "smooth", block: "start" }); });
   })();
   if (wantsTour) startTour();
