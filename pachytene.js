@@ -125,6 +125,25 @@
       txt(x, y + 3.2, n, "middle", 9.5, color, "700");
   }
   function plate(x1, y1, x2, y2) { return line(x1, y1, x2, y2, PLATE, 1.4, "4 4"); }
+  // The margin a side label needs: its own width, the gap between it and the
+  // chromosome it names, and a little air at the frame edge.
+  //
+  // The side labels are anchored to the outer end of a chromosome and grow OUTWARD
+  // from it, into the margin, while the margins were constants. A short label fit and
+  // a long one did not: with mL = 40 the trivalent's fusion label had 34px, so "13"
+  // fit and "rob(13;14)" was cut off at the left and rendered "b(13;14)", on every
+  // whole-arm translocation, which is most of what this figure is used to teach. The
+  // reciprocal cross had the same fault on both sides ("der(22)" against mR = 46).
+  //
+  // Karyo.textWidth is the shared estimate; see the comment on it for why an
+  // estimate is what is available here.
+  function labelMargin(labels, gap) {
+    var tw = (window.Karyo && window.Karyo.textWidth) ||
+      function (s, size) { return String(s).length * 0.55 * size; };
+    var widest = 0;
+    labels.forEach(function (l) { widest = Math.max(widest, tw(l[0], l[1])); });
+    return widest + (gap || 0) + 6;
+  }
   function svg(inner, w, h, label) {
     return '<svg class="seg-scene-svg" viewBox="0 0 ' + num(w) + ' ' + num(h) + '" role="img" aria-label="' +
       esc(label) + '">' + inner + '</svg>';
@@ -158,7 +177,12 @@
     var g = reciprocalGeom(model);
     if (!g) return "";
     var s = crossScale(g), N = g.N * s, W = g.W * s, S = g.S * s, E = g.E * s, cenA = g.cenA * s, cenB = g.cenB * s;
-    var mL = 46, mR = 46, mT = 26, mB = 26;
+    // Each side label sits O + 5 out from the end of its arm and grows away from the
+    // figure, so each margin holds the wider of the two labels on that side. Both
+    // sides were constants at 46, which "der(22)" alone overruns.
+    var mT = 26, mB = 26;
+    var mL = Math.max(46, labelMargin([[A, 9.5], ["der(" + B + ")", 9]], O + 5));
+    var mR = Math.max(46, labelMargin([[B, 9.5], ["der(" + A + ")", 9]], O + 5));
     var cx = mL + W, cy = mT + N, w = cx + E + mR, h = cy + S + mB;
     var A = model.A, B = model.B;
 
@@ -257,7 +281,11 @@
     if (!g) return "";
     var s = clamp(150 / Math.max(g.qA, g.qB), 0.5, 2.4), qA = g.qA * s, qB = g.qB * s;
     var A = model.A, B = model.B;
-    var mT = 34, mB = 30, mL = 40, mR = 40;
+    // Both left labels sit 6px out from the end of the arm and grow leftward, so the
+    // left margin is whichever of them is wider. "rob(13;14)" needs about 47px; the
+    // old constant 40 cut it to "b(13;14)".
+    var mT = 34, mB = 30, mR = 40;
+    var mL = Math.max(40, labelMargin([[A, 9.5], ["rob(" + A + ";" + B + ")", 9]], 6));
     var Cx = mL + qA, Cy = mT + 2 * O, w = Cx + 2 * O + mR, h = Cy + qB + mB;
 
     var cF = [Cx, Cy], cA = [Cx - 5, Cy - 2 * O], cB = [Cx + 2 * O, Cy + 5];

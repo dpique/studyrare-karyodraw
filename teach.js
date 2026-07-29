@@ -230,6 +230,15 @@
     if (k === "add") return { text: "ADDITIONAL material of unknown origin attached to chromosome " + c + " at " + c + ((bp[0] || [])[0] || "?"), tag: "add" };
     if (k === "mar") {
       var nmar = ab.count || 1;
+      // +r is the same finding as +mar with one extra fact: the shape is a ring.
+      // The chromosome it came from is still unknown, which is what separates it
+      // from r(13); saying so is the point, because the two look alike written down.
+      if (ab.ringMarker) {
+        return { text: (nmar > 1
+          ? nmar + " supernumerary RING chromosomes (r): small extra chromosomes that have"
+          : "a supernumerary RING chromosome (r): a small extra chromosome that has") +
+          " formed a circle, whose chromosome of origin banding cannot identify. Written r(13) instead once that chromosome is known", tag: "mar" };
+      }
       return { text: (nmar > 1
         ? nmar + " MARKER chromosomes (mar): small extra chromosomes"
         : "a MARKER chromosome (mar): a small extra chromosome") +

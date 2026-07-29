@@ -152,49 +152,83 @@ that following the chain reaches a karyogram within three steps.
 Vetting re-parses each candidate one level deep (`parse(input, depth)`); the candidate's own
 fixes are listed but not vetted, which is what terminates the recursion.
 
+## Breakpoint arity
+
+An operation knows how many breakpoints it takes, and that one rule closed the largest
+group on the old known-holes list. `ARITY` in `iscn-parser.js` holds the table; the check
+runs after the switch, only when the breakpoints that ARE there could be read, so
+`del(5)(zzqewdf2315.2)` is told its band is not a band and not also told a deletion needs
+one.
+
+| operation | takes |
+| --- | --- |
+| `del`, `dup`, `trp` | one group, one band (terminal) or two (interstitial) |
+| `inv` | one group, two bands: the ends of the segment that turns over |
+| `t` | one breakpoint per chromosome named, so three for a three-way |
+| `ins` | three breakpoints however written: the site, and the two bounding the piece |
+
+What made this worth a rule rather than four checks is that the drawing was invented
+silently. The explanations are where it showed: `inv(9)(p11)` came out as "the segment
+between 9p11 is flipped end-for-end (paracentric)", which invents both a second endpoint
+and a classification, and `dup(1)` as "the segment  is present twice".
+
+`r(13)`, `i(X)`, `add(19)`, `der(X)` and `rob(13;14)` are deliberately NOT in the table.
+Each reads sensibly with the breakpoints left off, real reports write them that way, and
+refusing valid ISCN is the worse failure. Adding one of them needs a better reason than
+symmetry, and `test/parser.test.js` pins each of them as drawable so the table cannot grow
+by accident.
+
+## Warns, and still draws
+
+A fault in how a karyotype is *written* that changes nothing about what is drawn keeps its
+drawing and gets the rule plus the corrected spelling. Refusing here would withhold a
+correct picture over a spelling.
+
+| input | what is said |
+| --- | --- |
+| `43,XY,rob(14;21)(q10;q10),-21,-20` | gains and losses are listed in chromosome order |
+| `46,XY,del(5)(p15.3p15.2)` | interstitial bands are written centromere-outward |
+| `46,XY,del(5)(p15.2),del(5)(p15.2)` | a change on both homologs is written `x2` |
+| `46c,XY` | `c` goes on the change it describes, not on the count |
+| `46-49,XY` | ISCN spells a range with a tilde (a note, not a warning) |
+
+**`dup` is excluded from the breakpoint-order rule.** There the order is meaningful: it
+distinguishes a direct duplication from an inverted one, and the renderer reads it. Two
+tests pin that, and a third pins that `dup(1)(q25q22)` raises no warning, so a later
+tidy-up cannot fold `dup` in with `del` and `inv`.
+
+`46,xy,del(5)(p15.2)` is still accepted silently. Lowercase is a shift-key slip, not an
+error of understanding, and there is nothing to teach.
+
 ## Known holes
 
-Input that is not correct ISCN and still draws. None is a regression; none has been
-worked on. Roughly ordered by how badly the drawing misleads.
+Nothing currently known. Every entry that was on this list is closed, and
+`test/parser.test.js` holds one case per rule with the correct spellings alongside, which
+is the half that matters: each rule is pinned by what it must NOT refuse as well as by what
+it must.
 
-| input | what is wrong |
-| --- | --- |
-| `46,XY,inv(9)(p11)` | `inv` needs two breakpoints; drawn as if it had them |
-| `46,XY,t(9;22)(q34)` | one breakpoint group for two chromosomes |
-| `46,XY,t(2;7;5)(q21;p13)` | three chromosomes, two breakpoint groups |
-| `46,XY,del(5)(p15.3p15.2)` | interstitial breakpoints in reverse order |
-| `46,XY,t(9;9)(q34;q11)` | the same chromosome on both sides of a `t` |
-| `45,XY,rob(1;2)(q10;q10)` | `rob` between non-acrocentrics; should be `der`/`t` |
-| `46,XY,+0` | there is no chromosome 0 |
-| `46,XY,del(5)(p15.2),del(5)(p15.2)` | the identical change listed twice |
-| `47,idem,+8` | `idem` with no earlier clone (it warns, then draws anyway) |
-| `46<3n>,XY` | ploidy annotation contradicts the count |
-| `46c,XY` | a qualifier on the count field |
-| `46,XY,t(9;22)(q34;q11.2)[0]` | a cell count of zero |
-| `46,YX` | sex chromosomes out of order |
-| `46,xy,del(5)(p15.2)` | lowercase; accepted deliberately, may not be wanted in a checker |
-| `46,XX,del(5)` | no breakpoints at all; every band in the drawing is invented |
-| `46,XX,t(9;22)` | no breakpoint group at all; same |
+The ones that were here, and where each went: the arity group (`inv(9)(p11)`,
+`t(9;22)(q34)`, `t(2;7;5)(q21;p13)`, and the two the survey never had, `del(5)` and
+`t(9;22)`) to the table above; `del(5)(p15.3p15.2)`, the doubled change and `46c,XY` to
+"Warns, and still draws"; `t(9;9)`, `rob(1;2)`, `+0`, `47,idem,+8`, `46<3n>,XY` and `[0]`
+to the gate; `46,YX` to a repair, like the missing comma.
 
-The last two were found by `npm run stress` (see below), not by the survey, and they belong
-with the arity group at the top: an operation drawn from breakpoints it was never given.
-`del(5)` and `t(9;22)` are the shape an exam question written from memory takes, so they
-are more likely to be typed than any of the malformed-breakpoint entries.
+**`47,XX,+r` was the one failure in the other direction**, and the one that mattered most:
+a supernumerary ring is valid ISCN and the counterpart of `+mar`, and it was refused as an
+unrecognized change. It now parses as a marker carrying a ring shape, so it draws as a ring
+labelled `r` in the marker slot, and the decode says what separates it from `r(13)` (which
+names its chromosome; `+r` does not).
 
-**The opposite failure, which this list has no room for:** `47,XX,+r` is valid ISCN — a
-supernumerary ring of unknown origin, the counterpart of `+mar`, which the app does support
-— and it is refused as an unrecognized change. Refusing valid ISCN is the worse direction
-of error (see "Adding a check" below), so it outranks everything in the table.
+Reproduce the whole set with `npm run stress`, which runs a 138-karyotype corpus through
+the real page and flags every case where the app drew something it should have refused or
+refused something it should have drawn. It currently flags none.
 
-Reproduce with the survey in `NEXT_SESSION_HANDOFF.md`, or with `npm run stress`, which
-runs a 138-karyotype corpus through the real page and flags every case where the app drew
-something it should have refused or refused something it should have drawn.
-
-Note what this list is not. Every entry above is a well-formed field list with a bad
+Note what the old list was not. Every entry on it was a well-formed field list with a bad
 *aberration* in it, because that is what the survey was built to probe. `69.XX` was not on
 it and drew for months: the mistake was in the *separator between fields*, one level up
-from anything being surveyed. When adding to the survey, vary the punctuation and the
-field structure too, not only the operations.
+from anything being surveyed. `del(5)` and `t(9;22)` were missed the same way, by a survey
+that only varied what was inside the parentheses. Vary the punctuation and the field
+structure too, not only the operations.
 
 ## Adding a check
 

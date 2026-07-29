@@ -224,3 +224,15 @@ test('the decode states the range once, and the tilde advice is not repeated the
   assert.ok(!/tilde/.test(textOf('46-49,XY')), textOf('46-49,XY'));
   assert.match(textOf('46-49,XY'), /varies from 46 to 49/);
 });
+
+// A supernumerary ring is the same finding as a marker plus one fact: the shape.
+// The chromosome of origin is still unknown, which is what separates +r from r(13),
+// and the two are easy to confuse written down, so the decode has to say it.
+test('the ring marker says what is known and what is not', () => {
+  const text = decodeText('47,XX,+r');
+  assert.match(text, /RING/, 'names the shape');
+  assert.match(text, /cannot identify/, 'and that the chromosome of origin is unknown');
+  assert.match(text, /r\(13\)/, 'and points at the notation used once it is known');
+  assert.match(decodeText('48,XX,+2r'), /2 supernumerary RING chromosomes .* that have formed/,
+    'the plural agrees');
+});

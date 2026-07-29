@@ -14,6 +14,7 @@ const context = vm.createContext({ window: win });
 const load = (f) => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), context);
 load('ideogram-data.js');
 load('iscn-parser.js');
+load('karyo-render.js');
 load('segregation.js');
 const ISCN = win.ISCN;
 const Seg = win.Segregation;

@@ -396,7 +396,9 @@
       '" height="' + (H + 10) + '" rx="6" fill="' + acc.bg + '" stroke="' + acc.stroke + '" stroke-width="1.3"/>';
     var cen = rect(cx - barW / 2 + 1.5, cenY - 1.8, barW - 3, 3.6, 0, "#fff") +
       '<circle cx="' + cx + '" cy="' + cenY.toFixed(1) + '" r="2.7" fill="' + (body.cen || INK) + '" stroke="#fff" stroke-width="0.9"/>';
-    var name = showName ? '<text x="' + cx + '" y="' + (top + H + 10).toFixed(1) + '" text-anchor="middle" font-size="7" fill="' + LINE + '">' + esc(body.name) + '</text>' : "";
+    var name = showName ? '<text x="' + cx + '" y="' + (top + H + 10).toFixed(1) +
+      '" text-anchor="middle" font-size="' + nameSize(body.name, cx * 2) + '" fill="' + LINE + '">' +
+      esc(body.name) + '</text>' : "";
     var tx = clamp((pole[0] - cx) * 0.34, -22, 22), ty = clamp((pole[1] - cy) * 0.34, -22, 22);
     var svg = '<g class="seg-chrom" style="--tx:' + tx.toFixed(1) + 'px;--ty:' + ty.toFixed(1) + 'px">' +
       halo + blocks + cen + name + '</g>';
@@ -540,6 +542,22 @@
   function viabChip(v) {
     return '<span class="seg-chip seg-' + v.tag + '">' + esc(v.text) + '</span>';
   }
+  // The glyph name is centred in a frame whose width is fixed by the drawing, not by
+  // the label, so a long name overran it at both ends: "der(13;14)" measures 35.2px
+  // at font-size 7 in a 30-wide box and lost 2.6px off each end. Shrink the type
+  // instead of widening the box, because the box width is what scales the chromosome
+  // beside it, and the name is the secondary thing here. Floor at 5.2 so the longest
+  // name in the model, "der(13;14)", stays legible rather than shrinking without
+  // limit; below that the label would be doing nobody any good and the aria-label
+  // carries the full name regardless.
+  function nameSize(s, boxW) {
+    var tw = (window.Karyo && window.Karyo.textWidth) ||
+      function (t, size) { return String(t).length * 0.55 * size; };
+    var natural = 7, w = tw(s, natural), avail = boxW - 2;
+    if (w <= avail) return natural;
+    return Math.max(5.2, Math.round(natural * (avail / w) * 10) / 10);
+  }
+
   function glyphRow(bodies, ids) {
     // Resting gamete glyphs (no pole pull, neutral halo) drawn small under each outcome.
     var neutral = { stroke: "#dfe3ee", bg: "#ffffff" };

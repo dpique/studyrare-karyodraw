@@ -114,6 +114,86 @@
       "” cannot be included. Alternatives written with “or”, and uncertainty markers, are not supported.";
   }
 
+  // How many breakpoints an operation takes before it describes anything.
+  //
+  // An operation knows its own arity: an inversion needs the two ends of the segment
+  // it turns over, a translocation needs one breakpoint on every chromosome it
+  // involves. Given fewer, the renderer had nothing to draw from and drew anyway,
+  // filling the gap from whatever the code happened to do with an absent band. The
+  // damage shows plainest in the explanations it produced: inv(9)(p11) came out as
+  // "the segment between 9p11 is flipped end-for-end (paracentric)", which invents a
+  // second endpoint AND a classification; dup(1) as "the segment  is present twice".
+  //
+  // NUM is spelled out because "takes 2" reads like a count of something the reader
+  // wrote rather than a rule about the notation.
+  //
+  // Only operations whose ISCN form always carries breakpoints are listed here.
+  // r(13), i(X), add(19), der(X) and rob(13;14) are deliberately absent: each reads
+  // sensibly with the breakpoints left off, real reports write them that way, and
+  // refusing valid ISCN is a worse failure than tolerating invalid ISCN
+  // (docs/VALIDATION.md). This table is for the cases where the drawing is a guess.
+  var NUM = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight"];
+  var ARITY = {
+    del: { bands: [1, 2], msg: "A deletion says where the chromosome broke, so it needs a band: one for a terminal loss, del(5)(p15.2), or the two that bound the missing piece, del(5)(q13q33)." },
+    dup: { bands: [1, 2], msg: "A duplication says which segment is doubled, so it needs the bands that bound it: dup(1)(q22q25)." },
+    inv: { bands: [2, 2], msg: "An inversion turns a segment end for end, so it needs the two bands that bound that segment: inv(9)(p13q21). One band cannot say where the segment starts and where it stops." },
+    trp: { bands: [1, 2], msg: "A triplication says which segment is present three times, so it needs the bands that bound it: trp(1)(q22q25)." },
+    t: { perChrom: true, what: "A translocation", eg: "t(9;22)(q34;q11.2)" },
+    // An insertion takes three breakpoints however it is written: where the piece
+    // landed, and the two bands that bound the piece that moved. Between chromosomes
+    // that is ins(5;2)(p14;q22q32); within one it is ins(2)(q13p23p13). Both come to
+    // three, which is why the total is checked rather than the shape.
+    ins: { perChrom: true, total: 3, what: "An insertion", eg: "ins(5;2)(p14;q22q32)",
+      totalMsg: "An insertion needs three breakpoints: where the piece landed, and the two bands that bound the piece that moved. Between two chromosomes that is ins(5;2)(p14;q22q32); within one, ins(2)(q13p23p13)." }
+  };
+
+  // Are these two breakpoints written from the telomere inward?
+  //
+  // Band numbers increase away from the centromere on both arms (p11 is proximal,
+  // p15.3 is the tip), and ISCN writes the proximal band of an interstitial segment
+  // first. Across arms, p is written before q. Sub-bands compare as decimals rather
+  // than as integers, so q11.23 sorts inside q11.2 and before q11.3, which comparing
+  // 23 against 3 would get backwards.
+  function bandKey(b) {
+    var m = /^([pq])(\d+)(?:\.(\d+))?$/.exec(String(b || ""));
+    return m ? { arm: m[1], pos: parseFloat(m[2] + (m[3] ? "." + m[3] : "")) } : null;
+  }
+  function bandOrderReversed(chrom, a, b) {
+    var ka = bandKey(a), kb = bandKey(b);
+    if (!ka || !kb) return false;
+    if (ka.arm !== kb.arm) return ka.arm === "q" && kb.arm === "p";
+    return kb.pos < ka.pos;
+  }
+
+  // Returns the sentence to show, or "" when the operation has what it needs.
+  function arityProblem(op, ab) {
+    var rule = ARITY[op];
+    if (!rule) return "";
+    var groups = (ab.breakpoints || []).filter(function (g) { return g.length; });
+    // An operation with a fixed total (ins) is answered by that total whatever the
+    // shape of the mistake: "involves two chromosomes so it needs two breakpoints"
+    // is true of the groups and wrong about the operation, which needs three.
+    if (rule.total) {
+      if (!groups.length) return rule.totalMsg;
+      var tot = groups.reduce(function (s, g) { return s + g.length; }, 0);
+      return (tot === rule.total && groups.length === (ab.chroms.length || 1)) ? "" : rule.totalMsg;
+    }
+    if (rule.perChrom) {
+      var n = ab.chroms.length;
+      if (!n || groups.length === n) return "";
+      // The example is fixed rather than built from the reader's own chromosomes:
+      // completing t(2;7;5)(q21;p13) means choosing a band on chromosome 5, and an
+      // invented band in a teaching message is the thing this whole check exists to
+      // stop. State the rule with a real two-way, then apply the count to their input.
+      return rule.what + " names one breakpoint on each chromosome it involves, like " +
+        rule.eg + ". “" + op + "(" + ab.chroms.join(";") + ")” involves " + (NUM[n] || n) +
+        " chromosomes, so it needs " + (NUM[n] || n) + " breakpoints.";
+    }
+    var bands = groups.length ? groups[0].length : 0;
+    if (bands >= rule.bands[0] && bands <= rule.bands[1]) return "";
+    return rule.msg;
+  }
+
   function parseAberration(tok, warnings) {
     var raw = tok;
     var ab = { raw: raw, kind: "unknown", sign: null, chroms: [], breakpoints: [], note: "", qualifier: null, multiplier: 1, ref: null };
@@ -162,6 +242,17 @@
       var marM = /^(\d+)(?:[-~]\d+)?mar\d*$/i.exec(tok);
       if (marM) { ab.kind = "mar"; ab.count = Math.min(parseInt(marM[1], 10), MAX_COPIES); return finish(ab); }
       if (/^mar\d*$/i.test(tok)) { ab.kind = "mar"; return finish(ab); }
+      // A supernumerary ring, +r. Same thing as +mar — an extra chromosome whose
+      // origin banding cannot identify — except that its shape is known, so it is
+      // drawn as a ring and labelled r. The chromosome it came from is not stated,
+      // which is exactly why it is not r(13): that names its chromosome.
+      //
+      // Written +r, or +r1/+r2 when a report distinguishes two rings, or with a
+      // count (2r), matching how markers are written. Reached only from this branch,
+      // where the token has no parenthesis, so r(13) never lands here.
+      var ringM = /^(\d+)(?:[-~]\d+)?r\d*$/i.exec(tok);
+      if (ringM) { ab.kind = "mar"; ab.ringMarker = true; ab.count = Math.min(parseInt(ringM[1], 10), MAX_COPIES); return finish(ab); }
+      if (/^r\d*$/i.test(tok)) { ab.kind = "mar"; ab.ringMarker = true; return finish(ab); }
       // A bare chromosome number needs a sign to say gained or lost.
       if (/^(\d+|X|Y)$/.test(tok)) {
         warnings.push("“" + raw + "” needs a sign: “+" + tok + "” for a gain (extra copy) or “−" + tok + "” for a loss.");
@@ -273,6 +364,63 @@
       warnings.push("“" + b + "” in “" + raw + "” is not a breakpoint. A breakpoint is an arm letter " +
         "then a band number, like " + (ab.chroms[0] || "5") + "p15.2 or " + (ab.chroms[0] || "5") + "q31.");
     });
+    // Only when the breakpoints that ARE there could be read. del(5)(zzqewdf2315.2)
+    // has both problems, and "a deletion needs a band" on top of "zzqewdf2315.2 is not
+    // a breakpoint" names the same mistake twice and answers the second question the
+    // reader has, not the first.
+    if (!ab.badBands.length) {
+      var arity = arityProblem(op, ab);
+      if (arity) { ab.arity = arity; warnings.push(arity); }
+    }
+
+    // A translocation between a chromosome and itself. t() describes an exchange
+    // between two DIFFERENT chromosomes; a rearrangement inside one chromosome is an
+    // inversion, a deletion or a duplication, depending on what happened to the
+    // segment. Nothing in ISCN writes an exchange between the two homologs of one
+    // pair as t(9;9), and the drawing this produced was two derivatives of 9 that no
+    // notation asked for.
+    if (op === "t" && ab.chroms.length === 2 && ab.chroms[0] === ab.chroms[1]) {
+      ab.arity = ab.arity || "same chromosome twice";
+      warnings.push("A translocation is an exchange between two different chromosomes, so “t(" +
+        ab.chroms[0] + ";" + ab.chroms[1] + ")” names one chromosome where it needs two. " +
+        "A rearrangement within a single chromosome is written inv(" + ab.chroms[0] +
+        ")(p13q21) if a segment turned end for end, or del/dup if a segment was lost or doubled.");
+    }
+
+    // rob() is the whole-arm fusion of two ACROCENTRIC chromosomes: 13, 14, 15, 21
+    // and 22, the five whose short arms carry only ribosomal repeats and satellite
+    // DNA, which is why losing them costs nothing and the carrier is balanced. Fuse
+    // two metacentrics and you lose two real short arms, which is a different event
+    // with a different consequence, so it is not a Robertsonian and must not be
+    // drawn as one. Written der() instead, which the message offers.
+    if (op === "rob" && ab.chroms.length === 2 &&
+        !ab.chroms.every(function (c) { return ACROCENTRIC[c]; })) {
+      var nonAcro = ab.chroms.filter(function (c) { return !ACROCENTRIC[c]; });
+      ab.arity = ab.arity || "rob between non-acrocentrics";
+      warnings.push("A Robertsonian translocation fuses two acrocentric chromosomes, which are 13, 14, 15, 21 and 22. " +
+        (nonAcro.length > 1 ? "Chromosomes " + nonAcro.join(" and ") + " are not" : "Chromosome " + nonAcro[0] + " is not") +
+        " acrocentric, so a whole-arm exchange involving it loses short-arm material and is written der(" +
+        ab.chroms.join(";") + ")(" + (ab.breakpoints.length === 2 ? ab.breakpoints.map(function (g) { return g[0] || "q10"; }).join(";") : "q10;q10") + ").");
+    }
+
+    // Interstitial breakpoints written from the telomere inward. ISCN orders the two
+    // bands of an interstitial segment from the centromere outward, so del(5)(p15.3p15.2)
+    // is del(5)(p15.2p15.3). This one changes how the karyotype is written and NOT
+    // what is drawn, since the same segment is bounded either way, so it takes a
+    // warning and a repair rather than a refusal, like listing order.
+    //
+    // del and inv only. dup is deliberately excluded: there the order is meaningful,
+    // distinguishing a direct duplication from an inverted one, and the renderer
+    // reads it (see the two dup order tests).
+    if ((op === "del" || op === "inv") && !ab.badBands.length && !ab.arity) {
+      var g0 = ab.breakpoints[0] || [];
+      if (g0.length === 2 && bandOrderReversed(ab.chroms[0], g0[0], g0[1])) {
+        ab.reversedBands = [g0[0], g0[1]];
+        warnings.push("The two bands of an interstitial " + (op === "del" ? "deletion" : "inversion") +
+          " are written from the centromere outward, so “" + op + "(" + ab.chroms[0] + ")(" +
+          g0[0] + g0[1] + ")” is “" + op + "(" + ab.chroms[0] + ")(" + g0[1] + g0[0] + ")”.");
+      }
+    }
     return finish(ab);
   }
 
@@ -320,12 +468,12 @@
         for (var dj = 0; dj < ndm; dj++) slots["dmin"].push({ chrom: "dmin", kind: "dmin", label: "dmin", aberration: ab, primary: "dmin" });
       } else if (ab.kind === "gain") {
         var g = ab.chroms[0];
-        if (comp[g] === undefined) { warnings.push("“" + g + "” isn’t a human chromosome, use 1–22, X, or Y (e.g. +21)."); return; }
+        if (comp[g] === undefined) { warnings.push("“" + g + "” isn’t a human chromosome, use 1–22, X, or Y (e.g. +21)."); clone.badChrom = true; return; }
         comp[g] += mult;
         for (var gj = 0; gj < mult; gj++) slots[g].push({ chrom: g, kind: "gain", label: g, aberration: ab, primary: g });
       } else if (ab.kind === "loss") {
         var l = ab.chroms[0];
-        if (comp[l] === undefined) { warnings.push("“" + l + "” isn’t a human chromosome, use 1–22, X, or Y (e.g. -7)."); return; }
+        if (comp[l] === undefined) { warnings.push("“" + l + "” isn’t a human chromosome, use 1–22, X, or Y (e.g. -7)."); clone.badChrom = true; return; }
         for (var lj = 0; lj < mult; lj++) {
           comp[l] -= 1;
           var idx = slots[l].map(function (x) { return x.kind; }).indexOf("normal");
@@ -338,7 +486,11 @@
           var nmar = Math.min((ab.count || 1) * mult, MAX_COPIES);
           for (var mj = 0; mj < nmar; mj++) {
             comp["mar"] = (comp["mar"] || 0) + 1;
-            slots["mar"].push({ chrom: "mar", kind: "mar", label: "mar", aberration: ab, primary: "mar" });
+            // A ring marker occupies the same slot as any other marker (an extra
+            // chromosome of unknown origin) and differs only in what is known about
+            // its shape, which the label and the drawing carry.
+            slots["mar"].push({ chrom: "mar", kind: "mar", label: ab.ringMarker ? "r" : "mar",
+              ring: !!ab.ringMarker, aberration: ab, primary: "mar" });
           }
         }
       } else if (ab.kind === "inc") {
@@ -350,7 +502,7 @@
         // chromosome into a derivative (count unchanged unless signed). A single-
         // chromosome idic falls here too (it replaces one homolog, count unchanged).
         ab.chroms.forEach(function (c, ci) {
-          if (comp[c] === undefined) { warnings.push("“" + c + "” isn’t a human chromosome, use 1–22, X, or Y."); return; }
+          if (comp[c] === undefined) { warnings.push("“" + c + "” isn’t a human chromosome, use 1–22, X, or Y."); clone.badChrom = true; return; }
           if (ab.sign === "+") { for (var sj = 0; sj < mult; sj++) { comp[c] += 1; slots[c].push(mkDer(c, ab)); } return; }
           var idx = firstNormal(slots[c]);
           // convention: normal homolog stays on the left, derivative on the right
@@ -367,7 +519,7 @@
           if (comp[dp] !== undefined) { for (var wj = 0; wj < mult; wj++) { comp[dp] += 1; slots[dp].push(mkDer(dp, ab)); } }
         } else {
           ab.chroms.forEach(function (c) {
-            if (comp[c] === undefined) { warnings.push("“" + c + "” isn’t a human chromosome, use 1–22, X, or Y."); return; }
+            if (comp[c] === undefined) { warnings.push("“" + c + "” isn’t a human chromosome, use 1–22, X, or Y."); clone.badChrom = true; return; }
             var ridx = firstNormal(slots[c]);
             if (ridx >= 0) { slots[c].splice(ridx, 1); comp[c] -= 1; }
           });
@@ -376,7 +528,7 @@
         }
       } else if (["del", "dup", "inv", "add", "ring", "iso", "der", "fra", "trp", "hsr"].indexOf(ab.kind) >= 0) {
         var c0 = ab.chroms[0];
-        if (comp[c0] === undefined) { warnings.push("“" + c0 + "” isn’t a human chromosome, use 1–22, X, or Y."); return; }
+        if (comp[c0] === undefined) { warnings.push("“" + c0 + "” isn’t a human chromosome, use 1–22, X, or Y."); clone.badChrom = true; return; }
         if (ab.sign === "+") { for (var pj = 0; pj < mult; pj++) { comp[c0] += 1; slots[c0].push(mkDer(c0, ab)); } return; }
         if (ab.sign === "-") {
           comp[c0] -= 1;
@@ -512,6 +664,25 @@
     // "did you mean 45,XY,rob(14;21)(q10;q10),21" would be worse than saying nothing,
     // since that fix keeps the signless 21 and changes the number that was right.
     clone.uncounted = clone.aberrations.some(function (ab) { return ab.unread || ab.kind === "unknown"; });
+    // The identical change written twice. ISCN has a notation for a change present on
+    // both homologs, and it is not repetition: del(5)(p15.2)x2. Listed twice, the app
+    // applied it to one homolog and then to the other, which is what x2 means, so the
+    // drawing was right and the notation was not. That is the "how it is written"
+    // case, so it warns and offers the multiplier rather than refusing.
+    //
+    // Compared on the text as written (minus the multiplier, which is the whole
+    // point), so del(5)(p15.2) and del(5)(p15.2)x2 together are not called a repeat.
+    var seenAb = {};
+    clone.aberrations.forEach(function (ab) {
+      if (!ab.raw || ab.kind === "unknown" || ab.multiplier > 1) return;
+      var key = String(ab.raw).toLowerCase();
+      if (seenAb[key]) { if (!clone.repeatedAb) clone.repeatedAb = ab.raw; return; }
+      seenAb[key] = 1;
+    });
+    if (clone.repeatedAb) {
+      warnings.push("A change affecting both copies of a chromosome is written once with a multiplier, " +
+        "so “" + clone.repeatedAb + "” twice is “" + clone.repeatedAb + "x2”.");
+    }
     // Part of the designation could not be read at all. Distinct from `uncounted`,
     // which is only about whether the tally can be trusted: an unreadable BREAKPOINT
     // leaves the tally fine (a del does not change the count) but leaves the drawing
@@ -522,14 +693,23 @@
     // operation could not consume. Distinct from `uncounted`, which is only about
     // whether the tally can be trusted.
     clone.unreadable = clone.aberrations.some(function (ab) {
-      return (ab.badBands || []).length > 0 || ab.kind === "unknown" || ab.unread;
+      // ab.arity: the operation was given fewer breakpoints than it takes, so the
+      // drawing would have to invent the rest. Same consequence as a breakpoint that
+      // could not be read, and for the same reason.
+      return (ab.badBands || []).length > 0 || ab.kind === "unknown" || ab.unread || ab.arity;
     // A sex field the app had to edit to use. 43,XZY,… dropped the Z and drew, and
     // 46,QQ,+21 drew a karyogram with no sex chromosomes at all.
     }) || (clone.sex && ((clone.sex.dropped || []).length > 0 ||
       (clone.sexGiven && !clone.sex.tokens.length)))
     // No sex field stated at all: 69.XX, and 46 on its own. The check above cannot
     // see this one, since it compares against a field that was never there.
-    || !!clone.sexMissing;
+    || !!clone.sexMissing
+    // A chromosome that does not exist (+0, +99), a subclone whose stemline is not
+    // there (47,idem,+8 as the only clone), a clone counted in no cells ([0]), and a
+    // ploidy note that contradicts its own count (46<3n>). Each already had its
+    // message and each still drew, which is the combination this gate exists to stop:
+    // a picture that looks like an answer sitting under a sentence saying it is not.
+    || !!clone.badChrom || !!clone.danglingIdem || !!clone.zeroCells || !!clone.ploidyWrong;
     if (clone.outOfOrder) {
       warnings.push("Whole-chromosome gains and losses are listed in chromosome order, so “" +
         clone.outOfOrder.before + "” comes before “" + clone.outOfOrder.after + "”.");
@@ -615,6 +795,15 @@
       clone.composite = !!cnt[1];
       clone.cellGiven = cnt[0];   // as written, for the round-trip
       s = s.slice(0, cnt.index).trim();
+      // [0] says the clone was found in no cells, which is to say it was not found.
+      // The number in brackets is how many metaphases carried this karyotype, so a
+      // clone with none of them is not an observation and there is nothing to draw.
+      if (clone.cellCount === 0) {
+        clone.zeroCells = true;
+        warnings.push("The number in brackets is how many cells were counted with this karyotype, so “[0]” " +
+          "says it was seen in none of them. A clone that was observed is written with the count of cells " +
+          "that carried it, like [20]; leave the brackets off if the count is not being reported.");
+      }
     }
 
     var fields = splitTop(s, ",").map(function (x) { return x.trim(); }).filter(function (x) { return x.length; });
@@ -631,6 +820,35 @@
 
     // modal number — may be a range like 47~49 (a cancer clone whose count varies)
     clone.modalGiven = fields[0];   // as written, so "45<2n>" and "47-49" survive intact
+    // <2n>, <3n>: the ploidy the count is to be read against, which a cancer report
+    // states when the clone is near-triploid and a bare number would be ambiguous.
+    // It has to agree with the count it annotates: 46<3n> says triploid and then
+    // gives the diploid number, and the app has no way to know which half was meant,
+    // so it drew 46 chromosomes under a label saying 69. One n is 23 chromosomes;
+    // allow the same slack the ploidy inference uses for a near-triploid clone.
+    var ploidyNote = /<(\d+)n>/.exec(fields[0]);
+    var mnFirst = /^(\d+)/.exec(fields[0]);
+    if (ploidyNote && mnFirst) {
+      var stated = parseInt(ploidyNote[1], 10), num = parseInt(mnFirst[1], 10);
+      if (stated >= 1 && Math.abs(num - 23 * stated) > 3 + Math.round(23 * stated * 0.15)) {
+        clone.ploidyWrong = true;
+        warnings.push("“<" + stated + "n>” says this clone is " +
+          (stated === 1 ? "haploid" : stated === 2 ? "diploid" : stated === 3 ? "triploid" : stated === 4 ? "tetraploid" : stated + "n") +
+          ", which is about " + (23 * stated) + " chromosomes, and the count in front of it says " + num +
+          ". One n is 23 chromosomes, so the two have to describe the same cell.");
+      }
+    }
+    // "c" marks a karyotype as the constitutional one in a report whose subject is a
+    // tumour, and it goes on the abnormality it describes (46,XY,t(9;22)(q34;q11.2)c),
+    // not on the count. A warning rather than a refusal: the count reads the same
+    // either way, so the drawing is right and only the spelling is not, and the rule
+    // about where the qualifier sits is worth stating without withholding the picture.
+    if (/^\d+(?:\s*[~\-–]\s*\d+)?c$/i.test(fields[0])) {
+      clone.countQualifier = fields[0];
+      warnings.push("“c” marks a change as constitutional rather than acquired, so it goes on the change " +
+        "it describes and not on the count, as in 46,XY,t(9;22)(q34;q11.2)c. The count itself is written “" +
+        fields[0].replace(/c$/i, "") + "”.");
+    }
     var mn = /^(\d+)(?:\s*[~\-–]\s*(\d+))?/.exec(fields[0]);
     if (mn) {
       clone.modalNumber = parseInt(mn[1], 10);
@@ -688,6 +906,7 @@
           // splice this clone's own aberrations back in and apply them twice. Skip
           // the copy and flag the missing stemline instead of silently doubling.
           warnings.push("“" + a.ref + "” means “the same changes as the previous clone”, but there is no earlier clone here. Write the full stemline before the “/” subclone, e.g. 46,XX,+8/47,idem,+9.");
+          cl.danglingIdem = true;
         } else {
           ref.aberrations.forEach(function (ra) { if (ra.kind !== "idem") out.push(ra); });
         }
@@ -754,6 +973,31 @@
     }).join("/");
     sexSeps.forEach(function (pair) {
       warnings.push("The chromosome count and the sex chromosomes are separated by a comma, so “" +
+        pair[0] + "” is “" + pair[1] + "”.");
+    });
+
+    // The sex chromosomes out of order: 46,YX. ISCN lists every X before every Y, so
+    // the canonical form is the same letters sorted, and there is only ever one
+    // reading of them. A repair rather than a refusal on its own, for the same reason
+    // as the missing comma: the reader knows what they meant and needs the rule.
+    //
+    // Anchored between the count and either a comma or the end of the clone, so it
+    // can only ever see the sex field. Reordering, never editing: the letters that
+    // come out are the letters that went in, which is what keeps this safe next to
+    // the sex-field check that refuses anything it would have had to change.
+    var sexOrder = [];
+    suggestion = suggestion.split("/").map(function (cl) {
+      var lead = (/^(?:mos|chi)\s+/i.exec(cl) || [""])[0];
+      var rest = cl.slice(lead.length);
+      var m = /^(\d+(?:\s*[~\-–]\s*\d+)?(?:<\d+n>)?,)([XY]{2,4})(,|\[|$)/.exec(rest);
+      if (!m) return cl;
+      var sorted = m[2].split("").sort().join("");   // X sorts before Y
+      if (sorted === m[2]) return cl;
+      sexOrder.push([m[2], sorted]);
+      return lead + m[1] + sorted + rest.slice(m[0].length - m[3].length);
+    }).join("/");
+    sexOrder.forEach(function (pair) {
+      warnings.push("The sex chromosomes are written with every X before every Y, so “" +
         pair[0] + "” is “" + pair[1] + "”.");
     });
     // A sign is only ever the first character of an aberration (+21, -X, +der(1)),

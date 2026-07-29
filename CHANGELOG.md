@@ -3,6 +3,73 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-29 (every known hole closed, and a label that was cut in half)
+
+The stress sheet from the previous entry was built to find these. This closes all of them,
+plus every entry that was already on the known-holes list in `docs/VALIDATION.md`. All 138
+karyotypes in the corpus now do what the notation says they should.
+
+- **A supernumerary ring, `+r`, was refused, and it is valid ISCN.** It is the counterpart
+  of `+mar`, which the app has always supported: an extra chromosome banding cannot
+  identify, differing only in that its shape is known. It drew nothing and said "+r is not
+  a change KaryoDraw recognizes". Refusing valid ISCN is the worse direction of error for
+  this app, so this outranked everything else here.
+
+  `+r` now takes the marker slot and draws as a ring labelled `r`, with `+r1` and `+2r`
+  handled like `+mar1` and `+2mar`. The decode says what separates it from `r(13)`: that
+  one names the chromosome the ring came from, and `+r` is what is written when nobody
+  knows yet.
+
+- **An operation given fewer breakpoints than it takes now says which ones it needs.** One
+  rule replaced the largest group of known holes, because the arity is a property of the
+  operation: an inversion needs the two ends of the segment it turns over, a translocation
+  needs one breakpoint on every chromosome it names, an insertion needs three however it is
+  written. Given fewer, the renderer drew anyway and filled the gap from whatever the code
+  did with an absent band.
+
+  The explanations are where the damage showed. `inv(9)(p11)` was decoded as "the segment
+  between 9p11 is flipped end-for-end (paracentric)", which invents a second endpoint and
+  then classifies the inversion using it. `dup(1)` came out as "the segment  is present
+  twice". `t(9;22)(q34)` reported chromosome 22 breaking "at 22".
+
+  This also closes `46,XX,del(5)` and `46,XX,t(9;22)`, which state no breakpoint at all and
+  were never on the known-holes list. They are the shape an exam question written from
+  memory takes, so they are likelier to be typed than any of the malformed ones that were.
+
+  `r(13)`, `i(X)`, `add(19)`, `der(X)` and `rob(13;14)` are deliberately left drawable. Each
+  reads sensibly without breakpoints and real reports write them that way; a test pins each
+  one so the table cannot grow by accident.
+
+- **The rest of the gate.** `t(9;9)` is an exchange between a chromosome and itself, and the
+  message points at `inv`/`del`/`dup` for a rearrangement within one chromosome.
+  `rob(1;2)` names which chromosomes are acrocentric (13, 14, 15, 21, 22) and why the short
+  arms are what makes the fusion balanced, then offers `der(1;2)`. `+0` and `+99` already
+  said there is no such chromosome and drew anyway; so did `47,idem,+8` with no stemline to
+  copy. `46<3n>,XY` says triploid and then gives the diploid number. `[0]` is a clone found
+  in no cells, which is to say not found.
+
+- **Written-form faults keep their drawing.** Reversed interstitial breakpoints
+  (`del(5)(p15.3p15.2)`), the same change listed twice instead of `x2`, and `c` on the count
+  field all describe exactly what gets drawn, so each is told the rule and shown the
+  corrected spelling rather than refused. `dup` is excluded from the breakpoint-order rule
+  on purpose: there the order distinguishes a direct duplication from an inverted one and
+  the renderer reads it, and a test pins that `dup(1)(q25q22)` raises nothing.
+
+  `46,YX` is a repair, like the missing comma: the sex chromosomes are reordered, never
+  edited, so the letters that come out are the letters that went in.
+
+- **`rob(13;14)` was drawn as `b(13;14)`.** Every label in the pachytene figures is anchored
+  to the outer end of a chromosome and grows outward into the margin, and the margins were
+  constants. A short label fit and a long one was cut off by the frame: 34px of room for a
+  47px label, on every whole-arm translocation, which is most of what that figure teaches.
+  The reciprocal cross had the same fault on both sides.
+
+  Margins are now sized from the labels they have to hold. The same fault, separately, was
+  clipping 2.6px off each end of `der(13;14)` in the small gamete glyphs, where the box is
+  fixed by the drawing; there the type shrinks to fit instead. Both share one width
+  estimate, `Karyo.textWidth`, checked once against Chrome's `getBBox` so the two cannot
+  drift apart.
+
 ## 2026-07-28 (a stress sheet for the whole app, built from what students type)
 
 - **`npm run stress` types 138 karyotypes into the real page and writes a review sheet.**

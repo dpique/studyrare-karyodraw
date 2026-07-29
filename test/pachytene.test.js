@@ -14,7 +14,7 @@ function loadAll() {
   const win = {};
   const context = vm.createContext({ window: win });
   const load = (f) => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), context);
-  load('ideogram-data.js'); load('iscn-parser.js'); load('segregation.js'); load('pachytene.js');
+  load('ideogram-data.js'); load('iscn-parser.js'); load('karyo-render.js'); load('segregation.js'); load('pachytene.js');
   return win;
 }
 const win = loadAll();
@@ -94,7 +94,7 @@ test('available() is false and render falls back to the schematic when the ideog
   const bare = {};
   const ctx = vm.createContext({ window: bare });
   const load = (f) => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), ctx);
-  load('ideogram-data.js'); load('iscn-parser.js'); load('segregation.js');
+  load('ideogram-data.js'); load('iscn-parser.js'); load('karyo-render.js'); load('segregation.js');
   delete bare.IDEOGRAM;                    // strip the band data before loading pachytene
   load('pachytene.js');
   const m = bare.Segregation.compute(bare.ISCN.parse('46,XX,t(2;5)(q21;q31)').clones[0]);
@@ -264,4 +264,63 @@ test('the 3:1 caption no longer says the plate cuts chromosomes', () => {
   const html = Seg.render(model('46,XY,t(2;5)(q21;q31)'));
   assert.doesNotMatch(html, /plate cuts three/);
   assert.match(html, /three-to-one instead of two-and-two/);
+});
+
+// ---- labels stay inside the frame -------------------------------------------
+// Every side label is anchored to the outer end of a chromosome and grows outward,
+// into the margin. The margins were constants, so a short label fit and a long one
+// was cut off by the viewBox: mL = 40 gave the trivalent's fusion label 34px, and
+// "rob(13;14)" needs about 47, so it rendered "b(13;14)" on every whole-arm
+// translocation. Nothing in SVG clips visibly enough to catch this by reading code,
+// which is why it survived to a review sheet.
+//
+// Measured with the same estimate the figures budget with (Karyo.textWidth), because
+// there is no text metric in a vm. That makes this a check that the two agree, not a
+// check on the glyphs, so the real widths were verified once in Chrome with getBBox:
+// der(13;14) at font-size 7 draws 35.22px against an estimated 33.7, and every
+// label in this corpus now sits inside its frame with room to spare.
+const labelWidth = (s, size) => win.Karyo.textWidth(s, size);
+const overflow = (svg) => {
+  const vb = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
+  if (!vb) return [];
+  const out = [];
+  for (const t of svg.matchAll(/<text x="([-\d.]+)"[^>]*text-anchor="(end|start|middle)"[^>]*font-size="([\d.]+)"[^>]*>([^<]*)</g)) {
+    const x = +t[1], anchor = t[2], w = labelWidth(t[4], +t[3]);
+    const left = anchor === 'end' ? x - w : anchor === 'middle' ? x - w / 2 : x;
+    const over = Math.max(-left, (left + w) - +vb[1]);
+    if (over > 0) out.push(`${t[4]} overflows by ${over.toFixed(1)}px`);
+  }
+  return out;
+};
+
+test('no pachytene label is cut off by the frame it is drawn in', () => {
+  // The long-label cases: rob() spelled out in the trivalent, and der(NN) on both
+  // sides of the cross. Two-digit partners on purpose, which is where it broke.
+  ['45,XX,rob(13;14)(q10;q10)', '45,XX,rob(14;21)(q10;q10)', '45,XY,der(21;21)(q10;q10)',
+    '46,XY,t(9;22)(q34;q11.2)', '46,XX,t(11;22)(q23;q11.2)', '46,XY,t(2;5)(q21;q31)']
+    .forEach((k) => {
+      const html = Seg.render(model(k));
+      // Every SVG in the panel, not only the pachytene ones: the gamete glyphs are
+      // built by segregation.js against a fixed box and had the same fault.
+      (html.match(/<svg[\s\S]*?<\/svg>/g) || []).forEach((svg) => {
+        assert.deepEqual(overflow(svg), [], `${k}: ${overflow(svg).join('; ')}`);
+      });
+    });
+});
+
+test('the trivalent margin is fitted to its fusion label, not set by a constant', () => {
+  // Both directions, because either one alone is satisfied by a bad fix. Big enough
+  // to hold the label is what was broken; not much bigger than the label is what
+  // stops the fix being "pad every figure by the worst case it could ever meet",
+  // which would leave a lopsided frame on every karyotype to serve one.
+  //
+  // The trivalent draws its fusion label 6px in from the left edge (x = mL - 6),
+  // which is what makes the margin recoverable from the markup.
+  const svg = P.pairing(model('45,XX,rob(13;14)(q10;q10)'));
+  const label = /<text x="([\d.]+)"[^>]*font-size="9"[^>]*>rob\(13;14\)</.exec(svg);
+  assert.ok(label, 'the fusion label is drawn at font-size 9');
+  const margin = +label[1] + 6;
+  const width = win.Karyo.textWidth('rob(13;14)', 9);
+  assert.ok(margin >= width + 6, `a ${width.toFixed(1)}px label needs more than a ${margin}px margin`);
+  assert.ok(margin <= width + 20, `${margin}px for a ${width.toFixed(1)}px label is padding, not fitting`);
 });
