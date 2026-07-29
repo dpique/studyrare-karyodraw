@@ -133,3 +133,47 @@ test('characters outside the ISCN symbol list are named and removed', () => {
     .forEach((k) => assert.equal(ISCN.parse(k).warnings.filter(
       (w) => /is not a character ISCN uses/.test(w)).length, 0, k));
 });
+
+test('an acquired sex chromosome loss is not counted twice', () => {
+  // ISCN 5.3.1.2, all ten examples. The governing sentence is in ix: "an acquired
+  // abnormality is presented in relation to the constitutional karyotype". So when the
+  // sex field carries c it IS the constitutional complement and the change applies on
+  // top of it; without the c the field is what was actually seen, and a stated LOSS has
+  // already happened to it. A gain is additive either way.
+  //
+  // 45,X,-Y is acquired loss of the Y, among the commonest karyotypes in myeloid
+  // disease, and it was being called a count error.
+  [['46,Xc,+X', 46], ['45,X,-X', 45], ['44,Xc,-X', 44], ['45,X,-Y', 45], ['45,Y,-X', 45],
+    ['47,XX,+X', 47], ['48,XY,+X,+Y', 48], ['48,XXYc,+X', 48], ['46,XXYc,-X', 46],
+    ['46,Xc,+21', 46]].forEach(([k, n]) => {
+    const c = ISCN.parse(k).clones[0];
+    assert.equal(c.counts.actual, n, `${k}: the changes come to ${n}`);
+    assert.equal(c.countWrong, false, `${k} is printed in ISCN 5.3.1.2`);
+  });
+});
+
+test('the sex field is the baseline when it is not this clone\'s own', () => {
+  // A subclone written 45,idem,-X states no sex field and inherits the stemline's,
+  // which is a baseline rather than an observation of this clone, so there the loss
+  // does apply. Scoping the rule to clones that state their own field is what keeps
+  // both readings right.
+  assert.equal(refused('46,XX,t(8;21)(q22;q22)[12]/45,idem,-X[19]/46,idem,-X,+8[5]'), false);
+  assert.equal(ISCN.parse('45,X,-X').clones[0].sexGiven, 'X', 'this one states its own');
+  assert.equal(ISCN.parse('46,XX,t(8;21)(q22;q22)[12]/45,idem,-X[19]').clones[1].sexGiven, '',
+    'and this one does not');
+});
+
+test('c on the sex complement marks the whole complement', () => {
+  // ISCN 4.2.1 e and 5.3.1.2 viii: "the letter c for the constitutional anomaly refers
+  // to the whole sex complement". It was being refused as a stray letter in the field.
+  const c = ISCN.parse('48,XXYc,+X').clones[0];
+  assert.equal(c.sex.label, 'XXY', 'the c is not part of the complement');
+  assert.equal(c.sex.constitutional, true, 'but it is remembered, because it changes the arithmetic');
+  assert.equal(c.sex.dropped.length, 0, 'and nothing was silently discarded from the field');
+  // 5.3.1.2 x: a question mark where it is unclear whether the complement is
+  // constitutional or acquired.
+  assert.equal(refused('47,XXX?c'), false);
+  // A stray letter that is NOT this is still refused.
+  assert.equal(refused('46,XZY'), true);
+  assert.equal(refused('46,QQ'), true);
+});

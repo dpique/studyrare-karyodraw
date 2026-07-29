@@ -3,6 +3,41 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-29 (45,X,-Y is not a count error)
+
+- **Acquired loss of a sex chromosome was being counted twice.** `45,X,-Y` is loss of the
+  Y, one of the commonest karyotypes in myeloid disease and in age-related clonal
+  haematopoiesis, and the app said the changes came to 44 against a stated 45 and refused
+  to draw it. So did `45,X,-X` and `45,Y,-X`.
+
+  ISCN 5.3.1.2 ix gives the principle: "an acquired abnormality is presented in relation to
+  the constitutional karyotype". The sex field is the baseline the changes apply to, except
+  that a stated loss has already happened to a field the clone wrote for itself. All ten
+  examples in that section now come out at the number they print:
+
+  | | field is | so the loss |
+  | --- | --- | --- |
+  | `45,X,-X`, `45,X,-Y`, `45,Y,-X` | what was seen | is already in it |
+  | `44,Xc,-X`, `46,XXYc,-X` | constitutional, marked `c` | applies on top |
+  | `45,idem,-X` | inherited from the stemline | applies, because it is not this clone's own |
+
+  A gain is additive in every case, which is why the rule is scoped to losses:
+  `47,XX,+X` and `48,XY,+X,+Y` were always right.
+
+- **`c` on the sex complement is read rather than refused.** ISCN 4.2.1 e, and 5.3.1.2
+  viii: "the letter c for the constitutional anomaly refers to the whole sex complement".
+  `48,XXYc,+X` is an acquired gain of an X in someone with Klinefelter syndrome. The `c`
+  was being reported as a stray letter in the sex field, which refused ten of the
+  standard's own examples. It is now parsed and remembered, because it decides whether a
+  loss applies on top of the field or is already in it. `47,XXX?c` (5.3.1.2 x, where it is
+  unclear which the complement is) is accepted too.
+
+  A letter that is genuinely not a sex chromosome, `46,XZY` or `46,QQ`, is still refused.
+
+- **326 of the 394 ISCN 2024 examples now pass**, up from 302. What remains is listed with
+  its section in `test/iscn-2024-examples.js`; the largest is `?` for uncertain
+  identification (4.2.1 k, 16 examples).
+
 ## 2026-07-29 (the message fits the mistake)
 
 - **A leftover is now told what is missing from it.** The catch-all named two ISCN

@@ -181,6 +181,33 @@ Three more rules went the same way and are pinned by citation in the conformance
 searchable PDF; a plausible memory of it is not evidence, and this app's whole claim is
 that if it draws, the notation was accepted.
 
+## The sex field and acquired sex-chromosome loss
+
+ISCN 5.3.1.2 ix states the principle: "an acquired abnormality is presented in relation to
+the constitutional karyotype". So the sex field is the baseline the changes are applied
+to, **except** that a stated loss of a sex chromosome has already happened to a field the
+clone wrote for itself.
+
+| input | field | why |
+| --- | --- | --- |
+| `45,X,-X`, `45,X,-Y`, `45,Y,-X` | what was seen | the loss is already in the field; counting it again gives 44 |
+| `44,Xc,-X`, `46,XXYc,-X` | constitutional (`c`) | the change applies on top of it |
+| `47,XX,+X`, `48,XY,+X,+Y` | baseline | a gain is always additive |
+| `45,idem,-X` | inherited from the stemline | not this clone's own observation, so the loss applies |
+
+`45,X,-Y` is acquired loss of the Y, one of the commonest karyotypes in myeloid disease,
+and it was being called a count error. All ten examples in 5.3.1.2 are pinned in
+`test/iscn-conformance.test.js`.
+
+**`c` on the sex complement** (4.2.1 e; 5.3.1.2 viii: "the letter c ... refers to the whole
+sex complement") is parsed and remembered rather than treated as a stray letter, because it
+changes the arithmetic and not just the label. `47,XXX?c` is 5.3.1.2 x, where it is unclear
+whether the complement is constitutional or acquired.
+
+**Tolerated:** `46,XY,-Y` states a loss the field does not show, and is accepted at 46
+rather than computed as 45 and flagged. ISCN writes that `45,X,-Y`. Tolerating odd notation
+is the cheaper mistake; refusing `45,X,-Y` is the expensive one.
+
 ## Characters that are not ISCN
 
 ISCN's symbol list (Chapter 3) is closed. For a karyotype it comes to letters, digits, and
@@ -251,10 +278,10 @@ error of understanding, and there is nothing to teach.
 
 Nothing currently known **in the gate**, and a measured list of unmodelled ISCN features
 in `test/iscn-2024-examples.js`. The largest, in order: `?` for uncertain identification
-(4.2.1 k), acquired sex-chromosome loss where the sex field already states what remains
-(5.3.1.2, which is `45,X,-Y`, one of the commonest cancer karyotypes there is and
-currently called a count error), `c` on the sex complement (4.2.1 e), `sl`/`sdl` sideline
-references (6.3.4), and a count read against a ploidy level other than diploid (6.3.7). Every entry that was on this list is closed, and
+(4.2.1 k), `sl`/`sdl` sideline references (6.3.4), a count read against a ploidy
+level other than diploid (6.3.7), and the operations `rec`, `ider`, `tas`, `trc`, `fis`
+and `qdp`. Acquired sex-chromosome loss and `c` on the sex complement are now handled;
+see the section above. Every entry that was on this list is closed, and
 `test/parser.test.js` holds one case per rule with the correct spellings alongside, which
 is the half that matters: each rule is pinned by what it must NOT refuse as well as by what
 it must.
