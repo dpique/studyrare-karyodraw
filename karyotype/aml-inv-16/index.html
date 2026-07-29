@@ -495,6 +495,16 @@
   .lp-fig .karyogram { transform: none !important; }
   .lp-karyo-img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
   .lp-figcap { font-size: 12.5px; color: var(--muted); margin: 8px 4px 0; }
+  /* What banding actually sees. Directly under the drawing, because that is the claim
+     it qualifies: KaryoDraw draws every deletion at the same crispness whatever its
+     size, and for a submicroscopic one the picture is a map and not a micrograph.
+     Periwinkle and not the amber of the app's warning box, for the reason index.html
+     gives where it draws that line: the karyotype on this page is correct and is drawn
+     correctly, so the note must not read as an error. */
+  .lp-res { margin: -8px 0 22px; padding: 11px 14px; border: 1px solid var(--peri-300);
+    border-radius: 12px; background: var(--peri-50); font-size: 14.5px; line-height: 1.6;
+    color: var(--ink-2); }
+  .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
@@ -563,6 +573,7 @@
     <p class="lp-intro">46,XY,inv(16)(p13q22) is a pericentric inversion of chromosome 16 that fuses <i>CBFB</i> with <i>MYH11</i>, seen in acute myeloid leukemia with abnormal eosinophils (M4Eo). Like t(8;21), it is a core-binding-factor leukemia with a favorable prognosis.</p>
     <p class="lp-cta"><a class="btn" href="/?k=46%2CXY%2Cinv(16)(p13q22)&amp;style=highlight&amp;bands=550&amp;show=all">Open in the interactive visualizer &rarr;</a></p>
     <figure class="lp-fig"><img class="lp-karyo-img" src="karyogram.png" alt="Karyotype of AML with inv(16) (46,XY,inv(16)(p13q22))" width="145" height="206" decoding="async" /><figcaption class="lp-figcap">AML with inv(16) (46,XY,inv(16)(p13q22)) drawn by KaryoDraw, showing the involved chromosomes with their normal homolog.</figcaption></figure>
+    
     <section class="lp-sec"><h2>What the notation means</h2><dl class="lp-decode"><dt><code>46</code></dt><dd>total chromosome count (the normal human number)</dd><dt><code>XY</code></dt><dd>sex chromosomes: one X, one Y (usual male karyotype)</dd><dt><code>inv(16)(p13q22)</code></dt><dd>an INVERSION in chromosome 16: the segment between 16p13 and 16q22 is flipped end-for-end (pericentric, it spans the centromere)</dd></dl></section>
     
     <section class="lp-sec lp-related"><h2>Related karyotypes</h2><ul><li><a href="/karyotype/aml-t-8-21/"><code>46,XX,t(8;21)(q22;q22)</code> <span>AML with t(8;21)</span></a></li><li><a href="/karyotype/acute-promyelocytic-leukemia/"><code>46,XY,t(15;17)(q24;q21)</code> <span>Acute promyelocytic leukemia t(15;17)</span></a></li><li><a href="/karyotype/inversion-9/"><code>46,XY,inv(9)(p11q13)</code> <span>Pericentric inversion 9</span></a></li></ul></section>

@@ -495,6 +495,16 @@
   .lp-fig .karyogram { transform: none !important; }
   .lp-karyo-img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
   .lp-figcap { font-size: 12.5px; color: var(--muted); margin: 8px 4px 0; }
+  /* What banding actually sees. Directly under the drawing, because that is the claim
+     it qualifies: KaryoDraw draws every deletion at the same crispness whatever its
+     size, and for a submicroscopic one the picture is a map and not a micrograph.
+     Periwinkle and not the amber of the app's warning box, for the reason index.html
+     gives where it draws that line: the karyotype on this page is correct and is drawn
+     correctly, so the note must not read as an error. */
+  .lp-res { margin: -8px 0 22px; padding: 11px 14px; border: 1px solid var(--peri-300);
+    border-radius: 12px; background: var(--peri-50); font-size: 14.5px; line-height: 1.6;
+    color: var(--ink-2); }
+  .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
@@ -563,6 +573,7 @@
     <p class="lp-intro">This karyotype shows mosaic Turner syndrome, with two cell lines: 45,X and 46,XX. The bracketed numbers are the cells counted in each line, and mosaic forms are often milder than a non-mosaic 45,X.</p>
     <p class="lp-cta"><a class="btn" href="/?k=mos%2045%2CX%5B12%5D%2F46%2CXX%5B18%5D&amp;style=highlight&amp;bands=550&amp;show=all">Open in the interactive visualizer &rarr;</a></p>
     <figure class="lp-fig"><img class="lp-karyo-img" src="karyogram.png" alt="Karyotype of Mosaic Turner syndrome (mos 45,X[12]/46,XX[18])" width="147" height="265" decoding="async" /><figcaption class="lp-figcap">Mosaic Turner syndrome (mos 45,X[12]/46,XX[18]) drawn by KaryoDraw, showing the involved chromosomes with their normal homolog.</figcaption></figure>
+    
     <section class="lp-sec"><h2>What the notation means</h2><dl class="lp-decode"><dt><code>45</code></dt><dd>total chromosome count (normal is 46)</dd><dt><code>X</code></dt><dd>sex chromosomes: a single X (monosomy X)</dd><dt><code>[12]</code></dt><dd>seen in 12 cells counted for this clone</dd></dl></section>
     <section class="lp-sec"><h2>Clinical notes</h2><div class="lp-syn"><h3>Turner syndrome (45,X and variants)</h3><p>Loss of all or part of the second sex chromosome. 45,X (monosomy X) is classic; variants include an isochromosome i(Xq), a ring r(X), an idic(Y), and 45,X mosaicism (e.g. 45,X/46,XX). Short stature, ovarian dysgenesis/streak gonads, webbed neck, coarctation/bicuspid aortic valve, lymphedema.</p></div></section>
     <section class="lp-sec lp-related"><h2>Related karyotypes</h2><ul><li><a href="/karyotype/turner-syndrome/"><code>45,X</code> <span>Turner syndrome</span></a></li><li><a href="/karyotype/isochromosome-xq/"><code>46,X,i(X)(q10)</code> <span>Isochromosome Xq</span></a></li><li><a href="/karyotype/triploidy/"><code>69,XXY</code> <span>Triploidy</span></a></li></ul></section>

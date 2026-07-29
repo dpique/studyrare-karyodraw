@@ -121,6 +121,16 @@ const LANDING_CSS = `
   .lp-fig .karyogram { transform: none !important; }
   .lp-karyo-img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
   .lp-figcap { font-size: 12.5px; color: var(--muted); margin: 8px 4px 0; }
+  /* What banding actually sees. Directly under the drawing, because that is the claim
+     it qualifies: KaryoDraw draws every deletion at the same crispness whatever its
+     size, and for a submicroscopic one the picture is a map and not a micrograph.
+     Periwinkle and not the amber of the app's warning box, for the reason index.html
+     gives where it draws that line: the karyotype on this page is correct and is drawn
+     correctly, so the note must not read as an error. */
+  .lp-res { margin: -8px 0 22px; padding: 11px 14px; border: 1px solid var(--peri-300);
+    border-radius: 12px; background: var(--peri-50); font-size: 14.5px; line-height: 1.6;
+    color: var(--ink-2); }
+  .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
@@ -258,6 +268,15 @@ function karyoFigure(e) {
   return renderKaryogram(e.k).html;
 }
 
+// The shared half of the resolution note. The entry supplies the syndrome-specific
+// sentence (content/karyotypes.js, `resolution`); this sentence says what the drawing
+// above is for, and is identical on every such page, so it lives in one place.
+function resolutionNote(e) {
+  if (!e.resolution) return '';
+  return `<p class="lp-res"><strong>What banding sees:</strong> ${e.resolution} ` +
+    `The drawing above shows where the missing segment lies, not what would be visible down a microscope.</p>`;
+}
+
 function pageHtml(e) {
   const toolLink = `/?k=${encodeURIComponent(e.k)}&style=highlight&bands=550&show=all`;
   const desc = pageDesc(e);
@@ -271,6 +290,7 @@ function pageHtml(e) {
     <p class="lp-intro">${e.intro}</p>
     <p class="lp-cta"><a class="btn" href="${attr(toolLink)}">Open in the interactive visualizer &rarr;</a></p>
     <figure class="lp-fig">${karyoFigure(e)}<figcaption class="lp-figcap">${esc(e.name)} (${esc(e.k)}) drawn by KaryoDraw${karyoNote(e)}.</figcaption></figure>
+    ${resolutionNote(e)}
     <section class="lp-sec"><h2>What the notation means</h2>${decodeList(model.clones[0])}</section>
     ${syndromeNotes(model.clones[0])}
     ${relatedLinks(e)}

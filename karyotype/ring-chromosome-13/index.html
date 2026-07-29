@@ -495,6 +495,16 @@
   .lp-fig .karyogram { transform: none !important; }
   .lp-karyo-img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
   .lp-figcap { font-size: 12.5px; color: var(--muted); margin: 8px 4px 0; }
+  /* What banding actually sees. Directly under the drawing, because that is the claim
+     it qualifies: KaryoDraw draws every deletion at the same crispness whatever its
+     size, and for a submicroscopic one the picture is a map and not a micrograph.
+     Periwinkle and not the amber of the app's warning box, for the reason index.html
+     gives where it draws that line: the karyotype on this page is correct and is drawn
+     correctly, so the note must not read as an error. */
+  .lp-res { margin: -8px 0 22px; padding: 11px 14px; border: 1px solid var(--peri-300);
+    border-radius: 12px; background: var(--peri-50); font-size: 14.5px; line-height: 1.6;
+    color: var(--ink-2); }
+  .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
@@ -563,6 +573,7 @@
     <p class="lp-intro">46,XY,r(13)(p11q34) is a ring chromosome 13, formed when both arms of chromosome 13 break and the broken ends fuse into a circle. Ring chromosomes are unstable through cell division.</p>
     <p class="lp-cta"><a class="btn" href="/?k=46%2CXY%2Cr(13)(p11q34)&amp;style=highlight&amp;bands=550&amp;show=all">Open in the interactive visualizer &rarr;</a></p>
     <figure class="lp-fig"><img class="lp-karyo-img" src="karyogram.png" alt="Karyotype of Ring chromosome 13 (46,XY,r(13)(p11q34))" width="185" height="233" decoding="async" /><figcaption class="lp-figcap">Ring chromosome 13 (46,XY,r(13)(p11q34)) drawn by KaryoDraw, showing the involved chromosomes with their normal homolog.</figcaption></figure>
+    
     <section class="lp-sec"><h2>What the notation means</h2><dl class="lp-decode"><dt><code>46</code></dt><dd>total chromosome count (the normal human number)</dd><dt><code>XY</code></dt><dd>sex chromosomes: one X, one Y (usual male karyotype)</dd><dt><code>r(13)(p11q34)</code></dt><dd>a RING chromosome r(13): the chromosome's arms break and the broken ends fuse into a circle (usually loses the distal tips)</dd></dl></section>
     
     <section class="lp-sec lp-related"><h2>Related karyotypes</h2><ul><li><a href="/karyotype/chromosome-1p36-deletion/"><code>46,XX,del(1)(p36.3)</code> <span>1p36 deletion syndrome</span></a></li><li><a href="/karyotype/isochromosome-xq/"><code>46,X,i(X)(q10)</code> <span>Isochromosome Xq</span></a></li><li><a href="/karyotype/marker-chromosome/"><code>47,XX,+mar</code> <span>Marker chromosome</span></a></li></ul></section>

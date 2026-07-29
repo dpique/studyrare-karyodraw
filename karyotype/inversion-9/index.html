@@ -495,6 +495,16 @@
   .lp-fig .karyogram { transform: none !important; }
   .lp-karyo-img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
   .lp-figcap { font-size: 12.5px; color: var(--muted); margin: 8px 4px 0; }
+  /* What banding actually sees. Directly under the drawing, because that is the claim
+     it qualifies: KaryoDraw draws every deletion at the same crispness whatever its
+     size, and for a submicroscopic one the picture is a map and not a micrograph.
+     Periwinkle and not the amber of the app's warning box, for the reason index.html
+     gives where it draws that line: the karyotype on this page is correct and is drawn
+     correctly, so the note must not read as an error. */
+  .lp-res { margin: -8px 0 22px; padding: 11px 14px; border: 1px solid var(--peri-300);
+    border-radius: 12px; background: var(--peri-50); font-size: 14.5px; line-height: 1.6;
+    color: var(--ink-2); }
+  .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
@@ -563,6 +573,7 @@
     <p class="lp-intro">46,XY,inv(9)(p11q13) is a pericentric inversion of chromosome 9. It is one of the most common structural variants in the human genome and is generally considered a benign finding.</p>
     <p class="lp-cta"><a class="btn" href="/?k=46%2CXY%2Cinv(9)(p11q13)&amp;style=highlight&amp;bands=550&amp;show=all">Open in the interactive visualizer &rarr;</a></p>
     <figure class="lp-fig"><img class="lp-karyo-img" src="karyogram.png" alt="Karyotype of Pericentric inversion 9 (46,XY,inv(9)(p11q13))" width="139" height="260" decoding="async" /><figcaption class="lp-figcap">Pericentric inversion 9 (46,XY,inv(9)(p11q13)) drawn by KaryoDraw, showing the involved chromosomes with their normal homolog.</figcaption></figure>
+    
     <section class="lp-sec"><h2>What the notation means</h2><dl class="lp-decode"><dt><code>46</code></dt><dd>total chromosome count (the normal human number)</dd><dt><code>XY</code></dt><dd>sex chromosomes: one X, one Y (usual male karyotype)</dd><dt><code>inv(9)(p11q13)</code></dt><dd>an INVERSION in chromosome 9: the segment between 9p11 and 9q13 is flipped end-for-end (pericentric, it spans the centromere)</dd></dl></section>
     
     <section class="lp-sec lp-related"><h2>Related karyotypes</h2><ul><li><a href="/karyotype/normal-male-karyotype/"><code>46,XY</code> <span>Normal male karyotype</span></a></li><li><a href="/karyotype/ring-chromosome-13/"><code>46,XY,r(13)(p11q34)</code> <span>Ring chromosome 13</span></a></li><li><a href="/karyotype/isochromosome-xq/"><code>46,X,i(X)(q10)</code> <span>Isochromosome Xq</span></a></li></ul></section>

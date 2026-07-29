@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-29 (what banding sees)
+
+- **Two landing pages showed a deletion a karyotype would usually not show.** KaryoDraw
+  draws every deletion at the same crispness whatever its size, so the pages for 1p36
+  deletion syndrome and Wolf-Hirschhorn syndrome presented a clean banded picture of a
+  change that is mostly submicroscopic. Someone reading the page to learn what the test
+  looks like would take away that a karyotype is how these are found.
+
+  Both now carry a note directly under the drawing, from a new optional `resolution`
+  field in `content/karyotypes.js`:
+
+  > **What banding sees:** Most 1p36 deletions are too small to see with banding, so the
+  > diagnosis is usually made by microarray or FISH rather than by a karyotype. The
+  > drawing above shows where the missing segment lies, not what would be visible down a
+  > microscope.
+
+  Periwinkle, not the amber of the app's warning box, for the reason `index.html` gives
+  where it draws that line: the karyotype on the page is correct and is drawn correctly,
+  so the note must not read as an error.
+
+  Scoped to the entries where it is true. `del(5)(p15.2)` (cri-du-chat), `del(11)(q24.1)`
+  (Jacobsen) and `del(5)(q13q33)` are visible on a standard karyotype and say nothing
+  extra; `test/seo.test.js` pins both halves of that.
+
 ## 2026-07-29 (breakpoints on one chromosome run together)
 
 - **`46,XX,del(15)(q11.2;q13)` drew a different deletion from the one that was typed, and

@@ -495,6 +495,16 @@
   .lp-fig .karyogram { transform: none !important; }
   .lp-karyo-img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
   .lp-figcap { font-size: 12.5px; color: var(--muted); margin: 8px 4px 0; }
+  /* What banding actually sees. Directly under the drawing, because that is the claim
+     it qualifies: KaryoDraw draws every deletion at the same crispness whatever its
+     size, and for a submicroscopic one the picture is a map and not a micrograph.
+     Periwinkle and not the amber of the app's warning box, for the reason index.html
+     gives where it draws that line: the karyotype on this page is correct and is drawn
+     correctly, so the note must not read as an error. */
+  .lp-res { margin: -8px 0 22px; padding: 11px 14px; border: 1px solid var(--peri-300);
+    border-radius: 12px; background: var(--peri-50); font-size: 14.5px; line-height: 1.6;
+    color: var(--ink-2); }
+  .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
@@ -563,6 +573,7 @@
     <p class="lp-intro">69,XXY is triploidy, a complete extra set of chromosomes for a total of 69. Triploidy is usually lethal in early development and is a recognized cause of miscarriage.</p>
     <p class="lp-cta"><a class="btn" href="/?k=69%2CXXY&amp;style=highlight&amp;bands=550&amp;show=all">Open in the interactive visualizer &rarr;</a></p>
     <figure class="lp-fig"><img class="lp-karyo-img" src="karyogram.png" alt="Karyotype of Triploidy (69,XXY)" width="1055" height="797" decoding="async" /><figcaption class="lp-figcap">Triploidy (69,XXY) drawn by KaryoDraw.</figcaption></figure>
+    
     <section class="lp-sec"><h2>What the notation means</h2><dl class="lp-decode"><dt><code>69</code></dt><dd>total chromosome count (normal is 46)</dd><dt><code>XXY</code></dt><dd>sex chromosomes: two X + one Y</dd></dl></section>
     <section class="lp-sec"><h2>Clinical notes</h2><div class="lp-syn"><h3>Trisomy 21, Down syndrome</h3><p>The most common autosomal trisomy compatible with life (~1/700 births). Three copies of chromosome 21. Features: characteristic facies, hypotonia, intellectual disability, ~50% congenital heart disease (AV canal), ↑ risk of AML/ALL and early Alzheimer disease. ~95% free trisomy (nondisjunction, ↑ with maternal age), ~4% Robertsonian translocation, ~1% mosaic.</p></div><div class="lp-syn"><h3>Trisomy 18, Edwards syndrome</h3><p>Three copies of chromosome 18. Clenched fists with overlapping fingers, rocker-bottom feet, micrognathia, congenital heart disease; most die in the first year.</p></div><div class="lp-syn"><h3>Trisomy 13, Patau syndrome</h3><p>Three copies of chromosome 13. Holoprosencephaly, cleft lip/palate, polydactyly, cutis aplasia; high early mortality.</p></div><div class="lp-syn"><h3>Klinefelter syndrome (47,XXY and variants)</h3><p>An extra X in a male (≥1 Y with ≥2 X); 47,XXY is classic, with 48,XXXY and 48,XXYY as higher-grade variants. Tall stature, small firm testes, gynecomastia, infertility, low testosterone. The extra X (or Xs) inactivate as Barr bodies.</p></div></section>
     <section class="lp-sec lp-related"><h2>Related karyotypes</h2><ul><li><a href="/karyotype/down-syndrome/"><code>47,XX,+21</code> <span>Down syndrome</span></a></li><li><a href="/karyotype/edwards-syndrome/"><code>47,XY,+18</code> <span>Edwards syndrome</span></a></li><li><a href="/karyotype/mosaic-turner-syndrome/"><code>mos 45,X[12]/46,XX[18]</code> <span>Mosaic Turner syndrome</span></a></li></ul></section>
