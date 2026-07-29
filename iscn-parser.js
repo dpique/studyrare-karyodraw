@@ -876,7 +876,10 @@
     // Each already had its message and each still drew, which is the combination this
     // gate exists to stop: a picture that looks like an answer sitting under a
     // sentence saying it is not.
-    || !!clone.badChrom || !!clone.danglingIdem || !!clone.zeroCells;
+    // badCells is the same call as zeroCells for the same field: [-1] and [2.5] are
+    // not counts of cells, so the designation is not valid ISCN. The changes may well
+    // be right, and the message says the brackets can come off.
+    || !!clone.badChrom || !!clone.danglingIdem || !!clone.zeroCells || !!clone.badCells;
     if (clone.outOfOrder) {
       warnings.push("Whole-chromosome gains and losses are listed in chromosome order, so “" +
         clone.outOfOrder.before + "” comes before “" + clone.outOfOrder.after + "”.");
@@ -994,6 +997,39 @@
         warnings.push("The number in brackets is how many cells were counted with this karyotype, so “[0]” " +
           "says it was seen in none of them. A clone that was observed is written with the count of cells " +
           "that carried it, like [20]; leave the brackets off if the count is not being reported.");
+      }
+    } else {
+      // Brackets at the end that are not a cell count. ISCN 4.4.1 d: "Absolute cell
+      // numbers are given in square brackets ([ ])", and in a karyotype designation
+      // that is the only thing they hold, so the field is diagnosable on sight.
+      //
+      // Without this, "[-1]" was never recognized as the cell count at all: it stayed
+      // stuck to the last change and came back as “[-1]” in “t(9;22)(q34;q11.2)[-1]”
+      // is not one KaryoDraw can place, which names the wrong field and teaches a rule
+      // about commas to someone whose commas were right. Worse, on "+21[-1]" the
+      // missing-comma repair split inside the brackets and offered “+21[,-1]”.
+      //
+      // Only for a clone that opens with a chromosome count, so an arr or ish
+      // description keeps its own message: [GRCh38] is the genome build (Chapter 8)
+      // and [100/200] is nuclei scored (Chapter 7), neither of which is a cell count
+      // and neither of which belongs to a karyotype designation.
+      var badCnt = /^\d/.test(s) ? /\[([^\[\]]*)(\]?)\s*$/.exec(s) : null;
+      if (badCnt) {
+        clone.badCells = true;
+        clone.cellGiven = badCnt[0];   // as written, so the round-trip still balances
+        s = s.slice(0, badCnt.index).trim();
+        if (badCnt[2] !== "]" && /^(cp)?\d+$/i.test(badCnt[1])) {
+          warnings.push("The number of cells is written inside square brackets, so “[" + badCnt[1] +
+            "” needs its closing bracket: “[" + badCnt[1] + "]”.");
+        } else if (/^cp/i.test(badCnt[1])) {
+          warnings.push("A composite karyotype gives the number of cells the changes were collected " +
+            "from, so “cp” is followed by a whole number of them, like [cp10]. “" + badCnt[0] +
+            "” is not a count of cells.");
+        } else {
+          warnings.push("The number in brackets is how many cells were counted with this karyotype, " +
+            "so it is a whole number of them, like [20], or [cp10] for a composite. “" + badCnt[0] +
+            "” is not a count of cells; leave the brackets off if the count is not being reported.");
+        }
       }
     }
 
@@ -1238,14 +1274,20 @@
       var fields = splitTop(cl.slice(lead.length), ",");
       for (var fi = 2; fi < fields.length; fi++) {
         if (!/^[+\-−–]/.test(fields[fi])) continue;
-        var fixed = fields[fi].replace(/(.)([+\-−–])/g, "$1,$2");
-        if (fixed !== fields[fi]) { splitSigns.push(fields[fi]); fields[fi] = fixed; }
+        // The cell count rides on the last field and is not a change, so a sign inside
+        // its brackets is not a missing comma. "+21[-1]" was repaired to "+21[,-1]",
+        // a string with no reading at all, on top of a message about commas that were
+        // never the problem. The count keeps its own diagnosis in parseClone.
+        var cells = /\[[^\[\]]*\]?\s*$/.exec(fields[fi]);
+        var body = cells ? fields[fi].slice(0, cells.index) : fields[fi];
+        var fixed = body.replace(/(.)([+\-−–])/g, "$1,$2") + (cells ? cells[0] : "");
+        if (fixed !== fields[fi]) { splitSigns.push([fields[fi], fixed]); fields[fi] = fixed; }
       }
       return lead + fields.join(",");
     }).join("/");
-    splitSigns.forEach(function (tok) {
-      warnings.push("Changes are separated by commas, so “" + tok + "” is two of them: “" +
-        tok.replace(/(.)([+\-−–])/g, "$1,$2") + "”.");
+    splitSigns.forEach(function (pair) {
+      warnings.push("Changes are separated by commas, so “" + pair[0] + "” is two of them: “" +
+        pair[1] + "”.");
     });
 
     // An empty field between commas. 47~49,XY,+8,, drew a full karyogram and said

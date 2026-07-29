@@ -23,13 +23,35 @@ is written and never what is drawn.
 | `clone.countWrong` — the count is contradicted | `buildComplement` | `46,XY,rob(14;21)(q10;q10),-21` |
 | `clone.unaccounted` — input was silently dropped | round-trip, below | `47~49,XY,+8,,` |
 | `clone.sexMissing` — no sex field stated | `parseClone` | `69.XX`, `46` |
+| `clone.badCells` — the brackets hold no cell count | `parseClone` | `46,XY,t(9;22)(q34;q11.2)[-1]` |
 
 ### `clone.unreadable`
 
 Any of: a breakpoint group that yielded no band (`del(5)(zzqewdf2315.2)`); a token that
 never became an aberration (`zzz(9)(q34)`, or a signless `,21`); text an operation could
 not consume (`inv(9)(p11q13)zzz`); a sex field the app had to edit to use (`XZY`, `QQ`);
-a clone that states **no** sex field at all (`clone.sexMissing`: `69.XX`, `46`).
+a clone that states **no** sex field at all (`clone.sexMissing`: `69.XX`, `46`); square
+brackets holding something that is not a cell count (`clone.badCells`: `[-1]`, `[2.5]`,
+`[abc]`, an unclosed `[20`).
+
+### The cell count
+
+ISCN 4.4.1 d: "Absolute cell numbers are given in square brackets ([ ])", and in a
+karyotype designation that is the only thing the brackets hold, so the field is
+diagnosable on sight. `clone.badCells` is the same call as `clone.zeroCells` for the same
+field, and the message says the brackets can come off, since the count is optional outside
+neoplasia (4.4.1 c).
+
+Before it, `[-1]` was never recognized as the cell count at all: the count pattern wants
+digits, so the brackets stayed stuck to the last change and the reader was told `“[-1]” in
+“t(9;22)(q34;q11.2)[-1]” is not one KaryoDraw can place` — the wrong field, and a rule
+about commas they had not broken. On `+21[-1]` the missing-comma repair then split inside
+the brackets and offered `+21[,-1]`, a string with no reading at all. That repair now
+steps over the bracketed tail of a field.
+
+Only for a clone that opens with a chromosome count, so the other bracket forms keep their
+own messages: `[GRCh38]` is the genome build (Chapter 8) and `[100/200]` is nuclei scored
+(Chapter 7). Neither is a cell count, and neither belongs to a karyotype designation.
 
 `sexMissing` is a separate flag from the edited-sex-field check above, because that one
 compares against a field that was stated and there was none. `69.XX` is one comma-separated
