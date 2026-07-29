@@ -33,7 +33,7 @@ reasoning behind each; `docs/VALIDATION.md` is the standing reference for the dr
   stating no sex field at all is refused (`clone.sexMissing`). See `docs/VALIDATION.md`,
   including the note on why the known-holes survey could not have found this.
 
-367 tests pass (`npm test`). Verified live with a headless browser after each merge.
+372 tests pass (`npm test`). Verified live with a headless browser after each merge.
 
 - **Stress sheet:** `npm run stress` types the 138 karyotypes in `scripts/stress-corpus.mjs`
   into the real page and writes `karyotype-stress-test.html` — drawing, warning box, decode,
@@ -57,17 +57,17 @@ the opposite of Table 3 and 5.5.2 b.
 From `test/iscn-2024-examples.js`, largest first. Flip `supported: true` as each lands; the
 conformance test reports any that start passing so the flag cannot drift.
 
-1. **`45,X,-Y` is called a count error.** ISCN 5.3.1.2: for an acquired sex-chromosome
-   loss the sex field states what REMAINS, so the app counting the loss again lands one
-   short. 16 examples. Note the twist that makes it fiddly: with `c` the field is the
-   constitutional complement and the change does apply on top (`44,Xc,-X`), and gains are
-   always additive (`47,XX,+X`). Loss of Y is among the commonest cancer karyotypes there
-   is, so this is the top item.
-2. **`?` for uncertain identification** (4.2.1 k), 17 examples: `+?8`, `?del(1)(p36.1)`,
-   `del(5)(q?)`, `del(1)(q?2)`. A legal ISCN character everywhere a designation can go.
-3. **`c` on the sex complement** (4.2.1 e), 10 examples: `46,XXYc,-X`. Interacts with 1.
-4. **`sl`/`sdl` sidelines** (6.3.4) and counts read against a non-diploid ploidy (6.3.7).
-5. **Operations not modelled:** `rec`, `ider`, `tas`, `trc`, `fis`, `qdp`.
+1. **`?` for uncertain identification** (4.2.1 k), 16 examples: `+?8`, `?del(1)(p36.1)`,
+   `del(5)(q?)`, `del(1)(q?2)`. A legal ISCN character everywhere a designation can go,
+   and now the largest single gap.
+2. **`sl`/`sdl` sidelines** (6.3.4), 8 examples. `idem` already works; these are the same
+   idea with a numbered reference, `46,sl2,-Y`.
+3. **Counts read against a non-diploid ploidy** (6.3.7), 5 examples, and the related
+   haploid sex convention in 6.3.7 i (`32,-X,+Y,...` states no sex field at all).
+4. **Operations not modelled:** `rec` (5), `ider` (3), `tas` (3), `trc`, `fis`, `qdp`.
+5. **A ranged or open-ended `dmin` count** (5.5.12), 5 examples: `12~20dmin`, `>50dmin`.
+
+Acquired sex-chromosome loss (5.3.1.2) and `c` on the sex complement (4.2.1 e) are done.
 
 ## Closed
 Every entry that was on the known-holes list in `docs/VALIDATION.md`, plus the three the

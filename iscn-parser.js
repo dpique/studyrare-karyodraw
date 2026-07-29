@@ -524,10 +524,32 @@
       } else if (ab.kind === "loss") {
         var l = ab.chroms[0];
         if (comp[l] === undefined) { warnings.push("“" + l + "” isn’t a human chromosome, use 1–22, X, or Y (e.g. -7)."); clone.badChrom = true; return; }
+        // A stated loss of a SEX chromosome has already happened to the sex field.
+        //
+        // ISCN 5.3.1.2 ix: "an acquired abnormality is presented in relation to the
+        // constitutional karyotype". When the field carries c it IS the constitutional
+        // complement, so the change applies on top of it and 46,XXYc,-X comes to 46.
+        // Without the c the field is what was actually seen, which already reflects the
+        // loss: 45,X,-X (ii), 45,X,-Y (iv) and 45,Y,-X (v) all state 45, and subtracting
+        // again lands on 44. A GAIN is additive either way, 47,XX,+X (vi) and
+        // 48,XY,+X,+Y (vii), which is why this is scoped to losses.
+        //
+        // 45,X,-Y is loss of the Y in myeloid disease, among the commonest karyotypes
+        // there is, and it was being called a count error.
+        //
+        // The tolerated case: 46,XY,-Y states a loss the field does not show, and this
+        // now accepts it at 46 rather than computing 45 and complaining. ISCN would
+        // write that 45,X,-Y. Tolerating notation is the cheaper mistake here; refusing
+        // 45,X,-Y is the expensive one.
+        // Only when this clone STATED a sex field of its own. A subclone written
+        // 45,idem,-X inherits the stemline's field (XX), which is the baseline and not
+        // an observation of this clone, so there the loss does apply and 45 is right.
+        var sexLossInField = (l === "X" || l === "Y") && !!clone.sexGiven &&
+          !(clone.sex && clone.sex.constitutional);
         for (var lj = 0; lj < mult; lj++) {
-          comp[l] -= 1;
+          if (!sexLossInField) comp[l] -= 1;
           var idx = slots[l].map(function (x) { return x.kind; }).indexOf("normal");
-          if (idx >= 0) slots[l].splice(idx, 1);
+          if (idx >= 0 && !sexLossInField) slots[l].splice(idx, 1);
         }
       } else if (ab.kind === "mar") {
         // marker: an extra small chromosome of unknown origin; "2mar" adds two, etc.
@@ -804,6 +826,21 @@
   function parseSex(field, warnings) {
     var tokens = [], bad = [];
     if (!field) { return { tokens: tokens, label: "", note: "no sex chromosomes stated" }; }
+    // ISCN 4.2.1 e and 5.3.1.2 viii: "c" after the sex complement marks the WHOLE
+    // complement as the constitutional one, in a report whose subject is a neoplasm.
+    // 48,XXYc,+X is an acquired gain of an X in someone with Klinefelter syndrome, so
+    // XXY is what that person started with. A trailing "?" is 5.3.1.2 x, where it is
+    // unclear whether the complement is constitutional or acquired (47,XXX?c).
+    //
+    // It changes the arithmetic, not just the label: with c the field is the baseline
+    // the changes are applied to, and without it a stated sex-chromosome LOSS has
+    // already happened to the field. See buildComplement.
+    var constitutional = false;
+    var cm = /\??c$/.exec(field);
+    if (cm && /[XY]/.test(field.slice(0, cm.index))) {
+      constitutional = true;
+      field = field.slice(0, cm.index);
+    }
     for (var i = 0; i < field.length; i++) {
       var ch = field[i].toUpperCase();
       if (ch === "X" || ch === "Y") tokens.push(ch);
@@ -826,7 +863,7 @@
     // Recorded so the drawing can be refused. This is the one dropped-input case the
     // round-trip cannot see: it compares each field AS WRITTEN, so "XZY" round-trips
     // intact while the Z is quietly discarded INSIDE the field.
-    return { tokens: tokens, label: label, note: note, dropped: bad };
+    return { tokens: tokens, label: label, note: note, dropped: bad, constitutional: constitutional };
   }
 
   function parseClone(cloneStr, warnings, statedFully) {
