@@ -690,8 +690,8 @@ test('an operation given fewer breakpoints than it takes does not draw', () => {
     ['46,XX,del(5)', /so it needs a band/],
     ['46,XX,t(9;22)', /one breakpoint on each chromosome/],
     ['46,XY,dup(1)', /which segment is doubled/],
-    ['46,XY,ins(5;2)(p14;q22)', /three breakpoints/],
-    ['46,XY,ins(5;2)(p14)', /three breakpoints/],
+    ['46,XY,ins(5;2)(p14;q22)', /two bands that bound the piece/],
+    ['46,XY,ins(5;2)(p14)', /two bands that bound the piece/],
   ].forEach(([k, re]) => {
     const m = ISCN.parse(k);
     assert.equal(m.clones[0].unreadable, true, `${k} should not draw`);
@@ -881,7 +881,6 @@ test('input that cannot be drawn honestly is refused', () => {
     ['46,XY,t(9;9)(q34;q11)', /exchange between two different chromosomes/, 'a t within one chromosome'],
     ['45,XY,rob(1;2)(q10;q10)', /fuses two acrocentric chromosomes/, 'a rob between metacentrics'],
     ['47,idem,+8', /no earlier clone/, 'a subclone with no stemline'],
-    ['46<3n>,XY', /One n is 23 chromosomes/, 'a ploidy note against its own count'],
     ['46,XY,t(9;22)(q34;q11.2)[0]', /seen in none of them/, 'a clone observed in no cells'],
   ].forEach(([k, re, why]) => {
     const m = ISCN.parse(k);
@@ -901,19 +900,27 @@ test('the acrocentrics are named, and a real Robertsonian is untouched', () => {
     .forEach((k) => assert.equal(ISCN.parse(k).clones[0].unreadable, false, k));
 });
 
-test('a ploidy note that agrees with its count is left alone', () => {
-  // The check must not fire on the notation it exists to protect: <2n> and <3n> are
-  // written precisely so a near-triploid cancer clone can state what it is.
-  ['45<2n>,XY,-21', '69<3n>,XXX', '92<4n>,XXYY', '70<3n>,XXY,+8']
-    .forEach((k) => assert.equal(!!ISCN.parse(k).clones[0].ploidyWrong, false, k));
+test('a ploidy level is never checked against the count', () => {
+  // A check that <3n> must agree with the number in front of it was added here and was
+  // wrong. The angle brackets state the ploidy the gains and losses are expressed
+  // AGAINST, not a claim about the count. ISCN 6.3.7 f gives 81<3n> ("even though the
+  // count is in the near-tetraploid range") and 58<2n> ("in the hypotriploid range ...
+  // reported relative to a diploid chromosome number") as correct, and says outright
+  // that exceptions are made where biologically significant. There is no arithmetic
+  // here to check, so the rule is gone and these must all pass.
+  ['45<2n>,XY,-21', '69<3n>,XXX', '92<4n>,XXYY', '70<3n>,XXY,+8',
+    '81<3n>,XXX,+X,+X,+X,+X,+X,+1,+1,+3,+3,+14,+14,+14,-15,+21',
+    '58<2n>,XY,+X,+4,+6,+8,+9,+10,+14,+14,+17,+18,+21,+21', '46<3n>,XY']
+    .forEach((k) => assert.equal(ISCN.parse(k).clones[0].unreadable, false, k));
 });
 
 test('a written-form fault keeps its drawing and is told the rule', () => {
   // Nothing here changes what is drawn, so refusing would withhold a correct picture
   // over a spelling. This is the same call listing order gets.
   [
-    ['46,XY,del(5)(p15.3p15.2)', /from the centromere outward/, /del\(5\)\(p15.2p15.3\)/],
-    ['46,XY,inv(9)(q13p11)', /from the centromere outward/, /inv\(9\)\(p11q13\)/],
+    ['46,XY,del(5)(p15.2p15.3)', /along the chromosome/, /del\(5\)\(p15.3p15.2\)/],
+    ['46,XY,del(5)(q33q13)', /along the chromosome/, /del\(5\)\(q13q33\)/],
+    ['46,XY,inv(9)(q13p11)', /along the chromosome/, /inv\(9\)\(p11q13\)/],
     ['46,XY,del(5)(p15.2),del(5)(p15.2)', /written once with a multiplier/, /del\(5\)\(p15.2\)x2/],
     ['46c,XY', /goes on the change it describes/, /46/],
   ].forEach(([k, rule, fix]) => {
@@ -931,11 +938,20 @@ test('breakpoint order is only corrected where it carries no meaning', () => {
   assert.equal(ISCN.parse('46,XY,dup(1)(q25q22)').warnings.length, 0,
     'an inverted duplication is not a reversed deletion');
   ['46,XY,del(5)(q13q33)', '46,XY,inv(9)(p12q13)', '46,XX,del(11)(q23.1q23.3)',
-    '46,XY,inv(3)(q21.3q26.2)', '46,XX,del(22)(q11.2q11.2)']
+    '46,XY,inv(3)(q21.3q26.2)', '46,XX,del(22)(q11.2q11.2)',
+    // ISCN 2024 Table 3 and 5.5.2 b: breakpoints run pter to qter, so on the SHORT arm
+    // the distal (higher-numbered) band is written first. 4.2.1 j.iii spells it out on
+    // dup(1)(p34~32p22): "the distal breakpoint is in 1p34 ... and the proximal
+    // breakpoint is in band 1p22". This file first pinned the opposite and shipped it.
+    '46,XX,del(4)(p15.3p15.2)', '46,XY,dup(1)(p34p22)', '46,XY,del(5)(p15.2)']
     .forEach((k) => assert.equal(ISCN.parse(k).warnings.length, 0, `${k} is already in order`));
   // Sub-bands compare as decimals: q11.23 sits inside q11.2 and before q11.3, which
   // comparing 23 against 3 as integers gets backwards.
   assert.equal(ISCN.parse('46,XY,del(9)(q11.2q11.23)').warnings.length, 0, 'q11.2 then q11.23 is in order');
+  // An uncertain band has no single position on that axis, and ISCN writes plenty of
+  // them. Saying nothing beats guessing which end of a range to compare.
+  ['46,XX,del(1)(q21~24)', '46,XY,dup(1)(p34~32p22)', '46,XX,t(3;12)(q27~29;q13~15)']
+    .forEach((k) => assert.equal(ISCN.parse(k).warnings.length, 0, `${k} is uncertain, not reversed`));
 });
 
 test('the sex chromosomes are reordered, never edited', () => {

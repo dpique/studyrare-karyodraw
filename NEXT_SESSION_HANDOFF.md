@@ -33,7 +33,7 @@ reasoning behind each; `docs/VALIDATION.md` is the standing reference for the dr
   stating no sex field at all is refused (`clone.sexMissing`). See `docs/VALIDATION.md`,
   including the note on why the known-holes survey could not have found this.
 
-359 tests pass (`npm test`). Verified live with a headless browser after each merge.
+367 tests pass (`npm test`). Verified live with a headless browser after each merge.
 
 - **Stress sheet:** `npm run stress` types the 138 karyotypes in `scripts/stress-corpus.mjs`
   into the real page and writes `karyotype-stress-test.html` — drawing, warning box, decode,
@@ -43,6 +43,31 @@ reasoning behind each; `docs/VALIDATION.md` is the standing reference for the dr
 
 ## In flight
 Nothing. Working tree clean, no open PRs, no worktrees, `main` at the last merge.
+
+## Verified against ISCN 2024
+`test/iscn-conformance.test.js` runs 394 karyotype-format examples printed in ISCN 2024
+through the page's gate; 302 are accepted and the rest are recorded in
+`test/iscn-2024-examples.js` with the ISCN section naming the feature they need. The PDF
+is at `/Users/dpique/Desktop/colorado/books/core_resources_abgc/2024_ISCN.pdf`; extract it
+with `pdftotext -layout` and search it. **Find the section before adding a check.** Writing
+the gate from memory shipped `del(5)(p15.3p15.2)` being told to reverse itself, which is
+the opposite of Table 3 and 5.5.2 b.
+
+## Next: the ISCN features the app does not model
+From `test/iscn-2024-examples.js`, largest first. Flip `supported: true` as each lands; the
+conformance test reports any that start passing so the flag cannot drift.
+
+1. **`45,X,-Y` is called a count error.** ISCN 5.3.1.2: for an acquired sex-chromosome
+   loss the sex field states what REMAINS, so the app counting the loss again lands one
+   short. 16 examples. Note the twist that makes it fiddly: with `c` the field is the
+   constitutional complement and the change does apply on top (`44,Xc,-X`), and gains are
+   always additive (`47,XX,+X`). Loss of Y is among the commonest cancer karyotypes there
+   is, so this is the top item.
+2. **`?` for uncertain identification** (4.2.1 k), 17 examples: `+?8`, `?del(1)(p36.1)`,
+   `del(5)(q?)`, `del(1)(q?2)`. A legal ISCN character everywhere a designation can go.
+3. **`c` on the sex complement** (4.2.1 e), 10 examples: `46,XXYc,-X`. Interacts with 1.
+4. **`sl`/`sdl` sidelines** (6.3.4) and counts read against a non-diploid ploidy (6.3.7).
+5. **Operations not modelled:** `rec`, `ider`, `tas`, `trc`, `fis`, `qdp`.
 
 ## Closed
 Every entry that was on the known-holes list in `docs/VALIDATION.md`, plus the three the

@@ -3,6 +3,51 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-29 (checked against ISCN 2024, which corrected four rules and one of mine was live)
+
+The gate in the entry below was written from memory. The standard was on disk. Reading it
+turned up a rule that had shipped backwards, three more that were too strict, and it is now
+the test suite's job to notice: `test/iscn-2024-examples.js` holds 394 karyotype-format
+examples printed in ISCN 2024, and `test/iscn-conformance.test.js` runs every one through
+the page's gate.
+
+- **`del(5)(p15.3p15.2)` is correct, and for one day the app said it was not.** Breakpoint
+  designations run **pter to qter** (Table 3; 5.5.2 b), so travelling that way p-arm band
+  numbers descend and q-arm numbers ascend: on the short arm the distal band is written
+  first. The check had been written as "from the centromere outward", which is right on the
+  long arm and backwards on the short one, and it offered the reverse of a correct
+  karyotype. 4.2.1 j.iii settles it in words on `dup(1)(p34~32p22)`: "the distal breakpoint
+  is in 1p34 ... and the proximal breakpoint is in band 1p22."
+
+- **Three more rules were too strict.** `<3n>` states the ploidy level the changes are
+  expressed against, not a claim about the count, and 6.3.7 f prints `81<3n>` as correct
+  "even though the count is in the near-tetraploid range"; that check is gone entirely.
+  An insertion takes at least three breaks, not exactly three, because 5.5.9.3 writes
+  reciprocal insertional events with four. And a rearrangement states its breakpoints the
+  first time only (4.2.1 f), so the bare `t(9;22)` in
+  `46,XX,t(9;22)(q34;q11.2)[10]/47,XX,t(9;22),+der(22)[10]` is a back-reference and not a
+  translocation missing its breakpoints.
+
+- **A character that is not ISCN is now named and removed.** ISCN's symbol list (Chapter 3)
+  is closed, so "not an ISCN character" is a fact rather than a judgment. Typing
+  `der(13;14)(q10;q10) %14` produced "Alternatives written with or, and uncertainty
+  markers, are not supported", which sent a student reading about an ISCN feature she had
+  never used, over a character she had not meant to type. It now says `%` is not a
+  character ISCN uses, lists the marks that are, and offers the karyotype without it.
+
+  Stripped from the parsed text as well as from the repair, for the reason the trailing
+  period is: otherwise the field the stray landed in still reports itself as unreadable and
+  one stray character produces two messages.
+
+- **302 of the 394 examples are accepted.** The rest are recorded with the ISCN section
+  naming the feature they need, so an unmodelled feature reads as a coverage gap instead of
+  as bad input. The biggest is `?` for uncertain identification (4.2.1 k). The one that
+  will bite soonest is `45,X,-Y`, acquired loss of the Y and one of the commonest karyotypes
+  in myeloid disease: the sex field already states what remains (5.3.1.2), the app counts
+  the loss a second time, and calls the result a count error. It is not fixed here, because
+  the interaction with `c` on the sex complement needs the same careful reading the rest of
+  this entry got.
+
 ## 2026-07-29 (every known hole closed, and a label that was cut in half)
 
 The stress sheet from the previous entry was built to find these. This closes all of them,

@@ -152,6 +152,53 @@ that following the chain reaches a karyogram within three steps.
 Vetting re-parses each candidate one level deep (`parse(input, depth)`); the candidate's own
 fixes are listed but not vetted, which is what terminates the recursion.
 
+## Checking against ISCN itself
+
+`test/iscn-2024-examples.js` holds 394 karyotype-format examples printed in ISCN 2024
+(Cytogenet Genome Res 2024;164(suppl 1):1-224), and `test/iscn-conformance.test.js` runs
+every one through the page's gate. 302 are accepted. The rest are marked
+`supported: false` with the ISCN section naming the feature they need, so an unmodelled
+feature is recorded rather than mistaken for bad input.
+
+**Why it exists.** The draw gate was built from memory and shipped a rule that was
+backwards. It told students `del(5)(p15.3p15.2)` was wrong and offered the reverse, when
+Table 3 and 5.5.2 b say breakpoint designations run **pter to qter**: travelling that way,
+p-arm band numbers descend and q-arm numbers ascend, so on the short arm the distal band
+comes first and the original was right. 4.2.1 j.iii settles it in words on
+`dup(1)(p34~32p22)`: "the distal breakpoint is in 1p34 ... and the proximal breakpoint is
+in band 1p22." No test could have caught it, because every test had been written from the
+same memory.
+
+Three more rules went the same way and are pinned by citation in the conformance test:
+
+| written from memory | what ISCN says |
+| --- | --- |
+| `<3n>` must agree with the count | 6.3.7 f: the level is the baseline the changes are expressed against. `81<3n>` is correct "even though the count is in the near-tetraploid range". The check is gone |
+| `ins` takes exactly three breaks | 5.5.9 a says three, but 5.5.9.3 writes reciprocal insertional events with four: `ins(5;6)(q13q23;q15q23)`. At least three |
+| a `t` always states its breakpoints | 4.2.1 f: they are given the first time and need not be repeated. `46,XX,t(9;22)(q34;q11.2)[10]/47,XX,t(9;22),+der(22)[10]` is correct |
+
+**The rule this leaves.** Before adding a check, find the section. The standard is a
+searchable PDF; a plausible memory of it is not evidence, and this app's whole claim is
+that if it draws, the notation was accepted.
+
+## Characters that are not ISCN
+
+ISCN's symbol list (Chapter 3) is closed. For a karyotype it comes to letters, digits, and
+`, ; : ( ) [ ] < > / + - ~ ? .` and the multiplication sign. Anything else arrived from
+somewhere: a stray keystroke, a bullet or footnote mark pasted out of a question paper, a
+character mangled by a PDF.
+
+There is no ISCN rule to teach about them beyond that they are not karyotype notation, so
+the app names the character, removes it, and offers what is left. Stripped in two places,
+like the trailing period: the repair string, and the text actually parsed. Otherwise the
+field the stray landed in still reports itself as unreadable and one stray character
+produces two messages, the second about a rule the reader never broke.
+`der(13;14)(q10;q10) %14` was being reported as an unsupported `or` alternative, which
+sent a student reading about an ISCN feature she had never used.
+
+The cleaned string does not have to be correct, only further along. The fix machinery
+re-parses it and says whatever is wrong next.
+
 ## Breakpoint arity
 
 An operation knows how many breakpoints it takes, and that one rule closed the largest
@@ -202,7 +249,12 @@ error of understanding, and there is nothing to teach.
 
 ## Known holes
 
-Nothing currently known. Every entry that was on this list is closed, and
+Nothing currently known **in the gate**, and a measured list of unmodelled ISCN features
+in `test/iscn-2024-examples.js`. The largest, in order: `?` for uncertain identification
+(4.2.1 k), acquired sex-chromosome loss where the sex field already states what remains
+(5.3.1.2, which is `45,X,-Y`, one of the commonest cancer karyotypes there is and
+currently called a count error), `c` on the sex complement (4.2.1 e), `sl`/`sdl` sideline
+references (6.3.4), and a count read against a ploidy level other than diploid (6.3.7). Every entry that was on this list is closed, and
 `test/parser.test.js` holds one case per rule with the correct spellings alongside, which
 is the half that matters: each rule is pinned by what it must NOT refuse as well as by what
 it must.

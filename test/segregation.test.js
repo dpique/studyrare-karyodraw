@@ -258,7 +258,15 @@ test('every loadable karyotype re-parses to itself', () => {
 // able to close the attribute early. Escaping is correct exactly when every emitted
 // value survives unescaping back to the karyotype it stands for.
 test('a quote in a chromosome name is escaped inside data-k, not able to close it', () => {
-  const m = Seg.compute(clone0('46,XX,t(2";5)(q21;q31)'));
+  // Injected into the parsed clone, upstream of compute(), so the quote travels the
+  // whole pipeline exactly as it used to. It is put there rather than typed into the
+  // karyotype because the parser now drops characters that are not ISCN, which is why
+  // this test stopped reaching the code it guards. The escaping stays and is tested
+  // directly: "the parser happens to filter it out" is not a property the renderer
+  // should be resting on.
+  const c = clone0('46,XX,t(2;5)(q21;q31)');
+  c.aberrations[0].chroms[0] = '2"';
+  const m = Seg.compute(c);
   assert.ok(m, 'still modeled');
   const html = Seg.render(m);
   assert.match(html, /&quot;/, 'the quote is entity-escaped');
