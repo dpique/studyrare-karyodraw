@@ -311,6 +311,35 @@ sent a student reading about an ISCN feature she had never used.
 The cleaned string does not have to be correct, only further along. The fix machinery
 re-parses it and says whatever is wrong next.
 
+## Breakpoints on one chromosome
+
+ISCN 4.2.1 h: "If the rearrangement involves a single chromosome the breakpoints are not
+separated by a semicolon (;), e.g., inv(2)(p23q11.2), del(4)(p15.3p16.1), r(18)(p11.2q23)".
+The semicolon separates *different* chromosomes (4.2.1 g), so one inside a
+single-chromosome rearrangement announces a chromosome that is not there.
+
+`del(15)(q11.2;q13)` is why this is a check and not a tolerated spelling. The two sides
+parse as separate breakpoint groups, a deletion takes its bands from the first group
+alone, and the drawing came out as a terminal loss from 15q11.2 with the second
+breakpoint dropped. It drew, said nothing, and the decode described a larger deletion
+than the one that was typed. `dup`, `r`, `trp` and a within-chromosome `ins` had the same
+hole; `inv` was told instead that an inversion needs two bands, which is a rule the
+reader had not broken.
+
+A comma between the bands is the same mistake and gets the same repair. `joinSameChrom`
+runs **before** the comma-inside-parentheses rule, which would otherwise answer
+`del(15)(q11.2,q13)` with the semicolon form and teach the opposite of 4.2.1 h.
+
+Scoped to a token that is an operation followed by two adjacent groups, so a derivative
+chain (`der(9)del(9)(p11)t(9;22)(q34;q11.2)`) is never touched: its sub-operations carry
+their own chromosomes. The chromosome group is skipped when it holds a separator of any
+kind, so `t(9,22)(q34;q11.2)`, which names two chromosomes with a typo, is left for the
+comma rule.
+
+Applied in `parse()` as well as in `diagnose()`, like the trailing period: the repair
+alone leaves the operation to be parsed from the text as typed, and one mistake would
+produce two messages.
+
 ## Breakpoint arity
 
 An operation knows how many breakpoints it takes, and that one rule closed the largest

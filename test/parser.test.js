@@ -1060,3 +1060,59 @@ test('brackets outside a karyotype designation keep their own message', () => {
     assert.ok(!/how many cells were counted/.test(ISCN.parse(k).warnings.join(' ')), k);
   });
 });
+
+// ---- breakpoints on one chromosome -------------------------------------------
+// ISCN 4.2.1 h: "If the rearrangement involves a single chromosome the breakpoints are
+// not separated by a semicolon (;), e.g., inv(2)(p23q11.2), del(4)(p15.3p16.1),
+// r(18)(p11.2q23)". The semicolon separates different chromosomes (4.2.1 g).
+//
+// del(15)(q11.2;q13) drew, and drew the wrong deletion: the two sides parse as separate
+// breakpoint GROUPS, a deletion takes its bands from the first group alone, and the
+// picture came out as a terminal loss from 15q11.2 with the second breakpoint dropped.
+// The decode said "the part around 15q11.2", describing a larger deletion than the one
+// that was typed, and nothing objected.
+test('a semicolon between breakpoints on one chromosome is named and repaired', () => {
+  [['46,XX,del(15)(q11.2;q13)', '46,XX,del(15)(q11.2q13)'],
+   ['46,XX,inv(2)(p23;p13)', '46,XX,inv(2)(p23p13)'],
+   ['46,XY,r(18)(p11.2;q23)', '46,XY,r(18)(p11.2q23)'],
+   ['46,XY,dup(1)(q22;q25)', '46,XY,dup(1)(q22q25)'],
+   ['46,XY,ins(2)(q13;p23;p13)', '46,XY,ins(2)(q13p23p13)'],
+   // A comma there is the same mistake. It must NOT be answered with the
+   // comma-inside-parentheses rule, which would offer the semicolon form.
+   ['46,XX,del(15)(q11.2,q13)', '46,XX,del(15)(q11.2q13)'],
+   ['mos 46,XX,del(15)(q11.2;q13)[10]/46,XX[10]', 'mos 46,XX,del(15)(q11.2q13)[10]/46,XX[10]'],
+  ].forEach(([bad, want]) => {
+    const m = ISCN.parse(bad);
+    assert.equal(m.suggestion, want, bad);
+    assert.match(m.warnings.join(' '), /same chromosome are written one after the other/, bad);
+    assert.ok(!/separate values with a semicolon/.test(m.warnings.join(' ')),
+      `${bad} must not be told to use the semicolon it just used`);
+  });
+});
+
+test('one mistake, one message', () => {
+  // The repair alone leaves the operation to be parsed from the text as typed, where
+  // inv(2)(p23;p13) reads as two groups of one band each and is told an inversion needs
+  // two bands: a second message, about a rule the reader did not break.
+  const w = ISCN.parse('46,XX,inv(2)(p23;p13)').warnings;
+  assert.equal(w.length, 1, JSON.stringify(w));
+  // Count alone would pass on the old behaviour, where the arity message was the one
+  // message. It has to be the message that names the mistake.
+  assert.match(w[0], /same chromosome are written one after the other/, w[0]);
+});
+
+test('the semicolon is left alone where ISCN puts it', () => {
+  // Between chromosomes (4.2.1 g), in a derivative chain whose sub-operations carry
+  // their own chromosomes, and in an insertion written between two chromosomes.
+  ['46,XY,t(9;22)(q34;q11.2)', '45,XY,rob(13;14)(q10;q10)', '46,XY,ins(5;2)(p14;q22q32)',
+   '46,XY,der(9)del(9)(p11)t(9;22)(q34;q11.2)', '46,XX,t(2;7;5)(q21;p13;q31)',
+   '46,XY,del(5)(p15.2)', '46,XY,inv(9)(p11q13)', '46,X,i(X)(q10)', '46,XY,r(13)(p11q34)',
+   '46,XX,add(19)(p13.3 or q13.3)', '46,XY,del(5)(q13q33)']
+    .forEach((k) => assert.equal(ISCN.parse(k).suggestion, null, k));
+});
+
+test('a chromosome pair written with a comma is still the comma rule', () => {
+  // t(9,22) names two chromosomes with a typo in the separator, so the repair is the
+  // semicolon. The single-chromosome rule must not reach it and join the bands.
+  assert.equal(ISCN.parse('46,XY,t(9,22)(q34;q11.2)').suggestion, '46,XY,t(9;22)(q34;q11.2)');
+});

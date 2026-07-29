@@ -73,6 +73,18 @@ test('brackets that hold something other than a cell count are refused', () => {
    '47,XX,+21[cp-1]'].forEach((k) => assert.equal(refused(k), true, k));
 });
 
+// ISCN 4.2.1 h: within one chromosome the breakpoints run together. Written with a
+// semicolon they parse as two groups, and a deletion takes its bands from the first
+// group alone, so del(15)(q11.2;q13) drew a terminal loss from 15q11.2 and dropped the
+// second breakpoint without a word.
+test('breakpoints on one chromosome separated as though on two are refused', () => {
+  ['46,XX,del(15)(q11.2;q13)', '46,XX,inv(2)(p23;p13)', '46,XY,r(18)(p11.2;q23)',
+   '46,XX,del(15)(q11.2,q13)'].forEach((k) => assert.equal(refused(k), true, k));
+  // And the correct spellings still draw.
+  ['46,XX,del(15)(q11.2q13)', '46,XX,inv(2)(p23p13)', '46,XY,r(18)(p11.2q23)',
+   '46,XY,t(9;22)(q34;q11.2)'].forEach((k) => assert.equal(refused(k), false, k));
+});
+
 test('a count the app is willing to call wrong is refused', () => {
   ['46,XY,rob(14;21)(q10;q10),-21', '40,XY,rob(14;21)(q10;q10),-21', '45,XX,t(13;15)(q10;q10)',
    '47,XY,rob(14;21)(q10;q10),+21'].forEach((k) => assert.equal(refused(k), true, k));

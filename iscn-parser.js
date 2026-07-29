@@ -97,6 +97,46 @@
   // rob()/der() rather than t() because it replaces both chromosomes with one.
   var ACROCENTRIC = { "13": 1, "14": 1, "15": 1, "21": 1, "22": 1 };
 
+  // ISCN 4.2.1 h: "If the rearrangement involves a single chromosome the breakpoints
+  // are not separated by a semicolon (;), e.g., inv(2)(p23q11.2), del(4)(p15.3p16.1),
+  // r(18)(p11.2q23)". The semicolon is what separates DIFFERENT chromosomes (4.2.1 g),
+  // so one inside a single-chromosome rearrangement announces a second chromosome that
+  // is not there.
+  //
+  // del(15)(q11.2;q13) is why this has to be caught rather than tolerated. The parser
+  // reads the two sides as separate breakpoint GROUPS, a deletion takes its bands from
+  // the first group alone, and the drawing came out as a terminal deletion from 15q11.2
+  // with the second breakpoint silently dropped. It drew, it said nothing, and the
+  // decode described a larger deletion than the one that was typed.
+  //
+  // A comma between the bands is repaired the same way, and this has to run BEFORE the
+  // comma-inside-parentheses rule, which would otherwise turn del(15)(q11.2,q13) into
+  // the semicolon form and teach the exact opposite of 4.2.1 h.
+  //
+  // Scoped to a token that is an operation followed by two adjacent groups, so a
+  // derivative chain (der(9)del(9)(p11)t(9;22)(q34;q11.2)) is never touched: its
+  // sub-operations carry their own chromosomes and their semicolons are correct. The
+  // chromosome group is skipped when it holds a separator of any kind, so t(9,22),
+  // which names two chromosomes with a typo, is left for the comma rule to repair.
+  var TWO_GROUPS = /^(\s*)([+\-−–]?)([A-Za-z]+)\(([^()]*)\)\(([^()]*)\)(.*)$/;
+  function joinSameChrom(text) {
+    var hits = [];
+    var out = String(text).split("/").map(function (cl) {
+      var lead = (/^(?:mos|chi)\s+/i.exec(cl) || [""])[0];
+      var fields = splitTop(cl.slice(lead.length), ",");
+      for (var i = 0; i < fields.length; i++) {
+        var m = TWO_GROUPS.exec(fields[i]);
+        if (!m || /[;,]/.test(m[4]) || !/[;,]/.test(m[5])) continue;
+        var fixed = m[1] + m[2] + m[3] + "(" + m[4] + ")(" +
+          m[5].replace(/\s*[;,]\s*/g, "") + ")" + m[6];
+        hits.push([fields[i].trim(), fixed.trim()]);
+        fields[i] = fixed;
+      }
+      return lead + fields.join(",");
+    }).join("/");
+    return { text: out, hits: hits };
+  }
+
   // Text an operation did not consume. Most often it is the next aberration with
   // its comma missing (the sign case, which is fully diagnosable); otherwise it is
   // something outside the model, such as an "or" alternative.
@@ -1290,6 +1330,17 @@
         pair[1] + "”.");
     });
 
+    // Breakpoints on one chromosome, separated as though they were on two. Ahead of the
+    // comma-inside-parentheses rule below, which would answer del(15)(q11.2,q13) with
+    // the semicolon form and teach the opposite of ISCN 4.2.1 h.
+    var joined = joinSameChrom(suggestion);
+    suggestion = joined.text;
+    joined.hits.forEach(function (pair) {
+      warnings.push("Breakpoints on the same chromosome are written one after the other, so “" +
+        pair[0] + "” is “" + pair[1] + "”. The semicolon separates different chromosomes, " +
+        "as in t(9;22)(q34;q11.2).");
+    });
+
     // An empty field between commas. 47~49,XY,+8,, drew a full karyogram and said
     // nothing at all: the field list is filtered for length, so the blanks vanished
     // before anything could object. Repaired rather than only refused, so the viewer
@@ -1346,6 +1397,13 @@
     // the second of them about a rule the reader never broke. "%14" was being reported as
     // an unsupported "or" alternative.
     s = s.replace(/[^A-Za-z0-9,;:()\[\]<>\/+\-–−~?.×]/g, "");
+    // A separator between two breakpoints on ONE chromosome, dropped here as well as in
+    // diagnose(), for the reason the trailing period is: the repair alone leaves the
+    // operation to be parsed from the text as typed, where inv(2)(p23;p13) reads as two
+    // groups of one band each and is told an inversion needs two bands. That is a second
+    // message about a rule the reader did not break, under the one that names the
+    // mistake. The drawing is refused either way, since a repair is on offer.
+    s = joinSameChrom(s).text;
     // The canonical, whitespace-normalized designation — for display and the URL.
     result.normalized = (q ? q[1].toLowerCase() + " " : "") + s;
 
