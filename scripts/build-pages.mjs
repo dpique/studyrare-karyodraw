@@ -356,7 +356,12 @@ function hubHtml() {
 
 // About + guide: bespoke content authored in content/*.html, wrapped in the shell.
 const STATIC_PAGES = [
-  { slug: 'about', active: 'about', file: 'content/about.html',
+  // No site footer on the About page. The footer is a one-line version of what this app
+  // is, who makes it, that it is not diagnostic and that it is open source, which is
+  // exactly what the page above it says at length: every clause of it repeats a section
+  // it sits directly under. Everywhere else it is the only place those things are said,
+  // so it stays.
+  { slug: 'about', active: 'about', file: 'content/about.html', foot: '',
     title: 'About KaryoDraw | a free ISCN karyotype visualizer',
     description: 'KaryoDraw is a free, browser-based tool that draws any ISCN 2024 karyotype and explains every symbol in plain language, built for the genetics community by StudyRare.',
     ldType: 'AboutPage', crumb: '<a href="/">KaryoDraw</a> &rsaquo; About' },
@@ -384,7 +389,8 @@ function staticPageHtml(p) {
     : JSON.stringify({ '@context': 'https://schema.org', ...base });
   return pageShell({
     title: p.title, description: p.description, canonicalPath: `/${p.slug}/`, ogType: p.ldType === 'Article' ? 'article' : 'website',
-    jsonLd, active: p.active, crumb: p.crumb, articleClass: 'lp-prose', body: `${inner}\n    ${SITE_FOOT}`,
+    jsonLd, active: p.active, crumb: p.crumb, articleClass: 'lp-prose',
+    body: `${inner}${p.foot === '' ? '' : `\n    ${SITE_FOOT}`}`,
   });
 }
 

@@ -3,6 +3,40 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-29 (the first screen, and what is on it when nothing draws)
+
+- **On a phone the karyogram started below the fold.** At 390x844 the input, three
+  example chips, the prompt line and three rows of segmented buttons filled the whole
+  first screen: someone arriving from a search saw a form and no drawing. The first
+  chromosome now starts at 627px instead of 888px, so the top of the karyogram is on
+  screen when the page loads. Three changes, measured in a real browser at 390x844 and
+  1280x900, with the desktop layout unchanged:
+
+  - **The view options fold away under 700px**, behind one row that carries the current
+    setting (`All · ~550 bands · Highlight`) so the state is still legible while folded.
+    Collapsed by script rather than by CSS alone, so a page whose script failed shows the
+    options rather than hiding them behind a control that cannot open them.
+  - **Two example chips instead of three under 560px.** Each wraps to two lines at that
+    width, so the third row cost about 35px for an example nobody asked for. The deck
+    still deals the whole list across reloads, two at a time.
+  - **The brand and nav share one row on a phone**, and the "New to the notation?" prompt
+    is dropped there, since the two links after it say what they are.
+
+- **The chips are re-dealt on every load, and there was no way back to one.** The line
+  under them now ends with "See all 32 examples", pointing at the hub. The count comes
+  from `content/karyotypes.js`, the same source the pages are generated from.
+
+- **A refused karyotype sat beside a decode card showing "…", a band map of a chromosome
+  from the last karyotype that DID draw, and a legend for a drawing that was not there.**
+  All three are put away while nothing is drawn, and the grid drops to one column rather
+  than holding a third of the page open for them. The warning box carries the whole
+  message, which is the point of it.
+
+- **The About page repeated itself in the footer.** The site footer is a one-line version
+  of what the app is, that it is not diagnostic, who makes it, and the Ko-fi line, which
+  is exactly what the four sections above it say at length. It is gone from that page and
+  unchanged everywhere else, where it is the only place those things are said.
+
 ## 2026-07-29 (the tour starts where it runs)
 
 - **"Tour" and "Guide" sat side by side in the nav promising the same thing.** Nothing

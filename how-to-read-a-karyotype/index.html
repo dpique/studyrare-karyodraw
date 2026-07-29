@@ -85,6 +85,10 @@
   .btn:hover { background: var(--amber-600); }
   .examples { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
   .tourcta { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
+  .tourcta .sep { margin: 0 4px; color: var(--line); }
+  /* On a phone the question wrapped the line to three rows for four words that the two
+     links already imply. The links keep their own wording. */
+  @media (max-width: 560px) { .tourcta-lead { display: none; } }
   .linklike { background: none; border: 0; padding: 0; font: inherit; font-weight: 600;
     color: var(--peri-700); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
   .linklike:hover { color: var(--navy); }
@@ -96,6 +100,7 @@
   .chip:hover { background: var(--peri-50); border-color: var(--peri-300); color: var(--peri-700); }
   .chip b { color: var(--peri-700); font-weight: 700; }
 
+
   /* Visible keyboard focus on every interactive control. :focus-visible keeps the
      ring for keyboard users while leaving mouse clicks clean. */
   a:focus-visible, button:focus-visible, input:focus-visible,
@@ -104,6 +109,25 @@
   }
   .seg button:focus-visible { outline-offset: -2px; }
 
+  /* The view options, and the control that folds them away on a phone.
+     At 390px the three rows of segmented buttons plus their hint ran to about 190px
+     of the first screen, which is why the karyogram started below the fold: someone
+     arriving from a search saw a form and no drawing. They collapse behind one row
+     under 700px, and the row carries the current setting so the state is still legible
+     while folded. The toggle is hidden and the body is open above that width, and the
+     body is visible by default, so if the script never runs the options are simply
+     there rather than unreachable. */
+  .viewtoggle { display: none; }
+  @media (max-width: 700px) {
+    .viewtoggle {
+      display: inline-flex; align-items: baseline; gap: 8px; margin-top: 12px;
+      background: none; border: 0; padding: 0; font: inherit; font-size: 12px; cursor: pointer;
+      color: var(--muted); text-transform: uppercase; letter-spacing: .05em;
+    }
+    .viewtoggle .caret { font-size: 10px; text-transform: none; letter-spacing: 0; }
+    .viewtoggle .viewstate { font: 600 12.5px var(--font-sans); color: var(--ink-2); text-transform: none; letter-spacing: 0; }
+    .viewwrap.collapsed .viewbody { display: none; }
+  }
   .viewopts { display: flex; align-items: center; gap: 8px 16px; margin-top: 12px; flex-wrap: wrap; }
   .viewopt { display: inline-flex; align-items: center; gap: 8px; }   /* keep each label with its toggle when the row wraps */
   .viewopts .vlabel { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
@@ -132,6 +156,12 @@
   @media (max-width: 640px) {
     .wrap, .sitebar-inner { padding-left: 16px; padding-right: 16px; }
     .card .body { padding: 12px 12px; }
+    /* Brand and nav on one row rather than two. Two rows cost about 45px of the first
+       screen on every page, for a header that fits across once the padding tightens. */
+    .sitebar-inner { flex-wrap: nowrap; gap: 10px; padding-top: 9px; padding-bottom: 9px; }
+    .sitebar-nav { flex-wrap: nowrap; margin-left: auto; }
+    .sitebar-nav a { padding: 6px 7px; font-size: 13px; }
+    .sitebar-word { font-size: 18px; }
   }
 
   /* Respect a reduced-motion preference: strip transitions and animations for

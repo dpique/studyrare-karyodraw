@@ -129,3 +129,67 @@ test('the guide keeps a way into the tour', () => {
   assert.match(read('how-to-read-a-karyotype/index.html'), /href="\/\?tour=1"/,
     'the guide is the nav item that reaches the tour from every page');
 });
+
+// ---- the first screen on a phone ---------------------------------------------
+// At 390x844 the karyogram started 888px down: the input, three example chips, the
+// prompt line and three rows of segmented buttons filled the whole first screen, so
+// someone arriving from a search saw a form and no drawing. Measured after these
+// changes it starts at 627. The pieces that bought that are pinned here.
+test('the view options fold away on a phone, and are open everywhere else', () => {
+  const html = read('index.html');
+  // Collapsed by script, never by CSS alone: a page whose script failed must show the
+  // options rather than hide them behind a control that cannot open them.
+  assert.match(html, /\.viewtoggle \{ display: none; \}/, 'the toggle is hidden by default');
+  assert.match(html, /@media \(max-width: 700px\) \{[\s\S]*?\.viewtoggle \{/, 'and shown on a narrow screen');
+  // Every rule that hides the body has to be the collapsed one. Written as a sweep
+  // rather than a match for the rule as authored, so a second, unqualified
+  // "display: none" added later cannot slip past by sitting somewhere else.
+  const hides = [...html.matchAll(/([^\n]*)\.viewbody \{[^}]*display: none/g)].map((m) => m[1]);
+  assert.ok(hides.length, 'the collapsed rule is there');
+  hides.forEach((prefix) => assert.match(prefix, /\.viewwrap\.collapsed $/,
+    `.viewbody is hidden by a rule that is not the collapsed one: "${prefix}"`));
+  // The folded row still says what is on screen.
+  assert.match(html, /id="viewstate"/, 'the collapsed row carries the current setting');
+  assert.match(html, /aria-expanded/, 'and reports its state to a screen reader');
+  assert.match(html, /aria-controls="viewbody"/, 'and names what it controls');
+});
+
+test('a phone gets fewer example chips, and everyone gets a way back to them', () => {
+  const html = read('index.html');
+  assert.match(html, /max-width: 560px[^]*?matches;\s*\n\s*return Math\.min\(narrow \? 2 : EXAMPLES_SHOWN/,
+    'two chips under 560px, three above');
+  // The chips are re-dealt every load on purpose, so the row needs a door to all of them.
+  assert.match(html, /id="all-examples" href="\/karyotype\/"/, 'the link to the full list');
+  assert.ok(!/See all \d+ examples<\/a>/.test(html), 'the count is not typed into the markup');
+  assert.match(html, /"See all " \+ pages \+ " examples"/, 'it comes from the curriculum');
+});
+
+// ---- what is on screen when nothing is drawn ----------------------------------
+// A refused karyotype used to sit beside a "Karyotype decoded" card showing "…", a band
+// map of a chromosome from the last karyotype that DID draw, and a legend for a drawing
+// that was not there.
+test('a refusal puts away the cards that describe a drawing', () => {
+  const html = read('index.html');
+  ['decode-card', 'detail-card', 'legend-card'].forEach((id) =>
+    assert.match(html, new RegExp(`id="${id}"`), `${id} has to be addressable`));
+  const invalid = html.match(/if \(invalid\) \{[\s\S]*?\n {6}return;/)[0];
+  assert.match(invalid, /showAsideCards\(false\)/, 'the refusal hides them');
+  assert.ok(!/\$\("#decode"\)\.innerHTML = '<div class="muted">…<\/div>'/.test(html),
+    'and does not leave an ellipsis standing in for an explanation');
+  // And a later valid karyotype brings them back.
+  const valid = html.match(/currentModel = model;[\s\S]*?renderDetail\(focus\);/)[0];
+  assert.match(valid, /showAsideCards\(true\)/, 'a drawing brings them back');
+  // With the cards gone, the 360px column would hold a third of the page open for
+  // nothing, so the grid drops to one column while there is nothing to put in it.
+  assert.match(html, /\.grid\.solo \{ grid-template-columns: minmax\(0, 1fr\); \}/, 'the empty column collapses');
+  assert.match(html, /classList\.toggle\("solo", !on\)/, 'and only while the cards are away');
+});
+
+test('the About page does not repeat itself in the footer', () => {
+  // Every clause of the site footer restates a section of that page: what the app is,
+  // that it is not diagnostic, who makes it, and the Ko-fi line.
+  assert.ok(!/<div class="lp-foot">/.test(read('about/index.html')), 'no site footer on About');
+  // It is the only place those things are said on every other page, so it stays there.
+  ['how-to-read-a-karyotype/index.html', 'karyotype/down-syndrome/index.html', 'karyotype/index.html']
+    .forEach((f) => assert.match(read(f), /<div class="lp-foot">/, `${f} keeps the footer`));
+});
