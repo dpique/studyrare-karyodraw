@@ -3,6 +3,31 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-29 (the tour starts where it runs)
+
+- **"Tour" and "Guide" sat side by side in the nav promising the same thing.** Nothing
+  said that one is an eleven-step walk through the running app and the other is an
+  article, and with "Karyotypes" beside them three of the four nav items were places to
+  learn with no order between them.
+
+  The tour is a mode of the homepage, not a page, and the homepage is the only place it
+  can run. It now starts from a line beside the input, under the example chips and above
+  the view options, which is where someone who does not know the notation is sitting:
+
+  > New to the notation? **Take the guided tour (11 steps)**
+
+  A text link rather than a button, so it does not compete with "Draw and explain". The
+  step count is filled in from the curriculum in `content/karyotypes.js` rather than typed
+  into the markup, so adding a step cannot leave the number behind. The launcher hides
+  while the tour is open, since the tour card carries its own Exit.
+
+  Putting it in the nav had bought one real thing, which was reachability from every
+  landing page. That is kept: the Guide, which is the teaching destination that stayed in
+  the nav, now opens with the tour link. The `/?tour=1` deep link is unchanged.
+
+  `test/layout.test.js` pins the nav to Karyotypes, Guide, About on the homepage and on
+  four generated pages, and pins where the launcher sits.
+
 ## 2026-07-29 (what banding sees)
 
 - **Two landing pages showed a deletion a karyotype would usually not show.** KaryoDraw

@@ -89,3 +89,43 @@ test('the warning heading follows the messages under it', () => {
   const parser = fs.readFileSync(path.join(root, 'iscn-parser.js'), 'utf8');
   assert.match(parser, /is correct ISCN, /, 'and the parser still emits that phrase');
 });
+
+// ---- where the tour starts ---------------------------------------------------
+// The tour used to be a nav item, sitting beside "Guide" and promising the same thing
+// in different words. It is a mode of the homepage, not a page, and it can only run
+// there. It now starts from a line beside the input, and from the Guide, which is the
+// teaching destination that stayed in the nav, so it is still one click from any page.
+const navLinks = (html) => {
+  const bar = html.match(/<nav class="sitebar-nav"[\s\S]*?<\/nav>/);
+  assert.ok(bar, 'every page has the primary nav');
+  return [...bar[0].matchAll(/<a href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map((m) => [m[2].trim(), m[1]]);
+};
+
+test('the nav names one thing per item, and the tour is not one of them', () => {
+  ['index.html', 'about/index.html', 'how-to-read-a-karyotype/index.html',
+   'karyotype/index.html', 'karyotype/down-syndrome/index.html'].forEach((f) => {
+    const labels = navLinks(read(f)).map((l) => l[0]);
+    assert.deepEqual(labels, ['Karyotypes', 'Guide', 'About'], f);
+  });
+});
+
+test('the homepage starts the tour from beside the input', () => {
+  const html = read('index.html');
+  assert.match(html, /id="tour-start"/, 'the launcher is there');
+  // Before the view options and after the example chips: in the typing path, where
+  // someone who does not know the notation is sitting.
+  assert.ok(html.indexOf('id="examples"') < html.indexOf('id="tour-start"'), 'after the chips');
+  assert.ok(html.indexOf('id="tour-start"') < html.indexOf('class="viewopts"'), 'before the view options');
+  // A link, not a second button competing with Draw & explain.
+  assert.match(html, /class="linklike" id="tour-start"/, 'styled as a link');
+  // The step count comes from the curriculum, so it cannot drift from it.
+  assert.ok(!/guided tour \(\d+ steps\)/.test(html), 'the count is not typed into the markup');
+  assert.match(html, /TOUR\.length \+ " steps\)"/, 'the count is filled in from TOUR');
+  // And the deep link still works.
+  assert.match(html, /if \(wantsTour\) startTour\(\);/, '?tour=1 still opens it');
+});
+
+test('the guide keeps a way into the tour', () => {
+  assert.match(read('how-to-read-a-karyotype/index.html'), /href="\/\?tour=1"/,
+    'the guide is the nav item that reaches the tour from every page');
+});
