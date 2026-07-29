@@ -1568,6 +1568,23 @@
     var m = new RegExp("[?&]" + name + "=([^&]+)").exec(location.search);
     return m ? decodeURIComponent(m[1].replace(/\+/g, " ")) : null;
   }
+  // ?k= carries a karyotype, where "+" is an ISCN symbol and not a form-encoded space.
+  //
+  // The generic decode above turns "+" into a space, which is right for a form and wrong
+  // here: karyodraw.com/?k=46,XY,der(13;14)(q10;q10),+14, typed by hand or pasted out of
+  // a message, arrived as ",_14" and the app answered "“14” needs a sign" about a sign
+  // the reader had written. Every link this app makes encodes the plus as %2B and a space
+  // as %20 (encodeURIComponent), so nothing it hands out changes.
+  //
+  // ISCN writes exactly one space, after a mos/chi prefix (4.4.1 m), so that is the one
+  // case where a "+" there could have meant a space, and it is put back.
+  function getKaryotypeParam() {
+    var m = /[?&]k=([^&]*)/.exec(location.search);
+    if (!m) return null;
+    var v;
+    try { v = decodeURIComponent(m[1]); } catch (e) { v = m[1]; }
+    return v.replace(/^(mos|chi)\+/i, "$1 ");
+  }
   // The view options fold away under 700px (see the .viewtoggle rules). Collapsed by
   // script and not by CSS alone, so a page whose script failed shows the options rather
   // than hiding them behind a control that cannot open.
@@ -1946,7 +1963,7 @@
   // drawing. skipHashOnce stops run() from rewriting the entry we just moved to.
   window.addEventListener("popstate", function () {
     applyUrlView();
-    input.value = getParam("k") || DEMO_K;
+    input.value = getKaryotypeParam() || DEMO_K;
     run.skipHashOnce = true;
     run();
   });
@@ -2042,8 +2059,8 @@
   })();
 
   applyUrlView();
-  var hasK = getParam("k") != null;
-  var initial = getParam("k") || DEMO_K;
+  var hasK = getKaryotypeParam() != null;
+  var initial = getKaryotypeParam() || DEMO_K;
   input.value = initial;
   // If this deep-linked karyotype has a dedicated landing page, point the canonical
   // there so ?k= views consolidate onto one URL for search engines.
