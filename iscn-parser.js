@@ -106,12 +106,32 @@
   // internal state, teaches nothing, and leaves them to work out the rule themselves.
   // The rule is the whole point. See the message-voice test.
   function leftoverWarning(raw, leftover) {
+    // The message has to fit the leftover it is about. This used to end with a
+    // catch-all naming two ISCN features, "or" alternatives and uncertainty markers,
+    // whatever the leftover actually was: a bare "14" was answered with a paragraph
+    // about notation the reader had never used and no mention of the comma or the sign
+    // it was missing. Each branch below is a leftover that can be diagnosed, and the
+    // last one says only what is true.
     if (/^[+\-−–](\d+|X|Y)$/.test(leftover)) {
       return "Changes are separated by commas, so “" + leftover + "” needs one before it: “" +
         raw.replace(leftover, "," + leftover) + "”.";
     }
-    return "KaryoDraw draws one karyotype at a time, so “" + leftover + "” in “" + raw +
-      "” cannot be included. Alternatives written with “or”, and uncertainty markers, are not supported.";
+    // A chromosome with neither a comma nor a sign. Both are missing, and naming one
+    // of them sends the reader round again for the other.
+    if (/^(\d+|X|Y)$/.test(leftover)) {
+      return "A change says whether a chromosome was gained or lost, and changes are separated by commas, " +
+        "so “" + leftover + "” is “,+" + leftover + "” for an extra copy or “,-" + leftover + "” for a missing one.";
+    }
+    // Only when the reader really did write one. Anchored at the start rather than on
+    // a word boundary: ISCN writes " or " with spaces (4.4.1) and the parser strips
+    // them, so "del(5)(q13q33) or del(5)(q14q34)" reaches here as "ordel(5)(q14q34)".
+    // No ISCN abbreviation begins with "or", so this cannot catch a real operation.
+    if (/^or(?=[a-z(])/i.test(leftover)) {
+      return "ISCN writes two possible readings of the same result with “or”, and KaryoDraw draws one " +
+        "karyotype at a time, so “" + leftover.replace(/^or/i, "") + "” has to be entered on its own to see it.";
+    }
+    return "A karyotype is a list of changes separated by commas, and “" + leftover + "” in “" + raw +
+      "” is not one KaryoDraw can place. Changes look like +21, del(5)(p15.2), or t(9;22)(q34;q11.2).";
   }
 
   // How many breakpoints an operation takes before it describes anything.

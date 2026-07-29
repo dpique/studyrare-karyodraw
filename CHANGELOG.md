@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-29 (the message fits the mistake)
+
+- **A leftover is now told what is missing from it.** The catch-all named two ISCN
+  features, "or" alternatives and uncertainty markers, whatever the leftover actually
+  was. A student who typed a stray character before "14" was answered with a paragraph
+  about notation she had never used, and no mention of the comma or the sign she was
+  missing. Four branches now, each saying only what is true of the text in front of it:
+
+  | leftover | message |
+  | --- | --- |
+  | `+14` | changes are separated by commas, so it needs one before it |
+  | `14` | a change says whether the chromosome was gained or lost, AND changes are separated by commas, so this is `,+14` or `,-14`. Both, because naming one sends the reader round again for the other |
+  | `ordel(5)(q14q34)` | ISCN writes two readings of one result with "or", and only one can be drawn at a time, so enter the alternative on its own |
+  | `zzz` | not a change the app can place, with the shape of one shown. No diagnosis it does not have |
+
+  The "or" branch is anchored at the start of the leftover rather than on a word
+  boundary: ISCN writes " or " with spaces around it (4.4.1) and the parser strips
+  them, so the alternative arrives as `ordel(...)`. No ISCN abbreviation begins with
+  "or", so this cannot catch a real operation.
+
+  Together with the stray-character rule below, `46,XY,der(13;14)(q10;q10) %14` now
+  produces exactly two messages, each about something the reader typed: the `%` is not
+  an ISCN character and is dropped, and the `14` that is left needs a comma and a sign.
+
 ## 2026-07-29 (checked against ISCN 2024, which corrected four rules and one of mine was live)
 
 The gate in the entry below was written from memory. The standard was on disk. Reading it
