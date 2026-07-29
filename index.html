@@ -1431,8 +1431,16 @@
       parts.push('<div class="dym-row">Did you mean ' + joined + '?</div>');
     }
     if (w.length) {
+      // A karyotype the app simply has no drawing for is not the reader's problem, and
+      // the box must not frame it as one: "Let's sort this out" over a sentence saying
+      // "nothing is wrong with what you typed" contradicts itself in three lines. The
+      // heading follows the messages, so it only softens when EVERY message is one of
+      // these; a rec() alongside a real typo is still something to sort out.
+      var allNotDrawn = w.every(function (x) { return x.indexOf("is correct ISCN") >= 0; });
       parts.push('<div class="warn-title">' +
-        (fix ? (w.length === 1 ? "One thing to check:" : "A couple of things to check:") : "Let’s sort this out:") + '</div>');
+        (allNotDrawn ? (w.length === 1 ? "This one KaryoDraw cannot draw:" : "These KaryoDraw cannot draw:")
+          : fix ? (w.length === 1 ? "One thing to check:" : "A couple of things to check:")
+          : "Let’s sort this out:") + '</div>');
       parts.push('<ul>' + w.map(function (x) { return "<li>" + escapeHtml(x) + "</li>"; }).join("") + '</ul>');
     }
     parts.push('</div>');

@@ -74,3 +74,18 @@ test('the homepage footer is a top-level element, not wrapped in a container', (
     'nothing should sit between main and the footer: a wrapper there can reintroduce '
     + `padding under the footer (found ${JSON.stringify(between.slice(0, 120))})`);
 });
+
+// The heading over the warning box has to agree with what is inside it. A karyotype
+// the app has no drawing for is not the reader's problem, and "Let's sort this out"
+// over a sentence reading "nothing is wrong with what you typed" contradicts itself in
+// three lines. It only softens when EVERY message is one of these: a rec() alongside a
+// real typo is still something to sort out.
+test('the warning heading follows the messages under it', () => {
+  const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.match(page, /var allNotDrawn = w\.every\(/, 'the heading is decided from all the messages');
+  assert.match(page, /KaryoDraw cannot draw:/, 'and has its own wording for that case');
+  // The marker it keys on is the phrase the parser actually emits. If one moves without
+  // the other the heading silently reverts, which is exactly what this pins.
+  const parser = fs.readFileSync(path.join(root, 'iscn-parser.js'), 'utf8');
+  assert.match(parser, /is correct ISCN, /, 'and the parser still emits that phrase');
+});
