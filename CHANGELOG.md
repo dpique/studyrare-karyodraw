@@ -3,6 +3,44 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-28 (a stress sheet for the whole app, built from what students type)
+
+- **`npm run stress` types 138 karyotypes into the real page and writes a review sheet.**
+  The test suite checks what the app computes. Nothing checked what a student *reads*: whether
+  the message teaches the rule, whether the drawing is the right drawing, whether the clinical
+  card says the useful thing. `scripts/stress-report.mjs` drives `index.html` in a headless
+  browser, captures the karyogram, the warning box, the decode, the clinical card and the
+  segregation panel for each karyotype in `scripts/stress-corpus.mjs`, and assembles them into
+  one self-contained `karyotype-stress-test.html` with a Good / Not good control per card and a
+  Markdown export of everything marked not good.
+
+  It drives the page rather than the modules because the draw gate, the band check and much of
+  the wording live inside `run()`. A Node reimplementation would review a program nobody uses.
+
+  The corpus is the point, not the harness. Half of it is board practice questions and the
+  mistakes students make transcribing them, starting with the sixteen strings from one student's
+  July 2026 email — every answer choice as printed, each repair she tried, and the karyotype each
+  question was reaching for. The other half is the notation the app claims to support: mosaics,
+  composites, `inc`, modal ranges, `idem` subclones, isodicentrics, rings, markers, insertions,
+  three-way translocations, cancer clones. Each case carries what it is, what a reviewer should
+  look at, and whether valid ISCN should draw or be refused — a claim about the notation, not
+  about the phenotype.
+
+- **Three findings from the first run**, none of them regressions, none fixed here:
+  - `47,XX,+r` — a supernumerary ring, valid ISCN and the counterpart of `+mar`, which the app
+    does support — is refused as an unrecognized change. Refusing valid ISCN is the worse
+    direction of error, so this outranks everything on the known-holes list.
+  - `46,XX,del(5)` and `46,XX,t(9;22)` draw. Neither states a breakpoint, so every band in the
+    drawing is invented. They belong to the documented arity group (`inv(9)(p11)`,
+    `t(9;22)(q34)`), and they are the shape an exam question written from memory takes, so they
+    are likelier to be typed than any malformed-breakpoint case already on the list.
+  - In the pachytene diagram, the left-hand chromosome label is anchored at `x=34` with
+    `text-anchor="end"` inside a viewBox starting at 0, so any label wider than 34 units is cut
+    off at the left. `13` fits; `rob(13;14)` renders as `b(13;14)`. Every whole-arm translocation
+    shows it.
+
+  `docs/VALIDATION.md` carries the first two in its known-holes table and describes the sheet.
+
 ## 2026-07-28 (the tilde spelling, one click away)
 
 - **"Is it the tilde or the dash?" now has an answer you can click.** ISCN writes a range of modal

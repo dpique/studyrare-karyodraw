@@ -33,10 +33,34 @@ reasoning behind each; `docs/VALIDATION.md` is the standing reference for the dr
   stating no sex field at all is refused (`clone.sexMissing`). See `docs/VALIDATION.md`,
   including the note on why the known-holes survey could not have found this.
 
-330 tests pass (`npm test`). Verified live with a headless browser after each merge.
+344 tests pass (`npm test`). Verified live with a headless browser after each merge.
+
+- **Stress sheet:** `npm run stress` types the 138 karyotypes in `scripts/stress-corpus.mjs`
+  into the real page and writes `karyotype-stress-test.html` — drawing, warning box, decode,
+  clinical card and segregation panel per case, with a Good / Not good control and a Markdown
+  export. Built for the review a test suite cannot do: whether the wording teaches and whether
+  the picture is right. See `docs/VALIDATION.md`, "The stress sheet".
 
 ## In flight
 Nothing. Working tree clean, no open PRs, no worktrees, `main` at the last merge.
+
+## Found by the stress sheet, not yet fixed
+Ordered by how badly each misleads. None is a regression.
+
+1. **`47,XX,+r` is refused and is valid ISCN.** A supernumerary ring of unknown origin, the
+   counterpart of `+mar`, which the app supports. Refusing valid ISCN is the worse direction of
+   error, so this outranks the whole known-holes table. Likely a missing branch beside `+mar`.
+2. **The pachytene label is clipped.** `pachytene.js` anchors the left-hand chromosome label at
+   `x=34` with `text-anchor="end"` in a viewBox that starts at 0, so anything wider than 34
+   units loses its first characters: `rob(13;14)` renders as `b(13;14)`. Visible on every
+   whole-arm translocation, which is most of the segregation teaching. Widen the viewBox to the
+   left (and shift the content), rather than moving the anchor, so the diagram keeps its
+   proportions.
+3. **`46,XX,del(5)` and `46,XX,t(9;22)` draw.** Neither states a breakpoint. Same family as the
+   documented arity holes below, and both are added to the table in `docs/VALIDATION.md`. The
+   arity check planned for `inv(9)(p11)` and `t(9;22)(q34)` should cover "no breakpoint group at
+   all" in the same pass — an operation knows how many breakpoint groups it needs, and zero is a
+   case of that rule, not a separate one.
 
 ## Land mines
 - **The CDN serves mixed versions for 1-3 minutes after a merge.** A single post-deploy

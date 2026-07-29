@@ -173,8 +173,22 @@ worked on. Roughly ordered by how badly the drawing misleads.
 | `46,XY,t(9;22)(q34;q11.2)[0]` | a cell count of zero |
 | `46,YX` | sex chromosomes out of order |
 | `46,xy,del(5)(p15.2)` | lowercase; accepted deliberately, may not be wanted in a checker |
+| `46,XX,del(5)` | no breakpoints at all; every band in the drawing is invented |
+| `46,XX,t(9;22)` | no breakpoint group at all; same |
 
-Reproduce with the survey in `NEXT_SESSION_HANDOFF.md`.
+The last two were found by `npm run stress` (see below), not by the survey, and they belong
+with the arity group at the top: an operation drawn from breakpoints it was never given.
+`del(5)` and `t(9;22)` are the shape an exam question written from memory takes, so they
+are more likely to be typed than any of the malformed-breakpoint entries.
+
+**The opposite failure, which this list has no room for:** `47,XX,+r` is valid ISCN — a
+supernumerary ring of unknown origin, the counterpart of `+mar`, which the app does support
+— and it is refused as an unrecognized change. Refusing valid ISCN is the worse direction
+of error (see "Adding a check" below), so it outranks everything in the table.
+
+Reproduce with the survey in `NEXT_SESSION_HANDOFF.md`, or with `npm run stress`, which
+runs a 138-karyotype corpus through the real page and flags every case where the app drew
+something it should have refused or refused something it should have drawn.
 
 Note what this list is not. Every entry above is a well-formed field list with a bad
 *aberration* in it, because that is what the survey was built to probe. `69.XX` was not on
@@ -197,3 +211,21 @@ field structure too, not only the operations.
    problem without naming a rule, a correct form, or an example.
 5. Verify the new test fails when the fix is reverted. Several guards in this repo passed
    without the code that was supposed to make them pass.
+
+## The stress sheet
+
+`npm run stress` types every karyotype in `scripts/stress-corpus.mjs` into the real page in
+a headless browser and writes `karyotype-stress-test.html`: one card per karyotype holding
+the drawing, the warning box, the decode, the clinical card and the segregation panel as a
+student sees them, with a Good / Not good control and a Markdown export of the "not good"
+list. It is for the review a test suite cannot do — whether the *wording* teaches, whether
+the *picture* is right — so its corpus is written around what students actually type,
+including the exact strings from board practice questions.
+
+It drives the page rather than the modules on purpose: the draw gate, the band check and
+much of the message wording live inside `index.html`'s `run()`, so a Node reimplementation
+would review a program nobody uses. The two checks it makes on its own are the `expect`
+field per case and, at write time, that no two karyograms share an SVG `clipPath` id.
+
+Add a case whenever a student sends in a karyotype that behaved oddly. The corpus is the
+record of what has been looked at.
