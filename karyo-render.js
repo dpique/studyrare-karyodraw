@@ -207,6 +207,28 @@
 
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;"); }
 
+  // Roughly how wide a label will draw, in the same units as the font size.
+  //
+  // Every figure in this app builds its SVG as a string, so there is no text metric
+  // to ask: a label is positioned before anything has been laid out. The labels that
+  // matter are drawn at the edge of a frame and grow outward, so a frame sized by a
+  // constant fits a short label and cuts a long one. It did, in two places at once,
+  // and neither is visible in the code: pachytene.js drew "rob(13;14)" as "b(13;14)"
+  // on every whole-arm translocation, and segregation.js clipped 2.6px off each end
+  // of "der(13;14)" in its gamete glyphs.
+  //
+  // Sans-serif digits and lowercase run about 0.55 em; "(", ")" and ";", which is
+  // most of what else appears in a chromosome label, run about 0.32. Checked against
+  // Chrome's own getBBox on the strings this app actually draws: der(13;14) at
+  // font-size 7 measures 35.2px and this returns 33.7, close enough for a margin
+  // that adds its own gap on top. It is one function so that a correction lands
+  // everywhere, and so the two callers cannot drift apart.
+  function textWidth(s, size) {
+    var wide = 0, narrow = 0;
+    String(s).split("").forEach(function (ch) { if ("();:.,".indexOf(ch) >= 0) narrow++; else wide++; });
+    return (wide * 0.55 + narrow * 0.32) * (size || 9);
+  }
+
   // ----- composite ideogram renderer ----------------------------------------
   function renderComposite(segments, opts) {
     opts = opts || {};
@@ -416,7 +438,13 @@
   function buildInstance(inst) {
     var chrom = inst.chrom, ab = inst.aberration, kind = inst.kind;
     if (kind === "normal" || kind === "gain") return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label };
-    if (kind === "mar") return { segments: [{ chrom: (chrom in IDEO.data ? chrom : "21"), from: 0, to: 24000000, hasCen: true, reversed: false }], overlays: [], caption: "mar", marker: true };
+    if (kind === "mar") {
+      var mseg = { chrom: (chrom in IDEO.data ? chrom : "21"), from: 0, to: 24000000, hasCen: true, reversed: false };
+      // +r is a marker whose shape is known: draw the ring rather than the generic
+      // marker bar, so it is not confused with +mar on the page it appears on.
+      if (inst.ring) return { segments: [mseg], overlays: [], caption: "r", marker: true, ring: true };
+      return { segments: [mseg], overlays: [], caption: "mar", marker: true };
+    }
     if (kind === "dmin") return { segments: [{ chrom: "21", from: 0, to: 6000000, hasCen: false, reversed: false }], overlays: [], caption: "dmin", dmin: true };
     var d0 = IDEO.data[chrom];
 
@@ -1219,7 +1247,7 @@
 
   window.Karyo = {
     render: render, drawInstance: drawInstance, drawDetail: drawDetail, buildInstance: buildInstance,
-    computeAffected: computeAffected, resolveBand: resolveBand, getBands: getBands,
+    computeAffected: computeAffected, resolveBand: resolveBand, getBands: getBands, textWidth: textWidth,
     armExtent: armExtent, nearestBand: nearestBand,
     STAIN: STAIN, OP_COLORS: OP_COLORS, AFFECTED_PALETTE: AFFECTED_PALETTE, tintRamp: tintRamp, BASELINE: BASELINE
   };

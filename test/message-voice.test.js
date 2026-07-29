@@ -30,6 +30,15 @@ const BAD_INPUTS = [
   '47,idem,+9', '45,XX,t(13;15)(q10;q10)', '46,XY,+21×99', '46,XY,dmin×99',
   '46,XY,inv(9)(p11q13)zzz', '46XY', '46,XY,del(5)(zz15.2)', '46,XY,t(9;22)(q34;zzz)',
   '46,XY,-2-21', '43,XZY,+8', '46,QQ,+21', '44,XY,-21,-20',
+  // The gate added in the 2026-07-29 changelog entry. Every message it can produce goes
+  // through the same voice rules; a new refusal is exactly where parser voice creeps
+  // back in, because "needs two breakpoints" is one word away from "could not read the
+  // second one".
+  '46,XY,inv(9)(p11)', '46,XY,t(9;22)(q34)', '46,XY,t(2;7;5)(q21;p13)', '46,XX,del(5)',
+  '46,XX,t(9;22)', '46,XY,dup(1)', '46,XY,ins(5;2)(p14;q22)', '46,XY,t(9;9)(q34;q11)',
+  '45,XY,rob(1;2)(q10;q10)', '46,XY,+0', '46,XY,del(5)(p15.3p15.2)',
+  '46,XY,del(5)(p15.2),del(5)(p15.2)', '46<3n>,XY', '46c,XY',
+  '46,XY,t(9;22)(q34;q11.2)[0]', '46,YX',
 ];
 
 const allWarnings = () => {
@@ -69,7 +78,10 @@ test('no warning reports on the parser instead of teaching the rule', () => {
 test('every warning tells the reader something to do or a rule to follow', () => {
   // A heuristic, deliberately loose: a message must either name the correct form,
   // give an example, or state a rule. One that only reports a problem fails.
-  const TEACHES = /\b(needs?|must|has to|use|write|written|should|belongs?|separated?|starts? with|comes? first|comes? before|listed in|add|make sure|for example|e\.g\.|like|look like|is a|are not supported|not an ISCN|takes? one|draws? one|left out of the drawing|capped|Type a karyotype)\b/i;
+  // "have to" as well as "has to": a rule stated about two things ("the two have to
+  // describe the same cell") is as much a rule as one stated about one, and the
+  // singular-only pattern failed the ploidy message for its grammar.
+  const TEACHES = /\b(needs?|must|ha(?:s|ve) to|use|write|written|should|belongs?|separated?|starts? with|comes? first|comes? before|listed in|add|make sure|for example|e\.g\.|like|look like|is a|are not supported|not an ISCN|takes? one|draws? one|left out of the drawing|capped|Type a karyotype)\b/i;
   allWarnings().forEach(function (x) {
     assert.ok(TEACHES.test(x.w), `message for "${x.k}" reports a problem without teaching anything:\n    ${x.w}`);
   });

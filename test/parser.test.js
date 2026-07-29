@@ -343,6 +343,29 @@ test('a ranged marker count +1~3mar is recognized, not rejected as unreadable', 
   assert.ok((r.clones[0].slots.mar || []).length >= 1, 'draws at least one marker');
 });
 
+// --- Supernumerary rings ------------------------------------------------------
+// +r is the ring counterpart of +mar: an extra chromosome banding cannot identify,
+// whose shape happens to be known. It was refused as "not a change KaryoDraw
+// recognizes" while +mar worked, which is the worse direction of error for this app
+// (docs/VALIDATION.md): refusing valid ISCN, not tolerating invalid ISCN.
+test('a supernumerary ring +r is a marker whose shape is known', () => {
+  const c = clone0('47,XX,+r');
+  assert.equal(c.unreadable, false, '+r is valid ISCN and must draw');
+  assert.equal(c.complement.mar, 1, 'it occupies the marker slot: origin unidentified');
+  assert.equal(c.slots.mar[0].ring, true, 'and carries the ring shape into the drawing');
+  assert.equal(c.slots.mar[0].label, 'r', 'labelled r, not mar');
+  assert.equal(c.counts.ok, true, '46 + 1 ring = 47');
+});
+
+test('the ring marker is counted and labelled like any other marker', () => {
+  assert.equal(clone0('48,XX,+2r').complement.mar, 2, 'a count works, as with 2mar');
+  assert.equal(clone0('47,XX,+r1').unreadable, false, 'a numbered ring r1 is one ring');
+  // r(13) names the chromosome and is a different thing: it replaces a 13 rather
+  // than adding an unidentified chromosome, so it must not land in the marker slot.
+  const named = clone0('46,XX,r(13)(p11q34)');
+  assert.equal(named.complement.mar || 0, 0, 'r(13) is not a supernumerary marker');
+});
+
 test('a labeled marker +mar1 is still a single marker, not a count', () => {
   const c = clone0('47,XX,+mar1');
   assert.equal(c.complement.mar, 1, 'mar1 is one (labeled) marker, not "1 marker via count"');
@@ -641,9 +664,69 @@ test('breakpoint text that yields no band is recorded, not discarded', () => {
 });
 
 test('a legitimately absent breakpoint is not flagged', () => {
-  // del(5) and r(13) are legal without one; only non-empty text that yields nothing is.
-  ['46,XY,del(5)', '46,XY,r(13)', '47,XY,+mar', '46,XY,dmin', '46,XY,del(5)(p15.2)', '46,XY,inv(9)(p11q13)']
+  // Only non-empty text that yields no band is a bad band. Whether an operation may
+  // leave the group empty at all is a separate question, answered by the arity rule
+  // below: r(13) and +mar are legal with no breakpoint, del(5) is not.
+  ['46,XY,r(13)', '47,XY,+mar', '46,XY,dmin', '46,XY,del(5)(p15.2)', '46,XY,inv(9)(p11q13)']
     .forEach((k) => assert.equal(ISCN.parse(k).clones[0].unreadable, false, k));
+  ['46,XY,del(5)', '46,XY,r(13)'].forEach((k) =>
+    assert.equal((ISCN.parse(k).clones[0].aberrations[0].badBands || []).length, 0,
+      `${k}: an empty group is not gibberish, whatever else is wrong with it`));
+});
+
+// ---- breakpoint arity ------------------------------------------------------
+// An operation knows how many breakpoints it takes. Given fewer, the renderer drew
+// anyway and filled the gap from whatever the code did with an absent band, which
+// the explanations exposed: inv(9)(p11) came out "the segment between 9p11 is
+// flipped end-for-end (paracentric)", inventing a second endpoint and a
+// classification; dup(1) as "the segment  is present twice". One rule covers the
+// whole family, including the two cases the known-holes survey never had in it
+// (del(5) and t(9;22), which state no breakpoint at all).
+test('an operation given fewer breakpoints than it takes does not draw', () => {
+  [
+    ['46,XY,inv(9)(p11)', /two bands that bound that segment/],
+    ['46,XY,t(9;22)(q34)', /one breakpoint on each chromosome/],
+    ['46,XY,t(2;7;5)(q21;p13)', /involves three chromosomes, so it needs three breakpoints/],
+    ['46,XX,del(5)', /so it needs a band/],
+    ['46,XX,t(9;22)', /one breakpoint on each chromosome/],
+    ['46,XY,dup(1)', /which segment is doubled/],
+    ['46,XY,ins(5;2)(p14;q22)', /three breakpoints/],
+    ['46,XY,ins(5;2)(p14)', /three breakpoints/],
+  ].forEach(([k, re]) => {
+    const m = ISCN.parse(k);
+    assert.equal(m.clones[0].unreadable, true, `${k} should not draw`);
+    assert.match(m.warnings.join(' '), re, `${k} should say which breakpoints it needs`);
+  });
+});
+
+test('every correct spelling of those operations still draws', () => {
+  // The whole point of the rule is the notation it must NOT refuse. Both deletion
+  // forms, both insertion forms, whole-arm t at q10, and the three-way that is the
+  // valid twin of the flagged one.
+  ['46,XY,del(5)(p15.2)', '46,XY,del(5)(q13q33)', '46,XY,dup(1)(q22q25)',
+    '46,XY,inv(9)(p12q13)', '46,XY,inv(11)(q21q23)', '46,XY,t(9;22)(q34;q11.2)',
+    '46,XX,t(2;7;5)(q21;p13;q31)', '46,XX,t(13;15)(q10;q10)',
+    '46,XY,ins(5;2)(p14;q22q32)', '46,XY,ins(2)(q13p23p13)', '46,XX,trp(1)(q22q25)']
+    .forEach((k) => assert.equal(ISCN.parse(k).clones[0].unreadable, false, k));
+});
+
+test('operations that are legal without a breakpoint are left alone', () => {
+  // Deliberately outside the table. Each reads sensibly with the breakpoints left
+  // off and real reports write them that way, and refusing valid ISCN is the worse
+  // failure. Adding one of these to ARITY needs a reason better than symmetry.
+  ['46,XX,r(13)', '46,X,der(X)', '46,XY,i(X)', '46,XY,add(19)', '45,XY,rob(13;14)',
+    '47,XY,+mar', '46,XY,dmin']
+    .forEach((k) => assert.equal(ISCN.parse(k).clones[0].unreadable, false, k));
+});
+
+test('an unreadable breakpoint is named once, not twice', () => {
+  // del(5)(zzqewdf2315.2) fails both checks: the text is not a band, and what is
+  // left is a deletion with no breakpoint. The bad band is the reader's actual
+  // mistake and the arity is downstream of it, so only the first is said.
+  const w = ISCN.parse('46,XY,del(5)(zzqewdf2315.2)').warnings;
+  assert.match(w.join(' '), /is not a breakpoint/);
+  assert.equal(w.filter((x) => /says where the chromosome broke/.test(x)).length, 0,
+    'the arity message would name the same mistake a second time');
 });
 
 test('an unreadable breakpoint is explained, and gets no count fix', () => {
@@ -784,4 +867,86 @@ test('the sign repair leaves ordinary signed changes alone', () => {
 
 test('it works on sex chromosomes too', () => {
   assert.equal(ISCN.parse('44,XY,-X-Y').suggestion, '44,XY,-X,-Y');
+});
+
+// ---- the rest of the known holes ---------------------------------------------
+// docs/VALIDATION.md carried a table of input that is not correct ISCN and drew
+// anyway. Each entry here closes one. The split that matters is refuse vs warn: a
+// karyotype that cannot be drawn honestly is refused, one whose only fault is how it
+// is written keeps its drawing and is told the rule (see "Adding a check").
+test('input that cannot be drawn honestly is refused', () => {
+  [
+    ['46,XY,+0', /isn.t a human chromosome/, 'there is no chromosome 0'],
+    ['46,XY,+99', /isn.t a human chromosome/, 'nor a 99'],
+    ['46,XY,t(9;9)(q34;q11)', /exchange between two different chromosomes/, 'a t within one chromosome'],
+    ['45,XY,rob(1;2)(q10;q10)', /fuses two acrocentric chromosomes/, 'a rob between metacentrics'],
+    ['47,idem,+8', /no earlier clone/, 'a subclone with no stemline'],
+    ['46<3n>,XY', /One n is 23 chromosomes/, 'a ploidy note against its own count'],
+    ['46,XY,t(9;22)(q34;q11.2)[0]', /seen in none of them/, 'a clone observed in no cells'],
+  ].forEach(([k, re, why]) => {
+    const m = ISCN.parse(k);
+    assert.equal(m.clones[0].unreadable, true, `${k}: ${why}`);
+    assert.match(m.warnings.join(' '), re, `${k} should say why`);
+  });
+});
+
+test('the acrocentrics are named, and a real Robertsonian is untouched', () => {
+  // The message has to carry the rule, because "1 and 2 are not acrocentric" is the
+  // fact the reader is missing, not a verdict on their typing.
+  const w = ISCN.parse('45,XY,rob(1;2)(q10;q10)').warnings.join(' ');
+  assert.match(w, /13, 14, 15, 21 and 22/, 'names which chromosomes are acrocentric');
+  assert.match(w, /der\(1;2\)\(q10;q10\)/, 'and offers the notation that does fit');
+  ['45,XY,rob(13;14)(q10;q10)', '45,XX,rob(14;21)(q10;q10)', '45,XY,rob(21;21)(q10;q10)',
+    '45,XX,rob(13;15)(q10;q10)', '46,XX,rob(14;21)(q10;q10),+21']
+    .forEach((k) => assert.equal(ISCN.parse(k).clones[0].unreadable, false, k));
+});
+
+test('a ploidy note that agrees with its count is left alone', () => {
+  // The check must not fire on the notation it exists to protect: <2n> and <3n> are
+  // written precisely so a near-triploid cancer clone can state what it is.
+  ['45<2n>,XY,-21', '69<3n>,XXX', '92<4n>,XXYY', '70<3n>,XXY,+8']
+    .forEach((k) => assert.equal(!!ISCN.parse(k).clones[0].ploidyWrong, false, k));
+});
+
+test('a written-form fault keeps its drawing and is told the rule', () => {
+  // Nothing here changes what is drawn, so refusing would withhold a correct picture
+  // over a spelling. This is the same call listing order gets.
+  [
+    ['46,XY,del(5)(p15.3p15.2)', /from the centromere outward/, /del\(5\)\(p15.2p15.3\)/],
+    ['46,XY,inv(9)(q13p11)', /from the centromere outward/, /inv\(9\)\(p11q13\)/],
+    ['46,XY,del(5)(p15.2),del(5)(p15.2)', /written once with a multiplier/, /del\(5\)\(p15.2\)x2/],
+    ['46c,XY', /goes on the change it describes/, /46/],
+  ].forEach(([k, rule, fix]) => {
+    const m = ISCN.parse(k);
+    assert.equal(m.clones[0].unreadable, false, `${k} still draws`);
+    assert.match(m.warnings.join(' '), rule, `${k} names the rule`);
+    assert.match(m.warnings.join(' '), fix, `${k} shows the corrected form`);
+  });
+});
+
+test('breakpoint order is only corrected where it carries no meaning', () => {
+  // dup is excluded on purpose: there the order distinguishes a direct duplication
+  // from an inverted one and the renderer reads it, so "correcting" it would change
+  // the karyotype. The two dup order tests above are the other half of this.
+  assert.equal(ISCN.parse('46,XY,dup(1)(q25q22)').warnings.length, 0,
+    'an inverted duplication is not a reversed deletion');
+  ['46,XY,del(5)(q13q33)', '46,XY,inv(9)(p12q13)', '46,XX,del(11)(q23.1q23.3)',
+    '46,XY,inv(3)(q21.3q26.2)', '46,XX,del(22)(q11.2q11.2)']
+    .forEach((k) => assert.equal(ISCN.parse(k).warnings.length, 0, `${k} is already in order`));
+  // Sub-bands compare as decimals: q11.23 sits inside q11.2 and before q11.3, which
+  // comparing 23 against 3 as integers gets backwards.
+  assert.equal(ISCN.parse('46,XY,del(9)(q11.2q11.23)').warnings.length, 0, 'q11.2 then q11.23 is in order');
+});
+
+test('the sex chromosomes are reordered, never edited', () => {
+  const m = ISCN.parse('46,YX');
+  assert.equal(m.suggestion, '46,XY', 'offers the canonical order');
+  assert.match(m.warnings.join(' '), /written with every X before every Y/, 'and the rule behind it');
+  assert.equal(ISCN.parse('48,XYXY').suggestion, '48,XXYY');
+  assert.equal(ISCN.parse('mos 46,YX[10]/46,XX[10]').suggestion, 'mos 46,XY[10]/46,XX[10]',
+    'a cell count after the sex field does not hide it');
+  // Every canonical spelling is left exactly as written. A sort that "fixed" one of
+  // these would be editing a correct karyotype.
+  ['46,XY', '45,X', '47,XXY', '47,XYY', '49,XXXXY', '48,XXYY', '46,XX', '69,XXY', '47,XXY[20]']
+    .forEach((k) => assert.equal(ISCN.parse(k).suggestion, null, k));
 });

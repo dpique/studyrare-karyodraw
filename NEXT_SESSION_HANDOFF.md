@@ -33,7 +33,7 @@ reasoning behind each; `docs/VALIDATION.md` is the standing reference for the dr
   stating no sex field at all is refused (`clone.sexMissing`). See `docs/VALIDATION.md`,
   including the note on why the known-holes survey could not have found this.
 
-344 tests pass (`npm test`). Verified live with a headless browser after each merge.
+359 tests pass (`npm test`). Verified live with a headless browser after each merge.
 
 - **Stress sheet:** `npm run stress` types the 138 karyotypes in `scripts/stress-corpus.mjs`
   into the real page and writes `karyotype-stress-test.html` — drawing, warning box, decode,
@@ -44,23 +44,24 @@ reasoning behind each; `docs/VALIDATION.md` is the standing reference for the dr
 ## In flight
 Nothing. Working tree clean, no open PRs, no worktrees, `main` at the last merge.
 
-## Found by the stress sheet, not yet fixed
-Ordered by how badly each misleads. None is a regression.
+## Closed
+Every entry that was on the known-holes list in `docs/VALIDATION.md`, plus the three the
+stress sheet found and the label bug found while building it. All 138 karyotypes in the
+corpus now do what the notation says they should; `npm run stress` flags none.
 
-1. **`47,XX,+r` is refused and is valid ISCN.** A supernumerary ring of unknown origin, the
-   counterpart of `+mar`, which the app supports. Refusing valid ISCN is the worse direction of
-   error, so this outranks the whole known-holes table. Likely a missing branch beside `+mar`.
-2. **The pachytene label is clipped.** `pachytene.js` anchors the left-hand chromosome label at
-   `x=34` with `text-anchor="end"` in a viewBox that starts at 0, so anything wider than 34
-   units loses its first characters: `rob(13;14)` renders as `b(13;14)`. Visible on every
-   whole-arm translocation, which is most of the segregation teaching. Widen the viewBox to the
-   left (and shift the content), rather than moving the anchor, so the diagram keeps its
-   proportions.
-3. **`46,XX,del(5)` and `46,XX,t(9;22)` draw.** Neither states a breakpoint. Same family as the
-   documented arity holes below, and both are added to the table in `docs/VALIDATION.md`. The
-   arity check planned for `inv(9)(p11)` and `t(9;22)(q34)` should cover "no breakpoint group at
-   all" in the same pass — an operation knows how many breakpoint groups it needs, and zero is a
-   case of that rule, not a separate one.
+- **Breakpoint arity** is one rule in `ARITY`/`arityProblem` (`iscn-parser.js`) covering
+  `inv(9)(p11)`, `t(9;22)(q34)`, `t(2;7;5)(q21;p13)`, `ins` with two breakpoints, and the
+  two that state none at all (`del(5)`, `t(9;22)`). `r(13)`, `i(X)`, `add(19)`, `der(X)`
+  and `rob(13;14)` are deliberately outside it and pinned as drawable.
+- **Refused:** `t(9;9)`, `rob(1;2)`, `+0`/`+99`, `47,idem,+8`, `46<3n>,XY`, `[0]`.
+- **Warned, still drawn:** reversed interstitial breakpoints, a change listed twice
+  instead of `x2`, `c` on the count field. `dup` is excluded from the order rule because
+  there the order is meaningful.
+- **Repaired:** `46,YX` offers `46,XY`, reordering and never editing the letters.
+- **`+r`** parses as a marker carrying a ring shape: it draws as a ring labelled `r` and
+  the decode says what separates it from `r(13)`.
+- **Pachytene margins** are sized from their labels (`rob(13;14)` was drawn `b(13;14)`),
+  and the gamete glyph shrinks its type to its fixed box. Both use `Karyo.textWidth`.
 
 ## Land mines
 - **The CDN serves mixed versions for 1-3 minutes after a merge.** A single post-deploy
@@ -96,36 +97,24 @@ npm test 2>&1 | tail -5
 curl -s "https://karyodraw.com/iscn-parser.js?cb=$RANDOM" | grep -c "unaccounted"
 ```
 
-## Next: the known holes
-`docs/VALIDATION.md` lists 14 inputs that are not correct ISCN and still draw. Nothing is
-a regression and none has been attempted. Reproduce the whole set with:
+## Next
+Nothing outstanding on the draw gate. The corpus in `scripts/stress-corpus.mjs` is the
+record of what has been looked at, so the next work comes from adding to it: a karyotype a
+student reports, or a class of notation nobody has typed yet. `ish`/`nuc ish` (FISH
+nomenclature) and `arr` (microarray) are the largest unmodelled families, and both appear
+on real reports beside the karyotypes this app already draws.
 
-```
-node -e '
-const fs=require("fs"),vm=require("vm");const win={};const ctx=vm.createContext({window:win});
-["ideogram-data.js","iscn-parser.js","karyo-render.js"].forEach(f=>vm.runInContext(fs.readFileSync(f,"utf8"),ctx));
-const {ISCN,Karyo}=win;
-const drew=k=>{const m=ISCN.parse(k);
- if(!m.clones.length||m.clones.every(c=>c.modalNumber==null)||m.suggestion) return false;
- return !m.clones.some(c=>c.unreadable||c.countWrong||c.unaccounted);};
-["46,XY,inv(9)(p11)","46,XY,t(9;22)(q34)","46,XY,t(2;7;5)(q21;p13)","46,XY,del(5)(p15.3p15.2)",
- "46,XY,t(9;9)(q34;q11)","45,XY,rob(1;2)(q10;q10)","46,XY,+0","46,XY,del(5)(p15.2),del(5)(p15.2)",
- "47,idem,+8","46<3n>,XY","46c,XY","46,XY,t(9;22)(q34;q11.2)[0]","46,YX"]
- .forEach(k=>console.log((drew(k)?"DRAWS   ":"blocked ")+k));'
-```
-
-The strongest group is the arity ones (`inv` with one breakpoint, `t` with a breakpoint
-group per chromosome missing): each operation knows how many breakpoints it needs, so one
-check in `parseAberration` covers them all, and the drawing is currently invented.
+Note that the survey this file used to carry has been superseded by `npm run stress`, which
+covers everything it did and 130 more. It missed `69.XX`, `del(5)` and `t(9;22)` all for
+the same reason: it only varied what was inside the parentheses.
 
 ## Resume prompt
 > Read `NEXT_SESSION_HANDOFF.md` and `docs/VALIDATION.md` in
 > `/Users/dpique/Desktop/projects/active/studyrare/karyodraw`, then run the Verify-first
-> commands before acting on anything in them. We are closing the remaining holes where
-> KaryoDraw draws a karyogram for input that is not correct ISCN. Start with the
-> breakpoint-arity group (`inv(9)(p11)`, `t(9;22)(q34)`, `t(2;7;5)(q21;p13)`): each
-> operation knows how many breakpoints it requires, so it should be one check rather than
-> several. Follow the rules at the end of `docs/VALIDATION.md`, especially that refusing
-> valid ISCN is far worse than tolerating invalid ISCN, and that every new guard must be
-> verified to fail when its fix is reverted. Ship as a worktree + squash PR per the usual
-> workflow and confirm the deploy with three consecutive fetches.
+> commands before acting on anything in them. The draw gate has no known holes left: every
+> entry that was on that list is closed and `npm run stress` flags nothing across its
+> 138-karyotype corpus. Work now comes from adding to that corpus. Follow the rules at the
+> end of `docs/VALIDATION.md`, especially that refusing valid ISCN is far worse than
+> tolerating invalid ISCN, that a written-form fault keeps its drawing, and that every new
+> guard must be verified to fail when its fix is reverted. Ship as a worktree + squash PR
+> per the usual workflow and confirm the deploy with three consecutive fetches.
