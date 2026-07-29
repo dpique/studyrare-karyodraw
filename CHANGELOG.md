@@ -3,6 +3,38 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-07-29 (breakpoints on one chromosome run together)
+
+- **`46,XX,del(15)(q11.2;q13)` drew a different deletion from the one that was typed, and
+  said nothing.** The two sides of the semicolon parse as separate breakpoint groups, a
+  deletion takes its bands from the first group alone, so the picture was a terminal loss
+  from 15q11.2 and the second breakpoint was dropped. The decode agreed with the picture
+  and not with the input: "the part around 15q11.2".
+
+  ISCN 4.2.1 h: "If the rearrangement involves a single chromosome the breakpoints are not
+  separated by a semicolon (;), e.g., inv(2)(p23q11.2), del(4)(p15.3p16.1), r(18)(p11.2q23)".
+  The semicolon is what separates different chromosomes (4.2.1 g). The message now says
+  so and offers the repair:
+
+  > Breakpoints on the same chromosome are written one after the other, so
+  > "del(15)(q11.2;q13)" is "del(15)(q11.2q13)". The semicolon separates different
+  > chromosomes, as in t(9;22)(q34;q11.2).
+
+  `dup`, `r`, `trp` and a within-chromosome `ins` had the same hole. `inv(2)(p23;p13)` was
+  told instead that an inversion needs two bands, which is a rule the reader had not
+  broken.
+
+- **A comma there was repaired into the semicolon form**, which teaches the opposite of
+  4.2.1 h. `del(15)(q11.2,q13)` now gets the same repair as the semicolon: the bands run
+  together. The single-chromosome rule runs before the comma-inside-parentheses rule, and
+  is skipped when the chromosome group itself holds a separator, so `t(9,22)(q34;q11.2)`
+  is still repaired to `t(9;22)(q34;q11.2)`.
+
+- **One mistake, one message.** The join is applied in `parse()` as well as in
+  `diagnose()`, for the reason the trailing period is: otherwise the operation is parsed
+  from the text as typed and reports a second problem underneath the one that names the
+  mistake.
+
 ## 2026-07-29 (the brackets hold a count of cells)
 
 - **`46,XY,t(9;22)(q34;q11.2)[-1]` was answered with a rule about commas.** The message
