@@ -87,6 +87,14 @@ async function capture(page, k) {
       // segregation is a germline event.
       segHTML: (el('segregation-card') && el('segregation-card').style.display !== 'none'
         && el('segregation')) ? el('segregation').innerHTML : '',
+      // Everything still on screen that describes a drawing. The corpus is typed into ONE
+      // page in sequence, which is the only place a panel left over from the previous
+      // karyotype can be seen at all, and for months one was: the gate hid the decode, the
+      // band map and the legend by name and never hid the segregation panel, so a refused
+      // karyotype sat under "Fix the karyotype above" with the previous carrier's
+      // quadrivalent drawn below it. A human had to notice, and did not.
+      onScreen: Array.prototype.slice.call(document.querySelectorAll('[data-drawing]'))
+        .filter((n) => getComputedStyle(n).display !== 'none').map((n) => n.id),
     };
   });
 
@@ -122,9 +130,19 @@ const asTyped = (k) => k === ''
   ? '<span class="ws">(empty)</span>'
   : esc(k).replace(/ /g, '<span class="ws">␣</span>');
 
+// A panel that describes a drawing, on screen when there is no drawing. The corpus is
+// typed into ONE page in sequence, so this sheet is the only place a panel left over from
+// the previous karyotype can be seen at all.
+const leftoverOf = (cap) => (!cap.drew && (cap.onScreen || []).length ? cap.onScreen : null);
+// Counted as a mismatch, and by the SAME rule the headline count uses. A red chip on a
+// card under a headline saying nothing is wrong is the failure this whole sheet exists to
+// stop, one level up.
+const isWrong = (e, cap) => (cap.drew ? 'draw' : 'refuse') !== e.expect || !!leftoverOf(cap);
+
 function cardHTML(e, cap, i) {
   const actual = cap.drew ? 'draw' : 'refuse';
-  const mismatch = actual !== e.expect;
+  const leftover = leftoverOf(cap);
+  const mismatch = isWrong(e, cap);
   const pic = cap.drew
     ? `<div class="pane"><div class="pane-h">The drawing <span class="viewtag">${cap.view === 'affected' ? 'affected chromosomes only' : 'full karyogram'}</span></div>
          <div class="picwrap">${cap.karyoHTML}</div>
@@ -156,7 +174,8 @@ function cardHTML(e, cap, i) {
       <div class="chips">
         <span class="chip expect-${e.expect}">should ${e.expect === 'draw' ? 'draw' : 'be refused'}</span>
         <span class="chip actual-${actual}">${actual === 'draw' ? 'drew' : 'refused'}</span>
-        ${mismatch ? '<span class="chip bad">does not match</span>' : ''}
+        ${actual !== e.expect ? '<span class="chip bad">does not match</span>' : ''}
+        ${leftover ? `<span class="chip bad">left over from the last karyotype: ${esc(leftover.join(', '))}</span>` : ''}
       </div>
     </div>
     <div class="verdict" role="group" aria-label="Review">
@@ -183,7 +202,7 @@ function reportHTML(rows, appCss, fontLinks) {
   const drew = rows.filter((r) => r.cap.drew).length;
   const mismatches = rows
     .map((r, i) => ({ r, i }))
-    .filter(({ r }) => (r.cap.drew ? 'draw' : 'refuse') !== r.e.expect);
+    .filter(({ r }) => isWrong(r.e, r.cap));
   const mismatch = mismatches.length;
 
   // The cases where the app did the opposite of what the notation calls for, listed up
@@ -500,10 +519,17 @@ async function main() {
 
   fs.writeFileSync(OUT, html);
   const mism = rows.filter((r) => (r.cap.drew ? 'draw' : 'refuse') !== r.e.expect);
-  console.log(`\n${rows.length} karyotypes · ${rows.filter((r) => r.cap.drew).length} drew · ${mism.length} not what was expected`);
+  const left = rows.filter((r) => leftoverOf(r.cap));
+  console.log(`\n${rows.length} karyotypes · ${rows.filter((r) => r.cap.drew).length} drew · ${mism.length + left.length} not what was expected`);
   if (mism.length) {
     console.log('\nUnexpected:');
     mism.forEach((r) => console.log(`  ${r.e.expect === 'draw' ? 'refused but is valid ISCN ' : 'drew but is not valid ISCN'}  ${r.e.k || '(empty)'}`));
+  }
+  // Said on the console as well as in the sheet, because this one is invisible in a
+  // screenshot of the card that has it: the panel belongs to the PREVIOUS karyotype.
+  if (left.length) {
+    console.log('\nLeft over from the previous karyotype (nothing drew, but these were still on screen):');
+    left.forEach((r) => console.log(`  ${leftoverOf(r.cap).join(', ')}  after  ${r.e.k || '(empty)'}`));
   }
   console.log(`\nWrote ${path.relative(process.cwd(), OUT)}  (${(fs.statSync(OUT).size / 1048576).toFixed(1)} MB)`);
 }

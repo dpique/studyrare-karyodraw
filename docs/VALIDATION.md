@@ -25,6 +25,28 @@ is written and never what is drawn.
 | `clone.sexMissing` — no sex field stated | `parseClone` | `69.XX`, `46` |
 | `clone.badCells` — the brackets hold no cell count | `parseClone` | `46,XY,t(9;22)(q34;q11.2)[-1]` |
 
+### What a refusal takes off the screen
+
+The gate does not only stop the karyogram. Everything that describes the current drawing
+carries `data-drawing` in the markup, and `showDrawingCards(false)` sweeps the lot: the
+export/print action row, the legend, the decode, the band map, the clinical card and the
+meiotic segregation panel. `data-drawing="conditional"` marks the two the gate may only
+ever HIDE, because their own renderers decide when they appear (clinical notes are not
+shown for every karyotype, segregation only for a balanced constitutional carrier).
+
+It was a list of three ids in the gate, and the segregation panel was never added to it.
+A refused karyotype therefore sat under "Fix the karyotype above and the drawing appears
+here" with the PREVIOUS karyotype's quadrivalent, its pairing diagram and its four
+segregation outcomes still drawn below, captioned as though they were about the text in
+the box. It is the exact failure the gate exists to prevent, one panel to the side of
+where anyone was looking.
+
+An attribute in the markup instead of a list in the gate, because the attribute is written
+where the panel is written. `test/layout.test.js` requires every `*-card` in the tool
+column to carry it, so the next panel cannot be forgotten, and `npm run stress` reports any
+case where something with `data-drawing` is still on screen after a refusal (see "The
+stress sheet").
+
 ### `clone.unreadable`
 
 Any of: a breakpoint group that yielded no band (`del(5)(zzqewdf2315.2)`); a token that
@@ -481,6 +503,13 @@ structure too, not only the operations.
    without the code that was supposed to make them pass.
 
 ## The stress sheet
+
+**It is also the only place a leftover can be seen.** The corpus is typed into one page in
+sequence, exactly as a person uses the app, so a panel left standing from the previous
+karyotype shows up here and nowhere else: a unit test parses one page's markup, and a
+cold page load of a refused karyotype is clean because nothing has drawn yet. Every case
+where nothing drew but a `data-drawing` element was still visible is counted as a mismatch
+and named on the console.
 
 `npm run stress` types every karyotype in `scripts/stress-corpus.mjs` into the real page in
 a headless browser and writes `karyotype-stress-test.html`: one card per karyotype holding

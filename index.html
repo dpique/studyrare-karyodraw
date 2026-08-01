@@ -210,7 +210,7 @@
     .grid > section { grid-column: 1; grid-row: 1; }
     .grid > aside { grid-column: 2; grid-row: 1 / span 2; }
     .grid > .col1-extra { grid-column: 1; grid-row: 2; }
-    /* Nothing drew, so the right column has nothing in it (see showAsideCards). Keeping
+    /* Nothing drew, so the right column has nothing in it (see showDrawingCards). Keeping
        the 360px track would hold a third of the page open for cards that are not there. */
     .grid.solo { grid-template-columns: minmax(0, 1fr); }
     .grid.solo > .col1-extra { grid-row: auto; }
@@ -665,7 +665,7 @@
         </div>
         <div class="card">
           <div id="summary" class="summary" aria-live="polite"></div>
-          <div class="kactions" id="kactions">
+          <div class="kactions" id="kactions" data-drawing>
             <button class="pbtn" id="copyimg" title="Copy the karyogram as an image, ready to paste into slides, notes, or a message">⧉ Copy image</button>
             <button class="pbtn" id="dlimg" title="Download the karyogram as a PNG file">↓ PNG</button>
             <button class="sharelink flagbtn" id="flagbtn" type="button" title="Something in this karyogram or explanation looks wrong? One click flags it; then add detail if you like.">⚠ Not right?</button>
@@ -675,14 +675,14 @@
           </div>
           <div id="karyo" role="group" aria-label="Karyogram" aria-describedby="decode"></div>
         </div>
-        <div class="card" id="legend-card">
+        <div class="card" id="legend-card" data-drawing>
           <h2>Band &amp; stain legend</h2>
           <div class="body"><div class="legend" id="legend"></div></div>
         </div>
       </section>
 
       <aside>
-        <div class="card" id="decode-card">
+        <div class="card" id="decode-card" data-drawing>
           <h2 class="withaction">Karyotype decoded
             <button class="speak" id="speakbtn" type="button" title="Hear the karyotype read aloud" aria-label="Hear the karyotype read aloud">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a9 9 0 0 1 0 14"/></svg>
@@ -691,7 +691,7 @@
           </h2>
           <div class="body" id="decode"></div>
         </div>
-        <div class="card" id="detail-card">
+        <div class="card" id="detail-card" data-drawing>
           <h2 id="detail-title">Anatomy of a chromosome</h2>
           <div class="body">
             <div class="detail-wrap">
@@ -700,13 +700,13 @@
             </div>
           </div>
         </div>
-        <div class="card" id="clinical-card" style="display:none">
+        <div class="card" id="clinical-card" data-drawing="conditional" style="display:none">
           <h2>Clinical notes</h2>
           <div class="body" id="clinical"></div>
         </div>
       </aside>
       <div class="col1-extra">
-    <section id="segregation-card" style="display:none" aria-label="Meiotic segregation">
+    <section id="segregation-card" data-drawing="conditional" style="display:none" aria-label="Meiotic segregation">
       <div class="card">
         <div class="body" id="segregation"></div>
       </div>
@@ -1384,18 +1384,15 @@
       // karyotype that DID draw, so a refused input sat beside a band map of a
       // chromosome from a karyotype no longer on screen. Nothing to say is better said
       // by saying nothing; the warning box above carries the whole message.
-      showAsideCards(false);
+      showDrawingCards(false);
       $("#decode").innerHTML = "";
-      $("#clinical-card").style.display = "none";
       $("#printsheet").innerHTML = "";
       currentModel = null;
-      var kaHide = $("#kactions"); if (kaHide) kaHide.style.display = "none";
       buildLegend();
       return;
     }
     currentModel = model;
-    showAsideCards(true);
-    var kaShow = $("#kactions"); if (kaShow) kaShow.style.display = "flex";
+    showDrawingCards(true);
     renderSummary(model);
     renderKaryogram(model);
     $("#karyo").setAttribute("aria-label", "Karyogram of " + (model.normalized || model.raw || val));
@@ -1588,11 +1585,22 @@
   // The view options fold away under 700px (see the .viewtoggle rules). Collapsed by
   // script and not by CSS alone, so a page whose script failed shows the options rather
   // than hiding them behind a control that cannot open.
-  // The cards that only make sense beside a drawing: the decode, the band map, and the
-  // legend that names the drawing's conventions.
-  function showAsideCards(on) {
-    ["#decode-card", "#detail-card", "#legend-card"].forEach(function (sel) {
-      var el = $(sel); if (el) el.style.display = on ? "" : "none";
+  // Everything that describes the current drawing, found by attribute rather than by a
+  // list kept here. The list was the bug: it named the decode, the band map and the
+  // legend, and nobody added the segregation panel to it, so a refused karyotype sat
+  // under an empty-state message with the PREVIOUS karyotype's quadrivalent and its four
+  // segregation outcomes still drawn below, captioned as though they were about the text
+  // in the box. A panel added tomorrow is swept by carrying the attribute, which is
+  // written where the panel is written and not three hundred lines away.
+  //
+  //   data-drawing              always on screen beside a drawing; the gate shows and hides it
+  //   data-drawing=conditional  its own renderer decides (clinical notes are not shown for
+  //                             every karyotype, segregation only for a balanced carrier),
+  //                             so the gate only ever hides these, never shows them
+  function showDrawingCards(on) {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-drawing]"), function (el) {
+      if (!on) { el.style.display = "none"; return; }
+      if (el.getAttribute("data-drawing") !== "conditional") el.style.display = "";
     });
     var grid = document.querySelector(".grid");
     if (grid) grid.classList.toggle("solo", !on);

@@ -3,6 +3,34 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-01 (a refusal takes the whole page with it)
+
+- **A refused karyotype left the previous karyotype's meiotic segregation panel on
+  screen.** Type `46,XX,t(14;21)(q10;q10)`, which draws, then change the count to 45,
+  which does not: the karyogram is replaced by "Fix the karyotype above and the drawing
+  appears here", and below it the quadrivalent, the pairing diagram and all four
+  segregation outcomes stay exactly where they were, reading as though they described the
+  karyotype in the box. They described the previous one.
+
+  The gate hid the cards by name, in a list of three ids inside `run()`, and the
+  segregation panel was never added to that list. It is the failure the gate exists to
+  prevent, one panel to the side of where anyone was looking.
+
+  Every element that describes the current drawing now carries `data-drawing` in the
+  markup, and the gate sweeps by attribute. That covers the export and print row as well,
+  which was hidden by hand next to the list. `data-drawing="conditional"` marks the
+  clinical and segregation panels, which the gate may only hide, since their own renderers
+  decide when they appear.
+
+  **Two guards, because a list that has to be maintained is what failed.**
+  `test/layout.test.js` requires every `*-card` in the tool column to carry the attribute,
+  so the next panel cannot be left out. `npm run stress` counts any case where nothing drew
+  and something with `data-drawing` was still on screen, and names it on the console. That
+  one matters most: the corpus is typed into a single page in sequence, the way a person
+  uses the app, so it is the only place a leftover panel is visible at all. Verified by
+  reintroducing the bug behind one line and watching the sheet report
+  `segregation-card after 46,XY,rob(13;14)(q10;q10)`.
+
 ## 2026-07-29 (a plus in a link is a plus)
 
 - **`karyodraw.com/?k=47,XX,+21`, typed by hand or pasted out of a message, lost its
