@@ -168,22 +168,36 @@ test('a phone gets fewer example chips, and everyone gets a way back to them', (
 // A refused karyotype used to sit beside a "Karyotype decoded" card showing "…", a band
 // map of a chromosome from the last karyotype that DID draw, and a legend for a drawing
 // that was not there.
-test('a refusal puts away the cards that describe a drawing', () => {
+test('a refusal puts away every card that describes a drawing', () => {
   const html = read('index.html');
-  ['decode-card', 'detail-card', 'legend-card'].forEach((id) =>
-    assert.match(html, new RegExp(`id="${id}"`), `${id} has to be addressable`));
+  // Marked in the markup, not listed in the gate. The list was the bug: it named the
+  // decode, the band map and the legend, and the segregation panel was never added to
+  // it, so a refused karyotype sat under "Fix the karyotype above" with the PREVIOUS
+  // karyotype's quadrivalent and its four outcomes still drawn below.
+  ['legend-card', 'decode-card', 'detail-card', 'clinical-card', 'segregation-card'].forEach((id) =>
+    assert.match(html, new RegExp(`id="${id}"[^>]*data-drawing`), `${id} must carry data-drawing`));
+  // Every card in main that a renderer writes into has to be one of them. This is the
+  // check that catches the NEXT panel: add one without the attribute and it fails here.
+  const cards = [...html.matchAll(/<(?:div|section)[^>]*id="([a-z0-9-]+-card)"/g)].map((m) => m[1]);
+  cards.forEach((id) => assert.match(html, new RegExp(`id="${id}"[^>]*data-drawing`),
+    `${id} is a card in the tool column with no data-drawing: the gate will not put it away`));
+
+  const sweep = html.match(/function showDrawingCards\(on\) \{[\s\S]*?\n {2}\}/)[0];
+  assert.match(sweep, /querySelectorAll\("\[data-drawing\]"\)/, 'the gate sweeps by attribute');
+  assert.ok(!/#decode-card|#detail-card|#legend-card/.test(sweep), 'and names no card of its own');
+  // A conditional panel is only ever hidden by the gate: its renderer decides when it is
+  // shown, and forcing it visible would put a clinical card on every karyotype.
+  assert.match(sweep, /!== "conditional"/, 'conditional panels are hidden, never shown');
+
   const invalid = html.match(/if \(invalid\) \{[\s\S]*?\n {6}return;/)[0];
-  assert.match(invalid, /showAsideCards\(false\)/, 'the refusal hides them');
-  assert.ok(!/\$\("#decode"\)\.innerHTML = '<div class="muted">…<\/div>'/.test(html),
-    'and does not leave an ellipsis standing in for an explanation');
-  // And a later valid karyotype brings them back.
+  assert.match(invalid, /showDrawingCards\(false\)/, 'the refusal sweeps');
+  assert.ok(!/style\.display = "none"/.test(invalid), 'and hides nothing by hand');
   const valid = html.match(/currentModel = model;[\s\S]*?renderDetail\(focus\);/)[0];
-  assert.match(valid, /showAsideCards\(true\)/, 'a drawing brings them back');
-  // With the cards gone, the 360px column would hold a third of the page open for
-  // nothing, so the grid drops to one column while there is nothing to put in it.
+  assert.match(valid, /showDrawingCards\(true\)/, 'a drawing brings them back');
   assert.match(html, /\.grid\.solo \{ grid-template-columns: minmax\(0, 1fr\); \}/, 'the empty column collapses');
   assert.match(html, /classList\.toggle\("solo", !on\)/, 'and only while the cards are away');
 });
+
 
 test('the About page does not repeat itself in the footer', () => {
   // Every clause of the site footer restates a section of that page: what the app is,
