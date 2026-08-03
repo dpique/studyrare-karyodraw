@@ -451,6 +451,27 @@ tidy-up cannot fold `dup` in with `del` and `inv`.
 `46,xy,del(5)(p15.2)` is still accepted silently. Lowercase is a shift-key slip, not an
 error of understanding, and there is nothing to teach.
 
+## The segregation figures
+
+Two figure systems live in the app. `pachytene.js` draws the real shape from hg38
+coordinates: a reciprocal carrier's quadrivalent as a cross with arms sized from the
+actual breakpoints, a Robertsonian as a folded trivalent. `segregation.js` carries an
+older schematic system, used when `Pachytene.available()` is false, which happens only if
+the ideogram lacks one of the chromosomes.
+
+**A silent fallback is how the old figures came back.** `p10` and `q10` are ISCN's
+centromere designations rather than bands, so they are not in the band table, so
+`segmentOf` returned null and every whole-arm translocation fell back to the schematic
+without a word. It was three carriers, and it read as a regression rather than a fallback,
+which is exactly what a silent fallback earns. A whole-arm break now resolves to the
+centromere: the two segments are the two arms, the named arm is the piece beyond the break
+and therefore the piece exchanged, the other arm keeps the centromere. That rule is also
+what makes `t(A;B)(p10;q10)` a different figure from `t(A;B)(q10;q10)`.
+
+`test/pachytene.test.js` pins that every carrier the app accepts draws to scale, so
+nothing can quietly drop back to the schematic again, and the whole-arm cases are in the
+loop that checks no spindle fiber crosses the plane it is sorted by.
+
 ## Known holes
 
 Nothing currently known **in the gate**, and a measured list of unmodelled ISCN features
