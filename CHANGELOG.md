@@ -3,6 +3,28 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-03 (whole-arm translocations, drawn to scale)
+
+- **`46,XX,t(14;21)(q10;q10)` drew its meiotic segregation in the old schematic style, and
+  nothing said so.** `p10` and `q10` are ISCN's centromere designations rather than bands,
+  so they are not in the hg38 band table; `segmentOf` returned null, `Pachytene.available()`
+  went false, and the panel fell back to the schematic figure system in `segregation.js`.
+  Three of the 33 carriers in the stress corpus were still drawn that way, all of them
+  `(q10;q10)`, which is why it read as a regression rather than as a fallback.
+
+  A whole-arm break now resolves to the centromere. The two segments are the two arms: the
+  named arm is the piece beyond the break, so it is the piece exchanged, and the other arm
+  keeps the centromere. That rule is also what makes `t(A;B)(p10;q10)` a different figure
+  from `t(A;B)(q10;q10)`, and both now draw correctly.
+
+  For two acrocentrics the cross comes out flat, which is honest: 14p is 17 Mb against 89 Mb
+  of 14q. For two metacentrics, `t(1;3)(p10;q10)`, it is a full cross, and that case is why
+  suppressing whole-arm panels would have been wrong: there is nothing Robertsonian about it.
+
+  `test/pachytene.test.js` now pins that **every** carrier the app accepts draws to scale,
+  so nothing can quietly drop back to the schematic again, and the whole-arm cases joined
+  the loop that checks no spindle fiber crosses the plane it is sorted by.
+
 ## 2026-08-01 (a refusal takes the whole page with it)
 
 - **A refused karyotype left the previous karyotype's meiotic segregation panel on

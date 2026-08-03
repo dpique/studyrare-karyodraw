@@ -50,6 +50,24 @@
     var IDE = ideo();
     var c = IDE && IDE.data && IDE.data[chrom];
     if (!c || !c.bands) return null;
+    // A whole-arm break. ISCN writes the centromere as p10 or q10 (5.5.2, and Table 3
+    // lists them as the centromeric designations), and neither is a band, so neither is
+    // in the hg38 band table. Looking them up failed, geometry() returned null, and
+    // available() sent the whole panel back to the schematic figures in segregation.js
+    // without saying so: t(13;15)(q10;q10) and t(14;21)(q10;q10) were the only carriers
+    // in the corpus still drawn in the old system.
+    //
+    // The break is AT the centromere, so the two segments are the two arms. The rule that
+    // holds for an ordinary break holds here too: the named arm is the piece beyond the
+    // break, which is the piece that is exchanged, and the other arm keeps the centromere.
+    // So q10 exchanges the long arm, p10 the short one, which is what makes
+    // t(A;B)(p10;q10) a different rearrangement from t(A;B)(q10;q10).
+    var wholeArm = /^([pq])10$/.exec(String(band || ""));
+    if (wholeArm) {
+      var wArm = wholeArm[1], wL = c.length, wCen = c.centromere;
+      var wDist = wArm === "q" ? (wL - wCen) : wCen;
+      return { mbProx: (wL - wDist) / 1e6, mbDist: wDist / 1e6, mbCenOff: 0, arm: wArm };
+    }
     var m = c.bands.filter(function (b) { return b[0] === band; });
     if (!m.length) m = c.bands.filter(function (b) { return b[0].indexOf(band + ".") === 0; });
     if (!m.length) m = c.bands.filter(function (b) { return b[0].indexOf(band) === 0; });

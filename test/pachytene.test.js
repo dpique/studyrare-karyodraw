@@ -84,6 +84,45 @@ test('a different translocation yields a visibly different cross', () => {
   assert.ok(b.W > a.W + 50, 't(2;5) west arm much longer than t(11;22)');
 });
 
+// ---- whole-arm breaks --------------------------------------------------------
+// p10 and q10 are ISCN's centromere designations, not bands, so they are not in the hg38
+// band table. Looking them up returned null, available() went false, and the whole panel
+// silently fell back to the schematic figures in segregation.js: t(13;15)(q10;q10),
+// t(14;21)(q10;q10) and t(14;21)(q10;q10)+21 were the only carriers in the stress corpus
+// still drawn in the old system, and it read as a regression rather than a fallback.
+test('a whole-arm break resolves to the centromere, so the two segments are the two arms', () => {
+  const g = P.geometry(model('46,XX,t(14;21)(q10;q10)'));
+  assert.equal(g.type, 'cross');
+  // 14: p 17.2 Mb, q 89.8 Mb.  21: p 12.0 Mb, q 34.7 Mb.
+  assert.ok(Math.abs(g.N - 17.2) < 1, '14p ~17.2 Mb north, got ' + g.N.toFixed(1));
+  assert.ok(Math.abs(g.W - 89.8) < 1, '14q ~89.8 Mb west, got ' + g.W.toFixed(1));
+  assert.ok(Math.abs(g.S - 12.0) < 1, '21p ~12.0 Mb south, got ' + g.S.toFixed(1));
+  assert.ok(Math.abs(g.E - 34.7) < 1, '21q ~34.7 Mb east, got ' + g.E.toFixed(1));
+  // The break IS the centromere, so the dot sits exactly at the crossing.
+  assert.equal(g.cenA, 0);
+  assert.equal(g.cenB, 0);
+});
+
+test('the named arm is the one exchanged, so p10 and q10 draw different figures', () => {
+  // This is what makes t(A;B)(p10;q10) a different rearrangement from t(A;B)(q10;q10).
+  const q = P.geometry(model('46,XY,t(1;3)(q10;q10)'));
+  const p = P.geometry(model('46,XY,t(1;3)(p10;q10)'));
+  // chr1: p 123.4 Mb, q 125.6 Mb. Breaking at q10 exchanges the long arm (west = q),
+  // breaking at p10 exchanges the short one (west = p), and the other arm keeps the centromere.
+  assert.ok(Math.abs(q.W - 125.6) < 1, 'q10 exchanges 1q, got ' + q.W.toFixed(1));
+  assert.ok(Math.abs(p.W - 123.4) < 1, 'p10 exchanges 1p, got ' + p.W.toFixed(1));
+  assert.ok(Math.abs(q.N - 123.4) < 1 && Math.abs(p.N - 125.6) < 1, 'and the other arm stays');
+});
+
+test('every carrier the app accepts now draws to scale', () => {
+  // The schematic system in segregation.js is the fallback for a chromosome the ideogram
+  // does not have, which is nothing in 1-22, X, Y. No accepted karyotype should reach it.
+  ['46,XX,t(14;21)(q10;q10)', '46,XX,t(13;15)(q10;q10)', '46,XY,t(1;3)(p10;q10)',
+   '46,XY,t(2;5)(q21;q31)', '46,XX,t(11;22)(q23;q11.2)', '45,XX,rob(13;14)(q10;q10)',
+   '45,XY,rob(14;21)(q10;q10)', '46,XX,t(4;8)(p13;q22)']
+    .forEach((k) => assert.equal(P.available(model(k)), true, k + ' should draw to scale'));
+});
+
 test('robertsonian geometry is the two long arms', () => {
   const g = P.geometry(model('45,XX,rob(13;14)(q10;q10)'));
   assert.equal(g.type, 'tri');
@@ -199,7 +238,10 @@ test('each mode staggers the chromosomes by easing curve, not duration', () => {
 });
 
 // ---- the invariant: no spindle fiber crosses a division plane ---------------
-for (const k of ['46,XX,t(11;22)(q23;q11.2)', '46,XY,t(2;5)(q21;q31)', '46,XX,t(4;8)(p13;q22)']) {
+for (const k of ['46,XX,t(11;22)(q23;q11.2)', '46,XY,t(2;5)(q21;q31)', '46,XX,t(4;8)(p13;q22)',
+  // Whole-arm breaks, where the two segments are the two arms and the centromere sits
+  // exactly at the crossing. The invariant has to hold on a flat cross too.
+  '46,XX,t(14;21)(q10;q10)', '46,XY,t(1;3)(p10;q10)']) {
   test('no fiber crosses a plane for reciprocal ' + k, () => {
     const m = model(k);
     RECIP_MODES.forEach((mode) => {
