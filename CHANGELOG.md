@@ -209,6 +209,17 @@ usually arrives, produced three faults at once and no way out of them.
   from the text as typed and reports a second problem underneath the one that names the
   mistake.
 
+## 2026-07-29 (KaryoDraw is free to use)
+
+- **"and always will be" was a promise about the future the About page has no way to keep.**
+  It now says what is true today.
+
+- **Six landing-page karyograms carried a stale `height` attribute.** PR #135 regenerated
+  the PNGs and wrote the pages in the same commit, but the pages went out with the
+  pre-baseline height: the image is 687x801, so at a displayed width of 229 the height is
+  267 and not 253. A wrong height attribute is a layout shift on load, which is the one
+  thing the attribute exists to prevent.
+
 ## 2026-07-29 (the brackets hold a count of cells)
 
 - **`46,XY,t(9;22)(q34;q11.2)[-1]` was answered with a rule about commas.** The message
