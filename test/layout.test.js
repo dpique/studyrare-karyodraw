@@ -199,13 +199,30 @@ test('a refusal puts away every card that describes a drawing', () => {
 });
 
 
-test('the About page does not repeat itself in the footer', () => {
-  // Every clause of the site footer restates a section of that page: what the app is,
-  // that it is not diagnostic, who makes it, and the Ko-fi line.
-  assert.ok(!/<div class="lp-foot">/.test(read('about/index.html')), 'no site footer on About');
-  // It is the only place those things are said on every other page, so it stays there.
-  ['how-to-read-a-karyotype/index.html', 'karyotype/down-syndrome/index.html', 'karyotype/index.html']
-    .forEach((f) => assert.match(read(f), /<div class="lp-foot">/, `${f} keeps the footer`));
+test('every page carries the one site footer, and the prose footer is gone', () => {
+  // The generated pages used to end in a bespoke one-paragraph .lp-foot while the
+  // homepage had the brand-and-links footer bar, and crossing between them read as
+  // two different sites. One footer now, everywhere, from one builder in
+  // build-pages.mjs. About is included: the old suppression argument (its prose
+  // footer restated the page) died with the prose footer.
+  const pages = ['about/index.html', 'how-to-read-a-karyotype/index.html',
+    'karyotype/down-syndrome/index.html', 'karyotype/index.html'];
+  for (const f of pages) {
+    const html = read(f);
+    assert.ok(!/lp-foot"/.test(html), `${f} has no bespoke prose footer`);
+    assert.match(html, /<footer class="wrap">/, `${f} carries the site footer`);
+    assert.match(html, /class="foot-brand"/, `${f} footer has the brand block`);
+    // No feedback dialog script on generated pages, so their "Send feedback" is a
+    // link to the issue tracker, never the dialog-opening button. (.fbtrigger the
+    // CLASS still appears in every page's inlined stylesheet; the element must not.)
+    assert.ok(!/<button[^>]*fbtrigger/.test(html), `${f} must not ship the dialog button`);
+    assert.match(html, /issues" target="_blank" rel="noopener">Send feedback<\/a>/,
+      `${f} links feedback to the issue tracker`);
+  }
+  // The homepage keeps the button variant of the same footer.
+  const home = read('index.html');
+  assert.match(home, /class="fbtrigger" id="fbopen">Send feedback</, 'homepage feedback opens the dialog');
+  assert.match(home, /class="foot-brand"/, 'homepage shares the brand block');
 });
 
 // ---- the k parameter carries a karyotype, not a form field --------------------

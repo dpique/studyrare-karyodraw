@@ -310,6 +310,15 @@
   .clone-head { display:flex; align-items:baseline; gap:10px; padding: 10px 16px 0; }
   .clone-head .cn { font: 600 14px var(--font-mono); }
   .clone-head .cc { font-size: 12.5px; color: var(--muted); }
+  /* Mosaic cell lines side by side, in one view at one scale. Stacked blocks put the
+     second population below the fold, where a mosaic read as its first clone alone;
+     the whole point of drawing a mosaic is seeing both populations at once. Used by
+     the app when Show = affected, and by the generated condition pages (this
+     stylesheet is inlined there), so the two figures cannot drift. */
+  .clones-row { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: center; }
+  .clones-row .clone-block { display: flex; flex-direction: column; align-items: center; min-width: 0; padding: 0 10px; }
+  .clones-row .clone-block + .clone-block { margin-top: 0; border-top: 0; border-left: 1px dashed var(--line); }
+  .clones-row .clone-head { flex-direction: column; align-items: center; gap: 2px; }
 
   /* karyogram — 4 fixed Denver rows; rendered at natural size, then JS scales it to fill the card */
   #karyo { overflow-x: auto; min-width: 0; }   /* scroll an over-wide karyogram inside the card instead of stretching the page */
@@ -503,6 +512,10 @@
     #printsheet .ps-meta { color: var(--muted); font-size: 10pt; margin-bottom: 6px; }
     #printsheet .ps-pic { text-align: center; margin: 4px 0 8px; }
     #printsheet .ps-pic .karyogram { display: inline-flex; padding: 0; margin: 0; }
+    /* One block per cell line, side by side, each under its notation and cell count. */
+    #printsheet .ps-pic .ps-clone { display: inline-block; vertical-align: top; margin: 0 10px; }
+    #printsheet .ps-pic .ps-clone-head { font-family: var(--font-mono); font-size: 9pt; color: var(--ink-2); margin-bottom: 2px; }
+    #printsheet .ps-clone-label { font-family: var(--font-mono); font-size: 9.5pt; font-weight: 600; margin: 6px 0 2px; }
     #printsheet .ps-pic svg.ideo { }
     #printsheet .ps-h2 { font-family: var(--font-display); font-size: 10.5pt; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid #ccc; margin: 11px 0 4px; padding-bottom: 2px; }
     #printsheet p { margin: 3px 0; font-size: 10.5pt; line-height: 1.42; }
@@ -546,7 +559,12 @@
   .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
+  .lp-clonehead { display: flex; align-items: baseline; gap: 10px; margin: 14px 0 8px; font-weight: 400; }
+  .lp-clonehead:first-child { margin-top: 0; }
+  .lp-clonehead code { font: 600 14px var(--font-mono); color: var(--ink); }
+  .lp-clonehead span { font-size: 12.5px; color: var(--muted); }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
+  .lp-decode + .lp-clonehead { margin-top: 16px; }
   .lp-decode dt { margin: 0; } .lp-decode dd { margin: 0; color: var(--ink-2); }
   .lp-decode code { font: 700 13px var(--font-mono); color: var(--ink); background: #f0f2f7; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
   .lp-syn { border-left: 3px solid var(--peri-300); padding: 2px 0 2px 12px; margin: 0 0 12px; }
@@ -557,8 +575,8 @@
   .lp-related a:hover { border-color: var(--peri-300); background: var(--peri-50); }
   .lp-related code { font: 600 13px var(--font-mono); color: var(--peri-700); }
   .lp-related span { color: var(--ink-2); font-size: 14px; }
-  .lp-foot { margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
-  .lp-foot a { color: var(--peri-700); }
+  /* The generated pages share the app's footer.wrap chrome (styled in the inlined
+     homepage stylesheet); it follows main, so the article keeps no footer of its own. */
   /* prose for the guide + about pages */
   .lp-prose h2 { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--navy); margin: 26px 0 8px; }
   .lp-prose h3 { font-family: var(--font-display); font-weight: 700; font-size: 15.5px; color: var(--navy); margin: 16px 0 4px; }
@@ -590,8 +608,7 @@
     .lp-sec h2, .lp-prose h2, .lp-prose h3, article h1 { break-after: avoid; }
     /* Colored link text is noise once the links cannot be followed. Each selector
        here has to match the specificity of the screen rule it overrides. */
-    a, .lp-foot a, .lp-prose a, .lp-crumb a { color: inherit; text-decoration: none; }
-    .lp-foot { font-size: 8.5pt; margin-top: 20px; }
+    a, .lp-prose a, .lp-crumb a { color: inherit; text-decoration: none; }
   }
 </style>
 </head>
@@ -721,8 +738,11 @@
   <h2>Keep going</h2>
   <p>Browse the full set of <a href="/karyotype/">worked karyotype examples</a>, each drawn and decoded, or open the <a href="/">interactive visualizer</a> and type a karyotype of your own.</p>
 </section>
-    <div class="lp-foot"><p><a href="/">KaryoDraw</a> is a free ISCN 2024 karyotype visualizer, a <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a> tool. It is an educational visualizer of cytogenetic nomenclature, not a diagnostic tool. It is <a href="https://github.com/dpique/studyrare-karyodraw" target="_blank" rel="noopener">open source</a>; if it helped you, you can <a href="https://ko-fi.com/studyrare" target="_blank" rel="noopener">support it on Ko-fi</a>.</p></div>
   </article>
 </main>
+<footer class="wrap">
+  <div class="foot-brand"><strong>KaryoDraw</strong><span>A free ISCN 2024 karyotype visualizer by <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a> &middot; educational, not diagnostic</span></div>
+  <nav class="foot-links" aria-label="Footer"><a href="https://github.com/dpique/studyrare-karyodraw/issues" target="_blank" rel="noopener">Send feedback</a><a href="https://github.com/dpique/studyrare-karyodraw" target="_blank" rel="noopener">Open source</a><a href="https://ko-fi.com/studyrare" target="_blank" rel="noopener">&#9829; Support on Ko-fi</a></nav>
+</footer>
 </body>
 </html>
