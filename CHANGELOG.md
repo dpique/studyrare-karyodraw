@@ -3,7 +3,16 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
-## 2026-08-03 (whole-arm translocations, drawn to scale)
+## 2026-08-08 (the tour button looked wired, and was not)
+
+- **Clicking "Take the guided tour (11 steps)" did nothing, on every page load.** The
+  launcher wiring set the button label, then hit a stale duplicate of the example-count
+  line referencing `KD_PAGE_COUNT`, an identifier defined nowhere. The `ReferenceError`
+  aborted the script before the click handler attached, and took everything after it down
+  too: the `?tour=1` deep link and the pageview beacon. The label was what made the button
+  look alive; the count in it came from the block that died two lines later. The stale
+  lines are gone, and `test/tour-launcher.test.js` pins that the wiring references no
+  undefined identifier and sets the example count exactly once.
 
 - **`46,XX,t(14;21)(q10;q10)` drew its meiotic segregation in the old schematic style, and
   nothing said so.** `p10` and `q10` are ISCN's centromere designations rather than bands,
