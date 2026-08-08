@@ -3,6 +3,22 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-08 (one mark, and actions grouped by purpose)
+
+- **The logo differed between the app and the generated pages.** index.html carried the
+  banded dotmark (band stripes and the amber tip clipped inside the rounded capsules,
+  matching favicon.svg) while `siteHeader()` in build-pages.mjs still emitted an older
+  flat version whose amber block painted over the rounded corner. The mark now lives in
+  one string (`BRAND_MARK`) and is injected into index.html between `KD:BRAND` markers,
+  exactly how the nav and footer already stay in sync, and `test/site-chrome.test.js`
+  asserts the app and every generated page render the identical SVG.
+
+- **The karyogram toolbar now groups by purpose.** Copy image, PNG, copy link, and print
+  all take the karyogram somewhere else, yet sat split across both ends of the row with
+  "Not right?" dressed as one of them in the middle. The four export actions now sit
+  together, right-aligned above the figure; the "Not right?" flag sits alone under the
+  figure, bottom right, where doubt about a drawing actually arrives, after looking at it.
+
 ## 2026-08-08 (a mosaic is its cell lines, and one footer for the whole site)
 
 - **The mosaic Turner condition page drew `mos 45,X[12]/46,XX[18]` as plain monosomy X.**
