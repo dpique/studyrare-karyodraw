@@ -3,6 +3,24 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-08 (a standing assessment, and where interface decisions live)
+
+- **The handoff now carries a reasoned assessment of the delivery pipeline rather than a
+  to-do list.** An audit found the split worth naming: the domain core is strong, with
+  roughly 290 behavioral tests against ISCN 2024 and no runtime dependencies, while the
+  pipeline around it is not. Nothing runs the test suite in CI, so 425 tests pass on trust
+  alone; 1.7MB of derivable build output is committed, which is why a two-line fix lands
+  as a 38-file diff; and about 83 assertions test the interface by grepping the source of
+  `index.html` rather than by exercising it. Each is recorded with its reasoning and its
+  open questions, deliberately as candidates rather than as a queue.
+
+- **Interface preferences had no home, and now have one.** `docs/VALIDATION.md` records
+  the reasoning behind parser and message decisions and works well for it. Nothing played
+  that role for the interface, so decisions about affordance prominence, control styling,
+  tooltip voice, and figure honesty survived only as changelog narrative and test
+  comments. They are written down in the handoff until someone decides whether they
+  belong in a new document or appended to the existing one.
+
 ## 2026-08-08 (one deploy path, not two)
 
 - **Two systems were deploying this site, and one of them shipped stale pages.** Besides
