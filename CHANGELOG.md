@@ -3,6 +3,28 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-08 (the docs describe the site as it is now)
+
+Documentation only. Two files, no served file touched.
+
+- **The handoff still stopped at PR #146 and 412 tests.** `NEXT_SESSION_HANDOFF.md` now
+  covers #136-#151 and 424 passing tests, and summarizes the five changes of #147-#151:
+  the mosaic figure that drew one cell line, the stale `KD_PAGE_COUNT` reference that
+  killed the tour button, and the shared footer, brand mark, toolbar button style and
+  copy-link tooltip. Two land mines earned today are recorded with it: any
+  `model.clones[0]` silently misreads a mosaic, which is the exact shape of the #148 bug,
+  and a new CHANGELOG section can swallow the heading below it, which happened twice on
+  2026-08-08.
+
+- **`docs/SEO_AND_FEEDBACK.md` quoted a feedback button that no longer exists.** The
+  section is named for the label the page actually shows, "Not right?", and it now records
+  that footer "Send feedback" has two forms since #148: a button that opens the dialog on
+  `index.html`, and a link to the GitHub issue tracker on the 35 generated pages, which
+  carry no dialog markup. Em dashes are gone, per house style. Google Search Console moved
+  out of "still open": the property is verified and reporting, and the one remaining ask of
+  the owner is Search Console API access, so a session can read `/karyotype/*` performance
+  instead of having it pasted in by hand.
+
 ## 2026-08-08 (a tooltip that says what the label cannot)
 
 - **"Copy link to this view" promised a link that keeps updating.** The tooltip read
