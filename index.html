@@ -2095,8 +2095,6 @@
     var all = $("#all-examples");
     var pages = (window.KDContent && window.KDContent.CONTENT && window.KDContent.CONTENT.length) || 0;
     if (all && pages) all.textContent = "See all " + pages + " examples";
-    var all = $("#all-examples");
-    if (all && KD_PAGE_COUNT) all.textContent = "See all " + KD_PAGE_COUNT + " examples";
     btn.addEventListener("click", function () { startTour(); $("#tourcard").scrollIntoView({ behavior: "smooth", block: "start" }); });
   })();
   if (wantsTour) startTour();
