@@ -330,6 +330,15 @@
   .clone-head { display:flex; align-items:baseline; gap:10px; padding: 10px 16px 0; }
   .clone-head .cn { font: 600 14px var(--font-mono); }
   .clone-head .cc { font-size: 12.5px; color: var(--muted); }
+  /* Mosaic cell lines side by side, in one view at one scale. Stacked blocks put the
+     second population below the fold, where a mosaic read as its first clone alone;
+     the whole point of drawing a mosaic is seeing both populations at once. Used by
+     the app when Show = affected, and by the generated condition pages (this
+     stylesheet is inlined there), so the two figures cannot drift. */
+  .clones-row { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: center; }
+  .clones-row .clone-block { display: flex; flex-direction: column; align-items: center; min-width: 0; padding: 0 10px; }
+  .clones-row .clone-block + .clone-block { margin-top: 0; border-top: 0; border-left: 1px dashed var(--line); }
+  .clones-row .clone-head { flex-direction: column; align-items: center; gap: 2px; }
 
   /* karyogram — 4 fixed Denver rows; rendered at natural size, then JS scales it to fill the card */
   #karyo { overflow-x: auto; min-width: 0; }   /* scroll an over-wide karyogram inside the card instead of stretching the page */
@@ -523,6 +532,10 @@
     #printsheet .ps-meta { color: var(--muted); font-size: 10pt; margin-bottom: 6px; }
     #printsheet .ps-pic { text-align: center; margin: 4px 0 8px; }
     #printsheet .ps-pic .karyogram { display: inline-flex; padding: 0; margin: 0; }
+    /* One block per cell line, side by side, each under its notation and cell count. */
+    #printsheet .ps-pic .ps-clone { display: inline-block; vertical-align: top; margin: 0 10px; }
+    #printsheet .ps-pic .ps-clone-head { font-family: var(--font-mono); font-size: 9pt; color: var(--ink-2); margin-bottom: 2px; }
+    #printsheet .ps-clone-label { font-family: var(--font-mono); font-size: 9.5pt; font-weight: 600; margin: 6px 0 2px; }
     #printsheet .ps-pic svg.ideo { }
     #printsheet .ps-h2 { font-family: var(--font-display); font-size: 10.5pt; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid #ccc; margin: 11px 0 4px; padding-bottom: 2px; }
     #printsheet p { margin: 3px 0; font-size: 10.5pt; line-height: 1.42; }
@@ -762,7 +775,7 @@
 </main>
 <footer class="wrap">
   <!-- KD:FOOT:START -->
-  <div class="foot-brand"><strong>KaryoDraw</strong><span>A free ISCN karyotype tool by <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a></span></div>
+  <div class="foot-brand"><strong>KaryoDraw</strong><span>A free ISCN 2024 karyotype visualizer by <a href="https://studyrare.com" target="_blank" rel="noopener">StudyRare</a> &middot; educational, not diagnostic</span></div>
   <nav class="foot-links" aria-label="Footer"><button type="button" class="fbtrigger" id="fbopen">Send feedback</button><a href="https://github.com/dpique/studyrare-karyodraw" target="_blank" rel="noopener">Open source</a><a href="https://ko-fi.com/studyrare" target="_blank" rel="noopener">&#9829; Support on Ko-fi</a></nav>
   <!-- KD:FOOT:END -->
 </footer>
@@ -1129,6 +1142,15 @@
       return;
     }
     var only = SHOW === "affected" ? affKeys : null;
+    // Isolated view of a mosaic: both populations side by side in one row, so the
+    // comparison the karyotype states is the comparison on screen. The full ("All")
+    // view keeps stacked clones: two complete karyograms cannot share a row.
+    var parent = host;
+    if (SHOW === "affected" && model.clones.length > 1) {
+      parent = document.createElement("div");
+      parent.className = "clones-row";
+      host.appendChild(parent);
+    }
     model.clones.forEach(function (clone, i) {
       var block = document.createElement("div");
       block.className = "clone-block";
@@ -1149,15 +1171,41 @@
       kg.setAttribute("role", "img");
       kg.setAttribute("aria-label", "Karyogram of " + (clone.raw || model.raw));
       block.appendChild(kg);
-      host.appendChild(block);
+      parent.appendChild(block);
     });
     fitKaryograms();
+  }
+
+  // A side-by-side clone row gets ONE scale for every cell line: two populations
+  // drawn at two scales would show a size difference the karyotype does not state.
+  // Per-block chrome is the 20px horizontal padding plus the 1px divider, fixed in
+  // the .clones-row rules above; offsetWidth is layout width, so re-fitting on
+  // resize is not compounded by the transforms already applied.
+  function fitCloneRow(row, avail) {
+    var kgs = row.querySelectorAll(".karyogram"); if (!kgs.length) return;
+    var blocks = row.querySelectorAll(".clone-block").length;
+    var sum = 0;
+    Array.prototype.forEach.call(kgs, function (kg) { sum += kg.offsetWidth; });
+    var chrome = blocks * 20 + (blocks - 1);
+    var scale = Math.max(0.1, Math.min(1.7, (avail - chrome) / sum));
+    Array.prototype.forEach.call(kgs, function (kg) {
+      kg.style.margin = "0";
+      kg.style.transformOrigin = "top left";
+      kg.style.transform = "scale(" + scale.toFixed(3) + ")";
+      if (kg.parentNode) {
+        kg.parentNode.style.height = Math.ceil(kg.offsetHeight * scale) + "px";
+        kg.parentNode.style.width = Math.ceil(kg.offsetWidth * scale) + "px";
+        kg.parentNode.style.overflow = "hidden";
+      }
+    });
   }
 
   // Scale each karyogram to fill the card width (dynamic / responsive).
   function fitKaryograms() {
     var host = $("#karyo"); if (!host) return;
     var avail = host.clientWidth - 4;
+    var row = host.querySelector(".clones-row");
+    if (row) { fitCloneRow(row, avail); return; }
     Array.prototype.forEach.call(host.querySelectorAll(".karyogram"), function (kg) {
       var natural = kg.offsetWidth, naturalH = kg.offsetHeight;
       if (!natural || avail <= 0) return;
@@ -1434,17 +1482,31 @@
   // ---- printable 1-page summary (built each render; shown only when printing) --
   function renderPrintSheet(model) {
     var ps = $("#printsheet");
-    var clone = model.clones[0];
+    var multi = model.clones.length > 1;
     var affKeys = Object.keys(AFFECTED);
     var hasMar = model.clones.some(function (c) { return (c.slots.mar || []).length; });
     var only = (affKeys.length || hasMar) ? affKeys : null;   // affected-only picture when there is an abnormality
+    // Every cell line prints, each under its own notation and cell count. This sheet
+    // used to print clones[0] alone, so a mosaic summary showed one population while
+    // its meta line said "mosaic (2 clones)".
     var picDiv = document.createElement("div");
-    window.Karyo.render(picDiv, clone, { theme: "simple", level: 1, affected: AFFECTED, only: only });
+    model.clones.forEach(function (c) {
+      var one = document.createElement("div");
+      window.Karyo.render(one, c, { theme: "simple", level: 1, affected: AFFECTED, only: only });
+      var head = multi ? '<div class="ps-clone-head">' + escapeHtml(c.raw + (c.cellCount != null ? " · " + c.cellCount + " cells" : "")) + "</div>" : "";
+      picDiv.innerHTML += '<div class="ps-clone">' + head + one.innerHTML + "</div>";
+    });
 
-    var plain = window.Teach.plainSummary(clone).map(function (p) { return "<p>" + escapeHtml(p) + "</p>"; }).join("");
-    var decodeHTML = '<ul class="ps-decode">' + window.Teach.decode(clone).map(function (r) {
-      return "<li><code>" + escapeHtml(r.code) + "</code> → " + escapeHtml(r.text) + "</li>";
-    }).join("") + "</ul>";
+    var plain = model.clones.map(function (c) {
+      var head = multi ? '<p class="ps-clone-label">' + escapeHtml(c.raw) + "</p>" : "";
+      return head + window.Teach.plainSummary(c).map(function (p) { return "<p>" + escapeHtml(p) + "</p>"; }).join("");
+    }).join("");
+    var decodeHTML = model.clones.map(function (c) {
+      var head = multi ? '<p class="ps-clone-label">' + escapeHtml(c.raw) + "</p>" : "";
+      return head + '<ul class="ps-decode">' + window.Teach.decode(c).map(function (r) {
+        return "<li><code>" + escapeHtml(r.code) + "</code> → " + escapeHtml(r.text) + "</li>";
+      }).join("") + "</ul>";
+    }).join("");
     var syn = [], seen = {};
     model.clones.forEach(function (c) { window.Teach.syndromes(c).forEach(function (s) { if (!seen[s.name]) { seen[s.name] = 1; syn.push(s); } }); });
     var synHTML = syn.length ? '<div class="ps-syn">' + syn.map(function (s) {

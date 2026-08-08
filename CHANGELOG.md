@@ -3,6 +3,32 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-08 (a mosaic is its cell lines, and one footer for the whole site)
+
+- **The mosaic Turner condition page drew `mos 45,X[12]/46,XX[18]` as plain monosomy X.**
+  The landing-page figure rendered `clones[0]` only, so the majority 46,XX line (18 of the
+  30 counted cells) never appeared, under a caption claiming the involved chromosome was
+  shown "with its normal homolog". On the one page whose teaching point is that the second
+  cell line is what makes it mosaic, the picture showed non-mosaic 45,X. The shared
+  renderer now draws every cell line, side by side under its own notation and cell count,
+  and the caption states what the figure shows. The printable summary had the same
+  `clones[0]` figure, plain-language text and decode, and now walks every clone. The
+  page's "What the notation means" section decodes every clone too, so the `[18]` it
+  promises to explain is explained. `test/mosaic-figure.test.js` pins all of it.
+
+- **The app's isolated view stacks mosaic clones no more.** With Show = affected, the cell
+  lines of a mosaic now sit in one row at one scale, dashed rule between them, instead of
+  one above the other with the second below the fold. Two populations at two scales, or in
+  two screenfuls, is not the comparison the karyotype states. The full "All" view keeps
+  stacked clones: two complete karyograms cannot share a row.
+
+- **Every generated page now carries the same footer as the homepage.** The condition
+  pages, hub, guide, and About ended in a bespoke one-paragraph prose footer, so crossing
+  from the app to a landing page read as two different sites (the About page had no footer
+  at all). One builder now emits the brand-and-links bar everywhere; on generated pages,
+  which carry no dialog script, "Send feedback" links to the GitHub issue tracker. The
+  not-diagnostic disclaimer moved into the brand line, stated on every page.
+
 ## 2026-08-08 (the tour button looked wired, and was not)
 
 - **Clicking "Take the guided tour (11 steps)" did nothing, on every page load.** The
@@ -13,6 +39,8 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   look alive; the count in it came from the block that died two lines later. The stale
   lines are gone, and `test/tour-launcher.test.js` pins that the wiring references no
   undefined identifier and sets the example count exactly once.
+
+## 2026-08-03 (whole-arm translocations, drawn to scale)
 
 - **`46,XX,t(14;21)(q10;q10)` drew its meiotic segregation in the old schematic style, and
   nothing said so.** `p10` and `q10` are ISCN's centromere designations rather than bands,

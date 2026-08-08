@@ -82,14 +82,30 @@ function jsonLd(e) {
   return JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
 }
 
-function decodeList(clone) {
-  const rows = Teach.decode(clone) || [];
-  return '<dl class="lp-decode">' + rows.map((r) =>
-    `<dt><code>${esc(r.code)}</code></dt><dd>${esc(r.text)}</dd>`).join('') + '</dl>';
+// Every clone is decoded, not just the first: on a mosaic page the second cell
+// line's notation and bracketed cell count are exactly the symbols the section
+// promises to explain. With one clone there is no header; with several, each list
+// sits under its own notation, mirroring the figure above it.
+function decodeList(clones) {
+  return clones.map((clone) => {
+    const head = clones.length > 1
+      ? `<h3 class="lp-clonehead"><code>${esc(clone.raw)}</code>` +
+        (clone.cellCount != null ? `<span>${clone.cellCount} cells</span>` : '') + '</h3>'
+      : '';
+    const rows = Teach.decode(clone) || [];
+    return head + '<dl class="lp-decode">' + rows.map((r) =>
+      `<dt><code>${esc(r.code)}</code></dt><dd>${esc(r.text)}</dd>`).join('') + '</dl>';
+  }).join('');
 }
 
-function syndromeNotes(clone) {
-  const syn = Teach.syndromes(clone) || [];
+function syndromeNotes(clones) {
+  // Dedup by name across clones, matching the app's clinical card: a mosaic's cell
+  // lines can name the same syndrome and it must appear once.
+  const seen = {};
+  const syn = [];
+  clones.forEach((c) => (Teach.syndromes(c) || []).forEach((s) => {
+    if (!seen[s.name]) { seen[s.name] = 1; syn.push(s); }
+  }));
   if (!syn.length) return '';
   // s.note is curated static content (teach.js) that may include markup such as
   // italicized gene symbols, so render it as HTML (matching the on-screen clinical
@@ -136,7 +152,12 @@ const LANDING_CSS = `
   .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
+  .lp-clonehead { display: flex; align-items: baseline; gap: 10px; margin: 14px 0 8px; font-weight: 400; }
+  .lp-clonehead:first-child { margin-top: 0; }
+  .lp-clonehead code { font: 600 14px var(--font-mono); color: var(--ink); }
+  .lp-clonehead span { font-size: 12.5px; color: var(--muted); }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
+  .lp-decode + .lp-clonehead { margin-top: 16px; }
   .lp-decode dt { margin: 0; } .lp-decode dd { margin: 0; color: var(--ink-2); }
   .lp-decode code { font: 700 13px var(--font-mono); color: var(--ink); background: #f0f2f7; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
   .lp-syn { border-left: 3px solid var(--peri-300); padding: 2px 0 2px 12px; margin: 0 0 12px; }
@@ -147,8 +168,8 @@ const LANDING_CSS = `
   .lp-related a:hover { border-color: var(--peri-300); background: var(--peri-50); }
   .lp-related code { font: 600 13px var(--font-mono); color: var(--peri-700); }
   .lp-related span { color: var(--ink-2); font-size: 14px; }
-  .lp-foot { margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
-  .lp-foot a { color: var(--peri-700); }
+  /* The generated pages share the app's footer.wrap chrome (styled in the inlined
+     homepage stylesheet); it follows main, so the article keeps no footer of its own. */
   /* prose for the guide + about pages */
   .lp-prose h2 { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--navy); margin: 26px 0 8px; }
   .lp-prose h3 { font-family: var(--font-display); font-weight: 700; font-size: 15.5px; color: var(--navy); margin: 16px 0 4px; }
@@ -180,8 +201,7 @@ const LANDING_CSS = `
     .lp-sec h2, .lp-prose h2, .lp-prose h3, article h1 { break-after: avoid; }
     /* Colored link text is noise once the links cannot be followed. Each selector
        here has to match the specificity of the screen rule it overrides. */
-    a, .lp-foot a, .lp-prose a, .lp-crumb a { color: inherit; text-decoration: none; }
-    .lp-foot { font-size: 8.5pt; margin-top: 20px; }
+    a, .lp-prose a, .lp-crumb a { color: inherit; text-decoration: none; }
   }
 `;
 
@@ -214,7 +234,20 @@ function siteHeader(active) {
 </div></div>`;
 }
 
-const SITE_FOOT = `<div class="lp-foot"><p><a href="/">KaryoDraw</a> is a free ISCN 2024 karyotype visualizer, a <a href="${LINKS.studyrare}" target="_blank" rel="noopener">StudyRare</a> tool. It is an educational visualizer of cytogenetic nomenclature, not a diagnostic tool. It is <a href="${LINKS.github}" target="_blank" rel="noopener">open source</a>; if it helped you, you can <a href="${LINKS.kofi}" target="_blank" rel="noopener">support it on Ko-fi</a>.</p></div>`;
+// ONE footer for every page, chrome rather than prose. The generated pages used to
+// carry a bespoke one-paragraph .lp-foot while the homepage had the brand-and-links
+// bar, so crossing between them read as two different sites. The app's "Send
+// feedback" opens its feedback dialog; the generated pages carry no dialog script,
+// so theirs is a link to GitHub issues. Both variants come from this builder so
+// they cannot drift. The not-diagnostic disclaimer lives in the brand line, the one
+// place it is stated on every page.
+function siteFooter(feedback) {
+  const fb = feedback === 'button'
+    ? '<button type="button" class="fbtrigger" id="fbopen">Send feedback</button>'
+    : `<a href="${LINKS.github}/issues" target="_blank" rel="noopener">Send feedback</a>`;
+  return `<div class="foot-brand"><strong>KaryoDraw</strong><span>A free ISCN 2024 karyotype visualizer by <a href="${LINKS.studyrare}" target="_blank" rel="noopener">StudyRare</a> &middot; educational, not diagnostic</span></div>
+  <nav class="foot-links" aria-label="Footer">${fb}<a href="${LINKS.github}" target="_blank" rel="noopener">Open source</a><a href="${LINKS.kofi}" target="_blank" rel="noopener">&#9829; Support on Ko-fi</a></nav>`;
+}
 
 // One page skeleton for every generated page (landing, hub, about, guide).
 function pageShell({ title, description, canonicalPath, ogType = 'website', ogTitle, jsonLd, extraCss = '', active = '', crumb = '', articleClass = '', body, ogImage = `${SITE}/preview.png`, ogImageW, ogImageH }) {
@@ -254,13 +287,23 @@ ${crumb ? `  <nav class="lp-crumb" aria-label="Breadcrumb">${crumb}</nav>\n` : '
 ${body}
   </article>
 </main>
+<footer class="wrap">
+  ${siteFooter('link')}
+</footer>
 </body>
 </html>
 `;
 }
 
 function karyoNote(e) {
-  const { affectedOnly } = renderKaryogram(e.k);
+  const { affectedOnly, clones } = renderKaryogram(e.k);
+  // A mosaic figure is captioned as what it is: every cell line at one scale. The
+  // single-clone caption would be false here; there is no homolog beside a missing
+  // placeholder, and the second population is the point of the drawing.
+  if (clones.length > 1) {
+    return `, showing ${clones.length === 2 ? 'both' : 'all ' + clones.length} cell lines` +
+      ' at the same scale, with the cells counted in each';
+  }
   return affectedOnly ? ', showing the involved chromosomes with their normal homolog' : '';
 }
 
@@ -301,10 +344,9 @@ function pageHtml(e) {
     <p class="lp-cta"><a class="btn" href="${attr(toolLink)}">Open in the interactive visualizer &rarr;</a></p>
     <figure class="lp-fig">${karyoFigure(e)}<figcaption class="lp-figcap">${esc(e.name)} (${esc(e.k)}) drawn by KaryoDraw${karyoNote(e)}.</figcaption></figure>
     ${resolutionNote(e)}
-    <section class="lp-sec"><h2>What the notation means</h2>${decodeList(model.clones[0])}</section>
-    ${syndromeNotes(model.clones[0])}
-    ${relatedLinks(e)}
-    ${SITE_FOOT}`;
+    <section class="lp-sec"><h2>What the notation means</h2>${decodeList(model.clones)}</section>
+    ${syndromeNotes(model.clones)}
+    ${relatedLinks(e)}`;
   return pageShell({
     title: pageTitle(e),
     ogTitle: `${e.name} karyotype (${e.k})`,
@@ -338,8 +380,7 @@ function hubHtml() {
   .lp-related-inline span { color: var(--ink-2); font-size: 13.5px; }`;
   const body = `    <h1>Karyotype examples, explained</h1>
     <p class="lp-intro">${esc(desc)} Every example is drawn by KaryoDraw and decoded symbol by symbol. New to the notation? Start with the <a href="/how-to-read-a-karyotype/">guide on how to read a karyotype</a>, or type any karyotype into the <a href="/">interactive visualizer</a>.</p>
-    ${sections}
-    ${SITE_FOOT}`;
+    ${sections}`;
   return pageShell({
     title: 'Karyotype examples: common ISCN karyotypes drawn and explained | KaryoDraw',
     ogTitle: 'Karyotype examples | KaryoDraw',
@@ -356,12 +397,12 @@ function hubHtml() {
 
 // About + guide: bespoke content authored in content/*.html, wrapped in the shell.
 const STATIC_PAGES = [
-  // No site footer on the About page. The footer is a one-line version of what this app
-  // is, who makes it, that it is not diagnostic and that it is open source, which is
-  // exactly what the page above it says at length: every clause of it repeats a section
-  // it sits directly under. Everywhere else it is the only place those things are said,
-  // so it stays.
-  { slug: 'about', active: 'about', file: 'content/about.html', foot: '',
+  // The About page gets the site footer like every other page. Its predecessor (a
+  // prose paragraph restating what the tool is) was suppressed here because the page
+  // above it says every clause of that paragraph at length; the footer is now the
+  // site-wide brand-and-links bar, whose value on this page is chrome consistency,
+  // not information.
+  { slug: 'about', active: 'about', file: 'content/about.html',
     title: 'About KaryoDraw | a free ISCN karyotype visualizer',
     description: 'KaryoDraw is a free, browser-based tool that draws any ISCN 2024 karyotype and explains every symbol in plain language, built for the genetics community by StudyRare.',
     ldType: 'AboutPage', crumb: '<a href="/">KaryoDraw</a> &rsaquo; About' },
@@ -390,7 +431,7 @@ function staticPageHtml(p) {
   return pageShell({
     title: p.title, description: p.description, canonicalPath: `/${p.slug}/`, ogType: p.ldType === 'Article' ? 'article' : 'website',
     jsonLd, active: p.active, crumb: p.crumb, articleClass: 'lp-prose',
-    body: `${inner}${p.foot === '' ? '' : `\n    ${SITE_FOOT}`}`,
+    body: inner,
   });
 }
 
@@ -428,10 +469,8 @@ const listHtml = '\n          <ul class="kdp-list">\n' + CONTENT.map((e) =>
 // Nav + footer are built from the single sources above and injected into index.html
 // too, so the SPA chrome cannot drift from the generated pages.
 const navHtml = NAV_ITEMS.map(([href, label]) => `<a href="${href}">${label}</a>`).join('\n      ');
-// The homepage footer is a top-level element (it follows </main>), so its contents
-// are indented two spaces, not six.
-const homeFoot = `<div class="foot-brand"><strong>KaryoDraw</strong><span>A free ISCN karyotype tool by <a href="${LINKS.studyrare}" target="_blank" rel="noopener">StudyRare</a></span></div>
-  <nav class="foot-links" aria-label="Footer"><button type="button" class="fbtrigger" id="fbopen">Send feedback</button><a href="${LINKS.github}" target="_blank" rel="noopener">Open source</a><a href="${LINKS.kofi}" target="_blank" rel="noopener">&#9829; Support on Ko-fi</a></nav>`;
+// The homepage footer is the same builder with the dialog-opening button variant.
+const homeFoot = siteFooter('button');
 const injected = indexHtml
   .replace(/(<!-- KD:PAGES:START -->)[\s\S]*?(<!-- KD:PAGES:END -->)/,
     `$1\n          <!-- Generated by scripts/build-pages.mjs from content/karyotypes.js — do not hand-edit. -->${listHtml}$2`)
