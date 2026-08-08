@@ -12,7 +12,7 @@ are also tour steps, the tour caption. Both the in-page guided tour
 **Generator:** `scripts/build-pages.mjs` (`npm run build`). Reusing the same render
 modules the browser uses (loaded in a `vm` shim, like the tests), it:
 
-- writes a static page per karyotype at `karyotype/<slug>/index.html` — unique title,
+- writes a static page per karyotype at `karyotype/<slug>/index.html`: unique title,
   meta description, canonical, Open Graph, `MedicalWebPage` + `BreadcrumbList` JSON-LD,
   an `<h1>`, the server-rendered karyogram, the decoded ISCN breakdown, clinical notes,
   and related-page links;
@@ -30,19 +30,27 @@ Validate notations first with the parser if unsure (all must parse with no warni
 
 **Routing (worker.js):**
 
-- `/karyotype/<slug>/` — served as a static asset.
-- `/k/<notation>` — 301-redirects to the canonical `/karyotype/<slug>/` when a curated
+- `/karyotype/<slug>/` is served as a static asset.
+- `/k/<notation>` 301-redirects to the canonical `/karyotype/<slug>/` when a curated
   page exists, else 302s to the interactive tool `/?k=<notation>`. `/k/` alone → hub.
 - Homepage `?k=<notation>` views set their `<link rel=canonical>` to the matching
   landing page (client-side), so tool views consolidate onto one canonical URL.
 
-## 2. "Doesn't look right?" feedback flagging
+## 2. "Not right?" feedback flagging
 
-A one-click flag on the karyogram (`#flagbtn`). The first click logs a row immediately
-(the click itself is the signal), then the dialog invites optional category + detail
-that enriches that same row by an unguessable `token`. The footer "Send feedback" opens
-the same dialog in general mode. All rows land in the D1 `feedback` table. No per-event
-pings — the existing daily email digest (13:00 UTC, via Resend) is the follow-up channel,
+A one-click flag on the karyogram (`#flagbtn`), leading the toolbar on the left in amber:
+feedback is a first-class action here, so it sits where the eye lands, not below the
+figure. The first click logs a row immediately (the click itself is the signal), then the
+dialog invites optional category + detail that enriches that same row by an unguessable
+`token`.
+
+"Send feedback" in the footer has two forms, both emitted by `siteFooter()` in
+`scripts/build-pages.mjs`. On the app page (`index.html`) it is a button that opens the
+same dialog in general mode. On the 35 generated pages it is a link to the GitHub issue
+tracker, because those pages carry no dialog markup or feedback script; a button there
+would look identical and do nothing. `test/layout.test.js` asserts each page gets the
+right one. All dialog rows land in the D1 `feedback` table. No per-event
+pings; the existing daily email digest (13:00 UTC, via Resend) is the follow-up channel,
 and it now shows the category.
 
 `worker.js` `/api/feedback` accepts three shapes: quick flag (returns `{id, token}`),
@@ -65,20 +73,26 @@ on insert as a safety net, so feedback is never lost even mid-migration.
 **Done (recorded here for provenance):**
 
 - **D1 schema + migrations applied.** The `usage` and `feedback` tables exist in prod;
-  the feedback `category`/`token` columns are present (migration `001` was not needed —
+  the feedback `category`/`token` columns are present (migration `001` was not needed,
   they were already there), and the partial index from `002_feedback_undigested_index.sql`
   is applied. `schema.sql` is the current full definition.
 - **Feedback digest is live.** `RESEND_API_KEY`, `FEEDBACK_EMAIL_TO`, and
   `FEEDBACK_EMAIL_FROM` are set as Worker secrets; the daily 13:00 UTC digest emails new
   feedback (batched, oldest-first). `FEEDBACK_WEBHOOK` is intentionally left unset (no
   per-event pings).
-- **IndexNow** — wired. The key file `7b3f1e9c4a2d6058e1f0b9c3d5a7e2f4.txt` is served at
+- **IndexNow** is wired. The key file `7b3f1e9c4a2d6058e1f0b9c3d5a7e2f4.txt` is served at
   the site root and CI pings IndexNow after each deploy. Nothing to do.
+
+- **Google Search Console is verified and reporting.** The `sc-domain:karyodraw.com`
+  property returns per-query performance data. As of the week of 2026-07-26 the guide page
+  alone drew impressions for its target queries ("how do you read a karyotype", "karyotype
+  notation", "interpreting karyotypes"), which is what settled the question of whether the
+  generated landing pages earn their keep. They do; keep them.
 
 **Optional, still open:**
 
-- **Google Search Console** (speeds up indexing; not required):
-  - Add the property `karyodraw.com` at <https://search.google.com/search-console>.
-  - Verify with a **DNS TXT record via Cloudflare** (easiest, no code), or uncomment the
-    `google-site-verification` meta tag in `index.html` and paste your token.
-  - Submit `https://karyodraw.com/sitemap.xml`.
+- **Search Console API access.** The data above has to be read out of the web UI and
+  pasted in by hand, because a session has no credential for the property. Enabling the
+  Search Console API once (OAuth client or a service account added to the property) would
+  let a session pull `/karyotype/*` impressions directly and pick what to write next from
+  data. This is a one-time setup by the owner; nothing in this repo depends on it.
