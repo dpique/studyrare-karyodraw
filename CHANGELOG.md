@@ -3,6 +3,25 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-08 (one deploy path, not two)
+
+- **Two systems were deploying this site, and one of them shipped stale pages.** Besides
+  `.github/workflows/deploy.yml`, the Cloudflare Workers Builds Git integration was
+  connected with "Build command: None" and watch paths `*`, so it deployed every push to
+  main, ignored the path filter, skipped `scripts/build-pages.mjs`, and published whatever
+  generated files happened to be committed. The two raced about a second apart on every
+  merge and the later one won. Nothing broke, because the generated pages are always
+  committed, but a `content/karyotypes.js` edit committed without a rebuild would have gone
+  live stale with both checks green. It was found by asking why a documentation-only PR
+  reached production when the path-filtered workflow had correctly not run.
+
+  The integration is disconnected. The Actions workflow, which regenerates the pages and
+  pings IndexNow, is now the only path, and `wrangler.jsonc` records why it must not be
+  reconnected without a build command. Two expected consequences: pull requests no longer
+  show any checks, since that integration provided the only one, and documentation-only
+  pushes no longer deploy, which costs nothing now that every internal file is excluded
+  from the served tree.
+
 ## 2026-08-08 (the handoff was a public page)
 
 - **`NEXT_SESSION_HANDOFF.md` was served at `karyodraw.com/NEXT_SESSION_HANDOFF.md`.** The
