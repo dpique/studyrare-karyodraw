@@ -107,3 +107,16 @@ test('a submicroscopic deletion page says what banding actually sees', () => {
   ['cri-du-chat-syndrome', 'jacobsen-syndrome', 'mds-5q-deletion'].forEach((slug) =>
     assert.ok(!/<p class="lp-res">/.test(read(`karyotype/${slug}/index.html`)), `${slug} needs no caveat`));
 });
+
+// The site serves the repo tree as static assets, minus `.assetsignore`. Internal
+// engineering files must be on that list: NEXT_SESSION_HANDOFF.md was not, so it
+// was live at karyodraw.com/NEXT_SESSION_HANDOFF.md, carrying working notes and
+// absolute paths under the author's home directory. Every comparable file (README,
+// CHANGELOG, docs/, CONTRIBUTING, schema.sql, test/) was already excluded, so this
+// was an oversight rather than a decision.
+test('internal engineering files are excluded from the served assets', () => {
+  const ignore = read('.assetsignore').split('\n').map((l) => l.trim());
+  for (const f of ['NEXT_SESSION_HANDOFF.md', 'README.md', 'CHANGELOG.md', 'docs/', 'test/']) {
+    assert.ok(ignore.includes(f), `${f} must be in .assetsignore, not served publicly`);
+  }
+});
