@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-08 (feedback up front, and one button style)
+
+- **The "Not right?" flag is back on top, leading the toolbar.** The previous pass parked
+  it under the figure, where it was too quiet to invite a report; feedback is a
+  first-class action on this site, so a reader deciding whether a drawing is trustworthy
+  now sees the way to say so before the ways to export it. Left group: the flag, amber.
+  Right group: the four export actions. And one button style for the whole row: it used
+  to mix bordered buttons with borderless text links, two half-finished designs in one
+  line, so every action now shares the same bordered shape and only the flag's color
+  differs.
+
 ## 2026-08-08 (one mark, and actions grouped by purpose)
 
 - **The logo differed between the app and the generated pages.** index.html carried the
