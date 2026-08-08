@@ -72,18 +72,119 @@ curl -s "https://karyodraw.com/karyotype/mosaic-turner-syndrome/?cb=$RANDOM" \
 ```
 
 ## Next
-No known holes in the gate. Work comes from adding to `scripts/stress-corpus.mjs`: a
-karyotype a student reports, or notation nobody has typed. Largest unmodelled families are
-`ish`/`nuc ish` and `arr`; unsupported ISCN 2024 examples sit in `test/iscn-2024-examples.js`.
 
-The corpus has no mosaic entries, which is why #148 survived to production. Adding a few
-(`mos`, `chi`, three clones, a mosaic whose clones disagree about a structural change) is
-the cheapest guard against the next figure that draws one cell line and looks fine.
+The domain core is in good shape and is not the work. What follows is a standing
+assessment of the delivery pipeline, written 2026-08-08 after an audit Dan asked for.
+**These are candidates with reasoning, not a queue.** Pick what fits the session, argue
+with any of it, and reorder freely. Each entry says why it matters and what is genuinely
+uncertain about it, because the uncertainty is usually the interesting part.
 
-One open ask for Dan, not code: there is no Search Console access from the CLI, so query
-and impression data has to be pasted in by hand. Enabling the Search Console API once
-would let a session pull `/karyotype/*` performance directly and decide what to write next
-from data instead of guesswork.
+### 1. The test suite is a habit, not a gate
+
+`.github/workflows/` holds `deploy.yml` and `sync-brand.yml`. Neither runs `npm test`. All
+425 tests pass only because whoever is at the keyboard chooses to run them, and a push
+that skipped them would deploy identically. This got worse on 2026-08-08: disconnecting
+Workers Builds removed the only check that appeared on pull requests, so PRs now show
+none at all.
+
+A workflow running `npm test` on `pull_request` and on `push` to main is roughly fifteen
+lines and turns the suite from documentation into an actual gate. Highest leverage item
+here by a wide margin, and the cheapest.
+
+Open question worth deciding rather than assuming: whether it also runs `npm run build`
+and fails on drift, which would have caught the generated-page staleness that item 2
+removes entirely. If item 2 happens first, this question dissolves.
+
+### 2. Build output is committed, and every diff pays for it
+
+Each generated landing page is 51KB, of which 43KB is the app stylesheet inlined
+verbatim, across 35 pages: about 1.7MB, a quarter of the repo, all derivable. The cost is
+visible in the log. The two-line tour fix (#147) landed as 38 files changed; the footer
+change (#148) as 44. It also produced a real bug class, the stale-committed-page race that
+#154 closed.
+
+`deploy.yml` already regenerates everything before deploying, so the committed copies are
+redundant. Gitignoring them is now unblocked, since the second deploy path that had no
+build step is gone.
+
+Two things to work out first. Five test files read the generated pages, so this needs a
+`pretest` hook or an equivalent, which is a small decision with taste in it. And the PNG
+karyograms are a different case that should stay committed, because rendering them needs a
+browser and CI never runs `render-images.mjs`.
+
+### 3. The interface is tested by grepping its own source
+
+About 83 assertions regex over raw `index.html`. That tests the shape of markup rather
+than whether anything works, and it fails both ways: brittle against formatting, silent
+when behavior breaks. `test/tour-launcher.test.js` is the honest example. It asserts that
+`KD_PAGE_COUNT` does not appear in the file, which is a proxy for the thing that matters,
+that clicking the button opens the tour.
+
+`puppeteer-core` is already a dependency and `scripts/render-images.mjs` proves headless
+Chrome works here, so a small browser-driven layer is within reach. Worth keeping the
+regex style where the artifact really is text: meta tags and structured data in
+`test/seo.test.js` are correctly tested that way.
+
+Judgement call for whoever takes it: converting all 83 is probably not worth it. The tour
+launcher is, because that bug reached production past this exact style of test.
+
+### 4. The interface has no `VALIDATION.md`
+
+`docs/VALIDATION.md` works because it records reasoning, not just rules, and it covers the
+parser, the gate, and their messages. Nothing plays that role for the interface. The
+preferences below were all decided on 2026-08-08 and currently survive only as changelog
+narrative, test comments, and Claude's private memory, which is invisible to everyone
+else. They are recorded here so they do not decay before someone decides where they
+belong. Whether that is a new `docs/INTERFACE.md`, a section appended to `VALIDATION.md`,
+or something else is genuinely open.
+
+- **Feedback affordances stay prominent.** The "Not right?" flag leads the karyogram
+  toolbar in amber. An earlier pass moved it below the figure, quiet and bottom-right, and
+  that was reversed: a reader deciding whether a drawing is trustworthy should meet the
+  way to say so before the ways to export it. Feedback volume is how wrong renders get
+  caught, and this site teaches, so a wrong figure is the worst failure mode.
+- **One button shape per row; color carries meaning.** The same toolbar used to mix
+  bordered buttons with borderless text links, which read as two unfinished designs. Group
+  actions by purpose using position, distinguish them by color, never by shape.
+- **A tooltip earns its place by saying what the label cannot.** The copy-link tooltip
+  restated its own button and then promised the link "updates as you edit", which was read
+  as a claim that an already-pasted link keeps tracking edits. It does not.
+- **A figure states what the notation states.** A mosaic draws every cell line side by
+  side at one scale, each under its own notation and cell count. Any `model.clones[0]` is
+  the bug shape here.
+- **Show the rendered result before shipping visual changes.** The flag placement above
+  was shipped, seen, and reverted. One preview screenshot would have made it one round.
+
+### 5. Background, lower urgency
+
+`index.html` is 2155 lines holding CSS, markup, and about 1400 lines of JS. This is the
+root cause of item 3: none of that JS can be imported, which is why tests grep it and why
+`test/examples.test.js` lifts a block out of the file and evaluates it without a `window`.
+The extraction pattern is already proven, since `iscn-parser.js`, `karyo-render.js`, and
+`teach.js` are the well-tested parts precisely because they are separate. This is a real
+refactor, not an afternoon, and it should wait until items 1 through 3 are done.
+
+`scripts/stress-corpus.mjs` still has no mosaic entries, which is why the #148 figure bug
+survived to production. A few (`mos`, `chi`, three clones, a mosaic whose clones disagree
+about a structural change) are the cheapest guard against the next figure that draws one
+cell line and looks entirely fine. Otherwise the corpus grows from real reports: a
+karyotype a student sends in, or notation nobody has typed. Largest unmodelled families
+are `ish`/`nuc ish` and `arr`; unsupported ISCN 2024 examples sit in
+`test/iscn-2024-examples.js`.
+
+Also consider whether this file belongs in the repo at all. It exists to prime a session
+rather than to serve the product, it was publicly served until #153, and the case for
+moving it into Claude's memory directory is decent.
+
+### Open asks for Dan, not code
+
+- **Search Console API access.** Query and impression data has to be pasted in by hand
+  today. Enabling the API once, via OAuth client or a service account added to the
+  `sc-domain:karyodraw.com` property, would let a session pull `/karyotype/*` performance
+  directly and choose what to write next from data rather than guesswork.
+- **Confirm the single deploy path held.** #154 produced exactly one Cloudflare deployment
+  where every previous merge produced two. That is one data point; the next merge should
+  show the same shape before treating it as settled.
 
 ## Resume prompt
 > Read `NEXT_SESSION_HANDOFF.md` and `docs/VALIDATION.md` in
