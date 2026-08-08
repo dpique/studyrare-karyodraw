@@ -2,7 +2,17 @@
   // KaryoDraw: a static site plus a small Worker. The Worker (worker.js) serves
   // the static assets via the ASSETS binding and handles POST /api/collect,
   // which writes an anonymous, cookieless usage row to the D1 database below.
-  // No build step. Deploys via CI (push to main) — see .github/workflows/deploy.yml.
+  // No build step here. ONE deploy path: .github/workflows/deploy.yml on push to main,
+  // which runs `node scripts/build-pages.mjs` before `wrangler deploy` so the landing
+  // pages and sitemap are regenerated from content/karyotypes.js, then pings IndexNow.
+  //
+  // Do NOT reconnect the Cloudflare Workers Builds Git integration without also setting
+  // its build command. It was connected until 2026-08-08 with "Build command: None" and
+  // watch paths "*", so it deployed every push, skipped the regeneration step, and
+  // shipped whatever generated files happened to be committed. Both paths deployed each
+  // push about a second apart and the later one won, so a content/karyotypes.js edit
+  // committed without a rebuild would have gone live stale with every check green. It is
+  // disconnected; this workflow is the only deploy path.
   "name": "studyrare-karyodraw",
   "compatibility_date": "2026-07-03",
   "main": "worker.js",
@@ -23,7 +33,7 @@
     "crons": ["0 13 * * *"]
   },
   // Per-IP rate limits on the write endpoints (worker.js overLimit). Best-effort,
-  // per-location counting — enough to stop a scripted flood from inflating D1
+  // per-location counting, enough to stop a scripted flood from inflating D1
   // writes, poisoning the "Most-studied" board, or spamming the feedback inbox.
   // /api/collect is generous so a classroom behind one NAT IP is never blocked;
   // /api/feedback is tight because a real person submits it rarely. namespace_id

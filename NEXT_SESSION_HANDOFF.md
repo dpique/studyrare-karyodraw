@@ -47,6 +47,15 @@ Nothing. Clean tree, no open PRs, no worktrees, no stale branches, level with `o
   cell line. Three paths now walk all clones (`scripts/lib/render.mjs` `renderKaryogram`,
   `renderPrintSheet` and `decodeList`); `test/mosaic-figure.test.js` pins them. Treat any
   new `clones[0]` as a bug until proven single-clone by construction.
+- **One deploy path, and it must stay one.** Until 2026-08-08 the Cloudflare Workers
+  Builds Git integration was connected alongside `.github/workflows/deploy.yml`, with no
+  build command and watch paths `*`. It deployed every push, skipped
+  `scripts/build-pages.mjs`, and shipped whatever generated files were committed, racing
+  the Actions deploy by about a second. A `content/karyotypes.js` edit committed without
+  a rebuild would have gone live stale with every check green. It is disconnected. Two
+  consequences to expect: PRs now show no checks at all (there is no Actions test job, so
+  run `npm test` locally, which the ship workflow does), and docs-only pushes no longer
+  deploy, which costs nothing now that every internal file is in `.assetsignore`.
 - **A new CHANGELOG section can swallow the one below it.** Both an agent and a human
   (me) did this on 2026-08-08, replacing the previous PR's `##` heading and absorbing its
   bullets. After editing the changelog, run `grep -n '^## ' CHANGELOG.md | head -5` and
