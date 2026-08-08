@@ -3,6 +3,16 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-08 (the handoff was a public page)
+
+- **`NEXT_SESSION_HANDOFF.md` was served at `karyodraw.com/NEXT_SESSION_HANDOFF.md`.** The
+  site publishes the repo tree as static assets minus `.assetsignore`, and that file was
+  missing from the list while every comparable one (README, CHANGELOG, `docs/`,
+  CONTRIBUTING, `schema.sql`, `test/`) was already on it, so this was an oversight rather
+  than a decision. It returned HTTP 200 with internal working notes and absolute paths
+  under the author's home directory. It is excluded now, and `test/seo.test.js` asserts
+  that the internal files stay off the served tree.
+
 ## 2026-08-08 (the docs describe the site as it is now)
 
 Documentation only. Two files, no served file touched.
