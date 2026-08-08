@@ -3,6 +3,18 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-08 (a tooltip that says what the label cannot)
+
+- **"Copy link to this view" promised a link that keeps updating.** The tooltip read
+  "Copy a link that reproduces this exact view. It updates as you edit.": the first
+  sentence restated the button label, and the second was read as a promise that a link
+  already copied and pasted somewhere would keep tracking later edits. It does not. The
+  app rewrites the address bar in place as you edit, and the button copies that address
+  at the moment of the click, so what you hand out is a snapshot. The tooltip now carries
+  only the fact the label cannot: "The link includes your Show, Bands, and Style
+  settings." `test/tooltip-voice.test.js` keeps the updating claim out and keeps every
+  action in the row annotated.
+
 ## 2026-08-08 (feedback up front, and one button style)
 
 - **The "Not right?" flag is back on top, leading the toolbar.** The previous pass parked
