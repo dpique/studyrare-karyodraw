@@ -449,14 +449,12 @@
   .pbtn { border: 1px solid #cdd2e1; background: #fff; color: var(--ink-2); border-radius: 9px; padding: 6px 12px; font-size: 13px; cursor: pointer; font-family: inherit; }
   .pbtn:hover { background: #f0f2f7; border-color: var(--periwinkle); color: var(--peri-700); }
   .pbtn:disabled { opacity: .7; cursor: default; }
-  .kactions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 2px 16px 12px; flex-wrap: wrap; }
-  .kactions .sharelink, .kfoot .sharelink { border: none; background: none; color: var(--peri-700); font: 600 12px var(--font-sans); cursor: pointer; padding: 4px 7px; border-radius: 7px; }
-  .kactions .sharelink:hover, .kfoot .sharelink:hover { background: var(--peri-50); text-decoration: underline; }
-  .kactions .sharelink:disabled, .kfoot .sharelink:disabled { text-decoration: none; opacity: .85; }
-  /* The flag sits alone under the figure, bottom right, quiet until hovered. */
-  .kfoot { display: flex; justify-content: flex-end; padding: 0 16px 10px; }
-  .kfoot .flagbtn { color: var(--amber-800); }
-  .kfoot .flagbtn:hover { background: var(--amber-50); }
+  .kactions { display: flex; align-items: center; gap: 8px; padding: 2px 16px 12px; flex-wrap: wrap; }
+  .kactions .spacer { flex: 1 1 auto; }
+  /* Same .pbtn shape as its neighbors, amber where they are neutral: the flag reads
+     as a peer action, and the color says which kind. */
+  .kactions .flagbtn { color: var(--amber-800); border-color: var(--amber-600); background: var(--amber-50); font-weight: 600; }
+  .kactions .flagbtn:hover { color: var(--amber-800); border-color: var(--amber-800); background: var(--amber-50); }
   .fb-cats { display: flex; flex-wrap: wrap; gap: 6px; margin: 3px 0 14px; }
   .fb-cat { font: 600 12px var(--font-sans); padding: 6px 11px; border-radius: 999px; border: 1px solid #cdd2e1; background: #fff; color: var(--ink-2); cursor: pointer; }
   .fb-cat:hover { background: #f0f2f7; }
