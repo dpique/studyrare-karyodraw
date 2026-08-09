@@ -4,7 +4,7 @@ Two systems added to KaryoDraw.
 
 ## 1. SEO landing pages
 
-**Single source of truth:** `content/karyotypes.js`. It holds ~32 curated karyotypes
+**Single source of truth:** `content/karyotypes.js`. It holds the curated karyotypes (40 as of 2026-08-09)
 (slug, notation, name, aliases, concept, intro, related links) and, for those that
 are also tour steps, the tour caption. Both the in-page guided tour
 (`window.KDContent.tour()`) and the page generator read from it, so they never drift.
@@ -52,7 +52,7 @@ dialog invites optional category + detail that enriches that same row by an ungu
 
 "Send feedback" in the footer has two forms, both emitted by `siteFooter()` in
 `scripts/build-pages.mjs`. On the app page (`index.html`) it is a button that opens the
-same dialog in general mode. On the 35 generated pages it is a link to the GitHub issue
+same dialog in general mode. On the generated pages it is a link to the GitHub issue
 tracker, because those pages carry no dialog markup or feedback script; a button there
 would look identical and do nothing. `test/layout.test.js` asserts each page gets the
 right one. All dialog rows land in the D1 `feedback` table. No per-event
