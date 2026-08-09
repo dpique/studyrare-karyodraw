@@ -109,14 +109,24 @@ test('a submicroscopic deletion page says what banding actually sees', () => {
 });
 
 // The site serves the repo tree as static assets, minus `.assetsignore`. Internal
-// engineering files must be on that list: NEXT_SESSION_HANDOFF.md was not, so it
-// was live at karyodraw.com/NEXT_SESSION_HANDOFF.md, carrying working notes and
-// absolute paths under the author's home directory. Every comparable file (README,
-// CHANGELOG, docs/, CONTRIBUTING, schema.sql, test/) was already excluded, so this
-// was an oversight rather than a decision.
+// engineering files must be on that list. `NEXT_SESSION_HANDOFF.md` was not, so it was
+// live at karyodraw.com/NEXT_SESSION_HANDOFF.md carrying working notes and absolute paths
+// under the author's home directory. That file is gone from the repo entirely now, since
+// a session handoff primes a session rather than serving the product, and it is
+// gitignored so it cannot come back; `.assetsignore` keeps its entry as a second guard in
+// case one ever does. The rest of the list is what a reader should not be served.
 test('internal engineering files are excluded from the served assets', () => {
   const ignore = read('.assetsignore').split('\n').map((l) => l.trim());
   for (const f of ['NEXT_SESSION_HANDOFF.md', 'README.md', 'CHANGELOG.md', 'docs/', 'test/']) {
     assert.ok(ignore.includes(f), `${f} must be in .assetsignore, not served publicly`);
   }
+});
+
+// A handoff is working state for a session, not part of an open-source product, and this
+// repo is public. Keeping it out is a property of the repo, not a habit to remember.
+test('no session handoff is tracked in the repo', () => {
+  assert.ok(!fs.existsSync(path.join(root, 'NEXT_SESSION_HANDOFF.md')),
+    'the handoff belongs in Claude memory, not in a public repo');
+  assert.match(read('.gitignore'), /^NEXT_SESSION_HANDOFF\.md$/m,
+    'and it is gitignored so it cannot be re-added by accident');
 });

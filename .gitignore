@@ -3,3 +3,7 @@ _build_inputs/*.gz
 .wrangler/
 node_modules
 karyotype-stress-test.html
+
+# Session handoffs live in Claude memory, never in this public repo (see the
+# session-handoff skill). Ignored so one cannot be re-added by accident.
+NEXT_SESSION_HANDOFF.md
