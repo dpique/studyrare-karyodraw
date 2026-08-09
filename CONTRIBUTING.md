@@ -33,15 +33,20 @@ server and open `index.html`:
 ./start.sh          # or: python3 -m http.server 8770
 ```
 
-(The SEO landing pages under `karyotype/` are generated from
-`content/karyotypes.js` by `npm run build`; CI runs it before every deploy, so
-you only need it if you edit the curated karyotypes.)
+(The SEO landing pages under `karyotype/`, the hub, `about/`,
+`how-to-read-a-karyotype/`, and `sitemap.xml` are generated from
+`content/karyotypes.js` by `npm run build` and are not committed; CI rebuilds
+them before every deploy. Run the build once if you want those pages locally.)
 
-Run the parser test suite (Node's built-in runner, no dependencies):
+Run the test suite (Node's built-in runner; it regenerates the landing pages
+first, since some tests read them):
 
 ```bash
 npm test
 ```
+
+Every pull request runs this same suite in GitHub Actions, and the deploy
+workflow will not ship a commit that fails it.
 
 ## Submit a change
 

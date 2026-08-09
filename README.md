@@ -116,7 +116,9 @@ karyotype still draws, with the mismatch flagged.
   define the D1 tables.
 - `content/karyotypes.js` — the single source of truth for the curated karyotypes
   and the guided tour; `scripts/build-pages.mjs` generates the SEO landing pages
-  and sitemap from it (`npm run build`, run in CI before every deploy).
+  and sitemap from it (`npm run build`, run in CI before every deploy). The
+  generated pages are not committed; only their PNG karyograms are, because
+  rendering those needs a browser.
 - `start.sh` — local server launcher.
 - `_build_inputs/` — band-data source + build script (see `_build_inputs/SOURCES.md`).
 - `docs/` — backend/SEO notes (`SEO_AND_FEEDBACK.md`) and the CyDAS lineage

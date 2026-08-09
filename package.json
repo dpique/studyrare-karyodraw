@@ -10,6 +10,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
+    "pretest": "node scripts/build-pages.mjs",
     "test": "node --test test/*.test.js",
     "build": "node scripts/build-pages.mjs",
     "images": "node scripts/render-images.mjs",

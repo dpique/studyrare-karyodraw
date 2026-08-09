@@ -532,6 +532,9 @@ async function main() {
     left.forEach((r) => console.log(`  ${leftoverOf(r.cap).join(', ')}  after  ${r.e.k || '(empty)'}`));
   }
   console.log(`\nWrote ${path.relative(process.cwd(), OUT)}  (${(fs.statSync(OUT).size / 1048576).toFixed(1)} MB)`);
+  // A regression must fail the command, not just print a line mid-run. The
+  // exit code is what lets a script, a hook, or CI treat this as a gate.
+  if (mism.length || left.length || dupes) process.exitCode = 1;
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });

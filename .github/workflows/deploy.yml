@@ -23,7 +23,6 @@ on:
       - 'favicon-96x96.png'
       - 'apple-touch-icon.png'
       - 'robots.txt'
-      - 'sitemap.xml'
       - 'wrangler.jsonc'
       - '.assetsignore'
       - '.github/workflows/deploy.yml'
@@ -32,17 +31,38 @@ on:
 permissions:
   contents: read
 
+# One deploy at a time, in order. Two merges in quick succession must not race
+# each other to Cloudflare, where the later commit could finish first and then
+# be overwritten by the earlier one.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
 jobs:
-  deploy:
+  # The suite gates the deploy: if a test fails, nothing ships. npm test also
+  # regenerates the landing pages first (the pretest hook), so a build script
+  # broken badly enough to fail fails here too.
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      # Regenerate the SEO landing pages, the homepage "Common karyotypes" list, and
-      # sitemap.xml from content/karyotypes.js so the single source of truth is always
-      # what ships, even if the committed generated files were stale.
+      - run: npm ci
+      - run: npm test
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      # Regenerate the SEO landing pages, the homepage "Common karyotypes" list,
+      # and sitemap.xml from content/karyotypes.js. Generated output is not
+      # committed (only the PNG karyograms are); this step is what puts it in
+      # the directory wrangler uploads.
       - name: Build landing pages
         run: node scripts/build-pages.mjs
       - name: Deploy with wrangler

@@ -7,3 +7,15 @@ karyotype-stress-test.html
 # Session handoffs live in Claude memory, never in this public repo (see the
 # session-handoff skill). Ignored so one cannot be re-added by accident.
 NEXT_SESSION_HANDOFF.md
+
+# Generated output. scripts/build-pages.mjs rebuilds all of this from
+# content/karyotypes.js; the deploy workflow regenerates it before every deploy
+# and npm test regenerates it via the pretest hook. Only the PNG karyograms
+# stay committed, because rendering those needs a browser
+# (scripts/render-images.mjs) and CI does not run one.
+/karyotype/index.html
+/karyotype/*/index.html
+/about/
+/how-to-read-a-karyotype/
+/sitemap.xml
+/content/k-index.mjs
