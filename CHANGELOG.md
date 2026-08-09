@@ -3,6 +3,24 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-08 (the disconnect held, proven from the check runs)
+
+- **The single deploy path is confirmed, without needing Cloudflare's own ledger.** Workers
+  Builds posts a GitHub check run on every build it performs, so its presence per merge is
+  a reliable proxy for whether it fired. It appears on six of six merges from #148 to #153
+  and on zero of two afterwards. #152 remains the clearest picture of the fault that
+  started this: Workers Builds ran while the path-filtered Actions workflow correctly did
+  not, which is precisely the deploy nobody asked for. Since the disconnect, #154 shows
+  the `deploy` run alone and #155, being documentation only, shows nothing at all, which
+  is the designed behavior.
+
+- **The reason the check runs were used instead of Cloudflare's deployment list is now on
+  the record.** `wrangler` is installed and authenticated, but `api.cloudflare.com` is
+  unreachable from the agent shell even with sandboxing disabled, so
+  `wrangler deployments list` cannot be run from a session. The handoff notes this next to
+  the settled question so the next reader does not repeat the attempt, and names the
+  check-run evidence as the practical substitute.
+
 ## 2026-08-08 (a standing assessment, and where interface decisions live)
 
 - **The handoff now carries a reasoned assessment of the delivery pipeline rather than a
