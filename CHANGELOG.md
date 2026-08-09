@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-09 (the toolbar groups swap sides)
+
+- **The export actions now lead the karyogram toolbar on the left; the "Not right?" flag
+  anchors the right edge, alone.** An owner decision reversing the left/right order set on
+  2026-08-08. What did not change, and stays deliberate: the flag lives in the top action
+  row, keeps the only amber identity on the panel, and sits isolated from the export
+  cluster across the spacer, because feedback volume is how wrong renders get caught. The
+  placement that remains reverted is the old under-figure flag row, which was too quiet to
+  invite a report. `test/site-chrome.test.js` pins the new order and
+  `docs/INTERFACE.md` records the decision with its date.
+
 ## 2026-08-09 (a clipped band no longer inherits a centromere it does not contain)
 
 - **At the ~400-band level, der(9) of t(9;22)(q34;q11.2) drew a second centromere.**
