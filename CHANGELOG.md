@@ -3,6 +3,37 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-08 (mosaic stress coverage, a browser test for the tour, and the interface decisions on record)
+
+- **The stress corpus covers the mosaic shapes that were missing.** A figure path that
+  read only `clones[0]` of a mosaic reached production because nothing exercised the
+  multi-clone cases end to end. The mosaic group gains the `chi` prefix form
+  (`chi 46,XX/46,XY`) and a mosaic whose clones disagree about a structural change
+  (`mos 46,XX,del(5)(p15.2)[10]/46,XX[20]`), where a `clones[0]`-only renderer would show
+  pure cri du chat and hide the normal majority line. Two-clone, three-clone, and bare
+  chimera forms were already in the corpus; the stale corpus count in
+  `docs/VALIDATION.md` (138) now reads 168.
+
+- **The tour launcher is tested in a real browser.** A stale `KD_PAGE_COUNT` reference
+  once threw at load time and killed the tour button after its label was set, so the
+  button looked wired and did nothing. The existing `test/tour-launcher.test.js` greps
+  `index.html` for that identifier, which pins the one regression that has happened.
+  `test/tour-launcher-browser.test.js` closes the general case: it serves the repo over
+  HTTP, loads the page in headless Chrome, asserts no JS error on load, clicks the
+  launcher and asserts the tour card opens on step 1, and loads `?tour=1` and asserts
+  the deep link opens it. The guard was proven by reintroducing the reference: all three
+  assertions fail. The test skips when no Chrome executable can be resolved
+  (`CHROME_PATH`, then the usual install paths, including `/usr/bin/google-chrome` on
+  GitHub's runners), so CI always runs it.
+
+- **The interface decisions are on record in `docs/INTERFACE.md`.** Five rules that were
+  living only in code comments and review memory, each with its reasoning: feedback
+  leads the karyogram toolbar in amber, one button shape per row with color for meaning,
+  a tooltip says what the label cannot and promises nothing false, a mosaic figure draws
+  every cell line at one scale, and visual changes ship with a preview screenshot.
+  Written down so a later change argues against the reason instead of reversing it
+  unknowingly. Referenced from the docs list in `README.md`.
+
 ## 2026-08-08 (the suite becomes a gate, and the build output leaves the repo)
 
 - **Tests now gate every pull request and every deploy.** Before this, no workflow ran

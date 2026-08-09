@@ -496,7 +496,7 @@ unrecognized change. It now parses as a marker carrying a ring shape, so it draw
 labelled `r` in the marker slot, and the decode says what separates it from `r(13)` (which
 names its chromosome; `+r` does not).
 
-Reproduce the whole set with `npm run stress`, which runs a 138-karyotype corpus through
+Reproduce the whole set with `npm run stress`, which runs a 168-karyotype corpus through
 the real page and flags every case where the app drew something it should have refused or
 refused something it should have drawn. It currently flags none.
 
