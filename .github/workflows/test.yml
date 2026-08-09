@@ -1,0 +1,28 @@
+name: Test
+
+# Runs the full suite on every pull request, so a PR always carries at least
+# one check. Deploys are gated separately: deploy.yml runs the same suite and
+# its deploy job does not start unless the suite passes. Before 2026-08-08 no
+# workflow ran the tests at all; they passed only when someone chose to run
+# them locally, and a push that skipped them deployed identically.
+
+on:
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: npm ci
+      # npm test regenerates the landing pages first (the pretest hook),
+      # because five test files read them and generated output is not
+      # committed.
+      - run: npm test

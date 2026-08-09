@@ -23,9 +23,15 @@ modules the browser uses (loaded in a `vm` shim, like the tests), it:
 - writes `content/k-index.mjs`, the normalized-notation to slug map used by the Worker.
 
 The generator runs automatically in CI before every deploy (`.github/workflows/deploy.yml`),
-so `content/karyotypes.js` is always what ships.
+so `content/karyotypes.js` is always what ships. Its output is **not committed**:
+everything it writes is gitignored except the homepage list injected into
+`index.html`. The PNG karyograms (`scripts/render-images.mjs`) are the one
+committed exception, because rendering them needs a browser and CI does not run one.
 
-**To add or edit a page:** edit `content/karyotypes.js`, run `npm run build`, commit.
+**To add or edit a page:** edit `content/karyotypes.js` and commit that alone; the
+pages, hub, sitemap, and `k-index.mjs` regenerate in CI (and locally via
+`npm run build`, which `npm test` also runs first). If the karyotype is new, run
+`npm run images` and commit the two PNGs it writes for the slug.
 Validate notations first with the parser if unsure (all must parse with no warnings).
 
 **Routing (worker.js):**

@@ -3,6 +3,29 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-08 (the suite becomes a gate, and the build output leaves the repo)
+
+- **Tests now gate every pull request and every deploy.** Before this, no workflow ran
+  `npm test`: all 426 tests passed only when someone chose to run them locally, and a push
+  that skipped them deployed identically. Disconnecting Workers Builds had also removed
+  the only check that appeared on pull requests. Now `.github/workflows/test.yml` runs the
+  suite on every PR, and the deploy job in `deploy.yml` requires a passing suite on the
+  same commit before `wrangler deploy` starts. A `concurrency` group serializes deploys so
+  two merges in quick succession cannot race each other to Cloudflare.
+
+- **Generated output is no longer committed.** The 32 landing pages, the hub, `about/`,
+  `how-to-read-a-karyotype/`, `sitemap.xml`, and `content/k-index.mjs` (about 1.8 MB, a
+  quarter of the repository, all derivable from `content/karyotypes.js`) are untracked and
+  gitignored. They were the reason a two-line fix could land as a 38-file diff, and they
+  enabled the stale-committed-page class of bug that required the single-deploy-path fix.
+  The deploy workflow already rebuilt them before every deploy; now a `pretest` hook also
+  rebuilds them before `npm test`, since several tests read the generated pages. The PNG
+  karyograms stay committed: rendering them needs a browser and CI does not run one.
+
+- **`npm run stress` now fails on a regression.** The runner printed mismatches, leftover
+  panels, and duplicate SVG ids but always exited 0, so nothing scripted could act on it.
+  It now sets a non-zero exit code when any of the three appear.
+
 ## 2026-08-08 (the handoff leaves the repo)
 
 - **`NEXT_SESSION_HANDOFF.md` is gone from the repository.** It existed to prime a coding
