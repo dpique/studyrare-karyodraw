@@ -121,8 +121,8 @@ karyotype still draws, with the mismatch flagged.
   rendering those needs a browser.
 - `start.sh` — local server launcher.
 - `_build_inputs/` — band-data source + build script (see `_build_inputs/SOURCES.md`).
-- `docs/` — backend/SEO notes (`SEO_AND_FEEDBACK.md`) and the CyDAS lineage
-  (`CYDAS.md`).
+- `docs/` — backend/SEO notes (`SEO_AND_FEEDBACK.md`), the CyDAS lineage
+  (`CYDAS.md`), and the interface decisions and their reasoning (`INTERFACE.md`).
 
 ## Regenerate the band data
 
