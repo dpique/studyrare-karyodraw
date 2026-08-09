@@ -182,9 +182,19 @@ moving it into Claude's memory directory is decent.
   today. Enabling the API once, via OAuth client or a service account added to the
   `sc-domain:karyodraw.com` property, would let a session pull `/karyotype/*` performance
   directly and choose what to write next from data rather than guesswork.
-- **Confirm the single deploy path held.** #154 produced exactly one Cloudflare deployment
-  where every previous merge produced two. That is one data point; the next merge should
-  show the same shape before treating it as settled.
+- ~~Confirm the single deploy path held.~~ **Settled 2026-08-08.** Workers Builds posts a
+  GitHub check run on every build it performs, so its presence per merge is a reliable
+  proxy for whether it fired. It appears on six of six merges from #148 to #153 and on
+  zero of two after the disconnect. #152 is the clearest evidence of the original fault:
+  Workers Builds ran while Actions correctly did not, which is the deploy nobody asked
+  for. Since the disconnect, #154 shows `deploy` alone and #155, being docs-only, shows
+  nothing at all.
+
+  Note for whoever wants the Cloudflare-side ledger as well: `wrangler` is installed and
+  authenticated, but `api.cloudflare.com` is unreachable from the agent shell even with
+  sandboxing disabled, so `wrangler deployments list` cannot run from a session. Dan can
+  run it directly if that last confirmation is ever wanted. The GitHub check-run evidence
+  above is the practical substitute and is what settled it.
 
 ## Resume prompt
 > Read `NEXT_SESSION_HANDOFF.md` and `docs/VALIDATION.md` in
