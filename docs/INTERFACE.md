@@ -5,24 +5,28 @@ change is argued against it instead of quietly reversing it. The register is the
 [`VALIDATION.md`](VALIDATION.md): what the rule is, and what went wrong or would go wrong
 without it.
 
-## Feedback leads the toolbar
+## Feedback stays prominent in the toolbar
 
-The "Not right?" flag is the first control in the karyogram action row, and the one control
-drawn in amber; the four export actions group to its right. A reader deciding whether a
-drawing is trustworthy should meet the way to say so before the ways to export it.
+The "Not right?" flag lives in the karyogram action row and is the one control drawn in
+amber. As of 2026-08-09 it anchors the right edge of the row, alone, with the four export
+actions grouped on the left (an owner decision swapping the two groups; the flag led on
+the left before that). What is load-bearing and does not move: the flag stays in this top
+row, keeps the strongest color on the panel, and sits isolated from the export cluster so
+it reads as its own kind of action.
 
 The pricing behind that: a wrong figure is the worst failure mode on a site that teaches.
 An export button that is hard to find costs a click. A wrong karyogram, exported, teaches a
 student the wrong thing with this site's name under it. Feedback volume is how wrong
-renders get caught, so the affordance that produces feedback keeps the leading position and
-the strongest color, and any redesign that demotes it is spending the wrong budget.
+renders get caught, so the affordance that produces feedback keeps the top row and the
+strongest color. The placement that stays reverted: an earlier pass parked the flag under
+the figure, quiet and bottom-right, and it was too quiet to invite a report.
 
 ## One button shape per row
 
 Buttons in a row share one shape. Actions are grouped by purpose using position, and
 distinguished by color, never by shape. The flag button is the worked example: the same
-`.pbtn` shape as its neighbors, amber where they are neutral, seated on the left while the
-exports sit on the right. Position says which group an action belongs to; color says what
+`.pbtn` shape as its neighbors, amber where they are neutral, seated apart from the export
+group across the spacer. Position says which group an action belongs to; color says what
 kind of action it is; a second shape would say nothing either does not already say, and
 shape variation reads as a hierarchy that does not exist.
 

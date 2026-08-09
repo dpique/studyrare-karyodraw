@@ -662,17 +662,21 @@
         </div>
         <div class="card">
           <div id="summary" class="summary" aria-live="polite"></div>
-          <!-- One row, one button style, two groups. The flag LEADS on the left, in
-               amber: feedback is a first-class action here, and a reader deciding
-               whether a drawing is trustworthy should see the way to say so before
-               the ways to export it. The four export actions group on the right. -->
+          <!-- One row, one button style, two groups. The four export actions group
+               on the left; the "Not right?" flag anchors the RIGHT edge, alone and
+               in amber (swapped 2026-08-09 by owner decision; it previously led on
+               the left). The flag's prominence is carried by its amber identity,
+               the top-row placement, and its isolation at the row's end, clear of
+               the export cluster. It stays in this row: an earlier pass that parked
+               it under the figure was too quiet to invite a report, and that
+               placement stays reverted. -->
           <div class="kactions" id="kactions" data-drawing>
-            <button class="pbtn flagbtn" id="flagbtn" type="button" title="Something in this karyogram or explanation looks wrong? One click flags it; then add detail if you like.">⚠ Not right?</button>
-            <span class="spacer"></span>
             <button class="pbtn" id="copyimg" title="Copy the karyogram as an image, ready to paste into slides, notes, or a message">⧉ Copy image</button>
             <button class="pbtn" id="dlimg" title="Download the karyogram as a PNG file">↓ PNG</button>
             <button class="pbtn" id="copyhint" type="button" title="The link includes your Show, Bands, and Style settings.">🔗 Copy link to this view</button>
             <button class="pbtn" id="printbtn" type="button" title="Print, or save as a 1-page PDF summary for a genetic counselor">🖨 Print summary</button>
+            <span class="spacer"></span>
+            <button class="pbtn flagbtn" id="flagbtn" type="button" title="Something in this karyogram or explanation looks wrong? One click flags it; then add detail if you like.">⚠ Not right?</button>
           </div>
           <div id="karyo" role="group" aria-label="Karyogram" aria-describedby="decode"></div>
         </div>

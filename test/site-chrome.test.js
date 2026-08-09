@@ -37,25 +37,28 @@ test('the app brand mark is injected between KD:BRAND markers', () => {
   assert.match(block[0], /<svg class="dotmark"/, 'the mark sits inside the markers');
 });
 
-// The karyogram toolbar: one row, one button style, two groups. The "Not right?"
-// flag LEADS the row on the left, in amber, because feedback is a first-class
-// action here, not a footnote (an earlier pass parked it under the figure, where
-// it was too quiet to invite a report). The four export actions group together on
-// the right. Every action is the same bordered .pbtn; the row used to mix bordered
-// buttons with borderless text links, which read as two half-finished designs.
-test('one button style, flag leading left, exports grouped right', () => {
+// The karyogram toolbar: one row, one button style, two groups. The four export
+// actions group on the left; the "Not right?" flag anchors the right edge, alone
+// and in amber (owner decision 2026-08-09, swapping the groups; the flag
+// previously led on the left). What stays load-bearing: the flag lives IN this
+// top row with its amber identity, isolated from the export cluster by the
+// spacer. An earlier pass that parked it under the figure was too quiet to
+// invite a report, and that placement stays reverted. Every action is the same
+// bordered .pbtn; the row used to mix bordered buttons with borderless text
+// links, which read as two half-finished designs.
+test('one button style, exports grouped left, flag anchoring right', () => {
   const html = read('index.html');
   const actions = html.match(/<div class="kactions"[\s\S]*?<\/div>/)[0];
   const buttons = [...actions.matchAll(/<button class="([^"]*)" id="([a-z]+)"/g)]
     .map((m) => ({ classes: m[1].split(' '), id: m[2] }));
-  assert.deepEqual(buttons.map((b) => b.id), ['flagbtn', 'copyimg', 'dlimg', 'copyhint', 'printbtn'],
-    'the flag leads, then the four export actions');
+  assert.deepEqual(buttons.map((b) => b.id), ['copyimg', 'dlimg', 'copyhint', 'printbtn', 'flagbtn'],
+    'the four export actions lead, the flag anchors the end');
   for (const b of buttons) {
     assert.ok(b.classes.includes('pbtn'), `${b.id} shares the one bordered button style`);
     assert.ok(!b.classes.includes('sharelink'), `${b.id} is not a borderless text link`);
   }
-  assert.ok(buttons[0].classes.includes('flagbtn'), 'the flag keeps its amber identity');
-  assert.match(actions, /flagbtn"[\s\S]*?<span class="spacer"><\/span>/,
-    'a spacer separates the flag from the export group');
+  assert.ok(buttons[4].classes.includes('flagbtn'), 'the flag keeps its amber identity');
+  assert.match(actions, /printbtn"[\s\S]*?<span class="spacer"><\/span>[\s\S]*?flagbtn/,
+    'a spacer separates the export group from the flag');
   assert.ok(!/class="kfoot"/.test(html), 'the under-figure flag row is gone');
 });
