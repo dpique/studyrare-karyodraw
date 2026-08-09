@@ -108,9 +108,27 @@
       if (last && last.name === nm) { last.end = b[2]; last.subs.push(b); }
       else groups.push({ name: nm, start: b[1], end: b[2], subs: [b] });
     });
-    var out = groups.map(function (g) { return [g.name, g.start, g.end, mergeStain(g.subs)]; });
+    // Element 4 keeps the full-resolution sub-bands so a consumer that CLIPS a
+    // merged band (a derivative junction landing inside it) can re-derive the
+    // stain from what the kept interval actually contains. Without it, the
+    // any-sub-band-is-acen rule leaks: at level 0 the remainder of 22q11 grafted
+    // onto der(9) of t(9;22) inherited "acen" from a centromere it does not
+    // contain, and the figure showed a dicentric derivative at ~400 bands only.
+    var out = groups.map(function (g) { return [g.name, g.start, g.end, mergeStain(g.subs), g.subs]; });
     _bandCache[key] = out;
     return out;
+  }
+  // Stain for the part of a merged band that survives clipping to [from, to]:
+  // mergeStain over the sub-bands clamped to that interval, so the weights are
+  // the widths actually kept.
+  function clippedStain(band, from, to) {
+    if (!band[4] || (from <= band[1] && to >= band[2])) return band[3];
+    var kept = [];
+    band[4].forEach(function (s) {
+      if (s[2] <= from || s[1] >= to) return;
+      kept.push([s[0], Math.max(s[1], from), Math.min(s[2], to), s[3]]);
+    });
+    return kept.length ? mergeStain(kept) : band[3];
   }
 
   // ----- band-name → position (always full resolution) -----------------------
@@ -286,7 +304,7 @@
         var y0, y1;
         if (!g.reversed) { y0 = segTop + (bs - g.from) * PX; y1 = segTop + (be - g.from) * PX; }
         else { y0 = segTop + (g.to - be) * PX; y1 = segTop + (g.to - bs) * PX; }
-        var st = b[3], fill;
+        var st = clippedStain(b, bs, be), fill;
         // heterochromatin renders as a hatched texture, not a solid band
         if (st === "acen") fill = "url(#" + hatch(heteroColor(g.chrom, st), g.reversed ? mirrorHatch(CEN_HATCH) : CEN_HATCH) + ")";
         else if (st === "gvar" || st === "stalk") fill = "url(#" + hatch(heteroColor(g.chrom, st), g.reversed ? mirrorHatch(HET_HATCH) : HET_HATCH) + ")";

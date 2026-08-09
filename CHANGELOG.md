@@ -3,6 +3,33 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-09 (a clipped band no longer inherits a centromere it does not contain)
+
+- **At the ~400-band level, der(9) of t(9;22)(q34;q11.2) drew a second centromere.**
+  Found by a user hovering the graft: the first band of the 22 material on der(9) was
+  crosshatched and its tooltip said "22q11 Centromere", which makes the derivative look
+  dicentric. The notation states one centromere per derivative; the figure said two, but
+  only at low band resolution, which is why the ~550-band landing pages, carousel, and
+  stress corpus never caught it. The same phantom appeared on der(9) of
+  t(11;22)(q23;q11.2), the Emanuel carrier translocation.
+
+  The cause was the display-level band union, not the derivative arithmetic. Merging
+  sub-bands to whole bands stamps the union `acen` when ANY sub-band is a centromere
+  band, which is honest for an intact chromosome; but when a junction clipped a merged
+  band, the kept remainder inherited the union's stain even when it contained none of
+  the actual centromere. `getBands` now carries the full-resolution sub-bands through
+  the merge, and `clippedStain` re-derives a clipped band's stain from only the
+  sub-bands inside the kept interval.
+
+  `test/derivative-centromere.test.js` pins both directions: the t(9;22) derivatives
+  carry exactly one centromere each at levels 0, 1, and 99 with no acen band sourced
+  from the partner chromosome, and a corpus-wide sweep asserts that a chromosome with
+  one centromere at full resolution shows exactly one at every display level. A
+  genuinely dicentric shape may see its two real centromeres merge into one crosshatch
+  block at a coarse level (idic(Y)(q11.2) does), which is a resolution artifact of a
+  true statement and is allowed; gaining a centromere is not. Both tests fail with the
+  fix reverted.
+
 ## 2026-08-08 (mosaic stress coverage, a browser test for the tour, and the interface decisions on record)
 
 - **The stress corpus covers the mosaic shapes that were missing.** A figure path that
