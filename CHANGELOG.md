@@ -3,6 +3,21 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-08 (the handoff leaves the repo)
+
+- **`NEXT_SESSION_HANDOFF.md` is gone from the repository.** It existed to prime a coding
+  session rather than to serve the product or its readers, and this repository is public,
+  so it put internal working notes and absolute paths under the author's home directory on
+  GitHub. #153 stopped the live site serving it, which was the unintended half; this
+  removes it from the repository altogether. The content now lives in the maintainer's
+  local session memory, the filename is gitignored so it cannot be re-added by accident,
+  and its `.assetsignore` entry stays as a second guard. `test/seo.test.js` asserts both.
+
+  Note for anyone reading the history rather than the tree: the file remains visible in
+  past commits and in the diffs of earlier pull requests, which GitHub serves independently
+  of the branch. Rewriting history would not remove those, and nothing in the file was ever
+  a credential, so the history is left intact rather than rewritten for no gain.
+
 ## 2026-08-08 (the disconnect held, proven from the check runs)
 
 - **The single deploy path is confirmed, without needing Cloudflare's own ledger.** Workers
