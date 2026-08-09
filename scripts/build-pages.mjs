@@ -375,17 +375,30 @@ function hubHtml() {
   const groups = [];
   const seen = {};
   for (const e of CONTENT) { if (!seen[e.concept]) { seen[e.concept] = []; groups.push(e.concept); } seen[e.concept].push(e); }
+  // Card anatomy: notation on top, name in muted gray under it, and a small
+  // lazy-loaded copy of the page's focused karyogram on the right. The stacked
+  // text stops the ragged side-by-side wrapping (long notations next to long
+  // names produced a different shape on every card), and the figure is the
+  // point of the product, so the index shows it. The PNGs are the committed
+  // per-page renders (7-37KB each); loading="lazy" defers nearly all of them.
+  const thumb = (e) => {
+    const im = imgManifest[e.slug];
+    if (!im) return '';
+    return `<img src="/karyotype/${e.slug}/karyogram.png" alt="" loading="lazy" width="${im.w}" height="${im.h}">`;
+  };
   const sections = groups.map((g) =>
     `<section class="lp-sec"><h2>${esc(g)}</h2><ul class="lp-related-inline">` +
-    seen[g].map((e) => `<li><a href="/karyotype/${e.slug}/"><code>${esc(e.k)}</code> <span>${esc(e.name)}</span></a></li>`).join('') +
+    seen[g].map((e) => `<li><a href="/karyotype/${e.slug}/"><span class="lp-card-txt"><code>${esc(e.k)}</code> <span class="lp-card-nm">${esc(e.name)}</span></span>${thumb(e)}</a></li>`).join('') +
     '</ul></section>').join('\n    ');
   const desc = 'Every common ISCN 2024 karyotype, drawn and explained: trisomies, monosomies, deletions, translocations, inversions, isochromosomes, ring chromosomes, mosaicism, and more.';
   const extraCss = `
-  .lp-related-inline { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
-  .lp-related-inline a { display: flex; align-items: baseline; gap: 8px; text-decoration: none; padding: 8px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+  .lp-related-inline { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+  .lp-related-inline a { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-decoration: none; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
   .lp-related-inline a:hover { border-color: var(--peri-300); background: var(--peri-50); }
-  .lp-related-inline code { font: 600 12.5px var(--font-mono); color: var(--peri-700); white-space: nowrap; }
-  .lp-related-inline span { color: var(--ink-2); font-size: 13.5px; }`;
+  .lp-related-inline .lp-card-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .lp-related-inline code { font: 600 12.5px var(--font-mono); color: var(--peri-700); }
+  .lp-related-inline .lp-card-nm { color: var(--ink-2); font-size: 13.5px; }
+  .lp-related-inline img { height: 56px; width: auto; max-width: 88px; object-fit: contain; flex: 0 0 auto; }`;
   const body = `    <h1>Karyotype examples, explained</h1>
     <p class="lp-intro">${esc(desc)} Every example is drawn by KaryoDraw and decoded symbol by symbol. New to the notation? Start with the <a href="/how-to-read-a-karyotype/">guide on how to read a karyotype</a>, or type any karyotype into the <a href="/">interactive visualizer</a>.</p>
     ${sections}`;

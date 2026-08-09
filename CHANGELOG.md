@@ -3,6 +3,33 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-09 (eight new karyotypes, a visual hub, and a cleaner guide)
+
+- **Eight curated pages fill the missing categories.** Translocation Down syndrome
+  (der(14;21) with an extra 21) completes the story the rob(14;21) carrier page starts;
+  Emanuel syndrome (+der(22)) pairs with its new balanced t(11;22) carrier page, the most
+  common recurrent constitutional translocation; isodicentric Y is the most common
+  structural abnormality of the Y; Pallister-Killian syndrome adds the classic
+  tissue-limited mosaic; monosomy 7 is the first autosomal monosomy on the site;
+  tetraploidy rounds out ploidy next to triploidy; and a direct insertion shows the ins
+  operator. Three new hub sections carry them: Unbalanced derivative, Dicentric
+  chromosome, and Insertion. Every notation was verified to parse and draw before the
+  entry was written, and the Pallister-Killian mosaic joins the stress corpus (169).
+
+- **The hub page shows the figures.** Each card now stacks the notation over the name in
+  muted gray and carries a small lazy-loaded copy of the page's focused karyogram. The
+  old side-by-side text wrapped differently on every card; the new anatomy is uniform,
+  and the index finally shows the thing the product does. The thumbnails are the
+  committed per-page renders, 7 to 37KB each, deferred by loading="lazy".
+
+- **The guide's structural-changes table says one thing per row.** The deletion row read
+  as a doubled list ("cri-du-chat, del(5)(p15.2), Wolf-Hirschhorn, del(4)(p16.3)"); it
+  now names each deletion once, in prose. The inv(9) example, which is pericentric, sat
+  attached to the paracentric clause and now sits with the pericentric one. der, dic,
+  and ins graduated from a footnote row to real entries linking the new pages, and the
+  guide's number-change, balanced-versus-unbalanced, mosaicism, and cancer sections link
+  the new examples where they teach those exact points.
+
 ## 2026-08-09 (the toolbar groups swap sides)
 
 - **The export actions now lead the karyogram toolbar on the left; the "Not right?" flag
