@@ -132,7 +132,11 @@ const LANDING_CSS = `
   .lp-aka { font-size: 13px; color: var(--muted); margin: 0 0 14px; }
   .lp-intro { font-size: 16px; line-height: 1.6; color: var(--ink-2); margin: 0 0 18px; }
   .lp-cta { margin: 0 0 20px; }
-  .lp-cta .btn { display: inline-block; text-decoration: none; }
+  /* The CTA is an <a>, so the pages' generic link color wins the cascade over the
+     app stylesheet's .btn rule and painted periwinkle text on the amber button,
+     two midtones with unreadable contrast. Re-assert the brand CTA pairing here:
+     amber background, deep navy text, in every state a link can be in. */
+  .lp-cta .btn, .lp-cta .btn:visited, .lp-cta .btn:hover { display: inline-block; text-decoration: none; color: var(--navy); }
   /* The sentence beside a call to action, saying what is on the other side of it. */
   .lp-cta-note { display: inline-block; margin-left: 10px; font-size: 13.5px; color: var(--muted); }
   @media (max-width: 560px) { .lp-cta-note { display: block; margin: 8px 0 0; } }
