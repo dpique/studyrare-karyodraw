@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-10 (the amber CTA gets its navy text back)
+
+- **The CTA buttons on the generated pages were periwinkle text on amber.** The button
+  is an anchor there, so the pages' generic link color won the cascade over the app
+  stylesheet's `.btn` rule: two midtones, unreadable. The pages now re-assert the brand
+  CTA pairing, amber background with deep navy text, on the anchor in every state
+  including visited and hover. `test/layout.test.js` pins the rule on the guide and a
+  landing page; the pin fails with the fix reverted.
+
 ## 2026-08-10 (feedback from the landing pages reaches the feedback form)
 
 - **"Send feedback" on the generated pages now opens the app's feedback dialog instead

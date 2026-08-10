@@ -252,3 +252,17 @@ test('a plus in ?k= is a plus', () => {
   // The generic decode is still what the view parameters want.
   assert.match(html, /getParam\("style"\)|getParam\("bands"\)|getParam\("show"\)/, 'view params keep it');
 });
+
+// ---- the CTA button stays readable -------------------------------------------
+// The generated pages' CTA ("Open in the interactive visualizer", "Take the
+// guided tour") is an <a class="btn">: the pages' generic link color beat the app
+// stylesheet's .btn color in the cascade and painted periwinkle text on the amber
+// button, two midtones with unreadable contrast. The pages must re-assert the
+// brand pairing (amber background, deep navy text) on the anchor, in every state.
+test('the amber CTA keeps deep navy text on generated pages', () => {
+  for (const f of ['how-to-read-a-karyotype/index.html', 'karyotype/down-syndrome/index.html']) {
+    const html = read(f);
+    assert.match(html, /\.lp-cta \.btn[^{]*\{[^}]*color: var\(--navy\)/,
+      `${f} re-asserts navy text on the CTA anchor`);
+  }
+});
