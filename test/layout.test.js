@@ -212,26 +212,41 @@ test('every page carries the one site footer, and the prose footer is gone', () 
     assert.ok(!/lp-foot"/.test(html), `${f} has no bespoke prose footer`);
     assert.match(html, /<footer class="wrap">/, `${f} carries the site footer`);
     assert.match(html, /class="foot-brand"/, `${f} footer has the brand block`);
-    // No feedback dialog script on generated pages, so their "Send feedback" is a
-    // deep link to the app's dialog (?feedback=1), never the dialog-opening button.
-    // It used to link GitHub issues, which a non-technical reader will never use;
-    // GitHub keeps one quiet mention, the "Open source" link. (.fbtrigger the
-    // CLASS still appears in every page's inlined stylesheet; the element must not.)
-    assert.ok(!/<button[^>]*fbtrigger/.test(html), `${f} must not ship the dialog button`);
-    assert.match(html, /href="\/\?(k=[^"]+&(amp;)?)?feedback=1">Send feedback<\/a>/,
-      `${f} deep-links feedback to the app dialog`);
-    assert.ok(!/issues"[^>]*>Send feedback/.test(html), `${f} does not send feedback to GitHub`);
-    assert.match(html, /rel="noopener">Open source<\/a>/, `${f} keeps the single GitHub line`);
+    // Every generated page now inlines the app's feedback dialog (lifted verbatim
+    // at build time) and a script that posts to /api/feedback, so "Send feedback"
+    // is the same button everywhere and opens IN PLACE, with no navigation. The
+    // footer's GitHub "Open source" link is gone by owner decision (2026-08-10):
+    // readers of this site are students and counselors, and no feedback or footer
+    // affordance routes them to an engineering surface.
+    assert.match(html, /<button type="button" class="fbtrigger" id="fbopen">Send feedback<\/button>/,
+      `${f} footer opens the dialog in place`);
+    assert.match(html, /<dialog id="fbdialog"/, `${f} ships the feedback dialog`);
+    assert.match(html, /fetch\('\/api\/feedback'/, `${f} ships the posting script`);
+    const foot = html.match(/<nav class="foot-links"[\s\S]*?<\/nav>/)[0];
+    assert.ok(!/github\.com/.test(foot), `${f} footer has no GitHub link`);
+    assert.ok(!/Open source/.test(foot), `${f} footer has no Open source label`);
   }
-  // A karyotype page's deep link carries its own notation, so the feedback says
-  // which karyotype the reader was looking at; the hub and static pages have none.
+  // A karyotype page's inlined script carries its own notation, so the feedback
+  // that arrives says which karyotype the reader was looking at.
   assert.match(read('karyotype/down-syndrome/index.html'),
-    /href="\/\?k=47%2CXX%2C%2B21&(amp;)?feedback=1">Send feedback<\/a>/,
-    'a landing page sends its karyotype along with the feedback link');
-  // The homepage keeps the button variant of the same footer.
+    /var KD_FB_K = "47,XX,\+21"/,
+    'a landing page bakes its karyotype into the feedback payload');
+  // The about page offers both channels in prose: the in-place dialog (the link
+  // must NOT navigate; data-fb-open is intercepted, the href is only the no-JS
+  // fallback) and the routed email address.
+  const about = read('about/index.html');
+  assert.match(about, /<a href="\/\?feedback=1" data-fb-open>Submit feedback here<\/a>/,
+    'about offers the in-place dialog');
+  assert.match(about, /href="mailto:feedback@karyodraw\.com"/, 'about offers the email');
+  // (github.com may still appear inside the inlined stylesheet's brand-sync
+  // comment; what must be gone is any LINK a reader can follow.)
+  assert.ok(!/href="https:\/\/github\.com/.test(about), 'about no longer routes readers to GitHub');
+  // The homepage keeps the button variant of the same footer, also GitHub-free.
   const home = read('index.html');
   assert.match(home, /class="fbtrigger" id="fbopen">Send feedback</, 'homepage feedback opens the dialog');
   assert.match(home, /class="foot-brand"/, 'homepage shares the brand block');
+  const homeFoot = home.match(/<nav class="foot-links"[\s\S]*?<\/nav>/)[0];
+  assert.ok(!/Open source/.test(homeFoot), 'homepage footer has no Open source label');
 });
 
 // ---- the k parameter carries a karyotype, not a form field --------------------

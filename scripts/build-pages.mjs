@@ -248,21 +248,72 @@ function siteHeader(active) {
 
 // ONE footer for every page, chrome rather than prose. The generated pages used to
 // carry a bespoke one-paragraph .lp-foot while the homepage had the brand-and-links
-// bar, so crossing between them read as two different sites. The app's "Send
-// feedback" opens its feedback dialog; the generated pages carry no dialog script,
-// so theirs deep-links to the app with ?feedback=1 (plus the page's karyotype when
-// there is one), which opens the same dialog. It used to link GitHub issues, which
-// a non-technical reader will never use; GitHub keeps exactly one quiet mention,
-// the "Open source" link. Both variants come from this builder so they cannot
-// drift. The not-diagnostic disclaimer lives in the brand line, the one place it
-// is stated on every page.
-function siteFooter(feedback, feedbackK) {
-  const deep = `/?${feedbackK ? 'k=' + encodeURIComponent(feedbackK) + '&' : ''}feedback=1`;
-  const fb = feedback === 'button'
-    ? '<button type="button" class="fbtrigger" id="fbopen">Send feedback</button>'
-    : `<a href="${deep}">Send feedback</a>`;
+// bar, so crossing between them read as two different sites. Every page now carries
+// the same "Send feedback" button: the generated pages inline the app's feedback
+// dialog (lifted verbatim from index.html at build time, so the two cannot drift)
+// plus a small script that posts to /api/feedback, so feedback opens in place with
+// no navigation anywhere. The footer's "Open source" GitHub link is gone by owner
+// decision (2026-08-10); the site no longer routes readers to GitHub at all. The
+// not-diagnostic disclaimer lives in the brand line, the one place it is stated on
+// every page.
+function siteFooter() {
   return `<div class="foot-brand"><strong>KaryoDraw</strong><span>A free ISCN 2024 karyotype visualizer by <a href="${LINKS.studyrare}" target="_blank" rel="noopener">StudyRare</a> &middot; educational, not diagnostic</span></div>
-  <nav class="foot-links" aria-label="Footer">${fb}<a href="${LINKS.github}" target="_blank" rel="noopener">Open source</a><a href="${LINKS.kofi}" target="_blank" rel="noopener">&#9829; Support on Ko-fi</a></nav>`;
+  <nav class="foot-links" aria-label="Footer"><button type="button" class="fbtrigger" id="fbopen">Send feedback</button><a href="${LINKS.kofi}" target="_blank" rel="noopener">&#9829; Support on Ko-fi</a></nav>`;
+}
+
+// The feedback dialog, verbatim from index.html so there is exactly one copy of
+// the markup, plus the wiring a static page needs: open triggers (the footer
+// button and any [data-fb-open] link), category chips, and a JSON post to
+// /api/feedback carrying the page's karyotype and URL. The dialog's styles ride
+// in the app stylesheet every generated page already inlines.
+const fbDialogMarkup = (indexHtml.match(/<dialog id="fbdialog"[\s\S]*?<\/dialog>/) || [''])[0];
+function feedbackBlock(feedbackK) {
+  return `${fbDialogMarkup}
+<script>
+(function () {
+  var KD_FB_K = ${JSON.stringify(feedbackK || '')};
+  var dlg = document.getElementById('fbdialog'); if (!dlg) return;
+  var form = document.getElementById('fbform'), status = document.getElementById('fbstatus');
+  var category = '';
+  function open(ev) {
+    if (ev) ev.preventDefault();
+    status.textContent = ''; status.className = '';
+    if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+  }
+  var openBtn = document.getElementById('fbopen');
+  if (openBtn) openBtn.addEventListener('click', open);
+  var inline = document.querySelectorAll('[data-fb-open]');
+  for (var i = 0; i < inline.length; i++) inline[i].addEventListener('click', open);
+  document.getElementById('fbcats').addEventListener('click', function (ev) {
+    var b = ev.target.closest ? ev.target.closest('.fb-cat') : null; if (!b) return;
+    category = b.getAttribute('data-cat');
+    var btns = document.querySelectorAll('#fbcats .fb-cat');
+    for (var j = 0; j < btns.length; j++) btns[j].classList.toggle('on', btns[j] === b);
+  });
+  document.getElementById('fbcancel').addEventListener('click', function () { dlg.close ? dlg.close() : dlg.removeAttribute('open'); });
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var msg = document.getElementById('fbmsg').value.trim();
+    if (!msg && !category) { status.textContent = 'Pick a category or write a message first.'; return; }
+    status.textContent = 'Sending\\u2026';
+    fetch('/api/feedback', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ message: msg, category: category,
+        email: document.getElementById('fbemail').value.trim(),
+        hp: document.getElementById('fbhp').value,
+        karyotype: KD_FB_K, url: location.href })
+    }).then(function (r) {
+      if (!r.ok) throw new Error(String(r.status));
+      status.textContent = 'Thank you. Your feedback is in.'; status.className = 'ok';
+      form.reset(); category = '';
+      var btns = document.querySelectorAll('#fbcats .fb-cat');
+      for (var j = 0; j < btns.length; j++) btns[j].classList.remove('on');
+    }).catch(function () {
+      status.textContent = 'That did not send. Please try again, or email feedback@karyodraw.com.';
+    });
+  });
+})();
+</script>`;
 }
 
 // One page skeleton for every generated page (landing, hub, about, guide).
@@ -304,8 +355,9 @@ ${body}
   </article>
 </main>
 <footer class="wrap">
-  ${siteFooter('link', feedbackK)}
+  ${siteFooter()}
 </footer>
+${feedbackBlock(feedbackK)}
 </body>
 </html>
 `;
@@ -500,7 +552,7 @@ const listHtml = '\n          <ul class="kdp-list">\n' + CONTENT.map((e) =>
 // too, so the SPA chrome cannot drift from the generated pages.
 const navHtml = NAV_ITEMS.map(([href, label]) => `<a href="${href}">${label}</a>`).join('\n      ');
 // The homepage footer is the same builder with the dialog-opening button variant.
-const homeFoot = siteFooter('button');
+const homeFoot = siteFooter();
 const injected = indexHtml
   .replace(/(<!-- KD:PAGES:START -->)[\s\S]*?(<!-- KD:PAGES:END -->)/,
     `$1\n          <!-- Generated by scripts/build-pages.mjs from content/karyotypes.js — do not hand-edit. -->${listHtml}$2`)

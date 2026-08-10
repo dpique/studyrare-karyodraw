@@ -50,17 +50,27 @@ figure. The first click logs a row immediately (the click itself is the signal),
 dialog invites optional category + detail that enriches that same row by an unguessable
 `token`.
 
-"Send feedback" in the footer has two forms, both emitted by `siteFooter()` in
-`scripts/build-pages.mjs`. On the app page (`index.html`) it is a button that opens the
-same dialog in general mode. On the generated pages, which carry no dialog markup or
-feedback script, it deep-links to the app with `?feedback=1` (plus the page's own
-karyotype via `?k=` when there is one), which opens the same dialog on load. It used to
-link the GitHub issue tracker instead, and that was the wrong audience: the readers of
-these pages are students and counselors, not people who file issues, so the channel
-selected against exactly the feedback the site most needs. GitHub keeps one quiet
-mention, the "Open source" footer link. `test/layout.test.js` asserts each page gets the
-right form and that landing pages carry their notation;
-`test/feedback-deeplink-browser.test.js` drives the deep link in a real browser. All
+"Send feedback" in the footer is the same button on every page, emitted by
+`siteFooter()` in `scripts/build-pages.mjs`. The generated pages inline the app's
+feedback dialog (lifted verbatim from `index.html` at build time, so the markup cannot
+drift) plus a small script that posts to `/api/feedback` with the page's karyotype and
+URL, so feedback opens IN PLACE with no navigation. History of this affordance: it
+first linked the GitHub issue tracker (wrong audience; students and counselors do not
+file issues), then deep-linked the app with `?feedback=1` (still a navigation), and now
+opens where the reader already is. The `?feedback=1` deep link remains in the app for
+external links. The footer's GitHub "Open source" link is gone by owner decision
+(2026-08-10); the About page offers two channels in prose: the in-place dialog (a
+`[data-fb-open]` link whose href is only the no-JS fallback) and
+`feedback@karyodraw.com`.
+
+NOTE on the email address: it needs Cloudflare Email Routing on the karyodraw.com zone
+(dashboard: Email, Email Routing, enable, destination daniel@studyrare.com, custom
+address feedback@). As of 2026-08-10 the zone had NO MX records, so mail bounces until
+that is enabled; the on-site form is unaffected.
+
+`test/layout.test.js` pins the footer, dialog, script, and the About-page channels;
+`test/feedback-inplace-browser.test.js` opens and submits the dialog on built pages in
+a real browser; `test/feedback-deeplink-browser.test.js` covers the app deep link. All
 dialog rows land in the D1 `feedback` table. No per-event pings; the existing daily
 email digest (13:00 UTC, via Resend) is the follow-up channel, and it shows the
 category.

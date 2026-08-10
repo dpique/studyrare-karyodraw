@@ -22,10 +22,13 @@ strongest color. The placement that stays reverted: an earlier pass parked the f
 the figure, quiet and bottom-right, and it was too quiet to invite a report.
 
 The same principle picks the channel, not just the position: a feedback affordance points
-at the on-site form, never at an engineering surface. The generated pages once sent
-"Send feedback" to GitHub issues, and that selected against the site's actual audience;
-they now deep-link to the app's dialog with the page's karyotype attached (2026-08-10).
-GitHub keeps exactly one quiet mention, the "Open source" footer link.
+at the on-site form, never at an engineering surface, and it opens where the reader
+already is. The generated pages once sent "Send feedback" to GitHub issues, which
+selected against the site's actual audience; a deep link to the app's dialog replaced
+that, and the dialog now ships on every generated page, so no feedback click navigates
+anywhere (2026-08-10). GitHub is no longer linked from the site at all, by owner
+decision. The About page names the second channel, feedback@karyodraw.com, for readers
+who prefer email.
 
 ## One button shape per row
 

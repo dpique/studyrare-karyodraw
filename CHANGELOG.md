@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-10 (feedback opens in place, and GitHub leaves the chrome)
+
+- **Every generated page now carries the feedback dialog itself.** The dialog markup is
+  lifted verbatim from `index.html` at build time (one copy, cannot drift) and a small
+  inlined script posts to `/api/feedback` with the page's karyotype and URL, so "Send
+  feedback" opens where the reader already is: no navigation, which the deep-link
+  approach from earlier today still had. The footer is now the same button on every
+  page.
+
+- **GitHub is no longer linked from the site.** The footer's "Open source" link is gone
+  and the About page's read-the-code-on-GitHub sentence with it, by owner decision. The
+  About page instead offers the two channels a reader would actually use: "Submit
+  feedback here" opens the in-place dialog (its href is only a no-JS fallback to
+  `/?feedback=1`), and feedback@karyodraw.com for people who prefer email. The address
+  requires Cloudflare Email Routing on the zone, which had no MX records at this
+  writing; until that is enabled in the dashboard, mail to it bounces while the on-site
+  form works regardless.
+
+- Pins: `test/layout.test.js` asserts the dialog, script, karyotype payload, GitHub-free
+  footers, and both About-page channels; `test/feedback-inplace-browser.test.js` opens
+  and submits the dialog on the built About and Down syndrome pages in a real browser,
+  asserting the URL never changes and the posted JSON carries the context. Five
+  assertions fail with the builder change reverted.
+
 ## 2026-08-10 (the amber CTA gets its navy text back)
 
 - **The CTA buttons on the generated pages were periwinkle text on amber.** The button
