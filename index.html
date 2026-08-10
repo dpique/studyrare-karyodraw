@@ -1881,6 +1881,10 @@
   // The tour is launched from the nav rather than from a button in the typing path,
   // which is also what makes it reachable from the landing pages and not only here.
   var wantsTour = getParam("tour") === "1";
+  // ?feedback=1: the generated pages' "Send feedback" lands here, because those
+  // pages carry no dialog markup. Handled by clicking the real footer button, so
+  // the deep link and the button cannot drift apart.
+  var wantsFeedback = getParam("feedback") === "1";
   $("#tour-exit").addEventListener("click", exitTour);
   $("#tour-prev").addEventListener("click", function () { loadTourStep(tourIdx - 1); });
   $("#tour-next").addEventListener("click", function () {
@@ -2160,6 +2164,7 @@
     btn.addEventListener("click", function () { startTour(); $("#tourcard").scrollIntoView({ behavior: "smooth", block: "start" }); });
   })();
   if (wantsTour) startTour();
+  if (wantsFeedback) { var _fb = $("#fbopen"); if (_fb) _fb.click(); }
   try { var _ref = ""; if (document.referrer) { try { _ref = new URL(document.referrer).host; } catch (e) {} } beacon({ type: "pageview", ref: _ref }); } catch (e) {}
 })();
 </script>

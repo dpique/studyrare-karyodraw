@@ -3,6 +3,21 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-10 (feedback from the landing pages reaches the feedback form)
+
+- **"Send feedback" on the generated pages now opens the app's feedback dialog instead
+  of linking GitHub issues.** The readers of those pages are students and counselors,
+  not people who file issues, so the old channel selected against exactly the feedback
+  the site most needs. Each landing page's footer link now carries `?feedback=1` plus
+  the page's own karyotype, and the app opens the same dialog the footer button opens,
+  by clicking that button, so the deep link and the button cannot drift apart. The
+  message lands in D1 and reaches the maintainer in the existing daily digest; no email
+  address is exposed and no email client is needed. GitHub keeps exactly one quiet
+  mention, the "Open source" footer link. `test/layout.test.js` pins the generated
+  markup (including that a landing page sends its notation along) and
+  `test/feedback-deeplink-browser.test.js` drives the deep link in a real browser; all
+  three browser assertions fail with the app wiring reverted.
+
 ## 2026-08-09 (eight new karyotypes, a visual hub, and a cleaner guide)
 
 - **Eight curated pages fill the missing categories.** Translocation Down syndrome

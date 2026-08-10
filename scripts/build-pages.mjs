@@ -246,19 +246,23 @@ function siteHeader(active) {
 // carry a bespoke one-paragraph .lp-foot while the homepage had the brand-and-links
 // bar, so crossing between them read as two different sites. The app's "Send
 // feedback" opens its feedback dialog; the generated pages carry no dialog script,
-// so theirs is a link to GitHub issues. Both variants come from this builder so
-// they cannot drift. The not-diagnostic disclaimer lives in the brand line, the one
-// place it is stated on every page.
-function siteFooter(feedback) {
+// so theirs deep-links to the app with ?feedback=1 (plus the page's karyotype when
+// there is one), which opens the same dialog. It used to link GitHub issues, which
+// a non-technical reader will never use; GitHub keeps exactly one quiet mention,
+// the "Open source" link. Both variants come from this builder so they cannot
+// drift. The not-diagnostic disclaimer lives in the brand line, the one place it
+// is stated on every page.
+function siteFooter(feedback, feedbackK) {
+  const deep = `/?${feedbackK ? 'k=' + encodeURIComponent(feedbackK) + '&' : ''}feedback=1`;
   const fb = feedback === 'button'
     ? '<button type="button" class="fbtrigger" id="fbopen">Send feedback</button>'
-    : `<a href="${LINKS.github}/issues" target="_blank" rel="noopener">Send feedback</a>`;
+    : `<a href="${deep}">Send feedback</a>`;
   return `<div class="foot-brand"><strong>KaryoDraw</strong><span>A free ISCN 2024 karyotype visualizer by <a href="${LINKS.studyrare}" target="_blank" rel="noopener">StudyRare</a> &middot; educational, not diagnostic</span></div>
   <nav class="foot-links" aria-label="Footer">${fb}<a href="${LINKS.github}" target="_blank" rel="noopener">Open source</a><a href="${LINKS.kofi}" target="_blank" rel="noopener">&#9829; Support on Ko-fi</a></nav>`;
 }
 
 // One page skeleton for every generated page (landing, hub, about, guide).
-function pageShell({ title, description, canonicalPath, ogType = 'website', ogTitle, jsonLd, extraCss = '', active = '', crumb = '', articleClass = '', body, ogImage = `${SITE}/preview.png`, ogImageW, ogImageH }) {
+function pageShell({ title, description, canonicalPath, ogType = 'website', ogTitle, jsonLd, extraCss = '', active = '', crumb = '', articleClass = '', body, ogImage = `${SITE}/preview.png`, ogImageW, ogImageH, feedbackK = '' }) {
   const url = SITE + canonicalPath;
   const ogDims = (ogImageW && ogImageH)
     ? `<meta property="og:image:width" content="${ogImageW}" />\n<meta property="og:image:height" content="${ogImageH}" />\n` : '';
@@ -296,7 +300,7 @@ ${body}
   </article>
 </main>
 <footer class="wrap">
-  ${siteFooter('link')}
+  ${siteFooter('link', feedbackK)}
 </footer>
 </body>
 </html>
@@ -368,6 +372,7 @@ function pageHtml(e) {
     active: 'karyotypes',
     crumb: `<a href="/">KaryoDraw</a> &rsaquo; <a href="/karyotype/">Karyotypes</a> &rsaquo; ${esc(e.name)}`,
     body,
+    feedbackK: e.k,
   });
 }
 

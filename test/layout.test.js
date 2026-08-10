@@ -213,12 +213,21 @@ test('every page carries the one site footer, and the prose footer is gone', () 
     assert.match(html, /<footer class="wrap">/, `${f} carries the site footer`);
     assert.match(html, /class="foot-brand"/, `${f} footer has the brand block`);
     // No feedback dialog script on generated pages, so their "Send feedback" is a
-    // link to the issue tracker, never the dialog-opening button. (.fbtrigger the
+    // deep link to the app's dialog (?feedback=1), never the dialog-opening button.
+    // It used to link GitHub issues, which a non-technical reader will never use;
+    // GitHub keeps one quiet mention, the "Open source" link. (.fbtrigger the
     // CLASS still appears in every page's inlined stylesheet; the element must not.)
     assert.ok(!/<button[^>]*fbtrigger/.test(html), `${f} must not ship the dialog button`);
-    assert.match(html, /issues" target="_blank" rel="noopener">Send feedback<\/a>/,
-      `${f} links feedback to the issue tracker`);
+    assert.match(html, /href="\/\?(k=[^"]+&(amp;)?)?feedback=1">Send feedback<\/a>/,
+      `${f} deep-links feedback to the app dialog`);
+    assert.ok(!/issues"[^>]*>Send feedback/.test(html), `${f} does not send feedback to GitHub`);
+    assert.match(html, /rel="noopener">Open source<\/a>/, `${f} keeps the single GitHub line`);
   }
+  // A karyotype page's deep link carries its own notation, so the feedback says
+  // which karyotype the reader was looking at; the hub and static pages have none.
+  assert.match(read('karyotype/down-syndrome/index.html'),
+    /href="\/\?k=47%2CXX%2C%2B21&(amp;)?feedback=1">Send feedback<\/a>/,
+    'a landing page sends its karyotype along with the feedback link');
   // The homepage keeps the button variant of the same footer.
   const home = read('index.html');
   assert.match(home, /class="fbtrigger" id="fbopen">Send feedback</, 'homepage feedback opens the dialog');

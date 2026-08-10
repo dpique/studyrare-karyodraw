@@ -52,12 +52,18 @@ dialog invites optional category + detail that enriches that same row by an ungu
 
 "Send feedback" in the footer has two forms, both emitted by `siteFooter()` in
 `scripts/build-pages.mjs`. On the app page (`index.html`) it is a button that opens the
-same dialog in general mode. On the generated pages it is a link to the GitHub issue
-tracker, because those pages carry no dialog markup or feedback script; a button there
-would look identical and do nothing. `test/layout.test.js` asserts each page gets the
-right one. All dialog rows land in the D1 `feedback` table. No per-event
-pings; the existing daily email digest (13:00 UTC, via Resend) is the follow-up channel,
-and it now shows the category.
+same dialog in general mode. On the generated pages, which carry no dialog markup or
+feedback script, it deep-links to the app with `?feedback=1` (plus the page's own
+karyotype via `?k=` when there is one), which opens the same dialog on load. It used to
+link the GitHub issue tracker instead, and that was the wrong audience: the readers of
+these pages are students and counselors, not people who file issues, so the channel
+selected against exactly the feedback the site most needs. GitHub keeps one quiet
+mention, the "Open source" footer link. `test/layout.test.js` asserts each page gets the
+right form and that landing pages carry their notation;
+`test/feedback-deeplink-browser.test.js` drives the deep link in a real browser. All
+dialog rows land in the D1 `feedback` table. No per-event pings; the existing daily
+email digest (13:00 UTC, via Resend) is the follow-up channel, and it shows the
+category.
 
 `worker.js` `/api/feedback` accepts three shapes: quick flag (returns `{id, token}`),
 enrich (`{id, token, ...}`), and general feedback. It keeps a legacy-column fallback
