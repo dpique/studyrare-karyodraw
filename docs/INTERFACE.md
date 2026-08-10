@@ -21,6 +21,12 @@ renders get caught, so the affordance that produces feedback keeps the top row a
 strongest color. The placement that stays reverted: an earlier pass parked the flag under
 the figure, quiet and bottom-right, and it was too quiet to invite a report.
 
+The same principle picks the channel, not just the position: a feedback affordance points
+at the on-site form, never at an engineering surface. The generated pages once sent
+"Send feedback" to GitHub issues, and that selected against the site's actual audience;
+they now deep-link to the app's dialog with the page's karyotype attached (2026-08-10).
+GitHub keeps exactly one quiet mention, the "Open source" footer link.
+
 ## One button shape per row
 
 Buttons in a row share one shape. Actions are grouped by purpose using position, and
