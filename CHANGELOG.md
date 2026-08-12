@@ -3,6 +3,23 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-12 (both textbooks in the guide were a edition behind)
+
+- **Thompson & Thompson is on its 9th edition, and almost nothing about the
+  citation survived.** The guide cited "Nussbaum RL, McInnes RR, Willard HF.
+  Thompson & Thompson Genetics in Medicine. 8th ed. Elsevier; 2016." The 9th
+  edition changes the title to *Genetics and **Genomics** in Medicine* and
+  replaces all three authors: it is Cohn RD, Scherer SW, Hamosh A, Elsevier, 2024
+  (ISBN 978-0-323-54762-8). Verified from the copy on disk at
+  `~/Desktop/colorado/books/core_resources_abgc/`, whose title page and copyright
+  page carry all of it, rather than from the edition number alone.
+
+- **Gardner and Sutherland went to a 6th edition too, with the authors
+  reordered.** Now Amor DJ, Gardner RJM, Oxford University Press, 2025 (published
+  2025-11-18, ISBN 9780197747728), where the guide had the 5th edition of 2018
+  with Gardner first. This one is from the publisher and retailer listings, not
+  from the book: only the 5th edition is on disk.
+
 ## 2026-08-12 (the guide defines a karyotype once, and calls the schematic what ISCN calls it)
 
 - **The guide defined "karyotype" three times and the three did not agree.** The
