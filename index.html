@@ -1773,12 +1773,19 @@
     var outH = Math.ceil(M + titleBlockH + gap + kgH + gap + footH + M);
     var kgX = M + (contentW - kgW) / 2, kgY = M + titleBlockH + gap;
 
+    // The date in the watermark closes the provenance loop with the date-grouped
+    // changelog: an exported figure found in a slide deck years later can be
+    // matched to what the renderer did the day it was drawn. The site is always
+    // the latest deploy, so the export date IS the renderer's state date. Local
+    // date, because that is the day the person exporting experienced.
+    var _d = new Date();
+    var stamp = _d.getFullYear() + "-" + ("0" + (_d.getMonth() + 1)).slice(-2) + "-" + ("0" + _d.getDate()).slice(-2);
     var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + outW + '" height="' + outH + '" viewBox="0 0 ' + outW + ' ' + outH + '">' +
       '<rect width="' + outW + '" height="' + outH + '" fill="#ffffff"/>' +
       '<text x="' + M + '" y="' + (M + 14) + '" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" font-weight="700" fill="#242a45">' + escXml(title) + '</text>' +
       (note ? '<text x="' + M + '" y="' + (M + 30) + '" font-family="system-ui, sans-serif" font-size="11.5" font-weight="600" fill="#a2302c">⚠ ' + escXml(note) + '</text>' : "") +
       '<g transform="translate(' + kgX.toFixed(1) + ',' + kgY.toFixed(1) + ')">' + pieces.join("") + '</g>' +
-      '<text x="' + (outW - M) + '" y="' + (outH - M + 8) + '" text-anchor="end" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#5e72e4">karyodraw.com</text>' +
+      '<text x="' + (outW - M) + '" y="' + (outH - M + 8) + '" text-anchor="end" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#5e72e4">karyodraw.com · ' + stamp + '</text>' +
       '</svg>';
     return { svg: svg, width: outW, height: outH };
   }
