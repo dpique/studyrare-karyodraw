@@ -82,7 +82,12 @@
     gpos100: { name: "G-positive (darkest)", bio: "Darkest band: very AT-rich, gene-poor, latest-replicating." },
     acen: { name: "Centromere", bio: "The centromere (α-satellite heterochromatin) where the kinetochore assembles and spindle fibers attach at cell division." },
     gvar: { name: "Variable region", bio: "Polymorphic heterochromatin whose size varies normally between people (e.g. 1q, 9q, 16q, Yq), usually not pathogenic." },
-    stalk: { name: "Acrocentric stalk", bio: "The stalk of an acrocentric short arm (chr 13,14,15,21,22): houses the ribosomal RNA genes (NOR). Losing it is generally harmless." }
+    stalk: { name: "Acrocentric stalk", bio: "The stalk of an acrocentric short arm (chr 13,14,15,21,22): houses the ribosomal RNA genes (NOR). Losing it is generally harmless." },
+    // Centromeric material that rode across a junction because the breakpoint fell inside
+    // the centromere band. It is real α-satellite, but it is not this derivative's
+    // centromere, so it must not be named one: a chromosome with two centromeres is a
+    // dicentric, and ISCN spells that dic(), not der().
+    acen_carried: { name: "Pericentromeric heterochromatin", bio: "Centromere-region α-satellite carried across a rearrangement junction, because the breakpoint fell inside the centromere band. This derivative's working centromere is the one from the chromosome it is named for, so this block is not drawn as a centromere. A chromosome that truly keeps two is a dicentric, written dic()." }
   };
   function stainInfo(s) { return STAIN_INFO[s] || { name: s, bio: "" }; }
 

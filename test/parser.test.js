@@ -1187,3 +1187,42 @@ test('a stated ploidy marker on the count parses, and junk after the count is re
   const un = ISCN.parse('47<2n,XY,+8');
   assert.ok(un.warnings.some((w) => w.includes('47<2n>')), 'the unclosed marker gets a did-you-mean');
 });
+
+// splitBands wants an arm letter before the digits, so "q11.1-11.2" kept q11.1 and
+// dropped the rest with nothing said. The figure then showed a single precise cut the
+// writer had not asked for, which is the one thing this parser exists not to do.
+// ISCN 4.2.1 writes a range with a tilde and repeats the arm letter (1p34~p35), and
+// that spelling already parses to both bands, so the message names it.
+test('a breakpoint range that loses a band says so, and names the ISCN form', () => {
+  for (const k of ['46,XY,t(X;19)(q11.1-11.2;p13.3)',
+                   '46,XY,der(19)t(X;19)(q11.1-11.2;p13.3)',   // der() sub-op, same splitBands
+                   '46,XX,del(5)(p15.2-15.3)']) {
+    const w = ISCN.parse(k).warnings.join(' ');
+    assert.match(w, /tilde/, k);
+    assert.match(w, /q11\.1~q11\.2/, k + ' shows the correct spelling');
+  }
+});
+
+// A tilde range is correct ISCN and must stay silent. 4.2.1 allows the repeated arm
+// letter, and ISCN 2024 prints the shorthand inside a breakpoint itself:
+// der(18)t(18;19)(q21;p11~12). Warning on either would be warning on correct notation.
+test('tilde ranges are correct ISCN and are not flagged', () => {
+  for (const k of ['46,XY,der(19)t(X;19)(q11.1~q11.2;p13.3)',
+                   '46,XY,der(19)t(X;19)(q11.1~11.2;p13.3)',
+                   '46,XY,der(18)t(18;19)(q21;p11~12)',
+                   '46,XX,del(1)(q21~24)']) {
+    assert.ok(!/tilde/.test(ISCN.parse(k).warnings.join(' ')), k + ' must not warn');
+  }
+  const r = ISCN.parse('46,XY,der(19)t(X;19)(q11.1~q11.2;p13.3)');
+  // join, not deepEqual: the parser runs in a vm realm, so its arrays fail a
+  // reference-equal prototype check even when the contents match.
+  assert.equal(r.clones[0].aberrations[0].subOps[0].breakpoints[0].join(','), 'q11.1,q11.2');
+});
+
+test('ordinary breakpoint groups are not flagged as losing a band', () => {
+  for (const k of ['46,XY,t(9;22)(q34;q11.2)', '46,XX,del(15)(q11.2q13)', '46,XY,inv(9)(p11q13)',
+                   '46,XY,r(13)(p11q34)', '46,XY,der(9)del(9)(p12)t(9;22)(q34;q11.2)',
+                   '45,XX,rob(13;14)(q10;q10)', '46,XX,del(5)(p15.2)']) {
+    assert.ok(!/tilde/.test(ISCN.parse(k).warnings.join(' ')), k + ' must not warn');
+  }
+});

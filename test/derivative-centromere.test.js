@@ -101,3 +101,63 @@ test('centromere count per drawn chromosome is invariant across band levels', as
     }
   }
 });
+
+// Pick the instance block whose caption names this derivative.
+function blockFor(html, caption) {
+  return instances(html).find((b) => b.includes(caption));
+}
+
+// The clippedStain fix above handled a MERGED band inheriting acen at coarse
+// levels. A breakpoint landing INSIDE the centromere band is the same false claim
+// by a different route, and it survives at full resolution: Xq11.1 spans
+// 61.0-63.8 Mb and a break "at Xq11.1" resolves to its midpoint, so the graft on
+// der(19) really does carry 1.4 Mb of acen-stained X material. That material is
+// pericentromeric heterochromatin riding across the junction, not a centromere.
+// The notation says der(19), not dic(X;19): one centromere, chromosome 19's.
+// Before this, the figure drew two crosshatch blocks and the tooltip on the
+// grafted one read "Centromere".
+test('a breakpoint inside the centromere does not graft a second centromere', async () => {
+  const { ISCN, Karyo } = await lib();
+  const model = ISCN.parse('46,XY,der(19)t(X;19)(q11.1;p13.3)');
+  for (const level of [0, 1, 99]) {
+    const html = draw(Karyo, model.clones[0], model.clones, level);
+    const der19 = blockFor(html, 'der(19)');
+    assert.ok(der19, `found der(19) at level ${level}`);
+    assert.equal(acenRuns(der19), 1, `der(19) shows one centromere at level ${level}`);
+    assert.ok(!bands(der19).some((b) => b.chrom === 'X' && b.stain === 'acen'),
+      `no X centromere grafted onto der(19) at level ${level}`);
+  }
+});
+
+// The general form of the same rule, over the whole stress corpus: the figure may
+// only draw as many centromeres as the MODEL says the instance has. buildInstance
+// is the authority (segments flagged hasCen), so the drawing cannot out-claim it.
+test('no drawn instance shows more centromeres than its model carries', async () => {
+  const { ISCN, Karyo } = await lib();
+  const { CORPUS } = await import('../scripts/stress-corpus.mjs');
+  for (const entry of CORPUS) {
+    if (entry.expect !== 'draw') continue;
+    let model;
+    try { model = ISCN.parse(entry.k); } catch { continue; }
+    if (!model.clones || !model.clones.length) continue;
+    for (const clone of model.clones) {
+      let html;
+      try { html = draw(Karyo, clone, model.clones, 99); } catch { continue; }
+      const blocks = instances(html);
+      // Model-side count, in the same order the renderer emits instances.
+      const modelCounts = [];
+      Object.keys(clone.slots || {}).forEach((ch) => {
+        (clone.slots[ch] || []).forEach((inst) => {
+          try { modelCounts.push(Karyo.buildInstance(inst).segments.filter((s) => s.hasCen).length); }
+          catch { modelCounts.push(null); }
+        });
+      });
+      if (modelCounts.length !== blocks.length) continue;   // ordering differs; covered by the level-invariance test
+      blocks.forEach((b, i) => {
+        if (modelCounts[i] == null || modelCounts[i] === 0) return;
+        assert.ok(acenRuns(b) <= modelCounts[i],
+          `${entry.k}: instance ${i} draws ${acenRuns(b)} centromeres, model carries ${modelCounts[i]}`);
+      });
+    }
+  }
+});

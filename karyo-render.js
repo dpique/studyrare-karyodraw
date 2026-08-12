@@ -305,9 +305,18 @@
         if (!g.reversed) { y0 = segTop + (bs - g.from) * PX; y1 = segTop + (be - g.from) * PX; }
         else { y0 = segTop + (g.to - be) * PX; y1 = segTop + (g.to - bs) * PX; }
         var st = clippedStain(b, bs, be), fill;
+        // A segment flagged hasCen:false has no functional centromere, yet it can still
+        // carry acen-stained material across the junction when the breakpoint sits INSIDE
+        // the centromere band: Xq11.1 spans 61.0-63.8 Mb, and a break "at Xq11.1" resolves
+        // to its midpoint, so der(19)t(X;19)(q11.1;p13.3) grafts 1.4 Mb of real acen onto
+        // an acentric segment. Drawn with the centromere hatch that made a monocentric
+        // derivative read as dicentric and tooltipped the graft "Centromere" — the same
+        // false claim clippedStain fixed for merged bands, arriving by a different route.
+        // The waist below is already gated on hasCen; the band paint has to agree with it.
+        if (st === "acen" && !g.hasCen) st = "acen_carried";
         // heterochromatin renders as a hatched texture, not a solid band
         if (st === "acen") fill = "url(#" + hatch(heteroColor(g.chrom, st), g.reversed ? mirrorHatch(CEN_HATCH) : CEN_HATCH) + ")";
-        else if (st === "gvar" || st === "stalk") fill = "url(#" + hatch(heteroColor(g.chrom, st), g.reversed ? mirrorHatch(HET_HATCH) : HET_HATCH) + ")";
+        else if (st === "gvar" || st === "stalk" || st === "acen_carried") fill = "url(#" + hatch(heteroColor(g.chrom, st), g.reversed ? mirrorHatch(HET_HATCH) : HET_HATCH) + ")";
         else fill = fillFor(ctx, g.chrom, st);
         body.push('<rect class="band" x="' + pad + '" y="' + y0.toFixed(2) + '" width="' + W +
           '" height="' + Math.max(0.6, y1 - y0).toFixed(2) + '" fill="' + fill + '"' +
