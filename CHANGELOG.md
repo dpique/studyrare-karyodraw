@@ -3,6 +3,36 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-12 (the guide defines a karyotype once, and calls the schematic what ISCN calls it)
+
+- **The guide defined "karyotype" three times and the three did not agree.** The
+  intro and section 1 both made a karyotype the *description* of the chromosomes
+  ("a compact description of the number and structure", "a karyotype records how
+  many chromosomes are present"), while the FAQ made it the chromosome
+  constitution itself, with the notation as how it is written. The FAQ was the
+  correct one, so the intro and section 1 now follow it. Section 1 keeps its
+  heading and its job: the concrete anatomy of the normal 46-chromosome
+  complement and the 46,XX / 46,XY baseline. The FAQ keeps the crisp definition
+  and the neighboring terms. The overlap between them is deliberate, because
+  `build-pages.mjs` derives the `FAQPage` JSON-LD from the authored FAQ and those
+  answers have to stand alone when an answer engine lifts one out of the page.
+
+- **The three terms now follow ISCN 2024, Chapter 2, footnote 1 (p. 5).** That
+  footnote exists because "the terms karyogram, karyotype, and idiogram have often
+  been used indiscriminately", and it fixes each one: karyogram for a systematized
+  array of the chromosomes "prepared either by drawing, digitized imaging, or by
+  photography", karyotype for the chromosomal complement of an individual, tissue,
+  or cell line, and idiogram for the diagrammatic representation of a karyotype.
+  Two consequences. First, the spelling is **idiogram**; ISCN never writes
+  "ideogram" outside a 1981 citation in its bibliography, and the *e* spelling
+  reached us from genomics software, where it is common (UCSC's `cytoBandIdeo`,
+  and this repo's own `ideogram-data.js`). The FAQ now says "an idiogram (spelled
+  ideogram in much genomics software)" so the correct term does not read as a typo.
+  Second, a karyogram is not by definition a photograph, so section 2 says "whether
+  photographed, digitized, or drawn" rather than calling it a photograph. The FAQ
+  carries an HTML comment citing the footnote, so the next reader can check the
+  claim instead of trusting it. Code identifiers are untouched.
+
 ## 2026-08-12 (the smoke gets in, and the header that never could have helped is gone)
 
 - **Bot Fight Mode was what turned the runners away, and it is now off.** The
