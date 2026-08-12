@@ -3,6 +3,25 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-12 (the smoke gets in, and the header that never could have helped is gone)
+
+- **Bot Fight Mode was what turned the runners away, and it is now off.** The
+  zone's event log named it: 19 Managed Challenge events between 2026-08-11 and
+  2026-08-12, service "Bot fight mode", across several GitHub runner addresses on
+  Microsoft's ASN, against a user-agent that says in plain text what it is. Bot
+  Fight Mode is a free-plan feature evaluated off the Ruleset Engine, so no WAF
+  skip rule and no allowlist can except it; switching it off at the zone was the
+  only available fix, and it costs little on a public static site with no login.
+  The smoke's three checks pass from GitHub now, and the weekly D1 backup uploads
+  a real encrypted artifact now that the deploy token carries D1 Edit.
+
+- **The bypass header and its secret are removed.** They were added on the theory
+  that a WAF skip rule would let the runners through. That theory was wrong, so
+  they were never doing anything, and a header plus a repo secret that do nothing
+  read to the next person as a working mitigation. `test/ops.test.js` now asserts
+  their absence, and the workflow comment records what actually happened, so the
+  next 403 gets diagnosed from the `cf-mitigated` header rather than re-derived.
+
 ## 2026-08-12 (the smoke workflow parses, and the tests read it the way GitHub does)
 
 - **`smoke.yml` was unreadable YAML, and nothing said so.** The bypass header added

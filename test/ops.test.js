@@ -59,11 +59,12 @@ test('the daily smoke asserts content on all three surfaces', () => {
   assert.match(run, /karyodraw\.com\/'\s*\|\s*grep -q 'Karyotype diagram maker'/, 'the app, by its h1');
   assert.match(run, /karyotype\/down-syndrome\/'\s*\|\s*grep -q 'Down syndrome'/, 'a generated page, by its content');
   assert.match(run, /api\/top'\s*\|\s*grep -q '"items"'/, 'the Worker API, by its shape');
-  // Every check carries the bypass header, or the one that forgets it 403s
-  // alone and reads as an outage on that surface.
-  for (const step of checks) {
-    assert.match(step.run, /x-karyodraw-smoke: \$SMOKE_BYPASS/, `${step.name} carries the bypass header`);
-  }
+  // The checks carried a bypass header for two days, for a WAF skip rule that
+  // could never have applied to what was actually challenging them (Bot Fight
+  // Mode does not run on the Ruleset Engine). Turning that off at the zone was
+  // the fix. A header and a secret that do nothing are worse than nothing:
+  // they read as a working mitigation to the next person.
+  assert.doesNotMatch(run, /x-karyodraw-smoke|SMOKE_BYPASS/, 'no vestigial bypass header');
 });
 
 test('a failing smoke says what blocked it', () => {
