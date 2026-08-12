@@ -16,20 +16,45 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    # Cloudflare 403s GitHub's runner IPs at the edge (observed twice on
-    # 2026-08-12: default curl UA and a browser-shaped UA both blocked, so it is
-    # IP-level bot protection, not the user-agent). The checks therefore carry a
-    # bypass header that a WAF custom rule on the zone is configured to skip bot
-    # protection for; the token lives in the SMOKE_BYPASS repo secret and the
-    # rule is documented in the owner's private claude-workflows repo
-    # (RESTORE-karyodraw-d1.md sits beside it). The UA still names the monitor.
+    # Cloudflare turns GitHub's runner IPs away at the edge. The 403 carries
+    # `cf-mitigated: challenge` (measured 2026-08-12, run 31599239461), and a
+    # default curl UA and a browser-shaped UA are refused alike, so the source
+    # IP is what is being challenged, not the user-agent. The checks carry a
+    # bypass header for a WAF custom rule to skip on, which clears a challenge
+    # coming from the security level or from another custom rule. It cannot
+    # clear Bot Fight Mode: that is a free-plan feature evaluated off the
+    # Ruleset Engine, so no skip action reaches it and it has to be switched
+    # off at the zone instead. Which of the two is challenging is an owner
+    # question; both live on the zone's Security page and the state of play is
+    # recorded in the owner's private claude-workflows repo, in
+    # OWNER-STEPS-karyodraw-ops.md. The token is the SMOKE_BYPASS repo secret.
+    # The UA still names the monitor.
+    #
+    # Every run string below is a block scalar. It has to be: a plain YAML
+    # scalar cannot contain a colon followed by a space, and the header value
+    # above has one. When it was written inline on 2026-08-12 GitHub could not
+    # parse the file, so every push produced a zero-second failed run with no
+    # jobs and no logs, and the workflow's own triggers stopped applying.
+    # test/ops.test.js now parses these files rather than grepping them.
     env:
       UA: 'Mozilla/5.0 (compatible; KaryoDrawSmoke/1.0; +https://github.com/dpique/studyrare-karyodraw)'
       SMOKE_BYPASS: ${{ secrets.SMOKE_BYPASS }}
     steps:
       - name: Homepage serves the app
-        run: curl -fsS -A "$UA" -H "x-karyodraw-smoke: $SMOKE_BYPASS" --max-time 20 'https://karyodraw.com/' | grep -q 'Karyotype diagram maker'
+        run: |
+          curl -fsS -A "$UA" -H "x-karyodraw-smoke: $SMOKE_BYPASS" --max-time 20 'https://karyodraw.com/' | grep -q 'Karyotype diagram maker'
       - name: A landing page serves
-        run: curl -fsS -A "$UA" -H "x-karyodraw-smoke: $SMOKE_BYPASS" --max-time 20 'https://karyodraw.com/karyotype/down-syndrome/' | grep -q 'Down syndrome'
+        run: |
+          curl -fsS -A "$UA" -H "x-karyodraw-smoke: $SMOKE_BYPASS" --max-time 20 'https://karyodraw.com/karyotype/down-syndrome/' | grep -q 'Down syndrome'
       - name: The API answers
-        run: curl -fsS -A "$UA" -H "x-karyodraw-smoke: $SMOKE_BYPASS" --max-time 20 'https://karyodraw.com/api/top' | grep -q '"items"'
+        run: |
+          curl -fsS -A "$UA" -H "x-karyodraw-smoke: $SMOKE_BYPASS" --max-time 20 'https://karyodraw.com/api/top' | grep -q '"items"'
+      # A failed check above reports only "exited 22", which cannot tell the
+      # site being down from Cloudflare turning the runner away. Those two want
+      # opposite responses from whoever opens the failure email, so name the
+      # mitigation: cf-mitigated and the status line say which one happened.
+      - name: Why the edge said no
+        if: failure()
+        run: |
+          curl -sS -o /dev/null -D - -A "$UA" -H "x-karyodraw-smoke: $SMOKE_BYPASS" --max-time 20 'https://karyodraw.com/' \
+            | grep -iE '^(HTTP/|server|cf-ray|cf-mitigated|retry-after)' || true
