@@ -3,6 +3,34 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-11 (the FAQ stops echoing the page, and the demo costs one keystroke)
+
+- **The guide FAQ is rebuilt around what people actually search.** Google Trends
+  co-search data for "karyotype" (US, 12 months) settled a redundancy review: three of
+  the six items duplicated body sections and match no distinct query, so "How do I read
+  a karyotype?" (the page's own H1 as a question), "What does t(9;22) mean?", and the
+  Robertsonian comparison are gone; the body sections and landing pages already own that
+  content. "What is a karyotype?" stays, since its cluster is the largest of all
+  (interest 100, with "karyotype meaning" rising 30%), rewritten to add the karyotype vs
+  karyogram vs ideogram distinction the page never made. The fastest-rising cluster is
+  the lab test itself ("karyotype analysis" +80%, "karyotype testing" +40%, "karyotype
+  blood test" +20%), on which the guide had nothing: a new item walks sample to culture
+  to metaphase arrest to G-banding, with turnaround and the roughly 5 to 10 megabase
+  resolution floor. ISCN 2024 and the free/diagnostic items stay, the former rewritten
+  to say who maintains the standard rather than re-listing operators the body defines.
+  The FAQPage JSON-LD regenerates from the authored items, so the schema followed with
+  no build change. `test/seo.test.js` pins the four questions, the two additions, and
+  the schema agreement.
+
+- **Focusing the untouched demo karyotype selects it all.** The input pre-fills
+  46,XY,t(9;22)(q34;q11.2) so the page never opens blank, but typing your own karyotype
+  cost a manual select-and-delete. Focus now selects the whole demo (the URL-bar
+  pattern): one keystroke replaces it, a second click drops the selection for someone
+  who wants to edit the demo instead, and a deep-linked `?k=` karyotype is never
+  auto-selected. A mouseup guard keeps the browsers that fire mouseup after focus from
+  collapsing the selection, which is why `test/demo-input-select-browser.test.js`
+  exercises the behavior in a real browser rather than by grepping the source.
+
 ## 2026-08-10 (feedback opens in place, and GitHub leaves the chrome)
 
 - **Every generated page now carries the feedback dialog itself.** The dialog markup is

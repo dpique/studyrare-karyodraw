@@ -2144,6 +2144,17 @@
     if (_pg && _can) _can.setAttribute("href", "https://karyodraw.com/karyotype/" + _pg.slug + "/");
   } catch (e) {} }
   if (!hasK) { beaconDraw.skipOnce = true; run.skipHashOnce = true; }   // auto-loaded demo: do not count it, and keep the landing URL clean
+  // Replacing the auto-loaded demo should cost one keystroke, not a select-and-
+  // delete, so while the box still holds the untouched demo, focusing it selects
+  // all (the URL-bar pattern). A second click drops the selection for someone who
+  // wants to edit the demo rather than replace it. The mouseup guard exists
+  // because some browsers fire mouseup after focus and collapse the selection.
+  if (!hasK) input.addEventListener("focus", function () {
+    if (input.value !== DEMO_K) return;
+    input.select();
+    var guard = function (e) { e.preventDefault(); input.removeEventListener("mouseup", guard); };
+    input.addEventListener("mouseup", guard);
+  });
   run();
   // After the first draw, so the tour opens over a karyogram rather than an empty
   // page. run() has already rewritten the URL without ?tour=1, so a refresh or a
