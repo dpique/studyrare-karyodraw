@@ -1167,3 +1167,23 @@ test('the canonical designation fixes whitespace and nothing else', () => {
   assert.equal(ISCN.parse('47, XX, +21').normalized, '47,XX,+21');
   assert.equal(ISCN.parse('mos 45,X[12] / 46,XX[18]').normalized, 'mos 45,X[12]/46,XX[18]');
 });
+
+test('a stated ploidy marker on the count parses, and junk after the count is refused', () => {
+  // 47<2n> states the ploidy level the gains and losses are expressed against
+  // (ISCN 6.3.7 f) and must keep parsing cleanly.
+  const ok = ISCN.parse('47<2n>,XY,+8');
+  assert.equal(!!ok.clones[0].unreadable, false, '47<2n> is valid ISCN');
+  assert.equal(ok.clones[0].ploidy, 2);
+  assert.equal(ok.warnings.length, 0, 'and warns about nothing');
+  // The unclosed marker and outright junk used to sail through: the count regex
+  // took the leading digits and nothing ever read the rest of the field, so
+  // 47<2n and 47<>2<.>n both drew without a word.
+  for (const bad of ['47<2n,XY,+8', '47<>2<.>n,XY,+8', '47banana,XY,+8']) {
+    const m = ISCN.parse(bad);
+    assert.ok(m.clones[0].unreadable, `${bad} must be flagged unreadable`);
+    assert.ok(m.warnings.some((w) => /after the count/.test(w)), `${bad} gets a warning naming the junk`);
+  }
+  // The one honest guess: an unclosed ploidy marker suggests its closed form.
+  const un = ISCN.parse('47<2n,XY,+8');
+  assert.ok(un.warnings.some((w) => w.includes('47<2n>')), 'the unclosed marker gets a did-you-mean');
+});

@@ -104,6 +104,24 @@ test('the tour launcher works in a real browser', async (t) => {
       }, { timeout: 4000 });
       assert.deepEqual(errors, [], 'the deep-linked load ran without a JS error');
     });
+
+    await t.test('Back leaves the tour instead of stranding its card', async () => {
+      // Repro: draw something that pushes a history entry (an example chip),
+      // start the tour, press Back. The entry being restored predates the tour,
+      // and the card used to stay open, captioning a step over a drawing it no
+      // longer describes. Every other draw path already calls leaveTourIfActive;
+      // popstate must too.
+      await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'load' });
+      await page.waitForSelector('.chip');
+      await page.click('.chip');                    // loadKaryotype -> a pushed entry
+      await page.evaluate(() => document.getElementById('tour-start').click());
+      assert.notEqual((await tourState(page)).display, 'none', 'the tour is open');
+      await page.goBack();
+      await page.waitForFunction(
+        () => document.getElementById('tourcard').style.display === 'none',
+        { timeout: 4000 });
+      assert.deepEqual(errors, [], 'the Back navigation ran without a JS error');
+    });
   } finally {
     await browser.close();
     server.close();
