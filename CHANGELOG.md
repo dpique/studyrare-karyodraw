@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-12 (a safety net: weekly backups, a daily smoke, and a usage digest)
+
+- **The database is backed up weekly.** D1 holds the only state production has (usage
+  events and feedback); everything else regenerates from this repo. A Monday Actions
+  cron (`backup.yml`) exports it with wrangler, encrypts the dump (this repo is public
+  and public-repo artifacts are downloadable by any GitHub user, and feedback rows
+  carry reply emails), and stores it as a 90-day artifact, a rolling window of about
+  13 restore points. A missing secret fails the run loudly; a backup that silently
+  skips is the failure the workflow exists to prevent. Restore commands are in the
+  workflow header.
+
+- **A daily smoke watches the live site.** Three curls (`smoke.yml`): the homepage by
+  its h1, a landing page by its content, the Worker API by its shape, each asserting
+  content rather than a bare 200 so a blank page cannot pass. A failure triggers
+  GitHub's failed-workflow email. Deliberately minimal, by owner decision: no external
+  monitoring service, no state.
+
+- **The analytics are no longer write-only.** A weekly usage digest (Mondays, on the
+  same cron and Resend setup as the feedback digest) reports draws, parse rate,
+  pageviews, countries, cap hits, the top drawn karyotypes, and the top failing
+  inputs. The failing inputs are the point: what students type that does not draw is
+  the parser backlog and the FAQ pipeline, measured instead of guessed.
+  `test/ops.test.js` pins all three pieces.
+
 ## 2026-08-12 (the export watermark carries the date)
 
 - **Exported images now say when they were drawn.** The watermark on "Copy image" and

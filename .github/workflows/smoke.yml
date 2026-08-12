@@ -1,0 +1,25 @@
+name: Smoke
+
+# Three curls a day: nothing else watches the live site between deploys. A failed
+# run triggers GitHub's failed-workflow email to the owner. Deliberately minimal,
+# by owner decision: no external monitoring service, no state, no thresholds.
+# Each check asserts content, not just a 200, so a blank page cannot pass.
+
+on:
+  schedule:
+    - cron: '30 13 * * *'   # daily, 30 min after the feedback-digest cron
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Homepage serves the app
+        run: curl -fsS --max-time 20 'https://karyodraw.com/' | grep -q 'Karyotype diagram maker'
+      - name: A landing page serves
+        run: curl -fsS --max-time 20 'https://karyodraw.com/karyotype/down-syndrome/' | grep -q 'Down syndrome'
+      - name: The API answers
+        run: curl -fsS --max-time 20 'https://karyodraw.com/api/top' | grep -q '"items"'
