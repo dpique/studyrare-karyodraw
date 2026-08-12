@@ -225,6 +225,11 @@ test('every page carries the one site footer, and the prose footer is gone', () 
     const foot = html.match(/<nav class="foot-links"[\s\S]*?<\/nav>/)[0];
     assert.ok(!/github\.com/.test(foot), `${f} footer has no GitHub link`);
     assert.ok(!/Open source/.test(foot), `${f} footer has no Open source label`);
+    // The "educational, not diagnostic" tag left the brand line by owner decision
+    // (2026-08-11). The claim stays where a reader looking for it goes: the About
+    // page, the guide's sources section, and the guide FAQ item that answers it.
+    assert.ok(!/educational, not diagnostic/.test(html),
+      `${f} footer carries no disclaimer tag`);
   }
   // A karyotype page's inlined script carries its own notation, so the feedback
   // that arrives says which karyotype the reader was looking at.
@@ -247,6 +252,8 @@ test('every page carries the one site footer, and the prose footer is gone', () 
   assert.match(home, /class="foot-brand"/, 'homepage shares the brand block');
   const homeFoot = home.match(/<nav class="foot-links"[\s\S]*?<\/nav>/)[0];
   assert.ok(!/Open source/.test(homeFoot), 'homepage footer has no Open source label');
+  assert.ok(!/educational, not diagnostic/.test(home),
+    'homepage footer carries no disclaimer tag');
 });
 
 // ---- the k parameter carries a karyotype, not a form field --------------------
