@@ -15,7 +15,7 @@ authors:
 affiliations:
   - name: "StudyRare, Cincinnati, OH, USA"
     index: 1
-date: "4 July 2026"
+date: "12 August 2026"
 bibliography: paper.bib
 ---
 
@@ -32,9 +32,11 @@ token-by-token decoding of the nomenclature, the biology of the relevant Giemsa
 bands, and curated board-relevant clinical notes. The application runs
 client-side, with no installation and no account. It stores no personal data:
 an anonymous, cookieless beacon records the karyotype drawn and the features
-used, with no IP address or identifier, to guide development. Every view has a
-shareable deep-link URL and can be exported as an image or a one-page printable
-summary.
+used, with no IP address or identifier, to guide development. For a balanced
+translocation carrier, a segregation panel additionally draws the meiotic
+configuration and the gametes and conceptions that each segregation mode
+produces. Every view has a shareable deep-link URL and can be exported as a
+date-stamped image or a one-page printable summary.
 
 ![KaryoDraw rendering the reciprocal translocation `46,XY,t(9;22)(q34;q11.2)` (the Philadelphia chromosome) in "highlight" mode. Chromosomes involved in the rearrangement are colored by identity: der(9) carries the amber chromosome-22 segment and der(22) the periwinkle chromosome-9 segment, centromere-aligned against their normal homologs, while the panel at right decodes each token of the ISCN designation into plain language.\label{fig:interface}](fig1-interface.png)
 
@@ -104,13 +106,33 @@ chromosome is drawn as an actual ring, its retained material wrapped into an
 annulus with the centromere and the fusion point marked, which conveys the loss
 of the distal tips more directly than a linear depiction.
 
+**Meiotic segregation.** For a balanced reciprocal translocation carrier, a
+segregation panel models the pachytene quadrivalent and its segregation modes:
+2:2 (alternate, adjacent-1, adjacent-2), 3:1 (tertiary and interchange), and
+4:0; for a Robertsonian carrier it models the trivalent and its 2:1
+segregation. Each mode lists the gametes, the conceptus karyotype in ISCN, the
+resulting imbalance in plain language, and a rough viability, with the
+canonical segregants following ISCN 2024, Table 5. Alongside the schematic, a
+to-scale pachytene figure draws the actual pairing cross, each arm sized from
+the real hg38 band positions of the rearrangement typed, so different
+translocations produce visibly different crosses. The same machinery also runs
+backwards: given an unbalanced conceptus such as a derivative inherited from a
+carrier parent, the panel reconstructs the parental balanced rearrangement and
+names the segregation mode that produced the imbalance. This is a teaching
+visualizer of segregation, not a recurrence-risk calculator.
+
 **Explanation.** A teaching layer decodes each token of the designation into
 plain English, explains band-name structure and the biology of each Giemsa stain
 class, surfaces curated board-relevant clinical associations (for example trisomy
 21, cri-du-chat, and the Philadelphia chromosome), and offers text-to-speech
 pronunciation of the karyotype. n-way translocations are described with their
 explicit ISCN cycle (e.g. 2→7→5→2), which is otherwise a common source of
-confusion.
+confusion. An ordered guided tour walks a newcomer through the common
+notations, drawn one at a time in the visualizer, and a library of curated
+worked examples (40 karyotypes at this writing, from trisomy 21 through
+Emanuel syndrome and acquired leukemia rearrangements) is published as
+individual explainer pages, each with a server-rendered karyogram, the full
+decode, and clinical notes.
 
 **Sharing and export.** The full application state (karyotype, render mode, and
 band level) is encoded in a human-readable URL, so any view can be shared as a
@@ -148,11 +170,14 @@ or transpiler. It is served as static assets by a small Cloudflare Worker, which
 also handles an anonymous usage beacon and a feedback channel. It is deployed at
 <https://karyodraw.com> and the source is available at
 <https://github.com/dpique/studyrare-karyodraw> under the MIT license. Chromosome band data are
-derived from the UCSC Genome Browser `cytoBandIdeo` table (hg38). The nomenclature
-parser is validated by a dependency-free test suite (Node's built-in runner)
-covering designations from aneuploidy through three-way translocations and
-mosaicism, along with Robertsonian derivatives, isodicentrics, polyploidy, and
-the count-reconciliation and invalid-band edge cases.
+derived from the UCSC Genome Browser `cytoBandIdeo` table (hg38). The application
+is validated by a dependency-free suite of over 450 behavioral tests (Node's
+built-in runner, gating every pull request and every deploy) covering
+designations from aneuploidy through three-way translocations and mosaicism,
+Robertsonian derivatives, isodicentrics, polyploidy, segregation-mode
+enumeration, count-reconciliation and invalid-band edge cases, an ISCN 2024
+conformance set, and real-browser interface tests, plus a stress corpus built
+from designations students actually type.
 
 # Acknowledgements
 
