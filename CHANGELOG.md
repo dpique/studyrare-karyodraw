@@ -3,6 +3,31 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-12 (the smoke workflow parses, and the tests read it the way GitHub does)
+
+- **`smoke.yml` was unreadable YAML, and nothing said so.** The bypass header added
+  earlier the same day went in as `run: curl ... -H "x-karyodraw-smoke: $SMOKE_BYPASS"`
+  on one line. A plain YAML scalar cannot contain a colon followed by a space, so
+  GitHub could not parse the file: every push produced a zero-second failed run with
+  no jobs and no logs, whatever the workflow's own triggers said, and those runs were
+  what the daily failure emails were reporting. The three `run:` strings are block
+  scalars now, which cannot break this way again.
+
+- **The ops tests parse the workflow files instead of grepping them.** All three
+  assertions passed for the entire time the file was unreadable, which is the whole
+  argument: a grep sees the text, only a parser sees the file GitHub sees.
+  `test/ops.test.js` now loads each workflow through `js-yaml` (a new devDependency),
+  asserts that every file in `.github/workflows` parses, and pins the schedule,
+  steps, and artifact retention off the parsed document.
+
+- **A failed smoke now says what turned it away.** `curl` reported only "exited 22",
+  which cannot distinguish the site being down from Cloudflare refusing the runner,
+  and those two want opposite responses from whoever opens the email. A `failure()`
+  step prints the edge status line and the `cf-ray` / `cf-mitigated` headers. It
+  earned its place immediately: the first real run returned `cf-mitigated: challenge`,
+  which identifies the block as a Cloudflare challenge to the runner IP rather than
+  a WAF rule, and narrows the fix to the zone's Security page.
+
 ## 2026-08-12 (the count field stops swallowing junk, and Back leaves the tour)
 
 - **Junk after the chromosome count is refused, not silently drawn.** `47<2n>` is

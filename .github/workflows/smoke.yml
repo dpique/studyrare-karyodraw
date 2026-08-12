@@ -8,8 +8,6 @@ name: Smoke
 on:
   schedule:
     - cron: '30 13 * * *'   # daily, 30 min after the feedback-digest cron
-  push:
-    branches: [worktree-smoke-yaml]
   workflow_dispatch: {}
 
 permissions:
@@ -18,13 +16,19 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    # Cloudflare 403s GitHub's runner IPs at the edge (observed on 2026-08-12:
-    # default curl UA and a browser-shaped UA both blocked, so it is IP-level
-    # bot protection, not the user-agent). The checks carry a bypass header for
-    # a WAF custom rule on the zone to skip on; the token is the SMOKE_BYPASS
-    # repo secret and the rule is documented in the owner's private
-    # claude-workflows repo (RESTORE-karyodraw-d1.md sits beside it). The UA
-    # still names the monitor.
+    # Cloudflare turns GitHub's runner IPs away at the edge. The 403 carries
+    # `cf-mitigated: challenge` (measured 2026-08-12, run 31599239461), and a
+    # default curl UA and a browser-shaped UA are refused alike, so the source
+    # IP is what is being challenged, not the user-agent. The checks carry a
+    # bypass header for a WAF custom rule to skip on, which clears a challenge
+    # coming from the security level or from another custom rule. It cannot
+    # clear Bot Fight Mode: that is a free-plan feature evaluated off the
+    # Ruleset Engine, so no skip action reaches it and it has to be switched
+    # off at the zone instead. Which of the two is challenging is an owner
+    # question; both live on the zone's Security page and the state of play is
+    # recorded in the owner's private claude-workflows repo, in
+    # OWNER-STEPS-karyodraw-ops.md. The token is the SMOKE_BYPASS repo secret.
+    # The UA still names the monitor.
     #
     # Every run string below is a block scalar. It has to be: a plain YAML
     # scalar cannot contain a colon followed by a space, and the header value
