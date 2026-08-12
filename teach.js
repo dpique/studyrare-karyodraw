@@ -292,6 +292,78 @@
       (clone.modalNumber - 1) + " chromosomes";
   }
 
+  // Expected X-inactivation for a rearrangement involving the X. This is NOT read off
+  // the notation: ISCN carries inactivation status only as a FISH probe in ish
+  // nomenclature (2024 example xxiii, 46,X,r(X)(p22.3q22).ish r(X)(...XIST+,DXZ4-)),
+  // never in the karyotype string. So every sentence below opens with "Expected", and
+  // none of them claim the input said this.
+  //
+  // One rule covers every case (Gardner & Sutherland, 5th ed, p. 221): after selection
+  // the surviving pattern is the one leaving the least functional imbalance, and the
+  // choice exists only where the abnormal chromosome keeps an X-inactivation center.
+  // Balanced and unbalanced therefore skew in OPPOSITE directions, which is the part
+  // that is easy to get backwards, and the reason the balanced carrier can present with
+  // an X-linked recessive disease: her intact X is the silenced one, so a gene broken at
+  // the X breakpoint has no working copy left.
+  function xciNote(ab, clone) {
+    var own = ab.chroms || [];
+    var subT = (ab.subOps || []).filter(function (s) { return s.op === "t"; })[0];
+    var involved = own.concat(subT ? (subT.chroms || []) : []);
+    if (involved.indexOf("X") < 0) return "";
+    // Checked before the single-X test below, because 46,X,t(X;Y) draws only one X and
+    // would otherwise fall into "no choice to make" when the real answer is "unpredictable".
+    if (involved.indexOf("Y") >= 0) {
+      return ". Expected X inactivation after an X;Y translocation is variable and is not reliably predicted from the karyotype";
+    }
+    var k = ab.kind;
+    // Checked ahead of the single-X test too. A piece of X sitting on an autosome cannot
+    // be silenced whatever the X count, and the parser files a der(22)t(X;22) under
+    // chromosome 22, so complement.X reads 1 and the single-X branch would otherwise
+    // swallow the more informative fact.
+    if (k === "der" && own[0] !== "X") {
+      return ". The translocated X segment sits on an autosome, with no X-inactivation center of its own and beyond the reach of the one on the X, " +
+        "so it is expected to stay active and give functional disomy for that segment";
+    }
+    // No second X means no choice: a male carrier, or 45,X. Say that rather than assert a
+    // skew, which would be the wrong claim rather than a missing one.
+    if (((clone.complement && clone.complement.X) || 0) < 2) {
+      return ". X inactivation does not apply to this rearrangement: there is only one X, so there is no second X to silence";
+    }
+    if (k === "t") {
+      return ". Expected X inactivation is skewed: the normal X is silenced, and both derivatives stay active. " +
+        "Silencing the der(X) instead would let inactivation spread into the attached autosomal segment and leave it functionally monosomic, so those cells are selected against. " +
+        "Because the intact X is the silenced one, a gene disrupted at the X breakpoint is unmasked, and a balanced female carrier can still manifest an X-linked recessive disorder";
+    }
+    // A der(X) keeps the inactivation center, so it is the one that can be silenced.
+    if (k === "der") {
+      return ". Expected X inactivation is skewed toward the derivative: the der(X) is silenced and the normal X stays active, " +
+        "the pattern that leaves the least functional imbalance. That choice exists only while the der(X) keeps its X-inactivation center";
+    }
+    if (k === "iso" || k === "ring" || k === "del") {
+      return ". Expected X inactivation is skewed: the structurally abnormal X is silenced and the normal X stays active, " +
+        "the pattern that leaves the least functional imbalance. That depends on the abnormal X keeping its X-inactivation center" +
+        (k === "ring" ? ", and a ring too small to retain one cannot be silenced at all, which is why those cases are affected more severely" : "");
+    }
+    return "";
+  }
+
+  // The sex field carries only the sex chromosomes that are NOT rearranged: ISCN 2024
+  // section 5.5.18.1.1 example iii states "the correct designation is 46,X,t(X;13) and
+  // not 46,XX,t(X;13)", and the same for 46,Y,t(X;13) in a male. parseSex builds its note
+  // from the field alone, before any aberration is known, so a lone X there was read as
+  // monosomy X even when a second X is drawn inside the rearrangement. Corrected here
+  // rather than in the parser, because only the assembled clone knows what was drawn.
+  function sexNote(clone) {
+    var xDrawn = (clone.complement && clone.complement.X) || 0;
+    if (clone.sex.label === "X" && xDrawn >= 2) {
+      return "one X, listed alone because the other X is named in the rearrangement below. This is not monosomy X";
+    }
+    if (clone.sex.label === "Y" && xDrawn >= 1) {
+      return "one Y, listed alone because the X is named in the rearrangement below";
+    }
+    return clone.sex.note;
+  }
+
   function decode(clone) {
     var rows = [];
     if (clone.modalNumber != null) {
@@ -312,12 +384,18 @@
       rows.push({ code: code, text: txt, tag: "count" });
     }
     if (clone.sex.label) {
-      rows.push({ code: clone.sex.label, text: "sex chromosomes: " + clone.sex.note, tag: "sex" });
+      rows.push({ code: clone.sex.label, text: "sex chromosomes: " + sexNote(clone), tag: "sex" });
     }
     clone.aberrations.forEach(function (ab) {
       var d = describeAberration(ab);
       var q = ab.qualifier && QUALIFIER_PHRASE[ab.qualifier];
-      rows.push({ code: ab.raw, text: d.text + (q ? " (" + ab.qualifier + " = " + q + ")" : "") + robNote(ab, clone), tag: d.tag });
+      var body = d.text + (q ? " (" + ab.qualifier + " = " + q + ")" : "") + robNote(ab, clone);
+      // The der() descriptions already end in a full stop while the t() ones do not, and
+      // xciNote opens with one. Drop a trailing stop before joining rather than teaching
+      // every branch above about what might follow it.
+      var xci = xciNote(ab, clone);
+      if (xci) body = body.replace(/\.\s*$/, "") + xci;
+      rows.push({ code: ab.raw, text: body, tag: d.tag });
     });
     if (clone.cellCount != null) {
       rows.push({ code: "[" + (clone.composite ? "cp" : "") + clone.cellCount + "]", text: (clone.composite ? "composite of " : "seen in ") + clone.cellCount + " cells counted for this clone", tag: "cells" });

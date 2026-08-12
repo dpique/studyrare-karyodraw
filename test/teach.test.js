@@ -236,3 +236,107 @@ test('the ring marker says what is known and what is not', () => {
   assert.match(decodeText('48,XX,+2r'), /2 supernumerary RING chromosomes .* that have formed/,
     'the plural agrees');
 });
+
+// ---- expected X-inactivation on rearrangements involving the X ------------
+// X-inactivation status is NOT part of ISCN: the standard carries it only as a FISH
+// probe in ish nomenclature (ISCN 2024 example xxiii, 46,X,r(X)(p22.3q22).ish
+// r(X)(...XIST+,DXZ4-)). So every sentence here is flagged "Expected", and it is
+// inference from the rearrangement rather than a reading of the notation.
+//
+// The governing rule is one principle, not a lookup table (Gardner & Sutherland,
+// p. 221): the surviving inactivation pattern is the one leaving the least
+// functional imbalance, and the choice exists only where the abnormal chromosome
+// retains an X-inactivation center.
+test('a balanced X-autosome translocation silences the NORMAL X', () => {
+  const text = decodeText('46,X,t(X;22)(q28;q11)');
+  assert.match(text, /Expected X inactivation/, 'flags the claim as inference, not notation');
+  assert.match(text, /normal X is silenced/, 'names which X goes inactive');
+  assert.match(text, /derivatives stay active/, 'and which stay active');
+  // The clinically load-bearing half: the intact X being the silenced one is why a
+  // balanced female carrier can present with an X-linked recessive disease.
+  assert.match(text, /X-linked recessive/, 'names the manifesting-carrier consequence');
+});
+
+test('an unbalanced der(X) silences the ABNORMAL X instead', () => {
+  const text = decodeText('46,X,der(X)t(X;22)(q28;q11)');
+  assert.match(text, /Expected X inactivation/);
+  assert.match(text, /der\(X\) is silenced/, 'the derivative is the one silenced here');
+  assert.match(text, /least functional imbalance/, 'and says why');
+  assert.ok(!/X-linked recessive/.test(text),
+    'the manifesting-carrier warning belongs to the BALANCED carrier only');
+});
+
+test('a structurally abnormal X is the one silenced, and the XIST caveat rides along', () => {
+  for (const k of ['46,X,i(X)(q10)', '46,X,r(X)(p22.1q27)', '46,X,del(X)(q21)']) {
+    const text = decodeText(k);
+    assert.match(text, /Expected X inactivation/, k);
+    assert.match(text, /abnormal X is silenced/, k);
+    assert.match(text, /X-inactivation center/, k + ' carries the XIST caveat');
+  }
+});
+
+test('with only one X there is no choice to make, and the note says so', () => {
+  const text = decodeText('46,Y,t(X;22)(q28;q11)');
+  assert.match(text, /only one X/, 'a male carrier has no second X to silence');
+  assert.ok(!/normal X is silenced/.test(text), 'so it must not assert a skewed pattern');
+});
+
+test('X;Y translocations are reported as variable rather than predicted', () => {
+  const text = decodeText('46,X,t(X;Y)(p22;q11)');
+  assert.match(text, /variable/, 'Gardner flags X;Y as not reliably predicted');
+  assert.ok(!/normal X is silenced/.test(text));
+});
+
+test('the note stays off rearrangements that do not involve the X', () => {
+  assert.ok(!/X inactivation/.test(decodeText('46,XY,t(9;22)(q34;q11.2)')));
+  assert.ok(!/X inactivation/.test(decodeText('47,XX,+21')));
+  assert.ok(!/X inactivation/.test(decodeText('46,XY,inv(9)(p11q13)')));
+});
+
+// Landing pages escape decode text (build-pages.mjs decodeList -> esc(r.text)), so
+// markup here would ship as literal &lt;i&gt; on every generated page.
+test('the X-inactivation note carries no markup', () => {
+  for (const k of ['46,X,t(X;22)(q28;q11)', '46,X,der(X)t(X;22)(q28;q11)', '46,X,i(X)(q10)']) {
+    assert.ok(!/[<>]/.test(decodeText(k)), k);
+  }
+});
+
+// The mirror case: a piece of X landing on an autosome. It has no inactivation center
+// of its own and is out of reach of the one on the X, so it CANNOT be silenced. Saying
+// "the der is silenced" here would be exactly backwards.
+test('X material on a der(autosome) is called out as unsilenceable', () => {
+  const text = decodeText('46,X,der(22)t(X;22)(q28;q11)');
+  assert.match(text, /no X-inactivation center of its own/);
+  assert.match(text, /stay active/);
+  assert.match(text, /functional disomy/, 'names the consequence');
+  assert.ok(!/is silenced/.test(text), 'must not claim the derivative goes inactive');
+});
+
+// der() descriptions end in a full stop and the note opens with one, which read as
+// "attached.. Expected X inactivation" on every derivative until the join was fixed.
+test('the X-inactivation note joins without doubling the full stop', () => {
+  for (const k of ['46,X,der(X)t(X;22)(q28;q11)', '46,X,der(22)t(X;22)(q28;q11)',
+                   '46,X,t(X;22)(q28;q11)', '46,X,i(X)(q10)', '46,X,del(X)(q21)']) {
+    assert.ok(!/\.\./.test(decodeText(k)), k + ' -> ' + decodeText(k));
+  }
+});
+
+// ISCN lists a REARRANGED sex chromosome inside the rearrangement, not in the sex
+// field. ISCN 2024 section 5.5.18.1.1 example iii is explicit: "the correct designation
+// is 46,X,t(X;13) and not 46,XX,t(X;13). Similarly, an identical translocation in a male
+// is designated 46,Y,t(X;13) and not 46,XY,t(X;13)."
+// So a lone X in the field is monosomy X only when no second X is drawn elsewhere.
+// Calling 46,X,t(X;13) "monosomy X" told the reader she was missing an X she has.
+test('a lone X in the sex field is only monosomy X when no second X is drawn', () => {
+  const sexNote = (k) => Teach.decode(ISCN.parse(k).clones[0]).filter((r) => r.tag === 'sex')[0].text;
+  for (const k of ['46,X,t(X;13)(q27;q12)', '46,X,i(X)(q10)', '46,X,del(X)(q21)']) {
+    // Must not ASSERT monosomy; saying "not monosomy X" out loud is the point.
+    assert.ok(!/a single X \(monosomy X\)/.test(sexNote(k)), k + ' -> ' + sexNote(k));
+    assert.match(sexNote(k), /not monosomy X/, k + ' names the trap directly');
+    assert.match(sexNote(k), /the other X/, k + ' says where the second X went');
+  }
+  // 45,X genuinely is monosomy X and has to keep saying so.
+  assert.match(sexNote('45,X'), /monosomy X/);
+  // The male counterpart ISCN names in the same note.
+  assert.match(sexNote('46,Y,t(X;13)(q27;q12)'), /the X is named in the rearrangement/);
+});
