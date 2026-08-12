@@ -3,6 +3,16 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-11 (the footer drops its disclaimer)
+
+- **"educational, not diagnostic" leaves the footer brand line, by owner decision.**
+  The claim itself is not gone; it stays where a reader looking for it goes: the About
+  page, the guide's sources section, and the guide FAQ item that answers the question
+  directly. What leaves is the tag repeated in the chrome of every page. Both footer
+  sources change together, the homepage markup and the builder in `build-pages.mjs`,
+  and `test/layout.test.js` pins the phrase out of the homepage and the generated
+  pages; the pins fail with either source reverted.
+
 ## 2026-08-11 (the FAQ stops echoing the page, and the demo costs one keystroke)
 
 - **The guide FAQ is rebuilt around what people actually search.** Google Trends

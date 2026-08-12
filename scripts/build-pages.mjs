@@ -254,10 +254,11 @@ function siteHeader(active) {
 // plus a small script that posts to /api/feedback, so feedback opens in place with
 // no navigation anywhere. The footer's "Open source" GitHub link is gone by owner
 // decision (2026-08-10); the site no longer routes readers to GitHub at all. The
-// not-diagnostic disclaimer lives in the brand line, the one place it is stated on
-// every page.
+// not-diagnostic disclaimer left the brand line by owner decision (2026-08-11);
+// the claim lives where a reader looking for it goes: the About page, the guide's
+// sources section, and the guide FAQ item that answers it directly.
 function siteFooter() {
-  return `<div class="foot-brand"><strong>KaryoDraw</strong><span>A free ISCN 2024 karyotype visualizer by <a href="${LINKS.studyrare}" target="_blank" rel="noopener">StudyRare</a> &middot; educational, not diagnostic</span></div>
+  return `<div class="foot-brand"><strong>KaryoDraw</strong><span>A free ISCN 2024 karyotype visualizer by <a href="${LINKS.studyrare}" target="_blank" rel="noopener">StudyRare</a></span></div>
   <nav class="foot-links" aria-label="Footer"><button type="button" class="fbtrigger" id="fbopen">Send feedback</button><a href="${LINKS.kofi}" target="_blank" rel="noopener">&#9829; Support on Ko-fi</a></nav>`;
 }
 
