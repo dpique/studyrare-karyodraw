@@ -26,6 +26,29 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   - one X only, or an X;Y translocation: reported as not applicable and as
     variable, respectively, rather than guessed at.
 
+- **The answer is breakpoint-dependent, and the first cut of this did not model
+  that.** The center sits in Xq13, so which side of a break keeps it decides what
+  can be silenced at all (Gardner figure 6-8: "the der(autosome) has the XIC; here,
+  the X breakpoint must be in proximal Xq, above the XIC ... In the third column, in
+  which the der(X) has the XIC, X exchanges can occur either in Xp or in Xq distal
+  to the XIC"). The note now compares the X breakpoint against Xq13 and branches:
+  - X material on a der(autosome) with the break **distal** to Xq13 has no center
+    and cannot be silenced, giving functional disomy. With the break **proximal**
+    to Xq13 the center travels with the segment, so it can be silenced and
+    silencing spreads into the attached autosome instead. The earlier text asserted
+    the first case unconditionally, which was wrong for every proximal-Xq break.
+  - `i(X)(p10)` carries no Xq, so no center and no way to silence it. Gardner: an
+    Xp isochromosome "would probably always be lethal because there would be a
+    functional Xp trisomy". It was previously lumped in with `i(X)(q10)`.
+  - a break inside Xq13 itself is reported as undecidable from the notation rather
+    than guessed.
+
+- **New page: a balanced X-autosome translocation whose carrier is affected.**
+  `/karyotype/x-autosome-translocation-manifesting-carrier/`, `46,X,t(X;4)(p21;p16)`.
+  Balanced, yet affected, because the normal X is the silenced one and the
+  dystrophin gene broken at Xp21 has no working copy behind it. The page exists to
+  make the counterintuitive case concrete: "balanced" does not mean unaffected.
+
   Every sentence opens with "Expected", because none of this is in the notation:
   ISCN carries inactivation status only as a FISH probe in `ish` nomenclature
   (2024 example xxiii), never in the karyotype string. It rides the existing

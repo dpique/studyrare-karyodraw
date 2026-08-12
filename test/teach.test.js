@@ -305,9 +305,10 @@ test('the X-inactivation note carries no markup', () => {
 // of its own and is out of reach of the one on the X, so it CANNOT be silenced. Saying
 // "the der is silenced" here would be exactly backwards.
 test('X material on a der(autosome) is called out as unsilenceable', () => {
+  // Xq28 is distal to the Xq13 center, so the center stays behind on the X.
   const text = decodeText('46,X,der(22)t(X;22)(q28;q11)');
   assert.match(text, /no X-inactivation center of its own/);
-  assert.match(text, /stay active/);
+  assert.match(text, /cannot be silenced/);
   assert.match(text, /functional disomy/, 'names the consequence');
   assert.ok(!/is silenced/.test(text), 'must not claim the derivative goes inactive');
 });
@@ -339,4 +340,41 @@ test('a lone X in the sex field is only monosomy X when no second X is drawn', (
   assert.match(sexNote('45,X'), /monosomy X/);
   // The male counterpart ISCN names in the same note.
   assert.match(sexNote('46,Y,t(X;13)(q27;q12)'), /the X is named in the rearrangement/);
+});
+
+// ---- the XIC is at Xq13, so the answer is breakpoint-dependent ---------------
+// Gardner & Sutherland p.214: "Transcriptional silencing is initiated at an
+// X-inactivation center (XIC) in Xq13". Figure 6-8 caption: "the der(autosome) has
+// the XIC; here, the X breakpoint must be in proximal Xq, above the XIC ... In the
+// third column, in which the der(X) has the XIC, X exchanges can occur either in Xp
+// or in Xq distal to the XIC."
+// So which side of the break keeps the center decides what can be silenced AT ALL,
+// and the first cut of this feature asserted the common case unconditionally.
+test('X material on a der(autosome) is only unsilenceable when the break spared the XIC', () => {
+  // Break in Xp: the der(X) keeps Xq13, so the segment on the autosome has no center.
+  const noXic = decodeText('46,X,der(4)t(X;4)(p21;p16)');
+  assert.match(noXic, /no X-inactivation center/);
+  assert.match(noXic, /functional disomy/);
+  // Break in PROXIMAL Xq, above the XIC: the center travels WITH the segment, so it
+  // can be silenced, and silencing spreads into the autosome instead.
+  const hasXic = decodeText('46,X,der(21)t(X;21)(q11;q22)');
+  assert.match(hasXic, /carries the X-inactivation center/, hasXic);
+  assert.match(hasXic, /spread/, 'and names spreading into the autosome');
+  assert.ok(!/no X-inactivation center/.test(hasXic), 'must not claim the center is absent');
+});
+
+test('an isochromosome is silenceable only when it is the q arm that is doubled', () => {
+  // i(Xq) carries Xq13 twice, so it can be inactivated: variant Turner syndrome.
+  assert.match(decodeText('46,X,i(X)(q10)'), /abnormal X is silenced/);
+  // i(Xp) has no Xq at all, so no XIC and no way to silence it.
+  const ip = decodeText('46,X,i(X)(p10)');
+  assert.match(ip, /no X-inactivation center/, ip);
+  assert.ok(!/abnormal X is silenced/.test(ip), 'i(Xp) cannot be silenced');
+});
+
+test('a break inside Xq13 itself is reported as uncertain rather than guessed', () => {
+  const text = decodeText('46,X,t(X;9)(q13;p22)');
+  assert.match(text, /Xq13/, 'names the band the center sits in');
+  assert.ok(!/the normal X is silenced, and both derivatives stay active/.test(text),
+    'must not assert the usual balanced answer when the break is in the center itself');
 });

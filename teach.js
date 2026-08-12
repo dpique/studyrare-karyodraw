@@ -305,6 +305,35 @@
   // that is easy to get backwards, and the reason the balanced carrier can present with
   // an X-linked recessive disease: her intact X is the silenced one, so a gene broken at
   // the X breakpoint has no working copy left.
+  // The center sits in Xq13 (Gardner p. 214), so which side of a break keeps it is
+  // decided by the breakpoint, and that is what decides whether a piece CAN be silenced
+  // at all. Gardner figure 6-8 caption: "the der(autosome) has the XIC; here, the X
+  // breakpoint must be in proximal Xq, above the XIC ... In the third column, in which
+  // the der(X) has the XIC, X exchanges can occur either in Xp or in Xq distal to the
+  // XIC." Band numbers count outward from the centromere, so a plain numeric compare
+  // against 13 orders them correctly (q11.2 < q13 < q21). Done on the string rather than
+  // through Karyo.resolveBand so the note does not need the renderer loaded.
+  var XIC_BAND = 13;
+  function xicSide(xBreak) {
+    if (!xBreak) return "unknown";
+    if (/^p/.test(xBreak)) return "der-x";          // all of Xq, q13 included, stays with the der(X)
+    var m = /^q(\d+(?:\.\d+)?)$/.exec(xBreak);
+    if (!m) return "unknown";
+    var n = parseFloat(m[1]);
+    if (n >= XIC_BAND && n < XIC_BAND + 1) return "within";   // the break is inside q13 itself
+    return n < XIC_BAND ? "der-autosome" : "der-x";
+  }
+  // The first breakpoint of a single-chromosome operation (iso, ring, del).
+  function bpOf(ab) {
+    return ((ab.breakpoints || [])[0] || [])[0] || null;
+  }
+  // The X breakpoint of a t(), or of the t() inside a der() chain.
+  function xBreakOf(ab, subT) {
+    var src = subT || ab, cs = src.chroms || [], i = cs.indexOf("X");
+    if (i < 0) return null;
+    return ((src.breakpoints || [])[i] || [])[0] || null;
+  }
+
   function xciNote(ab, clone) {
     var own = ab.chroms || [];
     var subT = (ab.subOps || []).filter(function (s) { return s.op === "t"; })[0];
@@ -316,13 +345,22 @@
       return ". Expected X inactivation after an X;Y translocation is variable and is not reliably predicted from the karyotype";
     }
     var k = ab.kind;
-    // Checked ahead of the single-X test too. A piece of X sitting on an autosome cannot
-    // be silenced whatever the X count, and the parser files a der(22)t(X;22) under
-    // chromosome 22, so complement.X reads 1 and the single-X branch would otherwise
-    // swallow the more informative fact.
+    var side = xicSide(xBreakOf(ab, subT));
+    // Checked ahead of the single-X test too. What happens to a piece of X sitting on an
+    // autosome does not depend on the X count, and the parser files a der(22)t(X;22)
+    // under chromosome 22, so complement.X reads 1 and the single-X branch would
+    // otherwise swallow the more informative fact.
     if (k === "der" && own[0] !== "X") {
-      return ". The translocated X segment sits on an autosome, with no X-inactivation center of its own and beyond the reach of the one on the X, " +
-        "so it is expected to stay active and give functional disomy for that segment";
+      if (side === "der-autosome") {
+        return ". The X break is proximal to Xq13, so this derivative carries the X-inactivation center along with the X segment. " +
+          "The segment can therefore be silenced, and silencing is expected to spread from it into the attached autosomal material, " +
+          "which can leave that autosomal segment functionally monosomic";
+      }
+      if (side === "der-x") {
+        return ". The X break is distal to Xq13, so this derivative has no X-inactivation center of its own and is beyond the reach of the one left on the X. " +
+          "The X segment cannot be silenced, and functional disomy for it is the expected result";
+      }
+      return ". Whether this X segment can be silenced depends on which side of Xq13 the X broke, since the X-inactivation center sits there and cannot act on a segment separated from it";
     }
     // No second X means no choice: a male carrier, or 45,X. Say that rather than assert a
     // skew, which would be the wrong claim rather than a missing one.
@@ -330,8 +368,17 @@
       return ". X inactivation does not apply to this rearrangement: there is only one X, so there is no second X to silence";
     }
     if (k === "t") {
+      if (side === "within") {
+        return ". The X broke inside Xq13, which is where the X-inactivation center sits, so which derivative carries the center, and therefore which chromosome can be silenced, is not decided by the notation alone";
+      }
+      // The conclusion holds whichever derivative carries the center: only the normal X
+      // can be silenced without cost, because both X pieces are needed to add up to one
+      // working X. But name the right derivative in the mechanism, since the center rides
+      // with the der(autosome) when the break is proximal to Xq13.
+      var carrier = side === "der-autosome" ? "the derivative autosome, which carries the center because the X broke proximal to Xq13,"
+                                            : "the der(X), which carries the center,";
       return ". Expected X inactivation is skewed: the normal X is silenced, and both derivatives stay active. " +
-        "Silencing the der(X) instead would let inactivation spread into the attached autosomal segment and leave it functionally monosomic, so those cells are selected against. " +
+        "Silencing " + carrier + " would spread inactivation into the attached autosomal segment and leave it functionally monosomic, so those cells are selected against. " +
         "Because the intact X is the silenced one, a gene disrupted at the X breakpoint is unmasked, and a balanced female carrier can still manifest an X-linked recessive disorder";
     }
     // A der(X) keeps the inactivation center, so it is the one that can be silenced.
@@ -339,9 +386,17 @@
       return ". Expected X inactivation is skewed toward the derivative: the der(X) is silenced and the normal X stays active, " +
         "the pattern that leaves the least functional imbalance. That choice exists only while the der(X) keeps its X-inactivation center";
     }
+    // An isochromosome of Xp carries no Xq at all, so it cannot hold the Xq13 center and
+    // cannot be silenced. Gardner p. 967 on i(Xp): it "would probably always be lethal
+    // because there would be a functional Xp trisomy". i(Xq) doubles the arm the center
+    // is on and behaves like the other structural abnormals.
+    if (k === "iso" && /^p/.test((bpOf(ab) || "q10"))) {
+      return ". An isochromosome of Xp carries no Xq, so it has no X-inactivation center and cannot be silenced. " +
+        "Functional disomy for Xp is the expected result, which is why this form is far more severe than i(X)(q10)";
+    }
     if (k === "iso" || k === "ring" || k === "del") {
       return ". Expected X inactivation is skewed: the structurally abnormal X is silenced and the normal X stays active, " +
-        "the pattern that leaves the least functional imbalance. That depends on the abnormal X keeping its X-inactivation center" +
+        "the pattern that leaves the least functional imbalance. That depends on the abnormal X keeping its X-inactivation center at Xq13" +
         (k === "ring" ? ", and a ring too small to retain one cannot be silenced at all, which is why those cases are affected more severely" : "");
     }
     return "";
