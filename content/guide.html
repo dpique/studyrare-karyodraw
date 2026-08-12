@@ -1,5 +1,5 @@
 <h1>How to read a karyotype</h1>
-<p class="lp-intro">A karyotype is a compact description of the number and structure of a person's chromosomes, written in a standardized shorthand called ISCN (the International System for Human Cytogenomic Nomenclature). This guide walks through how to read one, from the total chromosome count to the symbol for every kind of change, with a worked example you can open for each. Anything here can be typed into the <a href="/">interactive visualizer</a> to see it drawn.</p>
+<p class="lp-intro">A karyotype is a compact description of the number and structure of a person's chromosomes, written in a standardized shorthand called <a href="#faq-iscn">ISCN</a> (the International System for Human Cytogenomic Nomenclature). This guide walks through how to read one, from the total chromosome count to the symbol for every kind of change, with a worked example you can open for each. Anything here can be typed into the <a href="/">interactive visualizer</a> to see it drawn.</p>
 <p class="lp-cta"><a class="btn" href="/?tour=1">Take the guided tour &rarr;</a> <span class="lp-cta-note">An ordered walk through the common notations, drawn one at a time in the visualizer.</span></p>
 
 <section class="lp-sec">
@@ -81,7 +81,10 @@
     <h3 class="faq-q">What is a karyotype test and how is it done?</h3>
     <div class="faq-a"><p>A karyotype test, also called chromosome analysis, checks the chromosomes for changes in their number or structure. Cells from blood, bone marrow, amniotic fluid, or chorionic villi are grown in culture, arrested in metaphase when chromosomes are condensed enough to see, stained to produce G-bands, then photographed and arranged into a karyogram that a cytogeneticist reads and reports in ISCN notation. Because the cells must divide in culture first, results typically take one to two weeks, and banding resolves only changes larger than roughly 5 to 10 megabases; anything smaller needs FISH or a chromosomal microarray.</p></div>
   </div>
-  <div class="faq-item">
+  <!-- The id is on the item, not the h3: build-pages.mjs derives the FAQPage
+       schema by matching the bare h3 tag, and an attribute there would silently
+       drop this question from the JSON-LD. -->
+  <div class="faq-item" id="faq-iscn">
     <h3 class="faq-q">What is ISCN 2024?</h3>
     <div class="faq-a"><p>ISCN, the International System for Human Cytogenomic Nomenclature, is the standard that defines the shorthand this page teaches. It is maintained by an international standing committee and revised every few years; the 2024 edition replaced ISCN 2020 and is the current one, and it is the edition KaryoDraw validates notation against.</p></div>
   </div>

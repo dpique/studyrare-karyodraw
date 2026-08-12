@@ -546,9 +546,15 @@ fs.writeFileSync(path.join(ROOT, 'content', 'k-index.mjs'),
   'export const K_TO_SLUG = ' + JSON.stringify(kmap, null, 2) + ';\n');
 
 // ---- inject homepage "Common karyotypes, explained" list ----------------------
-const listHtml = '\n          <ul class="kdp-list">\n' + CONTENT.map((e) =>
+// The homepage lists the guided-tour curriculum rather than every page: the full
+// set lives on the visual hub, which the closing link reaches with a live count.
+// Curation therefore stays in content/karyotypes.js (the tour flag), not here,
+// and adding a landing page no longer grows the homepage.
+const HOME_LIST = CONTENT.filter((e) => e.tour);
+const listHtml = '\n          <ul class="kdp-list">\n' + HOME_LIST.map((e) =>
   `            <li><a href="/karyotype/${e.slug}/"><code>${esc(e.k)}</code> <b>${esc(e.name)}</b></a></li>`
-).join('\n') + '\n          </ul>\n          ';
+).join('\n') + '\n          </ul>\n          <p class="muted"><a href="/karyotype/">See all ' +
+  CONTENT.length + ' karyotypes, with pictures &rarr;</a></p>\n          ';
 // Nav + footer are built from the single sources above and injected into index.html
 // too, so the SPA chrome cannot drift from the generated pages.
 const navHtml = NAV_ITEMS.map(([href, label]) => `<a href="${href}">${label}</a>`).join('\n      ');

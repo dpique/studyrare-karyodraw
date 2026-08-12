@@ -31,3 +31,12 @@ test('the click handler is attached in the same block that labels the button', (
   assert.ok(block, 'the launcher wiring block exists');
   assert.match(block[0], /btn\.addEventListener\("click"/, 'the launcher attaches its click handler');
 });
+
+test('starting the tour scrolls its card, from either door', () => {
+  // The scroll must live in startTour itself: when it sat on the button handler
+  // alone, the ?tour=1 deep link from the guide started the tour wherever the
+  // page happened to be, with the card out of view.
+  const fn = html.match(/function startTour\(\) \{[\s\S]*?\n  \}/);
+  assert.ok(fn, 'startTour exists');
+  assert.match(fn[0], /scrollIntoView/, 'startTour brings its card to the top of the screen');
+});
