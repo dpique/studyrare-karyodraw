@@ -16,10 +16,15 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
+    # Cloudflare's browser integrity check 403s curl's default user-agent from a
+    # datacenter IP (observed on the first dispatched run), so the checks
+    # identify themselves with a browser-shaped UA that still names the monitor.
+    env:
+      UA: 'Mozilla/5.0 (compatible; KaryoDrawSmoke/1.0; +https://github.com/dpique/studyrare-karyodraw)'
     steps:
       - name: Homepage serves the app
-        run: curl -fsS --max-time 20 'https://karyodraw.com/' | grep -q 'Karyotype diagram maker'
+        run: curl -fsS -A "$UA" --max-time 20 'https://karyodraw.com/' | grep -q 'Karyotype diagram maker'
       - name: A landing page serves
-        run: curl -fsS --max-time 20 'https://karyodraw.com/karyotype/down-syndrome/' | grep -q 'Down syndrome'
+        run: curl -fsS -A "$UA" --max-time 20 'https://karyodraw.com/karyotype/down-syndrome/' | grep -q 'Down syndrome'
       - name: The API answers
-        run: curl -fsS --max-time 20 'https://karyodraw.com/api/top' | grep -q '"items"'
+        run: curl -fsS -A "$UA" --max-time 20 'https://karyodraw.com/api/top' | grep -q '"items"'
