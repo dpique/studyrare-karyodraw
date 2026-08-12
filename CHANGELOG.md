@@ -3,6 +3,18 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-12 (the export watermark carries the date)
+
+- **Exported images now say when they were drawn.** The watermark on "Copy image" and
+  the PNG download reads `karyodraw.com · YYYY-MM-DD`. The exported figure is the copy
+  that outlives deploys, in slides and question banks in front of people who never
+  typed the input; the date lets any figure be matched to this date-grouped changelog,
+  so "was this drawn before or after the fix" has an answer. The site always runs the
+  latest deploy, so the export date is the renderer's state date, and no version
+  counter is introduced (a deliberate decision: versions disambiguate installs, and a
+  continuously deployed site has exactly one live version). `test/export.test.js` pins
+  the stamp.
+
 ## 2026-08-11 (interface polish: the homepage list, the tour, the Show control, the input)
 
 - **The homepage "Common karyotypes, explained" list is now the tour curriculum, not

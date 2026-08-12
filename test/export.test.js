@@ -150,3 +150,13 @@ test('an unreadable breakpoint blocks the karyogram', () => {
   assert.match(gate, /unreadable/, 'the draw gate consults the flag');
   assert.match(html, /c\.unreadable/, 'and reads it off the clone');
 });
+
+test('the export watermark carries the export date', () => {
+  // The exported figure is the copy that outlives deploys, in slides and question
+  // banks in front of people who never typed the input. The date lets it be
+  // matched to the date-grouped changelog, so "was this drawn before or after the
+  // fix" has an answer. The site always runs the latest deploy, so the export
+  // date is the renderer's state date; no version counter is needed or kept.
+  assert.match(html, /karyodraw\.com · ' \+ stamp/, 'the watermark appends the date stamp');
+  assert.match(html, /var stamp = _d\.getFullYear\(\)/, 'and the stamp is built at export time');
+});
