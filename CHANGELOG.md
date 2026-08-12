@@ -3,6 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-12 (the paper catches up with the app)
+
+- **The JOSE manuscript describes the app as it is, not as it was on July 4.** The
+  draft predated the app's most distinctive teaching feature, so the Functionality
+  section gains a meiotic-segregation subsection: the quadrivalent and trivalent
+  models with their segregation modes per ISCN 2024 Table 5, the to-scale pachytene
+  figures sized from real hg38 band positions, and the parental-origin direction
+  (candidate carriers re-run forward, kept on a round-trip match). The explanation
+  section now mentions the guided tour and the worked-example library, the summary
+  mentions the segregation panel and the date-stamped exports, and the validation
+  sentence states the current suite (450+ tests, CI-gated, conformance set, browser
+  tests, stress corpus). Submission itself is an owner action and has not happened.
+
 ## 2026-08-12 (a safety net: weekly backups, a daily smoke, and a usage digest)
 
 - **The database is backed up weekly.** D1 holds the only state production has (usage
