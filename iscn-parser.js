@@ -600,7 +600,9 @@
     // baseline the gains and losses are expressed against (ISCN 6.3.7 e-f), and it is
     // exactly the near-triploid clones where inferring it from the count goes wrong.
     // Believe the notation over the arithmetic.
-    var stated = /<(\d+)n>/.exec(clone.modalGiven || "");
+    // Case-insensitive to match the count-field validation: 58<2N> is accepted
+    // there, so the ploidy it states must be believed here too.
+    var stated = /<(\d+)n>/i.exec(clone.modalGiven || "");
     if (stated && +stated[1] >= 1 && +stated[1] <= 8) {
       ploidy = +stated[1];
     } else if (clone.modalNumber != null) {
@@ -893,7 +895,9 @@
     // aberration (a made-up operation, or a chromosome with no sign), and text an
     // operation could not consume. Distinct from `uncounted`, which is only about
     // whether the tally can be trusted.
-    clone.unreadable = clone.aberrations.some(function (ab) {
+    // badCount ORs in first: this assignment used to overwrite the count-field
+    // junk flag set at parse time, which let 47<2n draw with its warning showing.
+    clone.unreadable = clone.badCount === true || clone.aberrations.some(function (ab) {
       // ab.arity: the operation was given fewer breakpoints than it takes, so the
       // drawing would have to invent the rest. Same consequence as a breakpoint that
       // could not be read, and for the same reason.
@@ -1109,6 +1113,19 @@
     if (mn) {
       clone.modalNumber = parseInt(mn[1], 10);
       if (mn[2]) clone.modalHigh = parseInt(mn[2], 10);
+      // The count field is exactly a number, a range, the constitutional "c"
+      // (warned above), or a <Nn> ploidy marker. Anything else used to ride
+      // along unread: this regex took the leading digits and nothing ever
+      // looked at the rest of the field, so 47<2n (an unclosed ploidy marker)
+      // and 47<>2<.>n both drew without a word.
+      var restOfCount = fields[0].slice(mn[0].length).trim();
+      if (restOfCount && !/^c$/i.test(restOfCount) && !/^<\d+n>$/i.test(restOfCount)) {
+        var pd = /^<(\d+)n?>?$/i.exec(restOfCount);
+        warnings.push("“" + restOfCount + "” after the count is not something KaryoDraw can read. A count is a " +
+          "number (46), a range (47~49), or a number with a ploidy marker (47<2n>)." +
+          (pd ? " Did you mean “" + mn[0].trim() + "<" + pd[1] + "n>”?" : ""));
+        clone.badCount = true;   // ORed into clone.unreadable later; a direct set here is overwritten
+      }
     } else warnings.push("A karyotype starts with the chromosome count (a number like 46). “" + fields[0] + "” is not a number.");
 
     // sex field (second) — UNLESS the second field is a clonal-evolution marker

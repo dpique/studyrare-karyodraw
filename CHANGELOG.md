@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-12 (the count field stops swallowing junk, and Back leaves the tour)
+
+- **Junk after the chromosome count is refused, not silently drawn.** `47<2n>` is
+  valid ISCN (the ploidy marker; the parser reads it deliberately and, per ISCN
+  6.3.7 f, checks no arithmetic against it) and keeps parsing cleanly. But the count
+  regex took the leading digits and nothing ever read the rest of the field, so the
+  unclosed `47<2n`, the mistyped `47<>2<.>n`, and even `47banana` all drew without a
+  word. The remainder of the count field is now validated (number, range, `c`, or
+  `<Nn>`); anything else refuses the drawing with a warning that names the junk, and
+  an unclosed ploidy marker gets a did-you-mean for its closed form. The ploidy
+  reader also accepts `<2N>` uppercase, matching the validation. Found by typing a
+  CyDAS-style clone in by hand; the CyDAS lineage itself is documented in
+  `docs/CYDAS.md`. One subtlety cost a first attempt: the aberration-level
+  `unreadable` computation later overwrites the flag, so the count check sets its
+  own `badCount`, ORed in. `test/parser.test.js` pins the valid marker, all three
+  junk shapes, and the suggestion.
+
+- **Pressing Back during the tour leaves the tour.** The restored history entry
+  predates the tour, and the card used to stay open, captioning a step over a
+  drawing it no longer describes. Every other draw path already called
+  `leaveTourIfActive`; the popstate handler now does too.
+  `test/tour-launcher-browser.test.js` reproduces the strand in a real browser
+  (chip, tour, Back) and fails without the fix.
+
 ## 2026-08-12 (the paper catches up with the app)
 
 - **The JOSE manuscript describes the app as it is, not as it was on July 4.** The

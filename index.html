@@ -2035,6 +2035,10 @@
   // Without this, Back would change the URL while the page kept showing the old
   // drawing. skipHashOnce stops run() from rewriting the entry we just moved to.
   window.addEventListener("popstate", function () {
+    // Back during the tour leaves it: the entry being restored predates the
+    // tour, and a tour card captioning a drawing it does not describe is worse
+    // than no tour. Every other draw path already leaves it; this one forgot.
+    leaveTourIfActive();
     applyUrlView();
     input.value = getKaryotypeParam() || DEMO_K;
     run.skipHashOnce = true;
