@@ -1,15 +1,15 @@
 <h1>How to read a karyotype</h1>
-<p class="lp-intro">A karyotype is a compact description of the number and structure of a person's chromosomes, written in a standardized shorthand called <a href="#faq-iscn">ISCN</a> (the International System for Human Cytogenomic Nomenclature). This guide walks through how to read one, from the total chromosome count to the symbol for every kind of change, with a worked example you can open for each. Anything here can be typed into the <a href="/">interactive visualizer</a> to see it drawn.</p>
+<p class="lp-intro">A karyotype is a person's chromosome complement: the number of chromosomes in a cell and their structure. It is written in a standardized shorthand called <a href="#faq-iscn">ISCN</a> (the International System for Human Cytogenomic Nomenclature). This guide walks through how to read one, from the total chromosome count to the symbol for every kind of change, with a worked example you can open for each. Anything here can be typed into the <a href="/">interactive visualizer</a> to see it drawn.</p>
 <p class="lp-cta"><a class="btn" href="/?tour=1">Take the guided tour &rarr;</a> <span class="lp-cta-note">An ordered walk through the common notations, drawn one at a time in the visualizer.</span></p>
 
 <section class="lp-sec">
   <h2>1. What a karyotype is</h2>
-  <p>A typical human cell carries 46 chromosomes: 22 matching pairs called autosomes, numbered 1 to 22 from largest to smallest, plus two sex chromosomes (XX in a female, XY in a male). A karyotype records how many chromosomes are present and whether any have gained, lost, or rearranged material. The simplest karyotypes are <code>46,XX</code> and <code>46,XY</code>, which are the two normal results and the baseline every abnormal karyotype is compared against.</p>
+  <p>A typical human cell carries 46 chromosomes: 22 matching pairs called autosomes, numbered 1 to 22 from largest to smallest, plus two sex chromosomes (XX in a female, XY in a male). That set is the karyotype, and it is abnormal when a chromosome has been gained, lost, or rearranged. The simplest karyotypes are <code>46,XX</code> and <code>46,XY</code>, which are the two normal results and the baseline every abnormal karyotype is compared against.</p>
 </section>
 
 <section class="lp-sec">
   <h2>2. How the chromosomes are arranged</h2>
-  <p>In a karyogram the chromosomes are lined up in order, largest to smallest, with the sex chromosomes placed last. Each chromosome is shown as a pair of sister chromatids with a pattern of light and dark bands produced by Giemsa staining. That banding pattern is what lets a cytogeneticist tell one chromosome from another and spot when a piece is missing, extra, or in the wrong place.</p>
+  <p>In a karyogram the chromosomes of a single cell are lined up in order, largest to smallest, with the sex chromosomes placed last, whether that array is photographed, digitized, or drawn. Each chromosome is shown as a pair of sister chromatids with a pattern of light and dark bands produced by Giemsa staining. That banding pattern is what lets a cytogeneticist tell one chromosome from another and spot when a piece is missing, extra, or in the wrong place. KaryoDraw draws idiograms instead, the word ISCN reserves for a diagrammatic representation of a karyotype, so every example is schematic and clean enough to read.</p>
 </section>
 
 <section class="lp-sec">
@@ -73,9 +73,15 @@
 
 <section class="lp-sec faq" aria-labelledby="faq-h">
   <h2 id="faq-h">Frequently asked questions</h2>
+  <!-- The three-term distinction is ISCN 2024, Chapter 2, footnote 1 (p. 5), which
+       states the terms "have often been used indiscriminately" and then fixes each:
+       karyogram for the systematized array, karyotype for the chromosomal
+       complement, idiogram for the diagrammatic representation. Keep this answer
+       aligned with that footnote, and note that ISCN spells it idiogram, never
+       ideogram, whatever ideogram-data.js is called. -->
   <div class="faq-item">
     <h3 class="faq-q">What is a karyotype?</h3>
-    <div class="faq-a"><p>A karyotype is a person's chromosome constitution: the number of chromosomes in a cell and their structure, written in a standardized shorthand such as 46,XX or 46,XY. Two neighboring terms are often used interchangeably with it but mean different things: a karyogram is the image of one cell's stained chromosomes arranged in numbered pairs, and an ideogram is the schematic banding diagram of an idealized chromosome, which is the form KaryoDraw draws.</p></div>
+    <div class="faq-a"><p>A karyotype is the chromosomal complement of a person, tissue, or cell line: the number of chromosomes and their structure, written in a standardized shorthand such as 46,XX or 46,XY. Two neighboring terms are often used interchangeably with it but mean different things. A karyogram is a systematized array of one cell's stained chromosomes arranged in numbered pairs, whether photographed or drawn. An idiogram (spelled ideogram in much genomics software) is the diagrammatic representation of a karyotype, which is the form KaryoDraw draws.</p></div>
   </div>
   <div class="faq-item">
     <h3 class="faq-q">What is a karyotype test and how is it done?</h3>
