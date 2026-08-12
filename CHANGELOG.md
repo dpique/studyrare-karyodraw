@@ -3,6 +3,68 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-12 (the decode says which X goes silent, and stops calling a carrier monosomy X)
+
+- **A rearrangement involving the X now says which X is expected to be inactive.**
+  The decode panel was silent on the single most asked question about these
+  karyotypes. It now answers it from one rule rather than a lookup table (Gardner
+  & Sutherland, 5th ed, p. 221): after selection the surviving pattern is the one
+  leaving the least functional imbalance, and the choice exists only where the
+  abnormal chromosome keeps an X-inactivation center. Balanced and unbalanced
+  therefore skew in **opposite** directions, which is the part that is easy to get
+  backwards:
+  - balanced `t(X;autosome)`: the **normal X** is silenced, both derivatives stay
+    active, and because the intact X is the silenced one a gene disrupted at the X
+    breakpoint is unmasked, so a balanced female carrier can still manifest an
+    X-linked recessive disorder. That is how *DMD* and *OTC* were mapped.
+  - unbalanced `der(X)`: the **der(X)** is silenced and the normal X stays active.
+  - `i(X)`, `r(X)`, `del(X)`: the structurally abnormal X is silenced, with the
+    caveat that a ring too small to retain a center cannot be silenced at all.
+  - X material on a **der(autosome)**: it has no center of its own and is beyond
+    the reach of the one on the X, so it cannot be silenced, giving functional
+    disomy. Saying "the derivative is silenced" here would be exactly backwards.
+  - one X only, or an X;Y translocation: reported as not applicable and as
+    variable, respectively, rather than guessed at.
+
+- **The answer is breakpoint-dependent, and the first cut of this did not model
+  that.** The center sits in Xq13, so which side of a break keeps it decides what
+  can be silenced at all (Gardner figure 6-8: "the der(autosome) has the XIC; here,
+  the X breakpoint must be in proximal Xq, above the XIC ... In the third column, in
+  which the der(X) has the XIC, X exchanges can occur either in Xp or in Xq distal
+  to the XIC"). The note now compares the X breakpoint against Xq13 and branches:
+  - X material on a der(autosome) with the break **distal** to Xq13 has no center
+    and cannot be silenced, giving functional disomy. With the break **proximal**
+    to Xq13 the center travels with the segment, so it can be silenced and
+    silencing spreads into the attached autosome instead. The earlier text asserted
+    the first case unconditionally, which was wrong for every proximal-Xq break.
+  - `i(X)(p10)` carries no Xq, so no center and no way to silence it. Gardner: an
+    Xp isochromosome "would probably always be lethal because there would be a
+    functional Xp trisomy". It was previously lumped in with `i(X)(q10)`.
+  - a break inside Xq13 itself is reported as undecidable from the notation rather
+    than guessed.
+
+- **New page: a balanced X-autosome translocation whose carrier is affected.**
+  `/karyotype/x-autosome-translocation-manifesting-carrier/`, `46,X,t(X;4)(p21;p16)`.
+  Balanced, yet affected, because the normal X is the silenced one and the
+  dystrophin gene broken at Xp21 has no working copy behind it. The page exists to
+  make the counterintuitive case concrete: "balanced" does not mean unaffected.
+
+  Every sentence opens with "Expected", because none of this is in the notation:
+  ISCN carries inactivation status only as a FISH probe in `ish` nomenclature
+  (2024 example xxiii), never in the karyotype string. It rides the existing
+  `robNote` hook, so it reaches the app, every generated landing page, and
+  read-aloud with no new UI.
+
+- **`46,X,t(X;13)` was being called monosomy X.** The sex-field note is built by
+  `parseSex` from the field alone, before any aberration is known, so a lone `X`
+  read as "a single X (monosomy X)" even when a second X is drawn inside the
+  rearrangement. ISCN 2024 section 5.5.18.1.1 example iii is explicit that this is
+  the correct spelling: "the correct designation is 46,X,t(X;13) and not
+  46,XX,t(X;13)", and the same for `46,Y,t(X;13)` in a male. The note now says the
+  other X is named in the rearrangement below and that this is not monosomy X.
+  `45,X` still reads as monosomy X. Found because the new inactivation sentence
+  contradicted it two lines down in the same panel.
+
 ## 2026-08-12 (both textbooks in the guide were a edition behind)
 
 - **Thompson & Thompson is on its 9th edition, and almost nothing about the

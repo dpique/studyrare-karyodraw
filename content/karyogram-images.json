@@ -303,6 +303,14 @@
     "cw": 2400,
     "ch": 1260
   },
+  "x-autosome-translocation-manifesting-carrier": {
+    "w": 223,
+    "h": 347,
+    "pw": 669,
+    "ph": 1041,
+    "cw": 2400,
+    "ch": 1260
+  },
   "xxyy-syndrome": {
     "w": 223,
     "h": 265,
