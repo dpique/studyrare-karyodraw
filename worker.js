@@ -82,10 +82,12 @@ export default {
     return res;
   },
 
-  // Scheduled (cron) handler: email a daily digest of new feedback. Registered by
-  // the cron in wrangler.jsonc. Inert until the Resend settings are configured.
+  // Scheduled (cron) handler: email a daily digest of new feedback, and on
+  // Mondays a weekly usage digest, both on the one cron registered in
+  // wrangler.jsonc. Inert until the Resend settings are configured.
   async scheduled(event, env, ctx) {
     ctx.waitUntil(sendFeedbackDigest(env));
+    if (new Date(event.scheduledTime).getUTCDay() === 1) ctx.waitUntil(sendUsageDigest(env));
   },
 };
 
@@ -176,6 +178,69 @@ async function sendFeedbackDigest(env) {
     }
     // A short (partial) batch means the queue is drained.
     if (rows.length < 200) return;
+  }
+}
+
+// Weekly usage digest (Mondays, on the same cron as the feedback digest). The
+// analytics were write-only for months: rows accrued and nothing read them but
+// the Most-studied board. The failing-inputs list is the point of this email —
+// what students type that does not draw is the parser backlog and the FAQ
+// pipeline, measured instead of guessed.
+async function sendUsageDigest(env) {
+  if (!env.RESEND_API_KEY || !env.FEEDBACK_EMAIL_TO) return;
+  const since = Date.now() - 7 * 86400000;
+  let totals, top, failed;
+  try {
+    totals = await env.DB.prepare(
+      "SELECT SUM(type='draw') AS draws, SUM(type='pageview') AS views, " +
+      "SUM(type='draw' AND parsed=1) AS ok, COUNT(DISTINCT country) AS countries, " +
+      "SUM(len > 512) AS capped FROM usage WHERE ts >= ?"
+    ).bind(since).first();
+    // Grouped like the Most-studied board, so "46,XX" and "46, xx" count together.
+    top = (await env.DB.prepare(
+      "SELECT MIN(karyotype) AS k, COUNT(*) AS n FROM usage " +
+      "WHERE ts >= ? AND type='draw' AND parsed=1 AND karyotype IS NOT NULL " +
+      "GROUP BY LOWER(REPLACE(karyotype, ' ', '')) ORDER BY n DESC LIMIT 10"
+    ).bind(since).all()).results || [];
+    failed = (await env.DB.prepare(
+      "SELECT MIN(karyotype) AS k, COUNT(*) AS n FROM usage " +
+      "WHERE ts >= ? AND type='draw' AND parsed=0 AND karyotype IS NOT NULL " +
+      "GROUP BY LOWER(REPLACE(karyotype, ' ', '')) ORDER BY n DESC LIMIT 10"
+    ).bind(since).all()).results || [];
+  } catch (e) {
+    console.error("usage digest query failed:", e && e.message);
+    return;
+  }
+
+  const draws = (totals && totals.draws) || 0;
+  const okPct = draws ? Math.round(100 * ((totals.ok || 0) / draws)) : 0;
+  const list = (rows) => rows.length
+    ? rows.map((r) => "  " + r.k + "  x" + r.n).join("\n")
+    : "  (none)";
+  const body = [
+    "Last 7 days:",
+    "  draws: " + draws + " (" + okPct + "% drew)",
+    "  pageviews: " + ((totals && totals.views) || 0),
+    "  countries: " + ((totals && totals.countries) || 0),
+    "  over the 512-char storage cap: " + ((totals && totals.capped) || 0),
+    "",
+    "Top drawn:",
+    list(top),
+    "",
+    "Top failing inputs (parser backlog / FAQ candidates):",
+    list(failed),
+  ].join("\n");
+
+  const from = env.FEEDBACK_EMAIL_FROM || "KaryoDraw feedback <feedback@karyodraw.com>";
+  try {
+    const r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" },
+      body: JSON.stringify({ from, to: env.FEEDBACK_EMAIL_TO, subject: "KaryoDraw usage: last 7 days", text: body }),
+    });
+    if (!r.ok) console.error("usage digest send returned", r.status);
+  } catch (e) {
+    console.error("usage digest send failed:", e && e.message);
   }
 }
 

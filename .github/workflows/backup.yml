@@ -1,0 +1,55 @@
+name: Backup D1
+
+# Weekly export of the one stateful store (the usage + feedback tables in D1).
+# Everything else in production is reproducible from this repo; these rows are not.
+#
+# The repo is public and public-repo artifacts are downloadable by any GitHub
+# user, so the dump is encrypted before upload: feedback rows carry reply emails.
+# The passphrase is the BACKUP_PASSPHRASE repo secret; the restore copy lives in
+# the owner's private claude-workflows repo (RESTORE-karyodraw-d1.md), alongside
+# the restore commands.
+#
+# Restore, in short:
+#   gh run download <run-id> -n d1-backup-<run-id>
+#   openssl enc -d -aes-256-cbc -pbkdf2 -pass env:BACKUP_PASSPHRASE -in backup.sql.gz.enc | gunzip > backup.sql
+#   npx wrangler d1 execute karyodraw-usage --remote --file backup.sql
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'   # Mondays 05:00 UTC; 90-day retention keeps ~13 restore points
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      # Fail loudly on a missing secret: a backup that silently skips is the
+      # failure this workflow exists to prevent.
+      - name: Export and encrypt
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN and BACKUP_PASSPHRASE must both be set as repo secrets."
+            exit 1
+          fi
+          npx --yes wrangler@4 d1 export karyodraw-usage --remote --output=backup.sql
+          test -s backup.sql
+          gzip backup.sql
+          openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:BACKUP_PASSPHRASE -in backup.sql.gz -out backup.sql.gz.enc
+          rm backup.sql.gz
+          ls -l backup.sql.gz.enc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: d1-backup-${{ github.run_id }}
+          path: backup.sql.gz.enc
+          retention-days: 90
+          if-no-files-found: error
