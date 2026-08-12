@@ -3,6 +3,48 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-11 (interface polish: the homepage list, the tour, the Show control, the input)
+
+- **The homepage "Common karyotypes, explained" list is now the tour curriculum, not
+  every page.** Since the visual hub exists, listing all pages twice bought nothing; the
+  homepage now shows the curated, ordered set the tour teaches (curation stays in
+  `content/karyotypes.js` via the `tour` flag) and closes with a "See all N karyotypes,
+  with pictures" link to the hub whose count is computed, never typed. Adding a landing
+  page grows the hub and the count, not the homepage. `test/seo.test.js` pins the list to
+  the curriculum and the computed count.
+
+- **The guide's first mention of ISCN links to the FAQ item that defines it.** In-page
+  rather than to the publisher, so line one of the guide does not eject the reader; the
+  Karger citation stays in Sources. The anchor sits on the FAQ item div, not the h3,
+  because the FAQPage schema derivation matches the bare h3 tag and an attribute there
+  would silently drop the question from the JSON-LD, which is now said in a comment at
+  the anchor.
+
+- **Starting the tour scrolls its card to the top of the screen, from either door.** The
+  scroll sat on the launcher button alone, so the `?tour=1` deep link from the guide, the
+  only path the landing pages have, started the tour wherever the page happened to be.
+  It now lives in `startTour`. Step navigation re-pins the card only when it has drifted
+  out of view, so Next never lurches a page already showing it. Pinned statically in
+  `test/tour-launcher.test.js` and exercised live in the browser test, which waits for
+  the deep-linked card to reach the top of the viewport.
+
+- **The Show (All / Affected) control hides when there is nothing to isolate.** For a
+  normal karyotype the Affected view had nothing to draw, and the control answered with
+  an empty state telling the reader to switch back: a dead end dressed as an option. The
+  held choice is preserved rather than reset, so "Affected" survives a normal tour step,
+  falls back to the full karyogram while gated, and applies again on the next abnormal
+  karyotype; the folded view-options row skips the hidden control's label. Rationale
+  recorded in `docs/INTERFACE.md`.
+
+- **Select-on-focus generalizes from the untouched demo to anything drawn.** The
+  URL-bar rule, stated fully: focusing the box while it holds exactly what is drawn
+  (demo, example chip, tour step, deep link, or the reader's own karyotype after Draw)
+  selects it all; mid-edit focus never selects. Yesterday's version covered only the
+  demo, so the box behaved differently on a deep link than on a bare visit.
+  `test/demo-input-select-browser.test.js` now walks the full arc in a real browser:
+  drawn demo selects, mid-edit does not, a drawn 46,XX selects again and hides the Show
+  control, and a drawn deep link selects.
+
 ## 2026-08-11 (the footer drops its disclaimer)
 
 - **"educational, not diagnostic" leaves the footer brand line, by owner decision.**

@@ -71,3 +71,35 @@ A visual change ships with a screenshot of the rendered result, reviewed before 
 code diff for a figure change describes the change; only the render shows it. One preview
 screenshot turns two review rounds into one: without it, the first round is spent
 generating the picture the diff should have carried, and the review starts on the second.
+
+## The input follows the URL-bar rule (2026-08-11)
+
+Focusing the karyotype box while it holds exactly what is drawn selects the whole value;
+focusing it mid-edit never does. One keystroke starts the next karyotype in the first
+case; tweaking one breakpoint stays cheap in the second, and a second click drops the
+selection either way. "What is drawn" is tracked, not inferred: every successful draw
+records the box's value, so the rule covers the demo, the example chips, tour steps, deep
+links, and anything the reader drew themselves. The first version applied only to the
+auto-loaded demo, which made the box behave differently on a deep link than on a bare
+visit for no reason a reader could see. `test/demo-input-select-browser.test.js` exercises
+the rule in a real browser, because the post-focus mouseup that would collapse the
+selection is invisible to a grep.
+
+## A control with nothing to control is hidden (2026-08-11)
+
+The Show (All / Affected) option appears only when the drawn karyotype has something to
+isolate. For 46,XX the Affected view has nothing to draw; the earlier behavior kept the
+control live and answered the click with an empty state telling the reader to switch back,
+a dead end dressed as an option. The choice itself is preserved rather than reset: a held
+"Affected" survives a normal tour step, falls back to the full karyogram while gated, and
+applies again on the next abnormal karyotype. The folded view-options row skips the hidden
+control's label for the same reason.
+
+## The tour opens on screen (2026-08-11)
+
+Starting the tour scrolls its card to the top of the screen, from either door: the
+launcher button or the `?tour=1` deep link from the guide. The scroll lives in `startTour`
+itself because it once sat on the button handler alone, and the deep link, the only path
+the landing pages have, started the tour wherever the page happened to be. Step
+navigation re-pins the card only when it has drifted out of view, so Next never lurches a
+page that is already showing it.

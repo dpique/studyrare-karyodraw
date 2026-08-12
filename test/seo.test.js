@@ -157,4 +157,26 @@ test('the guide FAQ carries four items, none echoing the body', () => {
   const faq = JSON.parse(ld[1])['@graph'].find((g) => g['@type'] === 'FAQPage');
   assert.ok(faq, 'the graph includes a FAQPage node');
   assert.deepEqual(faq.mainEntity.map((q) => q.name), qs, 'schema questions match the visible ones');
+  // The intro's first mention of ISCN links to the FAQ item that defines it; the
+  // anchor sits on the item div because the schema regex matches the bare h3 tag.
+  assert.match(html, /<a href="#faq-iscn">ISCN<\/a>/, 'the intro links ISCN to its FAQ item');
+  assert.match(html, /<div class="faq-item" id="faq-iscn">/, 'and the anchor exists');
+});
+
+// The homepage "Common karyotypes, explained" section lists the guided-tour
+// curriculum, not every landing page: the full set lives on the visual hub, which
+// the section links with a live count. Curation stays in content/karyotypes.js
+// (the tour flag), so adding a landing page grows the hub and the count, never
+// the homepage.
+test('the homepage list is the tour curriculum, and the hub link carries the rest', () => {
+  const home = read('index.html');
+  const C = require('../content/karyotypes.js').CONTENT || require('../content/karyotypes.js');
+  const block = home.match(/<!-- KD:PAGES:START -->([\s\S]*?)<!-- KD:PAGES:END -->/)[1];
+  const slugs = [...block.matchAll(/href="\/karyotype\/([a-z0-9-]+)\/"/g)].map((m) => m[1]);
+  const tourSlugs = C.filter((e) => e.tour).map((e) => e.slug);
+  assert.ok(tourSlugs.length >= 8, 'the curriculum is a real list, not an accident of an empty flag');
+  assert.deepEqual(slugs, tourSlugs, 'the homepage lists exactly the tour curriculum, in tour order');
+  assert.match(block, new RegExp(`See all ${C.length} karyotypes`),
+    'the hub link count is computed, not typed');
+  assert.match(block, /<a href="\/karyotype\/">/, 'and it points at the visual hub');
 });

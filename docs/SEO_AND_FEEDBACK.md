@@ -18,7 +18,9 @@ modules the browser uses (loaded in a `vm` shim, like the tests), it:
   and related-page links;
 - writes a hub page at `karyotype/index.html`;
 - injects the homepage "Common karyotypes, explained" list between the `KD:PAGES`
-  markers in `index.html`;
+  markers in `index.html`: the guided-tour curriculum only (entries with `tour: true`),
+  closed by a "See all N karyotypes" link to the hub whose count is computed, so the
+  homepage stays curated while the hub carries every page;
 - writes `sitemap.xml` (home + hub + all pages);
 - writes `content/k-index.mjs`, the normalized-notation to slug map used by the Worker.
 

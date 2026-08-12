@@ -96,6 +96,12 @@ test('the tour launcher works in a real browser', async (t) => {
       const state = await tourState(page);
       assert.notEqual(state.display, 'none', 'the deep link opens the tour');
       assert.match(state.counter, /^Step \d+ of \d+$/, 'a step is loaded');
+      // The deep link must also scroll the card to the top of the screen; the
+      // smooth scroll is asynchronous, so wait for it to settle.
+      await page.waitForFunction(() => {
+        const r = document.getElementById('tourcard').getBoundingClientRect();
+        return r.top >= -8 && r.top < 120;
+      }, { timeout: 4000 });
       assert.deepEqual(errors, [], 'the deep-linked load ran without a JS error');
     });
   } finally {
