@@ -130,3 +130,31 @@ test('no session handoff is tracked in the repo', () => {
   assert.match(read('.gitignore'), /^NEXT_SESSION_HANDOFF\.md$/m,
     'and it is gitignored so it cannot be re-added by accident');
 });
+
+// The guide FAQ used to restate the page: six items, three of them near-verbatim
+// copies of body sections, one of them the page's own H1 as a question. Google Trends
+// co-search data around "karyotype" (US, 12 months) settled the rework: the largest
+// cluster is "what is a karyotype", the fastest-rising is the lab test itself
+// ("karyotype analysis" +80%, "karyotype testing" +40%), and the three dropped items
+// match no distinct demand. Four items now, each owning a query and each saying
+// something the body does not: the karyotype / karyogram / ideogram distinction and
+// the wet-lab test process appear nowhere else on the page.
+test('the guide FAQ carries four items, none echoing the body', () => {
+  const html = read('how-to-read-a-karyotype/index.html');
+  const qs = [...html.matchAll(/<h3 class="faq-q">([\s\S]*?)<\/h3>/g)].map((m) => m[1].trim());
+  assert.deepEqual(qs, [
+    'What is a karyotype?',
+    'What is a karyotype test and how is it done?',
+    'What is ISCN 2024?',
+    'Is KaryoDraw free, and is it a diagnostic tool?',
+  ], 'exactly these four questions, in this order');
+  // The two additions the demand data asked for, absent from the body sections.
+  assert.match(html, /ideogram/, 'the karyotype vs karyogram vs ideogram distinction');
+  assert.match(html, /arrested in metaphase/, 'the test answer covers the wet lab');
+  // And the FAQPage schema regenerates from what is authored, so it followed along.
+  const ld = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+  assert.ok(ld, 'the guide page carries JSON-LD');
+  const faq = JSON.parse(ld[1])['@graph'].find((g) => g['@type'] === 'FAQPage');
+  assert.ok(faq, 'the graph includes a FAQPage node');
+  assert.deepEqual(faq.mainEntity.map((q) => q.name), qs, 'schema questions match the visible ones');
+});
