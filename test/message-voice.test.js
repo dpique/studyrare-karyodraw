@@ -43,6 +43,12 @@ const BAD_INPUTS = [
   '46,XY,t(9;22)(q34;q11.2)[-1]', '47,XX,+21[2.5]', '47,XX,+21[20', '47,XX,+21[cp-1]',
   // Breakpoints on one chromosome, separated as though they were on two.
   '46,XX,del(15)(q11.2;q13)', '46,XX,del(15)(q11.2,q13)',
+  // The three ways a rec is turned down. All correct ISCN, so all three are places
+  // where "this app has no drawing for that" can slip into sounding like "you are
+  // wrong": a paracentric inversion, an insertion-derived rec, and a rec whose
+  // make-up was not written out.
+  '46,XX,rec(2)dup(2q)inv(2)(q21q31)dmat', '46,XX,rec(21)del(21)ins(21)(p13q22.2q22.3)dpat',
+  '46,XX,rec(2)dmat',
 ];
 
 const allWarnings = () => {

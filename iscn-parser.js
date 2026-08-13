@@ -98,11 +98,27 @@
   // Constitutional / inheritance qualifiers trail an aberration: they say where it
   // came from, they are not part of the rearrangement itself. Strip and remember
   // them so they do not break the token they follow (e.g. +21c, del(22)(q11.2)mat).
-  var QUAL = { c: "constitutional", mat: "maternal in origin", pat: "paternal in origin", dn: "de novo" };
+  //
+  // ISCN 4.2.1 g gives four more than the plain mat/pat/dn. inh is "inherited, but
+  // which parent is not established or disclosed". The d- forms say that only PART
+  // of a parental rearrangement was inherited: one derivative out of a balanced
+  // translocation, or the recombinant out of a parental inversion. So the child's
+  // chromosome is NOT the parent's chromosome. Every rec example in the standard
+  // carries one of them, so leaving them out refused every rec ISCN prints.
+  var QUAL = {
+    c: "constitutional", mat: "maternal in origin", pat: "paternal in origin", dn: "de novo",
+    inh: "inherited, parent of origin not stated",
+    dmat: "part of a maternal rearrangement", dpat: "part of a paternal rearrangement",
+    dinh: "part of an inherited rearrangement, parent of origin not stated"
+  };
   function stripQualifier(tok) {
     // Only after a closing paren, a digit, or a sex letter, so an op name like
     // "inc" or a band is never mistaken for a qualifier.
-    var m = /([)\dXY])(c|mat|pat|dn)$/.exec(tok);
+    //
+    // Longest first: dmat ends in "mat", so an alternation that offered "mat"
+    // earlier would match it, strip three characters, and leave a stray "d" on
+    // the end of the token for the leftover reporter to complain about.
+    var m = /([)\dXY])(dmat|dpat|dinh|inh|mat|pat|dn|c)$/.exec(tok);
     if (!m) return { tok: tok, qual: null };
     return { tok: tok.slice(0, tok.length - m[2].length), qual: m[2] };
   }
@@ -301,7 +317,6 @@
   // because "KaryoDraw does not draw this" and "this is not ISCN" are different
   // sentences and only one of them is true here.
   var NOT_DRAWN = {
-    rec: { what: "a recombinant chromosome from a parental inversion", sec: "ISCN 5.5.15" },
     ider: { what: "an isoderivative chromosome", sec: "ISCN 5.5.3" },
     tas: { what: "a telomeric association", sec: "ISCN 5.5.17" },
     trc: { what: "a tricentric chromosome", sec: "ISCN 5.5.19" },
@@ -314,6 +329,96 @@
     seq: { what: "a sequencing result", sec: "ISCN Chapter 11" },
     ogm: { what: "an optical genome mapping result", sec: "ISCN Chapter 9" }
   };
+
+  // A chain of op(...) groups run together with no commas between them. Two ISCN
+  // constructs are written that way and mean the same thing by it, "here is what
+  // this chromosome is made of": der(N) (5.5.2) and rec(N) (5.4.3.2 d, "The
+  // aberrations following the abbreviation rec are not separated by a comma").
+  // One reader for both, so a fix to how a sub-op is read reaches both.
+  function readSubOps(ab, rest, warnings, raw) {
+    var sub = [], cursor = 0, unread = "";
+    // The leading "?" of 4.2.1 k can sit on a sub-op too: der(1)?t(1;3)(p22;q13)
+    // is a derivative 1 whose translocation is the uncertain part. Consumed here
+    // rather than left in `unread`, where it was being reported as text the app
+    // could not place.
+    var subRe = /(\??)([a-zA-Z]+)\(([^)]*)\)(?:\(([^)]*)\))?/g, sm;
+    while ((sm = subRe.exec(rest)) !== null) {
+      unread += rest.slice(cursor, sm.index);
+      cursor = sm.index + sm[0].length;
+      if (sm[1]) ab.uncertain = true;
+      var subGroups = splitTop(sm[4] || "", ";");
+      var subBands = subGroups.map(function (p) { return splitBands(p.trim()); });
+      // A sub-op goes through the same splitBands, so it drops a range the same
+      // way: der(19)t(X;19)(q11.1-11.2;p13.3) was the report that found this.
+      collectPartial(ab.partialBands, subGroups, subBands);
+      sub.push({
+        op: sm[2].toLowerCase(),
+        chroms: splitTop(sm[3], ";").map(function (x) { return x.trim(); }),
+        breakpoints: subBands
+      });
+    }
+    unread += rest.slice(cursor);
+    ab.subOps = sub;
+    // Only op(...) groups are sub-ops. Anything else here was dropped, and a
+    // dropped "+14" is worse than a rejection: the drawing looks authoritative
+    // and is missing a chromosome. Say so rather than absorbing it.
+    if (unread.trim()) { ab.unread = unread.trim(); warnings.push(leftoverWarning(raw, ab.unread)); }
+    return sub;
+  }
+
+  // Work out which recombinant chromosome was written, and whether this app has a
+  // shape for it. rec(N) names the chromosome whose CENTROMERE the recombinant
+  // carries (ISCN 5.5.15 d); after it come the stated duplication and the parental
+  // rearrangement the crossover happened in. The deletion is never written down:
+  // 5.4.3.2 c says the duplication is explicit and the deletion is inferred, so it
+  // is derived here (recDelArm) rather than read.
+  //
+  // Only the PERICENTRIC inversion form is drawn, and that is a fact about meiosis
+  // rather than a shortcut. A crossover inside a PARACENTRIC inversion loop does not
+  // make a duplication-and-deletion chromosome at all; it makes an acentric fragment
+  // and a dicentric (Thompson & Thompson, 9th ed, Fig 5.12A), so there is no
+  // chromosome of this shape to draw and inventing one would teach the wrong figure.
+  // Insertion-derived rec (5.5.15 d ii, iii) is real and is a different shape again.
+  function classifyRec(ab, warnings, raw) {
+    var c = ab.chroms[0], subs = ab.subOps || [];
+    var stated = subs.filter(function (s) { return s.op === "dup" || s.op === "del"; })[0];
+    var origin = subs.filter(function (s) { return s.op === "inv" || s.op === "ins"; })[0];
+    function undrawn(msg) { ab.kind = "unknown"; ab.notDrawn = "rec"; warnings.push(msg); }
+
+    if (origin && origin.op === "ins") {
+      return undrawn("“rec” is correct ISCN, a recombinant chromosome (ISCN 5.5.15). KaryoDraw draws the " +
+        "ones a parental inversion produces, like rec(2)dup(2p)inv(2)(p21q31)dmat. The ones a parental " +
+        "insertion produces are not drawn yet, and nothing is wrong with what you typed.");
+    }
+    var ibands = (origin && origin.op === "inv" && origin.chroms[0] === c) ? (origin.breakpoints[0] || []) : [];
+    var pBand = ibands.filter(function (b) { return b.charAt(0) === "p"; })[0];
+    var qBand = ibands.filter(function (b) { return b.charAt(0) === "q"; })[0];
+    if (ibands.length >= 2 && !(pBand && qBand)) {
+      return undrawn("A recombinant chromosome needs a pericentric inversion, one with a breakpoint in " +
+        "each arm, like inv(" + c + ")(p21q31). Both breakpoints in “inv(" + c + ")(" + ibands.join("") +
+        ")” are in the same arm, which makes it paracentric, and a crossover inside a paracentric " +
+        "inversion loop gives an acentric fragment and a dicentric chromosome instead of a duplication " +
+        "and a deletion.");
+    }
+    // dup(2p) names an ARM, not breakpoints: which of the two segments flanking the
+    // inversion the recombinant carries twice. The other one is the deleted one.
+    var arm = null;
+    if (stated && stated.op === "dup") {
+      var am = /^(\d+|X|Y)([pq])$/.exec(String(stated.chroms[0] || ""));
+      if (am && am[1] === c) arm = am[2];
+    }
+    if (!arm || !pBand || !qBand) {
+      return undrawn("“rec” is correct ISCN, a recombinant chromosome (ISCN 5.5.15). It is written as the " +
+        "chromosome whose centromere it carries, then the duplicated arm, then the parental inversion it " +
+        "came from, with no commas between them (ISCN 5.4.3.2 d), like rec(2)dup(2p)inv(2)(p21q31)dmat.");
+    }
+    ab.recDupArm = arm;
+    ab.recDelArm = (arm === "p") ? "q" : "p";
+    ab.recInvBands = [pBand, qBand];
+    // The two segments the reader needs named, and only one of them is written down.
+    ab.recDupBand = (arm === "p") ? pBand : qBand;
+    ab.recDelBand = (arm === "p") ? qBand : pBand;
+  }
 
   function parseAberration(tok, warnings, statedFully) {
     statedFully = statedFully || {};
@@ -472,36 +577,17 @@
       case "der":
         ab.kind = "der";
         // der(N) may be followed by t(...)/del(...) sub-ops describing its make-up.
-        if (rest) {
-          ab.note = "der(" + ab.chroms.join(";") + ")" + rest;
-          var sub = [], cursor = 0, unread = "";
-          // The leading "?" of 4.2.1 k can sit on a sub-op too: der(1)?t(1;3)(p22;q13)
-          // is a derivative 1 whose translocation is the uncertain part. Consumed here
-          // rather than left in `unread`, where it was being reported as text the app
-          // could not place.
-          var subRe = /(\??)([a-zA-Z]+)\(([^)]*)\)(?:\(([^)]*)\))?/g, sm;
-          while ((sm = subRe.exec(rest)) !== null) {
-            unread += rest.slice(cursor, sm.index);
-            cursor = sm.index + sm[0].length;
-            if (sm[1]) ab.uncertain = true;
-            var subGroups = splitTop(sm[4] || "", ";");
-            var subBands = subGroups.map(function (p) { return splitBands(p.trim()); });
-            // A sub-op goes through the same splitBands, so it drops a range the same
-            // way: der(19)t(X;19)(q11.1-11.2;p13.3) was the report that found this.
-            collectPartial(ab.partialBands, subGroups, subBands);
-            sub.push({
-              op: sm[2].toLowerCase(),
-              chroms: splitTop(sm[3], ";").map(function (x) { return x.trim(); }),
-              breakpoints: subBands
-            });
-          }
-          unread += rest.slice(cursor);
-          ab.subOps = sub;
-          // Only op(...) groups are sub-ops. Anything else here was dropped, and a
-          // dropped "+14" is worse than a rejection: the drawing looks authoritative
-          // and is missing a chromosome. Say so rather than absorbing it.
-          if (unread.trim()) { ab.unread = unread.trim(); warnings.push(leftoverWarning(raw, ab.unread)); }
-        }
+        if (rest) { ab.note = "der(" + ab.chroms.join(";") + ")" + rest; readSubOps(ab, rest, warnings, raw); }
+        break;
+      // rec(N) is a recombinant chromosome: what an inversion carrier passes on
+      // when a crossover falls inside the inversion loop. Its make-up is written
+      // as a chain with no commas (ISCN 5.4.3.2 d), exactly like der's, so it is
+      // read by the same function; classifyRec then decides whether this app has
+      // a shape for it.
+      case "rec":
+        ab.kind = "rec";
+        if (rest) readSubOps(ab, rest, warnings, raw);
+        classifyRec(ab, warnings, raw);
         break;
       default:
         ab.kind = "unknown";
@@ -519,13 +605,13 @@
             " (" + NOT_DRAWN[op].sec + "), and KaryoDraw does not draw it yet. " +
             "The rest of the karyotype is fine; nothing is wrong with what you typed.");
         } else {
-          warnings.push("“" + op + "” in “" + raw + "” is not an ISCN abbreviation. The ones KaryoDraw draws: del, dup, inv, t, i, r, der, add, ins, dic, fra, mar.");
+          warnings.push("“" + op + "” in “" + raw + "” is not an ISCN abbreviation. The ones KaryoDraw draws: del, dup, inv, t, i, r, der, rec, add, ins, dic, fra, mar.");
         }
     }
-    // Every op except der() should consume its whole token; leftover text (an "or"
-    // alternative, an uncertainty marker, a trailing qualifier) is not modeled, so
-    // warn instead of dropping it silently. der() is exempt because it parses its own
-    // sub-op chain above and reports its own leftover there.
+    // Every op except der() and rec() should consume its whole token; leftover text
+    // (an "or" alternative, an uncertainty marker, a trailing qualifier) is not
+    // modeled, so warn instead of dropping it silently. Those two are exempt because
+    // they parse their own sub-op chain above and report their own leftover there.
     //
     // Keyed on the op as WRITTEN, not on ab.kind. rob() sets kind "der" (it behaves
     // exactly like der(13;14)(q10;q10)) but never runs der's sub-op parsing, so a
@@ -535,7 +621,7 @@
     // "the number at the start says 46, but this karyotype describes 45 chromosomes"
     // directly above a "did you mean" whose own count is 46. der(13;14)(q10;q10)+14,
     // the same karyotype spelled the other way, always reported it correctly.
-    if (op !== "der" && ab.kind !== "unknown" && rest && rest.trim()) {
+    if (op !== "der" && op !== "rec" && ab.kind !== "unknown" && rest && rest.trim()) {
       ab.unread = rest.trim();
       warnings.push(leftoverWarning(raw, ab.unread));
     }
@@ -770,7 +856,7 @@
           var dc = ab.chroms[0];
           if (comp[dc] !== undefined) { slots[dc].push(mkDer(dc, ab)); comp[dc] += 1; }
         }
-      } else if (["del", "dup", "inv", "add", "ring", "iso", "der", "fra", "trp", "hsr"].indexOf(ab.kind) >= 0) {
+      } else if (["del", "dup", "inv", "add", "ring", "iso", "der", "fra", "trp", "hsr", "rec"].indexOf(ab.kind) >= 0) {
         var c0 = ab.chroms[0];
         if (comp[c0] === undefined) { if (String(c0).indexOf("?") < 0) { warnings.push("“" + c0 + "” is not a human chromosome. They are numbered 1 to 22, plus X and Y."); clone.badChrom = true; } return; }
         if (ab.sign === "+") { for (var pj = 0; pj < mult; pj++) { comp[c0] += 1; slots[c0].push(mkDer(c0, ab)); } return; }
@@ -816,6 +902,7 @@
       if (ab.kind === "add") return "add(" + c + ")";
       if (ab.kind === "der") return "der(" + c + ")";
       if (ab.kind === "hsr") return "hsr(" + c + ")";
+      if (ab.kind === "rec") return "rec(" + c + ")";
       if (ab.kind === "t" || ab.kind === "dic" || ab.kind === "ins") return "der(" + c + ")";
       return c;
     }

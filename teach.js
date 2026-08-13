@@ -97,6 +97,14 @@
   }
   // Short phrases describing a derivative's make-up (kept part + attached part).
   function throughShort(chrom, band) { return band ? " (out to " + chrom + band + ")" : ""; }
+  // The segment from a breakpoint out to the nearer telomere, written the way ISCN
+  // writes it in prose (5.5.15 d i: "6p22.2 to 6pter", "6q25.2 to 6qter"). The
+  // chromosome number is repeated on the telomere end on purpose: a recombinant names
+  // two of these at once and they are both from the same chromosome, so dropping it
+  // leaves the reader matching "pter" to whichever number is nearest.
+  function distalSeg(chrom, band) {
+    return band ? chrom + band + "→" + chrom + (band.charAt(0) === "p" ? "pter" : "qter") : "";
+  }
   function endShort(partner, band) {
     if (!band) return "part of chromosome " + partner;
     return band[0] === "q"
@@ -257,6 +265,27 @@
         " whose origin cannot be identified by banding alone", tag: "mar" };
     }
     if (k === "trp") return { text: "a TRIPLICATION in chromosome " + c + ": the segment " + bandsPhrase(c, bp[0] || []) + " is present three times", tag: "dup" };
+    if (k === "rec") {
+      // The one aberration whose written form states half of what it is. ISCN 5.4.3.2 c:
+      // "In a recombinant chromosome (rec) there is a duplication and deletion of
+      // material. In the ISCN description the duplication (dup) is explicitly stated,
+      // and the deletion is inferred." A reader shown only the dup has been shown the
+      // half that is not driving the phenotype, so both segments get named here and the
+      // sentence says outright which one the notation left out.
+      //
+      // The other thing worth saying is that the parent and the child do not have the
+      // same chromosome. The parent is a balanced inversion carrier; the recombinant is
+      // the unbalanced product, and that distinction is the entire reason ISCN spells
+      // the qualifier dmat rather than mat (4.2.1 g).
+      var recInv = (ab.recInvBands || []).join("");
+      return { text: "a RECOMBINANT chromosome rec(" + c + "): what a carrier of the pericentric inversion inv(" +
+        c + ")(" + recInv + ") passes on when a crossover falls inside the inversion loop at meiosis I. " +
+        "It carries " + distalSeg(c, ab.recDupBand) + " twice and is missing " + distalSeg(c, ab.recDelBand) +
+        ", so it is unbalanced: a duplication of the segment beyond one breakpoint and a deletion of the segment beyond the other. " +
+        "The notation states only the duplication, dup(" + c + ab.recDupArm +
+        "); the deletion is inferred from the inversion rather than written (ISCN 5.4.3.2 c). " +
+        "The carrier parent is balanced and healthy; this chromosome is not the parent’s chromosome", tag: "rec" };
+    }
     return { text: "an aberration (" + (ab.raw || k) + ") that KaryoDraw drew as best it could", tag: "unknown" };
   }
 
@@ -264,11 +293,21 @@
   // records these; spell out what each means so a learner sees it in the decode.
   // The short label ("maternal in origin") is the parser's, reused here so the two
   // never drift; teach.js only adds the plain-language explanation after the colon.
+  //
+  // The d- forms (ISCN 4.2.1 g) are not longer spellings of mat and pat, and reading
+  // them as such loses the fact they exist to carry: only PART of the parent's
+  // rearrangement was passed on, so the parent's balanced chromosome and the child's
+  // unbalanced one are different chromosomes. That is the difference between a healthy
+  // carrier and an affected child, and it is the whole reason rec is written dmat.
   var QUALIFIER_EXPLAIN = {
     dn: "a new change, not inherited from either parent",
     mat: "inherited from the mother",
     pat: "inherited from the father",
     c: "present in every cell from birth, not acquired",
+    inh: "inherited from a parent, without saying which one",
+    dmat: "only this part of a rearrangement the mother carries was passed on, so her chromosome and this one are not the same",
+    dpat: "only this part of a rearrangement the father carries was passed on, so his chromosome and this one are not the same",
+    dinh: "only this part of a rearrangement a parent carries was passed on, without saying which parent",
   };
   var QUAL = (window.ISCN && window.ISCN.QUAL) || {};
   var QUALIFIER_PHRASE = {};
@@ -564,6 +603,9 @@
       case "add": return "additional material on chromosome " + c;
       case "mar": return "a marker chromosome";
       case "trp": return "triplication on chromosome " + c;
+      case "rec": return "recombinant chromosome " + c + (ab.recInvBands
+        ? ", from a pericentric inversion between " + ab.recInvBands.map(function (b) { return pronounceBand(c, b, false); }).join(" and ")
+        : "");
       case "hsr": return "homogeneously staining region on chromosome " + c;
       case "dmin": return "double minutes";
       case "idem": return ab.ref === "sdl" ? "same as the sideline" : "idem, same as the stemline";
@@ -612,6 +654,13 @@
       case "add": return "Extra chromosome material of uncertain origin is attached to chromosome " + c + ".";
       case "mar": return "There is a small extra chromosome whose origin has not been identified (a 'marker' chromosome).";
       case "trp": return "A region of chromosome " + c + " is present three times (a triplication).";
+      // Written for the printable sheet a family reads, so it says what happened
+      // rather than what it is called: the parent's chromosome is rearranged but
+      // complete, and the copy that was passed on is not.
+      case "rec": return "One parent carries a piece of chromosome " + c + " that is flipped around (an inversion). " +
+        "That parent has all of their genetic material, just in a different order, which is why they are healthy. " +
+        "When the flipped chromosome was copied to make an egg or sperm, the copy came out with one end of chromosome " +
+        c + " present twice and the other end missing. This chromosome is that copy (doctors call it a recombinant chromosome).";
       case "hsr": return "Chromosome " + c + " carries a block of amplified DNA (many extra copies of a gene, called a homogeneously staining region).";
       case "dmin": return "There are small extra circles of amplified DNA outside the chromosomes (called double minutes).";
       case "idem": return "This cell line has all the same changes as the main clone, plus the change(s) listed next.";
