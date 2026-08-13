@@ -445,6 +445,12 @@
     }
     if (clone.sex.label) {
       rows.push({ code: clone.sex.label, text: "sex chromosomes: " + sexNote(clone), tag: "sex" });
+    } else if (clone.sex.omitted) {
+      // Absence is the notation here, so it needs a row of its own. Without one the
+      // reader is left to wonder whether the sex was forgotten or the app lost it.
+      rows.push({ code: "(omitted)", tag: "sex",
+        text: "sex chromosomes: no field, because both are named in the rearrangement below. " +
+          "ISCN writes 46,t(X;Y)(q22;q11.23) rather than repeating the X and Y in front of it" });
     }
     clone.aberrations.forEach(function (ab) {
       var d = describeAberration(ab);

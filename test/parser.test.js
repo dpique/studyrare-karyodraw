@@ -1226,3 +1226,50 @@ test('ordinary breakpoint groups are not flagged as losing a band', () => {
     assert.ok(!/tilde/.test(ISCN.parse(k).warnings.join(' ')), k + ' must not warn');
   }
 });
+
+// ISCN omits the sex field entirely when the sex chromosomes are themselves in the
+// rearrangement. ISCN 2024 section 5.5.18.1.1 prints both forms:
+//   iv. 46,t(X;Y)(q22;q11.23)
+//   v.  46,t(X;18)(p11.2;q11.2),t(Y;1)(q11.23;p31)
+// Read as a sex field, parseSex harvested the X and Y out of the operation and threw
+// the rest away one character at a time, so t(X;Y) disappeared from the aberration
+// list and the app drew a normal 46,XY. In example v the FIRST translocation was lost
+// and the second survived, which is worse: the figure looked complete.
+test('an omitted sex field keeps the rearrangement instead of eating it', () => {
+  const r = ISCN.parse('46,t(X;Y)(q22;q11.23)');
+  assert.equal(r.warnings.length, 0, r.warnings.join(' '));
+  assert.equal(r.clones[0].aberrations.length, 1, 'the translocation survives');
+  assert.equal(r.clones[0].aberrations[0].raw, 't(X;Y)(q22;q11.23)');
+  assert.equal(r.clones[0].complement.X, 1, 'one X, named in the translocation');
+  assert.equal(r.clones[0].complement.Y, 1, 'one Y, named in the translocation');
+});
+
+test('both translocations survive when the sex field is omitted', () => {
+  const r = ISCN.parse('46,t(X;18)(p11.2;q11.2),t(Y;1)(q11.23;p31)');
+  assert.equal(r.warnings.length, 0, r.warnings.join(' '));
+  assert.equal(r.clones[0].aberrations.map((a) => a.raw).join(' '),
+    't(X;18)(p11.2;q11.2) t(Y;1)(q11.23;p31)');
+  assert.equal(r.clones[0].complement.X, 1);
+  assert.equal(r.clones[0].complement.Y, 1);
+});
+
+test('the omitted sex field round-trips as written', () => {
+  for (const k of ['46,t(X;Y)(q22;q11.23)', '46,t(X;18)(p11.2;q11.2),t(Y;1)(q11.23;p31)']) {
+    assert.equal(ISCN.parse(k).clones[0].raw, k);
+  }
+});
+
+// A leading operation that names NO sex chromosome is not the ISCN omission, it is a
+// karyotype missing its sex field. That still has to be caught: 46 is as consistent
+// with XX as with XY, so there is nothing to draw from.
+test('a leading operation with no sex chromosome is still a missing sex field', () => {
+  const r = ISCN.parse('46,t(9;22)(q34;q11.2)');
+  assert.ok(r.clones[0].sexMissing, 'flagged as missing, not treated as an omission');
+});
+
+// A mistyped sex field must keep reading as one, not get promoted to an aberration.
+test('a mistyped sex field is still read as a sex field', () => {
+  for (const k of ['46,XQ,+21', '46,QQ,+21', '43,XZY,+8']) {
+    assert.ok(!ISCN.parse(k).clones[0].sexOmitted, k + ' is a bad sex field, not an omission');
+  }
+});
