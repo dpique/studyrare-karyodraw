@@ -659,6 +659,12 @@
     AUTOSOMES.forEach(function (c) { comp[c] = ploidy; });
     // Sex chromosomes from the sex field.
     clone.sex.tokens.forEach(function (t) { if (comp[t] !== undefined) comp[t] += 1; });
+    // When ISCN omitted the field (5.5.18.1.1 iv, v), the sex chromosomes are the ones
+    // named in the rearrangements, one copy each. Without this they stayed at zero and
+    // the translocation had no chromosome to attach to.
+    if (clone.sexOmitted) {
+      (clone.sexFromAbs || []).forEach(function (t) { if (comp[t] !== undefined) comp[t] += 1; });
+    }
 
     var slots = {};
     ALL.forEach(function (c) {
@@ -1175,6 +1181,17 @@
     var firstAb = 2;
     if (fields.length > 1 && /^(idem|sl|sdl)$/i.test(fields[1])) {
       firstAb = 1;
+    } else if (fields.length > 1 && fields[1].indexOf("(") >= 0) {
+      // ISCN drops the sex field entirely when the sex chromosomes are themselves in
+      // the rearrangement: 46,t(X;Y)(q22;q11.23) and
+      // 46,t(X;18)(p11.2;q11.2),t(Y;1)(q11.23;p31) are both printed that way
+      // (5.5.18.1.1 iv and v). A sex field never contains a parenthesis, so the
+      // bracket is the tell. Read as a sex field, parseSex harvested the X and Y out
+      // of the operation and discarded the rest a character at a time, so the whole
+      // translocation vanished and a normal 46,XY was drawn in its place. Whether the
+      // omission is legitimate is settled below, once the aberrations are parsed.
+      firstAb = 1;
+      clone.sexOmitted = true;
     } else if (fields.length > 1) {
       clone.sexGiven = fields[1];   // as written; parseSex normalises case and order
       clone.sex = parseSex(fields[1], warnings);
@@ -1193,6 +1210,28 @@
     // remaining = aberrations (including a leading idem/sl/sdl marker)
     for (var i = firstAb; i < fields.length; i++) {
       clone.aberrations.push(parseAberration(fields[i], warnings, statedFully));
+    }
+
+    // The omission is only legitimate when a sex chromosome really is in one of the
+    // rearrangements. A leading operation naming none of them is not ISCN's shorthand,
+    // it is a karyotype with no sex field at all, and 46 is as consistent with XX as
+    // with XY, so it goes back to the existing missing-sex gate.
+    if (clone.sexOmitted) {
+      var sexSeen = {};
+      clone.aberrations.forEach(function (ab) {
+        (ab.chroms || []).forEach(function (c) { if (c === "X" || c === "Y") sexSeen[c] = 1; });
+        (ab.subOps || []).forEach(function (s) {
+          (s.chroms || []).forEach(function (c) { if (c === "X" || c === "Y") sexSeen[c] = 1; });
+        });
+      });
+      clone.sexFromAbs = Object.keys(sexSeen).sort();
+      if (!clone.sexFromAbs.length) {
+        clone.sexOmitted = false;
+        clone.sexMissing = true;
+      } else {
+        clone.sex = { tokens: [], label: "", dropped: [], omitted: true,
+          note: "not written here, because the sex chromosomes are named in the rearrangement instead" };
+      }
     }
 
     // A clone that references another (idem/sl/sdl) is completed in parse() after

@@ -3,6 +3,29 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-12 (a karyotype that omits the sex field keeps its translocation)
+
+- **`46,t(X;Y)(q22;q11.23)` drew a normal 46,XY.** ISCN drops the sex field entirely
+  when the sex chromosomes are themselves in the rearrangement, and prints both forms
+  in 5.5.18.1.1: `46,t(X;Y)(q22;q11.23)` (iv) and
+  `46,t(X;18)(p11.2;q11.2),t(Y;1)(q11.23;p31)` (v). The parser took the second field
+  as the sex field unconditionally, so `parseSex` harvested the X and the Y out of the
+  operation, discarded `t`, `(`, `;`, `)` and every digit one character at a time, and
+  the translocation never reached the aberration list. Example v was worse than iv:
+  the first translocation was eaten and the second survived, so the figure looked
+  complete while silently missing half the karyotype.
+
+  A sex field never contains a parenthesis, so the bracket is the tell. The field is
+  now treated as omitted, the operations parse as aberrations, and the sex complement
+  comes from the sex chromosomes named in them, one copy each. Whether the omission is
+  legitimate is settled after parsing: a leading operation naming no sex chromosome
+  (`46,t(9;22)(q34;q11.2)`) is not the ISCN shorthand but a karyotype missing its sex
+  field, and goes back to the existing gate. A mistyped field (`46,XQ,+21`) still
+  reads as a sex field.
+
+  The decode gains a row for it, because absence is the notation here and a blank
+  would read as the app having lost something.
+
 ## 2026-08-12 (a derivative stops growing a second centromere, and a dropped band range speaks up)
 
 - **`der(19)t(X;19)(q11.1;p13.3)` drew two centromeres.** Xq11.1 spans 61.0 to 63.8 Mb
