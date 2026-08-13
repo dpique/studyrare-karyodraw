@@ -3,6 +3,32 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-12 (a derivative stops growing a second centromere, and a dropped band range speaks up)
+
+- **`der(19)t(X;19)(q11.1;p13.3)` drew two centromeres.** Xq11.1 spans 61.0 to 63.8 Mb
+  and a break "at Xq11.1" resolves to the band midpoint, so the graft really does
+  carry 1.4 Mb of acen-stained X material. The band painter hatched it as a
+  centromere and the tooltip called it one, making a monocentric derivative read as
+  dicentric. The waist was already gated on the segment's `hasCen`; the band paint
+  was not, so the two disagreed. Acen material on an acentric segment now renders as
+  heterochromatin under a new `acen_carried` stain, described as "Pericentromeric
+  heterochromatin" with a note that a chromosome which truly keeps two centromeres
+  is a dicentric and is written `dic()`. This is the same false claim the
+  `clippedStain` fix caught for merged bands at ~400 bands, arriving by a different
+  route and surviving at full resolution, which is why the existing level-invariance
+  test did not see it. A new corpus-wide test now asserts the general rule: no drawn
+  instance may show more centromeres than its model carries.
+
+- **A breakpoint range that loses a band now says so.** `splitBands` wants an arm
+  letter before the digits, so `(q11.1-11.2;p13.3)` kept `q11.1` and dropped the rest
+  with nothing said, and the figure showed a single precise cut nobody asked for. The
+  `badBands` check only caught a group that yielded no band at all. Both the
+  aberration's own breakpoints and any `der()` sub-op are now checked, since both call
+  `splitBands` and the report that found this was a sub-op. The message names the ISCN
+  form. Tilde ranges are correct notation and stay silent: 4.2.1 allows the repeated
+  arm letter, and ISCN 2024 prints the shorthand in a breakpoint itself,
+  `der(18)t(18;19)(q21;p11~12)`. Warning on those would be warning on correct input.
+
 ## 2026-08-12 (the decode says which X goes silent, and stops calling a carrier monosomy X)
 
 - **A rearrangement involving the X now says which X is expected to be inactive.**

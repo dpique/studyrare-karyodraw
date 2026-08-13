@@ -49,6 +49,29 @@
     return out;
   }
 
+  // What is left of a breakpoint group once its bands are taken out. splitBands wants
+  // an arm letter before the digits, so "q11.1~11.2" and "q11.1-11.2" keep q11.1 and
+  // leave "11.2" behind. Separators are not leftovers; anything alphanumeric is.
+  function bandResidue(text, bands) {
+    var rest = text;
+    bands.forEach(function (b) { rest = rest.replace(b, ""); });
+    rest = rest.replace(/[~\-\s;:]/g, "");
+    return /[0-9a-z]/i.test(rest) ? rest : "";
+  }
+  // Groups that yielded SOME band but still had text left over. Collected from the
+  // aberration's own breakpoints and from any der() sub-op, since both call splitBands.
+  // A tilde range is correct ISCN and is NOT flagged: 4.2.1 permits both the repeated
+  // arm letter (17p13.3~p13.1) and the shorthand, and ISCN 2024 prints the shorthand in
+  // a breakpoint itself, der(18)t(18;19)(q21;p11~12). Only a separator ISCN does not use
+  // gets a message, because warning on correct notation is how the box loses authority.
+  function collectPartial(into, groupTexts, bandGroups) {
+    groupTexts.forEach(function (p, i) {
+      var text = String(p || "").trim(), bands = bandGroups[i] || [];
+      if (!text || text.indexOf("?") >= 0 || text.indexOf("~") >= 0 || !bands.length) return;
+      if (bandResidue(text, bands)) into.push({ text: text, kept: bands[0] });
+    });
+  }
+
   // Split on a delimiter but only at parenthesis depth 0.
   function splitTop(s, delim) {
     var out = [], depth = 0, cur = "";
@@ -406,6 +429,14 @@
       .filter(function (p) { return p.indexOf("?") >= 0; });
     ab.badBands = bpParts.map(function (p) { return p.trim(); })
       .filter(function (p, i) { return p && p.indexOf("?") < 0 && !ab.breakpoints[i].length; });
+    // A group that yields SOME bands can still leave text behind. splitBands wants an
+    // arm letter before the digits, so "q11.1~11.2" and "q11.1-11.2" keep q11.1 and drop
+    // the rest; badBands only catches a group that yields NOTHING, so this went through
+    // silently and the figure drew a single precise cut the writer had not asked for.
+    // ISCN 4.2.1 writes a range with a tilde and repeats the arm letter (1p34~p35), and
+    // that spelling already parses to both bands, so the fix is to name it.
+    ab.partialBands = [];
+    collectPartial(ab.partialBands, bpParts, ab.breakpoints);
 
     switch (op) {
       case "del": ab.kind = "del"; break;
@@ -453,10 +484,15 @@
             unread += rest.slice(cursor, sm.index);
             cursor = sm.index + sm[0].length;
             if (sm[1]) ab.uncertain = true;
+            var subGroups = splitTop(sm[4] || "", ";");
+            var subBands = subGroups.map(function (p) { return splitBands(p.trim()); });
+            // A sub-op goes through the same splitBands, so it drops a range the same
+            // way: der(19)t(X;19)(q11.1-11.2;p13.3) was the report that found this.
+            collectPartial(ab.partialBands, subGroups, subBands);
             sub.push({
               op: sm[2].toLowerCase(),
               chroms: splitTop(sm[3], ";").map(function (x) { return x.trim(); }),
-              breakpoints: splitTop(sm[4] || "", ";").map(function (p) { return splitBands(p.trim()); })
+              breakpoints: subBands
             });
           }
           unread += rest.slice(cursor);
@@ -514,6 +550,10 @@
         "determined, which is what ISCN uses it for. KaryoDraw cuts a chromosome where it is told to, so " +
         "there is nothing here for it to draw. The notation is correct.");
     }
+    (ab.partialBands || []).forEach(function (p) {
+      warnings.push("A range of breakpoints is written with a tilde, like q11.1~q11.2 or p11~12. " +
+        "Written “" + p.text + "”, the drawing takes one breakpoint, at " + p.kept + ".");
+    });
     ab.badBands.forEach(function (b) {
       warnings.push("“" + b + "” in “" + raw + "” is not a breakpoint. A breakpoint is an arm letter " +
         "then a band number, like " + (ab.chroms[0] || "5") + "p15.2 or " + (ab.chroms[0] || "5") + "q31.");
