@@ -367,13 +367,21 @@
   .band-hi { filter: drop-shadow(0 0 1px rgba(236,155,39,.6)); }
 
   /* teaching sidebar */
-  .decode-row { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); align-items: start; }
+  /* Flex-wrap, not a two-column grid. The code is an ISCN token and cannot be broken,
+     so with `auto 1fr` a long one (der(X)t(X;5)(q22.1;q31)dn) took the width it wanted
+     and left the sentence a ribbon a couple of words wide, running far down the panel
+     past a tall block of empty space beside the chip. Giving the text a flex-basis
+     means it stays on the chip's line while it fits and drops to its own full-width
+     line when it does not, so the row is either tidy or full width, never a ribbon. */
+  .decode-row { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); align-items: start; }
   .decode-row:last-child { border-bottom: none; }
-  .decode-code { font: 700 13px var(--font-mono); color: var(--ink); background: #f0f2f7; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+  .decode-code { flex: 0 0 auto; max-width: 100%; overflow-x: auto; font: 700 13px var(--font-mono); color: var(--ink); background: #f0f2f7; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
   .decode-code.count { color: #3e4bb0; } .decode-code.sex { color: #37428a; }
   .decode-code.gain { color: #894f18; } .decode-code.loss,.decode-code.del { color: #a2302c; }
   .decode-code.t { color: #4a6b3a; } .decode-code.inv { color: #3e4bb0; }
-  .decode-text { font-size: 13.5px; color: #334155; }
+  /* 15rem is the narrowest the sentence is allowed to get before it takes its own
+     line. Below that it reads as a column of fragments rather than prose. */
+  .decode-text { flex: 1 1 15rem; min-width: 0; font-size: 13.5px; color: #334155; }
   .decode-arrow { color: #94a3b8; }
 
   .detail-wrap { display: flex; gap: 14px; }
