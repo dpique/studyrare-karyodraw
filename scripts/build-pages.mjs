@@ -161,6 +161,14 @@ const LANDING_CSS = `
   .lp-clonehead code { font: 600 14px var(--font-mono); color: var(--ink); }
   .lp-clonehead span { font-size: 12.5px; color: var(--muted); }
   .lp-decode { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
+  /* One grid for every row, so the code column is as wide as the LONGEST token on the
+     page and every other row pays for it. On a phone that leaves the explanation a few
+     words wide. Stack instead: the token on its own line, the sentence at full width. */
+  @media (max-width: 620px) {
+    .lp-decode { grid-template-columns: 1fr; gap: 2px 0; }
+    .lp-decode dt { margin-top: 10px; justify-self: start; }
+    .lp-decode dt:first-child { margin-top: 0; }
+  }
   .lp-decode + .lp-clonehead { margin-top: 16px; }
   .lp-decode dt { margin: 0; } .lp-decode dd { margin: 0; color: var(--ink-2); }
   .lp-decode code { font: 700 13px var(--font-mono); color: var(--ink); background: #f0f2f7; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }

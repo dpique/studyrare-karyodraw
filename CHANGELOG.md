@@ -3,6 +3,24 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-12 (the decode row stops squeezing its own explanation into a ribbon)
+
+- **A long ISCN token starved the sentence beside it.** `.decode-row` was a
+  `grid-template-columns: auto 1fr` with a `white-space: nowrap` code chip, so
+  `der(X)t(X;5)(q22.1;q31)dn` took whatever width it wanted and left the explanation
+  a few words wide, running far down the panel past a tall block of empty space
+  beside the chip. The longer X-inactivation sentences made it obvious rather than
+  causing it. The row is a wrapping flex now, with a `15rem` flex-basis on the text:
+  it stays on the chip's line while it fits and drops to its own full-width line when
+  it does not, so a row is either tidy or full width and never a ribbon. At the same
+  panel width the decode went from 888px tall to 411px.
+
+- **The landing pages had the same shape, and it bit on phones.** `.lp-decode` is one
+  grid for every row, so the code column is as wide as the longest token anywhere on
+  the page and every other row pays for it. Under 620px the list now stacks, token
+  above sentence. The generated page went from 733px to 498px at 390px wide, with no
+  horizontal overflow.
+
 ## 2026-08-12 (a karyotype that omits the sex field keeps its translocation)
 
 - **`46,t(X;Y)(q22;q11.23)` drew a normal 46,XY.** ISCN drops the sex field entirely
