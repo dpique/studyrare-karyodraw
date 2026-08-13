@@ -119,6 +119,11 @@ karyotype still draws, with the mismatch flagged.
   and sitemap from it (`npm run build`, run in CI before every deploy). The
   generated pages are not committed; only their PNG karyograms are, because
   rendering those needs a browser.
+- `paper/` — the JOSS submission (`paper.md`, `paper.bib`) and its figures. The
+  figures are generated, not hand-captured: `npm run paper-figures` re-renders all
+  three by driving the real page in a browser, so the paper cannot go on showing an
+  interface the app no longer has. `test/paper.test.js` pins the counts the paper
+  quotes to the arrays they describe.
 - `start.sh` — local server launcher.
 - `_build_inputs/` — band-data source + build script (see `_build_inputs/SOURCES.md`).
 - `docs/` — backend/SEO notes (`SEO_AND_FEEDBACK.md`), the CyDAS lineage
