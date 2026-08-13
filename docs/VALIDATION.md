@@ -272,7 +272,7 @@ Three things can be true of an input, and the app has to say which:
 | | example | what it says |
 | --- | --- | --- |
 | not ISCN | `zzz(9)(q34)` | not an ISCN abbreviation, with the ones that are |
-| correct ISCN, no drawing for it | `rec(2)dup(2p)inv(2)(p21q31)` | correct ISCN, what it is, the section, and that KaryoDraw does not draw it yet |
+| correct ISCN, no drawing for it | `ider(22)(q10)t(9;22)(q34;q11.2)` | correct ISCN, what it is, the section, and that KaryoDraw does not draw it yet |
 | correct ISCN, drawn | `t(9;22)(q34;q11.2)` | nothing |
 
 The middle row was being reported as the top one. `rec`, `ider`, `tas`, `trc`, `fis` and
@@ -280,6 +280,11 @@ The middle row was being reported as the top one. `rec`, `ider`, `tas`, `trc`, `
 which asserts something false about the standard in the one place a student came to check
 themselves against it. `NOT_DRAWN` in `iscn-parser.js` carries the term, what it is, and
 its section, so the message can point at the book.
+
+A term can move out of the middle row: `rec` did, and only halfway (see **Recombinant
+chromosomes** below). When that happens the message has to get *more* specific rather than
+disappear, because "KaryoDraw does not draw rec" stops being true while "KaryoDraw does not
+draw this rec" still is. The same applies to any future partial support.
 
 Three more of the same kind, each a case where the app's own model was wrong and the
 message blamed the reader:
@@ -428,6 +433,47 @@ Each reads sensibly with the breakpoints left off, real reports write them that 
 refusing valid ISCN is the worse failure. Adding one of them needs a better reason than
 symmetry, and `test/parser.test.js` pins each of them as drawable so the table cannot grow
 by accident.
+
+## Recombinant chromosomes
+
+`rec` is the only operation whose written form states half of what it is. ISCN 5.4.3.2 c:
+"In a recombinant chromosome (rec) there is a duplication and deletion of material. In the
+ISCN description the duplication (dup) is explicitly stated, and the deletion is inferred."
+So a decode that echoes the notation faithfully tells the reader the half that is *not*
+driving the phenotype. `classifyRec` derives the deleted segment and the decode names both,
+with the sentence saying outright which one the string left out.
+
+The shape comes from ISCN's own detailed form rather than from reasoning about meiosis:
+
+| written | detailed form (5.5.15 d i) | drawn as |
+| --- | --- | --- |
+| `rec(6)dup(6p)inv(6)(p22.2q25.2)` | `rec(6)(pter→q25.2::p22.2→pter)` | `6pter→6q25.2`, then `6p22.2→6pter` reversed |
+
+`dup(Nq)` is the reflection: the q-distal segment leads as the extra copy, and the backbone
+runs from the p breakpoint out to qter. Which arm is duplicated is the *only* difference
+between the two strings, so it is the only thing the two geometries may differ in;
+`test/rec.test.js` pins both against ISCN's stated meaning, and the two stress cards exist
+so a sheet reader can see they are different chromosomes.
+
+**Only the pericentric form is drawn, and that is biology rather than a shortcut.** A
+crossover inside a *paracentric* inversion loop gives an acentric fragment and a dicentric
+(Thompson & Thompson, 9th ed, Fig 5.12A), not a duplication-and-deletion chromosome, so
+there is nothing of this shape to draw. Guessing one would be the expensive mistake here:
+the invented figure would look exactly like the pericentric one that is real. The refusal
+teaches the meiosis instead. Insertion-derived `rec` (5.5.15 d ii, iii) is a different
+geometry again and is still undrawn, with a message that says which half is missing.
+
+A recombinant is **monocentric**. `buildRecombinant` asserts `hasCen` on exactly one piece
+rather than inferring it from coordinates, for the reason in the derivative-centromere
+tests: a breakpoint inside a centromere band resolves to that band's midpoint and carries
+real `acen` material onto the far side of the join.
+
+**`dmat` / `dpat` / `dinh` are not longer spellings of `mat` / `pat`.** ISCN 4.2.1 g: they
+say only *part* of a parental rearrangement was inherited, so the parent's balanced
+chromosome and the child's unbalanced one are different chromosomes. That distinction is
+the difference between a healthy carrier and an affected child, and it is why every `rec`
+ISCN prints carries one. Leaving them out of `QUAL` refused every `rec` in the standard.
+Note the alternation in `stripQualifier` is longest-first: `dmat` ends in `mat`.
 
 ## Warns, and still draws
 

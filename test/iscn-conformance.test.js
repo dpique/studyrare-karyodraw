@@ -189,7 +189,12 @@ test('notation the app cannot draw is not called a mistake', () => {
   // and qdp are all in ISCN's symbol list (Chapter 3), and the app said each was "not
   // an ISCN abbreviation" — asserting something false about the standard, in the one
   // place a student came to check themselves against it.
-  [['46,XX,rec(2)dup(2p)inv(2)(p21q31)', /recombinant chromosome/],
+  //
+  // The rec here is the INSERTION-derived one (5.5.15 d ii). The inversion-derived
+  // form draws now, so it is no longer an example of this; what has to stay true is
+  // that the half still undrawn is described as a gap in the app rather than a fault
+  // in the notation.
+  [['46,XX,rec(21)del(21)ins(21)(p13q22.2q22.3)', /recombinant chromosome/],
     ['46,XX,ider(22)(q10)t(9;22)(q34;q11.2)', /isoderivative/],
     ['46,XX,tas(12;13)(q24.3;q34)', /telomeric association/],
     ['44,XX,trc(4;12;9)(q31.2;q22p13;q34)', /tricentric/],

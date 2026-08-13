@@ -377,7 +377,9 @@
   .decode-row:last-child { border-bottom: none; }
   .decode-code { flex: 0 0 auto; max-width: 100%; overflow-x: auto; font: 700 13px var(--font-mono); color: var(--ink); background: #f0f2f7; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
   .decode-code.count { color: #3e4bb0; } .decode-code.sex { color: #37428a; }
-  .decode-code.gain { color: #894f18; } .decode-code.loss,.decode-code.del { color: #a2302c; }
+  /* rec sits with the losses: it carries a duplication and a deletion, and the
+     deletion is both the part driving the phenotype and the part ISCN never writes. */
+  .decode-code.gain { color: #894f18; } .decode-code.loss,.decode-code.del,.decode-code.rec { color: #a2302c; }
   .decode-code.t { color: #4a6b3a; } .decode-code.inv { color: #3e4bb0; }
   /* 15rem is the narrowest the sentence is allowed to get before it takes its own
      line. Below that it reads as a column of fragments rather than prose. */
@@ -850,6 +852,11 @@
     ["46,XY,t(9;22)(q34;q11.2)", "Philadelphia / CML"],
     ["46,XY,del(5)(p15.2)", "cri-du-chat"],
     ["46,XY,inv(9)(p11q13)", "inv 9 variant"],
+    // The counselling half of an inversion. inv(9) above is the benign polymorphism;
+    // this is what a pericentric carrier can actually pass on, and the two read
+    // together. Its own drawing carries the point: visibly shorter than a normal 2,
+    // with the duplicated 2p tip on the far side of the break.
+    ["46,XX,rec(2)dup(2p)inv(2)(p21q31)dmat", "inversion carrier's recombinant"],
     ["46,X,i(X)(q10)", "iso-Xq"],
     ["mos 45,X[12]/46,XX[18]", "Turner mosaic"]
   ];

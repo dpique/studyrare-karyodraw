@@ -3,6 +3,46 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-13 (the recombinant chromosome an inversion carrier passes on, and the half ISCN does not write)
+
+- **`rec` draws.** A pericentric inversion carrier is healthy and gets counselled
+  precisely because of what a crossover inside the inversion loop can produce, and that
+  chromosome is written `rec`. It was refused, politely, as notation with no drawing.
+  The shape is taken from ISCN's own detailed form rather than reasoned out: 5.5.15 d i
+  gives `46,XX,rec(6)dup(6p)inv(6)(p22.2q25.2)dmat` as
+  `rec(6)(pter→q25.2::p22.2→pter)dmat`, which is one piece running 6pter through the
+  centromere to 6q25.2 and a second running 6p22.2 back out to 6pter. So the p-distal
+  segment is present twice with the extra copy end-for-end, and everything past the q
+  breakpoint is gone. `dup(Nq)` is the reflection. Both are drawn from one function,
+  because the duplicated arm is the only thing the two strings differ in.
+
+- **The decode names the deletion, which the notation never states.** ISCN 5.4.3.2 c:
+  "the duplication (dup) is explicitly stated, and the deletion is inferred". A decode
+  that echoed the string faithfully would therefore hand a reader the half that is not
+  driving the phenotype. Both segments are named, and the sentence says which one was
+  left out and why, alongside the fact that the balanced parent and the unbalanced child
+  do not have the same chromosome.
+
+- **A `rec` off a paracentric inversion is refused, and the refusal is the teaching.** A
+  crossover inside a paracentric loop gives an acentric fragment and a dicentric
+  (Thompson & Thompson, 9th ed, Fig 5.12A), not a duplication and a deletion. Drawing a
+  guessed shape would have been the expensive mistake here, because the invented figure
+  would look exactly like the pericentric one that is real. Insertion-derived `rec`
+  (5.5.15 d ii, iii) is a different geometry and stays undrawn, with a message that says
+  which half of `rec` is missing rather than implying the notation is at fault.
+
+- **`inh`, `dmat`, `dpat` and `dinh` parse (ISCN 4.2.1 g).** These are not longer
+  spellings of `mat` and `pat`: they record that only *part* of a parental rearrangement
+  was inherited, so the parent's balanced chromosome and the child's are different
+  chromosomes. Every `rec` printed in ISCN carries one, so their absence had been
+  refusing every `rec` in the standard, and it also cost two `der(…)ins(…)dmat` examples.
+  Five more of ISCN 2024's printed examples now draw, taking the corpus from 331 of 394
+  to 336.
+
+- **One reader for `der` and `rec` sub-ops.** Both write their make-up as a chain of
+  `op(...)` groups with no commas between them (5.4.3.2 d says so for `rec` outright), so
+  the sub-op parsing `der` already had is now shared rather than copied.
+
 ## 2026-08-12 (the decode row stops squeezing its own explanation into a ribbon)
 
 - **A long ISCN token starved the sentence beside it.** `.decode-row` was a

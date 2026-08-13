@@ -560,6 +560,11 @@
       if (isb) return { segments: isb.segments, overlays: isb.overlays || [], caption: inst.label, composite: true };
       return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label, note: "complex" };
     }
+    if (kind === "rec") {
+      var rcb = buildRecombinant(inst);
+      if (rcb) return { segments: rcb.segments, overlays: rcb.overlays, caption: inst.label };
+      return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label, note: "complex" };
+    }
     var twoChrom = ab && ab.chroms && ab.chroms.length >= 2;
     // A whole-arm fusion (breaks at the centromere, q10/p10/cen) joins two arms —
     // a Robertsonian rob(13;14)(q10;q10), der(13;14)(q10;q10), or dic(…)(q10;q10).
@@ -589,6 +594,47 @@
       return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label, note: "complex" };
     }
     return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label };
+  }
+
+  // A recombinant chromosome: what a PERICENTRIC inversion carrier passes on when a
+  // crossover falls inside the inversion loop. ISCN 5.5.15 d i gives the shape in its
+  // own detailed form, and this function is that string turned into segments:
+  //
+  //   46,XX,rec(6)dup(6p)inv(6)(p22.2q25.2) = rec(6)(pter→q25.2::p22.2→pter)
+  //
+  // One piece runs 6pter through the centromere to the q breakpoint; a second runs
+  // the p breakpoint back out to 6pter, so the p-distal segment is present twice with
+  // the extra copy end-for-end, and everything distal to the q breakpoint is gone.
+  // Thompson & Thompson 9th ed, Fig 5.12B draws the same chromosome as A-B-C-A.
+  //
+  // dup(Nq) is the mirror image: the recombinant keeps the q-distal segment twice and
+  // loses the p-distal one. Which arm is duplicated is the ONLY thing that differs, so
+  // the two cases are written as one reflection rather than two geometries that could
+  // drift apart.
+  //
+  // The centromere lives on exactly one piece either way, which is what makes a
+  // recombinant monocentric. It is asserted rather than inferred from coordinates:
+  // a break inside the centromere band resolves to that band's midpoint, and #181 was
+  // a phantom second centromere that came from letting a grafted piece keep acen paint
+  // its own hasCen flag denied.
+  function buildRecombinant(inst) {
+    var ab = inst.aberration, chrom = String(inst.chrom), d = IDEO.data[chrom];
+    if (!ab || !ab.recDupArm || !d) return null;
+    var pB = resolveBand(chrom, ab.recInvBands[0]), qB = resolveBand(chrom, ab.recInvBands[1]);
+    if (!pB || !qB) return null;
+    var seg = function (from, to, rev, cen) { return { chrom: chrom, from: from, to: to, hasCen: !!cen, reversed: !!rev }; };
+    var segs, ov;
+    if (ab.recDupArm === "p") {
+      // pter→qBreak, then the p-distal segment again, flipped.
+      segs = [seg(0, qB.mid, false, true), seg(0, pB.mid, true, false)];
+      ov = [{ type: "dup", chrom: chrom, segIndex: 1 }, { type: "cut", chrom: chrom, at: qB.mid }];
+    } else {
+      // The extra copy of the q-distal segment leads, flipped so qter is outermost;
+      // then pBreak→qter, which is the backbone with the p-distal segment gone.
+      segs = [seg(qB.mid, d.length, true, false), seg(pB.mid, d.length, false, true)];
+      ov = [{ type: "dup", chrom: chrom, segIndex: 0 }, { type: "cut", chrom: chrom, at: pB.mid }];
+    }
+    return { segments: segs.filter(function (s) { return s.to > s.from; }), overlays: ov };
   }
 
   // An insertion moves a segment to a new site: the recipient grows, the donor
