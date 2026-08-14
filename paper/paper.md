@@ -131,7 +131,7 @@ carrier parent, the panel reconstructs the parental balanced rearrangement and
 names the segregation mode that produced the imbalance. This is a teaching
 visualizer of segregation, not a recurrence-risk calculator.
 
-![The segregation panel for a balanced `46,XY,t(11;22)(q23;q11.2)` carrier, the commonest recurrent constitutional reciprocal translocation in humans. The pachytene pairing figure at top left is drawn to scale from hg38 band positions, so a different translocation gives a visibly different cross. Below it, alternate and adjacent-1 segregation are shown with their division planes, their gametes, and the conceptus karyotype each produces in ISCN, with the resulting imbalance stated in plain language. The figure is cropped after the first row; the panel continues with adjacent-2, 3:1 (whose interchange trisomy is Emanuel syndrome), and 4:0.\label{fig:segregation}](fig3-segregation.png)
+![The segregation panel for a balanced `46,XY,t(11;22)(q23;q11.2)` carrier. The pachytene pairing figure is drawn to scale from hg38 band positions, so a different translocation gives a visibly different cross. Alternate and adjacent-1 are shown with their division planes, their gametes, and the conceptus karyotype each produces in ISCN. Cropped after the first row; adjacent-2, 3:1 and 4:0 follow.\label{fig:segregation}](fig3-segregation.png){width=62%}
 
 **Explanation.** A teaching layer decodes each token of the designation into
 plain English, explains band-name structure and the biology of each Giemsa stain
@@ -198,9 +198,5 @@ the remainder are marked with the feature they need, so notation the tool does n
 model reads as a recorded coverage gap rather than as bad input. A separate stress
 corpus of 173 designations, built from what students actually type, is rendered
 through the real page and checked against the expected draw-or-refuse outcome.
-
-# Acknowledgements
-
-<!-- optional -->
 
 # References
