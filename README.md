@@ -79,13 +79,18 @@ and region-specific-assay chapters of ISCN are out of scope by design.
   `del`/`dup`/`inv` sub-operations in the chain), `add`, `dic` (fused two-body
   dicentric) and `idic` (mirror-image isodicentric), `ins` (inter- and
   intrachromosomal, recipient grown and donor shortened), `rob` (Robertsonian,
-  same as the whole-arm `der`), `fra`, `mar`, `trp`.
+  same as the whole-arm `der`), `rec` (the recombinant chromosome a pericentric
+  inversion carrier transmits, drawn with the duplication ISCN states and the
+  deletion it leaves implicit), `fra`, `mar`, `trp`.
 - **Amplification:** `hsr` (homogeneously staining region, drawn as an amplified
   block on the chromosome) and `dmin` (double minutes, drawn as small
   extrachromosomal fragments and — being acentric — not counted).
 - **Copy number & qualifiers:** the `×N` multiplier (`+8×2` = two extra copies),
-  and the constitutional / inheritance suffixes `c`, `mat`, `pat`, `dn` (recognized
-  and remembered, they do not break the aberration they trail).
+  and the constitutional / inheritance suffixes `c`, `mat`, `pat`, `dn`, `inh`, and
+  the `dmat` / `dpat` / `dinh` forms that mark a *partially* inherited rearrangement
+  (ISCN 4.2.1 g), where the parent's balanced chromosome and the child's are not the
+  same chromosome. Recognized and remembered; they do not break the aberration they
+  trail.
 - **Cancer shorthand:** range modal numbers (`47~49`, satisfied by any count in
   range) and clonal-evolution references `idem` / `sl` (same as the stemline) and
   `sdl` (same as the sideline), expanded to the referenced clone's aberrations.
