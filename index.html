@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
-<title>Karyotype Diagram Maker: Draw Any ISCN Karyotype Online | KaryoDraw</title>
+<title>Draw Any ISCN Karyotype Online: Free Karyogram Tool</title>
 <link rel="canonical" href="https://karyodraw.com/" />
 <meta name="description" content="Free browser tool that draws any ISCN karyotype as a correctly banded karyogram and explains every symbol in plain language. Built for genetics, cytogenetics, and board exam prep." />
 <meta name="keywords" content="ISCN karyotype, karyotype visualizer, karyotype interpreter, cytogenetics, chromosome nomenclature, karyogram, genetic counseling, medical genetics board prep" />
@@ -42,6 +42,21 @@
   "creator": { "@type": "Organization", "name": "StudyRare", "url": "https://studyrare.com/" },
   "author": { "@type": "Person", "name": "Daniel Pique", "url": "https://orcid.org/0000-0003-0074-3974" },
   "keywords": "ISCN, karyotype, cytogenetics, karyogram, chromosome nomenclature, genetic counseling, medical genetics education"
+}
+</script>
+<!-- WebSite, homepage only. This is the node Google reads to decide the site name it
+     prints above the result, and without it the SERP falls back to the bare domain
+     ("karyodraw.com"). The sub-pages already reference the same WebSite via isPartOf
+     (scripts/build-pages.mjs); this declares it. Keep name, og:site_name, and the
+     "| KaryoDraw" title suffix on sub-pages spelling the brand identically: Google
+     treats a disagreement between them as a reason to ignore all three. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "KaryoDraw",
+  "alternateName": "KaryoDraw ISCN karyotype visualizer",
+  "url": "https://karyodraw.com/"
 }
 </script>
 <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -582,8 +597,17 @@
 <header class="top">
   <div class="wrap">
     <div class="hero">
-      <h1 class="hero-title">Karyotype diagram maker</h1>
-      <p class="hero-sub">Type any ISCN karyotype and see it drawn as a correctly banded karyogram, with every symbol explained in plain language.</p>
+      <!-- "Draw a karyotype", not "Karyotype diagram maker" (the phrase this h1 carried
+           from #86 until the first Search Console export, 2026-08-18). Across 144
+           reported queries, "maker", "generator", and "diagram maker" drew zero
+           impressions; the only tool-intent queries the site surfaces for at all are
+           "karyotype drawing" (position 15) and "how to draw a karyotype" (position 22).
+           The verb is what people type, so the heading uses the verb. -->
+      <h1 class="hero-title">Draw a karyotype</h1>
+      <!-- ISCN is deliberately absent here and present on the field label below, where
+           someone about to type needs it. Twice in one screen stops a reader who has
+           never met the acronym at the third word of the page. -->
+      <p class="hero-sub">Type any karyotype and see it drawn as a banded karyogram, with every symbol explained in plain language.</p>
     </div>
     <label class="controls-label" for="kinput">Karyotype (ISCN notation)</label>
     <div class="controls">
