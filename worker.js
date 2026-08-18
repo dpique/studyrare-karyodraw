@@ -32,6 +32,20 @@ const TOP_LIMIT = 15;
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    // One origin, always. www.karyodraw.com and http://karyodraw.com each served a 200
+    // until 2026-08-18, so Google indexed four spellings of every page and ranked them
+    // apart: www.../karyotype/isochromosome-xq/ sat at position 17 while the apex twin
+    // did not appear at all. The canonical tags always pointed at the apex, which is
+    // why this was survivable rather than fatal, but a canonical is a hint and a 301 is
+    // not. Scoped to the production hostname so localhost and *.workers.dev keep
+    // serving directly. Query and hash ride along; the redirect is permanent so the
+    // link equity consolidates.
+    if (url.hostname === "www.karyodraw.com" ||
+        (url.protocol === "http:" && url.hostname === "karyodraw.com")) {
+      url.protocol = "https:";
+      url.hostname = "karyodraw.com";
+      return Response.redirect(url.toString(), 301);
+    }
     if (url.pathname === "/api/collect") {
       if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
       // Per-IP rate limit. On limit, silently drop (204, same as success) so a
