@@ -15,6 +15,17 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   a hint and a 301 is not. The Worker now redirects both to `https://karyodraw.com`,
   scoped to the production hostname so local dev is untouched.
 
+- **And the redirect above did nothing until the routing was fixed.** It shipped with
+  `assets.run_worker_first` unset, which is the default, and under that default Cloudflare
+  answers any request matching a static asset from the asset layer without invoking
+  `worker.js` at all. Every URL in `sitemap.xml` is a static asset. So the 301 ran on
+  `/api/*` and on 404s, which is precisely the set of URLs nobody searches for, while
+  `https://www.karyodraw.com/karyotype/isochromosome-xq/` went on returning 200. The three
+  tests written to cover it called `worker.fetch` directly and passed the whole time. HTML
+  now routes through the Worker and binaries stay on the free asset path, and two new
+  tests walk every URL in the sitemap against the routing patterns, so what gets asserted
+  is that the handler is reachable and not only that it is correct.
+
 - **The homepage heading is the verb people type.** `<h1>` was "Karyotype diagram maker",
   chosen without data when the brand wordmark was demoted out of the heading. Across the
   144 queries Search Console reports for the site, "maker", "generator", and "diagram

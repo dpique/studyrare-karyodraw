@@ -226,3 +226,52 @@ test('the redirect is scoped to production, so local dev is served directly', as
   await assert.rejects(() => workerFetch('http://localhost:8787/'),
     'localhost should fall through to the asset handler, not bounce to karyodraw.com');
 });
+
+// The routing gate the three tests above do not cross. They call worker.fetch directly,
+// so they passed while the 301 was unreachable in production for every page Google has
+// indexed: with `assets` configured and `run_worker_first` unset, Cloudflare serves any
+// path that matches a static asset from the asset layer and never invokes the Worker.
+// The redirect fired on /api/* and on 404s, which is exactly the set of URLs no one
+// searches for. So the invariant worth locking is not "the handler redirects" but "every
+// URL we ask Google to index actually reaches the handler".
+//
+// Cloudflare's rule (workers/static-assets/routing): the Worker runs first when some
+// non-negative pattern matches and no negative pattern matches. Negatives win, and the
+// order they are listed in does not matter. `*` matches across path segments.
+const runsWorkerFirst = (patterns, pathname) => {
+  const toRe = (p) => new RegExp('^' + p.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$');
+  const negative = patterns.filter((p) => p.startsWith('!')).map((p) => toRe(p.slice(1)));
+  const positive = patterns.filter((p) => !p.startsWith('!')).map(toRe);
+  return positive.some((re) => re.test(pathname)) && !negative.some((re) => re.test(pathname));
+};
+
+test('every URL in the sitemap reaches the Worker, so the 301 is not bypassed', () => {
+  const cfg = JSON.parse(read('wrangler.jsonc')
+    .replace(/^\s*\/\/.*$/gm, '')          // whole-line // comments
+    .replace(/\/\*[\s\S]*?\*\//g, ''));    // block comments
+  const first = cfg.assets && cfg.assets.run_worker_first;
+  assert.ok(Array.isArray(first) || first === true,
+    'assets.run_worker_first must be set, or the asset layer answers before worker.js runs');
+  if (first === true) return;
+
+  const paths = [...read('sitemap.xml').matchAll(/<loc>https:\/\/karyodraw\.com([^<]*)<\/loc>/g)]
+    .map((m) => m[1] || '/');
+  assert.ok(paths.length >= 40, `expected the full sitemap, got ${paths.length} urls`);
+  paths.forEach((p) => assert.ok(runsWorkerFirst(first, p),
+    `${p} is in the sitemap but would be served by the asset layer, never reaching the redirect`));
+});
+
+test('binary assets stay on the free path, and the app still loads its own scripts', () => {
+  const cfg = JSON.parse(read('wrangler.jsonc')
+    .replace(/^\s*\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, ''));
+  const first = cfg.assets.run_worker_first;
+  if (first === true) {
+    assert.fail('run_worker_first: true bills every PNG and script as a Worker invocation');
+  }
+  // The karyogram rasters live three segments deep, which is what makes the deep-matching
+  // behaviour of `*` load-bearing rather than incidental.
+  ['/karyotype/down-syndrome/karyogram.png', '/karyotype/down-syndrome/card.png',
+   '/preview.png', '/favicon.svg', '/favicon.ico', '/iscn-parser.js', '/karyo-render.js',
+   '/ideogram-data.js', '/robots.txt'].forEach((p) =>
+    assert.ok(!runsWorkerFirst(first, p), `${p} should be served by the asset layer, not the Worker`));
+});
