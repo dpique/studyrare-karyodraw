@@ -16,9 +16,28 @@
   "name": "studyrare-karyodraw",
   "compatibility_date": "2026-07-03",
   "main": "worker.js",
+  // The default here (run_worker_first unset, i.e. false) means Cloudflare serves any
+  // path matching a static asset from the asset layer and never invokes worker.js. The
+  // www -> apex 301 added in #186 shipped under that default, so it ran on /api/* and on
+  // 404s and on nothing else: every URL in sitemap.xml is a static asset, so the four
+  // indexed spellings of every page stayed four. The unit tests called worker.fetch
+  // directly and passed throughout.
+  //
+  // So HTML routes through the Worker and binaries do not. Negative patterns win over
+  // positive ones and their order does not matter; `*` matches across path segments,
+  // which is what keeps /karyotype/<slug>/karyogram.png (three deep) on the free asset
+  // path. Excluding an extension is a billing decision, not a correctness one: anything
+  // that does reach the Worker still falls through to env.ASSETS.fetch. test/seo.test.js
+  // checks every sitemap URL against these patterns, so a new page shape that would be
+  // served without ever reaching the redirect fails the build instead of going quiet.
   "assets": {
     "directory": ".",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/*",
+      "!/*.png", "!/*.svg", "!/*.ico", "!/*.js", "!/*.css",
+      "!/*.json", "!/*.xml", "!/*.txt"
+    ]
   },
   "d1_databases": [
     {

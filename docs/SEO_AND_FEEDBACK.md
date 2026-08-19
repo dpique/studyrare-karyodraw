@@ -38,7 +38,15 @@ Validate notations first with the parser if unsure (all must parse with no warni
 
 **Routing (worker.js):**
 
-- `/karyotype/<slug>/` is served as a static asset.
+- `/karyotype/<slug>/` is a static asset, but it reaches `worker.js` first. `assets.run_worker_first`
+  in `wrangler.jsonc` routes HTML through the Worker and leaves PNGs, scripts, icons, and
+  the sitemap on the free asset path. Without it Cloudflare answers any asset-matching
+  path from the asset layer and never invokes the Worker, which is how the www redirect
+  below shipped in #186 and did nothing until #187. `test/seo.test.js` walks every URL in
+  `sitemap.xml` against those patterns, so a new page shape that would bypass the Worker
+  fails the build.
+- `www.karyodraw.com` and plain `http://` 301 to `https://karyodraw.com`, path and query
+  preserved, scoped to the production hostname so local dev is untouched.
 - `/k/<notation>` 301-redirects to the canonical `/karyotype/<slug>/` when a curated
   page exists, else 302s to the interactive tool `/?k=<notation>`. `/k/` alone → hub.
 - Homepage `?k=<notation>` views set their `<link rel=canonical>` to the matching
@@ -115,8 +123,75 @@ on insert as a safety net, so feedback is never lost even mid-migration.
 
 **Optional, still open:**
 
-- **Search Console API access.** The data above has to be read out of the web UI and
-  pasted in by hand, because a session has no credential for the property. Enabling the
-  Search Console API once (OAuth client or a service account added to the property) would
-  let a session pull `/karyotype/*` impressions directly and pick what to write next from
-  data. This is a one-time setup by the owner; nothing in this repo depends on it.
+- **Search Console API access.** Still no credential in-session, but no longer a blocker:
+  Claude for Chrome drives the signed-in web UI and exports the CSV (see the baseline
+  section below). The API would only save the two-minute round trip. Nothing in this repo
+  depends on it.
+
+## Search performance baseline
+
+**How to refresh.** There is no API credential in-session. Ask Claude for Chrome to open
+Search Console → Performance → Search results, set Search type to Web with no other
+filters, pick the date range, **toggle on all four metric tiles** (the export silently
+drops columns for any tile left off), then Export → Download CSV. It lands in `~/Downloads`
+as `karyodraw.com-Performance-on-Search-<date>.zip`, one CSV per dimension.
+
+**First export, 2026-08-18.** Data begins ~2026-07-10, so this is roughly six weeks.
+
+| | value |
+|---|---|
+| Clicks | 19 |
+| Impressions | 1,110 |
+| Average position | 37.5 |
+| Site-wide CTR | 1.71% |
+| Impressions attributable to named queries | 381 (34%) |
+| Homepage | 80 impressions, 12 clicks, 15% CTR, position 21.4 |
+| `/how-to-read-a-karyotype/` | 214 impressions, position 33.6 (largest pool on the site) |
+| `/karyotype/triple-x-syndrome/` | 163 impressions, position 62.2 |
+| `/karyotype/marker-chromosome/` | 111 impressions, 2 clicks, position 15.7 (best-ranking page) |
+| Biggest single query | `47xxx`, 71 impressions, position 67.9 |
+
+**What it says.** The problem is ranking depth, not metadata. A 1.71% CTR at an average
+position of 37.5 is several times what that position normally returns, and the
+best-ranking page converts above its expected rate too. Nothing on this site is losing
+clicks it had earned. It is not earning the placement in the first place, which is what
+external citation and page count move, not titles.
+
+**Most of the demand is from people who do not need a drawing, and the people who do are
+where the site ranks worst.** Splitting the 381 named impressions by what the query is
+actually about:
+
+| | queries | impressions | share | best position |
+|---|---|---|---|---|
+| Numerical: trisomies, sex-chromosome counts, `47xxx`, `xx mar` | 60 | 193 | 51% | 7.8 |
+| Structural: translocations, inversions, Robertsonians, derivatives, rings, isochromosomes | 31 | 65 | 17% | **23** |
+| Notation, how-to, competitor brands | 53 | 123 | 32% | 13.3 |
+
+Half the impressions are somebody asking what a count means. A person who finds `+mar` or
+`47,XXX` on a report wants a sentence, not a karyogram, and no title will change that. The
+people who genuinely need this tool are the structural third: you cannot see what a
+`t(9;22)` or a `rob(13;14)` or an `inv(16)` actually did to the chromosomes without drawing
+the derivatives, which is the whole point of the product. And **not one structural query
+ranks better than position 23**, so the site is close to invisible to exactly the audience
+it was built for, while ranking respectably for searches that will never convert into use.
+
+Corroborating this from `Pages.csv`: the interactive `?k=` views that rank best are all
+structural. `45,XX,rob(13;14)(q10;q10)` sits at position 1, `45,XY,rob(14;21)(q10;q10)` at
+6, `46,XY,inv(9)(p11q13)` at 6.8, `46,X,i(X)(q10)` at 11. For structural notation the drawn
+view is the thing that wins, and Google already agrees.
+
+**So the priority is depth on rearrangements, not breadth on syndromes.** Adding another
+trisomy page chases the 51% that does not want the product. Adding and deepening
+translocation, inversion, Robertsonian, insertion, and derivative pages chases the 17% that
+does, in the one area where there is no incumbent worth the name.
+
+**The trap, so nobody re-walks it.** Two thirds of impressions belong to queries Google
+will not name, and the named ones are individually tiny. On 2026-08-18 a session read
+"`xx mar`, 26 impressions at position 7.8, zero clicks" as a title problem worth fixing.
+It is not: expected clicks at that position and volume is 0.7, so seeing zero happens
+about half the time with a perfectly good title. Same error in the other direction on the
+guide page, where five phrasings of "how to read a karyotype" were read as five separate
+intents worth splitting into separate pages, which would have manufactured the exact
+cannibalization the `www` 301 had just cleaned up. Before acting on any single query,
+multiply impressions by a plausible CTR for the position and check the result is bigger
+than one. Wait for volume, or find the answer somewhere other than this report.

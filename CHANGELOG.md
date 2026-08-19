@@ -3,6 +3,48 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-18 (four spellings of every page, and a heading no one was searching for)
+
+- **One origin.** `www.karyodraw.com` and plain `http://` each answered 200, so Google
+  indexed and ranked four spellings of every page independently. The first Search Console
+  export shows the split doing real damage:
+  `https://www.karyodraw.com/karyotype/isochromosome-xq/` sat at position 17 while its
+  apex twin drew no impressions at all, and seven of the forty reported URLs were `www`
+  or `http` variants of pages that also appear under the apex. The canonical tags were
+  always correct, which is why this was survivable rather than fatal, but a canonical is
+  a hint and a 301 is not. The Worker now redirects both to `https://karyodraw.com`,
+  scoped to the production hostname so local dev is untouched.
+
+- **And the redirect above did nothing until the routing was fixed.** It shipped with
+  `assets.run_worker_first` unset, which is the default, and under that default Cloudflare
+  answers any request matching a static asset from the asset layer without invoking
+  `worker.js` at all. Every URL in `sitemap.xml` is a static asset. So the 301 ran on
+  `/api/*` and on 404s, which is precisely the set of URLs nobody searches for, while
+  `https://www.karyodraw.com/karyotype/isochromosome-xq/` went on returning 200. The three
+  tests written to cover it called `worker.fetch` directly and passed the whole time. HTML
+  now routes through the Worker and binaries stay on the free asset path, and two new
+  tests walk every URL in the sitemap against the routing patterns, so what gets asserted
+  is that the handler is reachable and not only that it is correct.
+
+- **The homepage heading is the verb people type.** `<h1>` was "Karyotype diagram maker",
+  chosen without data when the brand wordmark was demoted out of the heading. Across the
+  144 queries Search Console reports for the site, "maker", "generator", and "diagram
+  maker" drew zero impressions between them. The only tool-intent queries the site
+  surfaces for at all are "karyotype drawing" (position 15) and "how to draw a karyotype"
+  (position 22), so the heading is now "Draw a karyotype" and the title leads with the
+  same verb. The title also drops from 67 characters to 51, which is under where Google
+  truncated it in the live result.
+
+- **The result carries the site name instead of the domain.** Every generated sub-page
+  referenced `isPartOf: WebSite` but no page ever declared that `WebSite`, and Google
+  reads it from the homepage only. So the SERP printed "karyodraw.com". The homepage now
+  declares it, spelled to match `og:site_name` and the sub-page title suffix.
+
+- **ISCN leaves the opening sentence.** It appeared twice within the first screen, in the
+  subhead and on the field label directly beneath it. The label is where someone about to
+  type needs the acronym; the subhead is where an unfamiliar reader meets it at the third
+  word and stops. It stays in the title, the description, and the label.
+
 ## 2026-08-13 (the paper shows the rearrangements it claims, and stops quoting numbers it has outgrown)
 
 - **One figure, for a page of claims.** The JOSS paper described ring chromosomes
