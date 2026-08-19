@@ -15,7 +15,7 @@ authors:
 affiliations:
   - name: "StudyRare, Cincinnati, OH, USA"
     index: 1
-date: "12 August 2026"
+date: "13 August 2026"
 bibliography: paper.bib
 ---
 
@@ -39,6 +39,12 @@ produces. Every view has a shareable deep-link URL and can be exported as a
 date-stamped image or a one-page printable summary.
 
 ![KaryoDraw rendering the reciprocal translocation `46,XY,t(9;22)(q34;q11.2)` (the Philadelphia chromosome) in "highlight" mode. Chromosomes involved in the rearrangement are colored by identity: der(9) carries the amber chromosome-22 segment and der(22) the periwinkle chromosome-9 segment, centromere-aligned against their normal homologs, while the panel at right decodes each token of the ISCN designation into plain language.\label{fig:interface}](fig1-interface.png)
+
+The same input path handles rearrangement classes well beyond a reciprocal exchange
+(\autoref{fig:gallery}). In every panel the only input is the ISCN string shown
+beneath it.
+
+![Six classes of rearrangement, each drawn from the ISCN designation printed below it and nothing else. Clockwise from top left: a Robertsonian translocation, where the whole-arm fusion is reflected in a count of 45; a ring chromosome, drawn as an actual annulus with its fusion point marked; an isochromosome Xq; a recombinant chromosome from a maternal pericentric inversion, shortened by the deletion ISCN leaves implicit; a mosaic drawn as both cell lines side by side with their cell counts and percentages; and a three-way translocation, whose three derivatives are colored by chromosome of origin.\label{fig:gallery}](fig2-gallery.png)
 
 # Statement of need
 
@@ -75,14 +81,17 @@ explanation layer in a single zero-install, shareable web page.
 
 **Parsing.** KaryoDraw parses ISCN designations including numerical gains and
 losses (`+21`, `-X`), terminal and interstitial deletions, duplications and
-triplications, paracentric and pericentric inversions, reciprocal and n-way (for
+triplications, paracentric and pericentric inversions, the recombinant chromosome a pericentric
+inversion carrier transmits (`rec`), reciprocal and n-way (for
 example three-way) translocations, isochromosomes, ring chromosomes, derivative
 chromosomes with nested sub-operations, whole-arm and Robertsonian derivatives
 (`der(13;14)`), dicentrics and isodicentrics, insertions, additions of unknown
 origin, marker chromosomes, and mosaic or composite karyotypes with multiple
 clones. It also reads the copy-number multiplication sign (`×n`), the
 clonal-evolution shorthand (`idem`, `sl`, `sdl`) that inherits a stemline or
-sideline's aberrations, double minutes (`dmin`), and homogeneously staining
+sideline's aberrations, the inheritance qualifiers (`mat`, `pat`, `dn`, `inh`, and
+the `dmat`/`dpat`/`dinh` forms that mark a partially inherited rearrangement),
+double minutes (`dmin`), and homogeneously staining
 regions (`hsr`). The drawn chromosome count is reconciled against the stated modal number,
 including the fusion arithmetic of Robertsonian derivatives and triploid or
 tetraploid ploidy, and a mismatch is flagged. The parser is forgiving but not
@@ -115,11 +124,14 @@ resulting imbalance in plain language, and a rough viability, with the
 canonical segregants following ISCN 2024, Table 5. Alongside the schematic, a
 to-scale pachytene figure draws the actual pairing cross, each arm sized from
 the real hg38 band positions of the rearrangement typed, so different
-translocations produce visibly different crosses. The same machinery also runs
+translocations produce visibly different crosses (\autoref{fig:segregation}). The
+same machinery also runs
 backwards: given an unbalanced conceptus such as a derivative inherited from a
 carrier parent, the panel reconstructs the parental balanced rearrangement and
 names the segregation mode that produced the imbalance. This is a teaching
 visualizer of segregation, not a recurrence-risk calculator.
+
+![The segregation panel for a balanced `46,XY,t(11;22)(q23;q11.2)` carrier. The pachytene pairing figure is drawn to scale from hg38 band positions, so a different translocation gives a visibly different cross. Alternate and adjacent-1 are shown with their division planes, their gametes, and the conceptus karyotype each produces in ISCN. Cropped after the first row; adjacent-2, 3:1 and 4:0 follow.\label{fig:segregation}](fig3-segregation.png){width=62%}
 
 **Explanation.** A teaching layer decodes each token of the designation into
 plain English, explains band-name structure and the biology of each Giemsa stain
@@ -129,7 +141,7 @@ pronunciation of the karyotype. n-way translocations are described with their
 explicit ISCN cycle (e.g. 2→7→5→2), which is otherwise a common source of
 confusion. An ordered guided tour walks a newcomer through the common
 notations, drawn one at a time in the visualizer, and a library of curated
-worked examples (40 karyotypes at this writing, from trisomy 21 through
+worked examples (41 karyotypes at this writing, from trisomy 21 through
 Emanuel syndrome and acquired leukemia rearrangements) is published as
 individual explainer pages, each with a server-rendered karyogram, the full
 decode, and clinical notes.
@@ -151,9 +163,13 @@ the same reason those separate nomenclatures exist.
 Within karyotype nomenclature, a few operators are deliberately not resolved and
 are surfaced transparently rather than mishandled silently: the alternative and
 uncertainty markers (`or`, `?`) are not evaluated, so the tool draws the first
-interpretation and states that it has done so. A derivative chromosome carrying
-more than a single embedded rearrangement falls back to the base chromosome plus
-the written decode. The polyploidy heuristic infers ploidy from the modal number
+interpretation and states that it has done so. A derivative chromosome may carry a
+chain of embedded rearrangements, and deletions, duplications and inversions in that
+chain are applied in turn on top of the join; an embedded insertion is not, and the
+derivative is drawn from the join alone. A recombinant chromosome (`rec`) is drawn
+for the pericentric-inversion case, which is the one that yields a duplication and
+deletion; the insertion-derived forms are not.
+The polyploidy heuristic infers ploidy from the modal number
 and is ambiguous for counts that fall between a hyperdiploid and a hypotriploid
 complement, an ambiguity the notation itself does not resolve without clinical
 context.
@@ -171,16 +187,16 @@ also handles an anonymous usage beacon and a feedback channel. It is deployed at
 <https://karyodraw.com> and the source is available at
 <https://github.com/dpique/studyrare-karyodraw> under the MIT license. Chromosome band data are
 derived from the UCSC Genome Browser `cytoBandIdeo` table (hg38). The application
-is validated by a dependency-free suite of over 450 behavioral tests (Node's
+is validated by a dependency-free suite of nearly 500 behavioral tests (Node's
 built-in runner, gating every pull request and every deploy) covering
 designations from aneuploidy through three-way translocations and mosaicism,
 Robertsonian derivatives, isodicentrics, polyploidy, segregation-mode
-enumeration, count-reconciliation and invalid-band edge cases, an ISCN 2024
-conformance set, and real-browser interface tests, plus a stress corpus built
-from designations students actually type.
-
-# Acknowledgements
-
-<!-- optional -->
+enumeration, count-reconciliation and invalid-band edge cases, and real-browser
+interface tests. Conformance is checked against a corpus of 394 karyotype-format
+examples transcribed verbatim from ISCN 2024, of which 336 are currently drawn;
+the remainder are marked with the feature they need, so notation the tool does not
+model reads as a recorded coverage gap rather than as bad input. A separate stress
+corpus of 173 designations, built from what students actually type, is rendered
+through the real page and checked against the expected draw-or-refuse outcome.
 
 # References

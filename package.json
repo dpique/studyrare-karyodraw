@@ -15,7 +15,9 @@
     "build": "node scripts/build-pages.mjs",
     "images": "node scripts/render-images.mjs",
     "stress": "node scripts/stress-report.mjs",
-    "indexnow": "node scripts/indexnow.mjs"
+    "indexnow": "node scripts/indexnow.mjs",
+    "paper-figures": "node scripts/render-paper-figures.mjs",
+    "paper-preview": "node scripts/paper-preview.mjs"
   },
   "devDependencies": {
     "js-yaml": "^4.3.1",

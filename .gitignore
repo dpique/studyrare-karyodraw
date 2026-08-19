@@ -19,3 +19,8 @@ NEXT_SESSION_HANDOFF.md
 /how-to-read-a-karyotype/
 /sitemap.xml
 /content/k-index.mjs
+
+# Local reading copy of the JOSS paper (npm run paper-preview). The submitted PDF
+# is built by openjournals/inara, not from this tree, so neither is committed.
+/paper/paper-preview.pdf
+/paper/paper.pdf

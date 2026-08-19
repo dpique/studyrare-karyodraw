@@ -45,6 +45,31 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   type needs the acronym; the subhead is where an unfamiliar reader meets it at the third
   word and stops. It stays in the title, the description, and the label.
 
+## 2026-08-13 (the paper shows the rearrangements it claims, and stops quoting numbers it has outgrown)
+
+- **One figure, for a page of claims.** The JOSS paper described ring chromosomes
+  drawn as annuli, mosaics drawn as every cell line, n-way translocation cycles and a
+  meiotic segregation panel, and illustrated all of it with a single screenshot of a
+  reciprocal translocation. Two figures were added: a gallery of six rearrangement
+  classes (Robertsonian, ring, isochromosome, three-way translocation, mosaic, and the
+  new recombinant), each captioned with the ISCN string that is its only input, and
+  the segregation panel for a `t(11;22)` carrier showing the to-scale pachytene cross
+  beside alternate and adjacent-1 with their gametes and conceptuses.
+
+- **The figures are generated now.** `npm run paper-figures` renders all three by
+  driving the real page in a browser, the same way the stress sheet does, and refuses
+  any karyotype that raises a warning. The old figure was a hand-captured screenshot
+  of an interface 101 commits out of date, showing a chip row, a control layout and a
+  header the app no longer has.
+
+- **Numbers the paper had outgrown.** It claimed 40 curated examples against 41, "over
+  450" tests against 492, and listed as a limitation something the renderer had since
+  learned: a derivative carrying several embedded rearrangements does apply its
+  deletions, duplications and inversions in turn, and only an embedded insertion is
+  still left at the join. The ISCN 2024 conformance corpus is now quoted precisely
+  (336 of 394 drawn), and `test/paper.test.js` pins every count to the array it
+  describes, so the paper and the software cannot drift apart again in silence.
+
 ## 2026-08-13 (the recombinant chromosome an inversion carrier passes on, and the half ISCN does not write)
 
 - **`rec` draws.** A pericentric inversion carrier is healthy and gets counselled
