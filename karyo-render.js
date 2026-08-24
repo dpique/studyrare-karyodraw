@@ -247,6 +247,28 @@
     return (wide * 0.55 + narrow * 0.32) * (size || 9);
   }
 
+  // The body capsule with an inward constriction at each fragile site: a rounded
+  // rect whose vertical edges pinch symmetrically to a waist at each pinch y.
+  // Used for BOTH the clip and the outline, which must be the same shape or the
+  // band paint and the border disagree about where the body is.
+  function waistPath(x, y, w, hh, r, pinches, halfH, depth) {
+    var xr = x + w, d = ["M" + (x + r) + " " + y, "H" + (xr - r), "A" + r + " " + r + " 0 0 1 " + xr + " " + (y + r)];
+    pinches.forEach(function (pc) {
+      d.push("L" + xr + " " + (pc - halfH).toFixed(2));
+      d.push("C" + (xr - depth).toFixed(2) + " " + (pc - halfH * 0.25).toFixed(2) + " " +
+        (xr - depth).toFixed(2) + " " + (pc + halfH * 0.25).toFixed(2) + " " + xr + " " + (pc + halfH).toFixed(2));
+    });
+    d.push("L" + xr + " " + (y + hh - r), "A" + r + " " + r + " 0 0 1 " + (xr - r) + " " + (y + hh),
+      "H" + (x + r), "A" + r + " " + r + " 0 0 1 " + x + " " + (y + hh - r));
+    pinches.slice().reverse().forEach(function (pc) {
+      d.push("L" + x + " " + (pc + halfH).toFixed(2));
+      d.push("C" + (x + depth).toFixed(2) + " " + (pc + halfH * 0.25).toFixed(2) + " " +
+        (x + depth).toFixed(2) + " " + (pc - halfH * 0.25).toFixed(2) + " " + x + " " + (pc - halfH).toFixed(2));
+    });
+    d.push("L" + x + " " + (y + r), "A" + r + " " + r + " 0 0 1 " + (x + r) + " " + y, "Z");
+    return d.join(" ");
+  }
+
   // ----- composite ideogram renderer ----------------------------------------
   function renderComposite(segments, opts) {
     opts = opts || {};
@@ -264,9 +286,31 @@
     var svgW = W + pad * 2, svgH = H + pad * 2;
     var uid = "c" + (renderComposite._n = (renderComposite._n || 0) + 1);
 
+    // A fragile site is a constriction the whole body has, not paint on top of it,
+    // so the waist lives in the body SHAPE: clip and outline both follow the
+    // pinched path and the bands end at the waist the way they do under the
+    // microscope. Deep enough to read at karyogram scale (the flat gap alone was
+    // not), shallow enough that the body plainly continues past it. Centers are
+    // clamped clear of the end caps, and pinches too close together collapse into
+    // one so the path cannot fold back on itself.
+    var FRA_HALF = 5, FRA_DEPTH = 8;
+    var fraLo = pad + cap + FRA_HALF, fraHi = pad + H - cap - FRA_HALF, fraPinches = [];
+    if (fraHi > fraLo) {
+      overlays.filter(function (o) { return o.type === "fra"; })
+        .map(function (o) { return pointY(segments, o.chrom, o.at, pad); })
+        .filter(function (v) { return v != null; })
+        .map(function (v) { return Math.max(fraLo, Math.min(fraHi, v)); })
+        .sort(function (a, b) { return a - b; })
+        .forEach(function (v) {
+          if (!fraPinches.length || v - fraPinches[fraPinches.length - 1] > FRA_HALF * 2 + 2) fraPinches.push(v);
+        });
+    }
+    var bodyShape = fraPinches.length
+      ? '<path d="' + waistPath(pad, pad, W, H, cap, fraPinches, FRA_HALF, FRA_DEPTH) + '"'
+      : '<rect x="' + pad + '" y="' + pad + '" width="' + W + '" height="' + H + '" rx="' + cap + '" ry="' + cap + '"';
+
     // dynamic diagonal-hatch patterns (heterochromatin texture), de-duped by color
-    var defs = ['<clipPath id="' + uid + '"><rect x="' + pad + '" y="' + pad + '" width="' + W +
-      '" height="' + H + '" rx="' + cap + '" ry="' + cap + '"/></clipPath>'];
+    var defs = ['<clipPath id="' + uid + '">' + bodyShape + '/></clipPath>'];
     var patCache = {};
     function hatch(color, o) {
       o = o || {};
@@ -380,9 +424,11 @@
         var gh = 3.4, gy = Math.max(pad + 0.5, Math.min(pad + H - gh - 0.5, fy - gh / 2));
         body.push('<rect class="fra-gap" x="' + pad + '" y="' + gy.toFixed(2) + '" width="' + W + '" height="' + gh +
           '" fill="#fff" clip-path="url(#' + uid + ')"/>');
+        // Clipped to the body: a rect body happened to end exactly where these
+        // lines do, the waisted body does not, and unclipped lines overhang it.
         [gy, gy + gh].forEach(function (yy) {
           body.push('<line x1="' + pad + '" y1="' + yy.toFixed(2) + '" x2="' + (pad + W) + '" y2="' + yy.toFixed(2) +
-            '" stroke="' + (simple ? "#64748b" : OP_COLORS.break) + '" stroke-width="0.9"/>');
+            '" stroke="' + (simple ? "#64748b" : OP_COLORS.break) + '" stroke-width="0.9" clip-path="url(#' + uid + ')"/>');
         });
         return;
       }
@@ -426,8 +472,7 @@
 
     // Outline color follows the chromosome the derivative is named for, not
     // whichever piece happens to be drawn on top (idChrom, resolved above).
-    body.push('<rect x="' + pad + '" y="' + pad + '" width="' + W + '" height="' + H + '" rx="' + cap + '" ry="' + cap +
-      '" fill="none" stroke="' + outlineFor(ctx, idChrom) + '" stroke-width="1.1"/>');
+    body.push(bodyShape + ' fill="none" stroke="' + outlineFor(ctx, idChrom) + '" stroke-width="1.1"/>');
 
     return {
       svg: '<svg class="ideo" width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '"><defs>' +

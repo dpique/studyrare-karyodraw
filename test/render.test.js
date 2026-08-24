@@ -755,3 +755,27 @@ test('the fragile-site gap reaches the drawn SVG', () => {
   assert.match(fra, /class="fra-gap"/, 'the gap is drawn');
   assert.doesNotMatch(draw('46,XX'), /fra-gap/, 'and only when a fragile site was written');
 });
+
+// The flat unstained gap plus two hairlines was near-invisible at karyogram scale,
+// so the body now pinches into a constricted waist at the site, which is also what
+// the microscopist sees (Gardner 5e: an "apparent rupture" with the distal material
+// still attached). The clip and the outline both follow the pinched path, and the
+// gap hairlines are clipped to the body: a rect body happened to end exactly where
+// they do, a waisted one no longer does, so unclipped lines would overhang it.
+// Checked at every display level, not the default one (#160's lesson).
+test('a fragile site pinches the body into a waist at the band', () => {
+  for (const level of [0, 1, 2]) {
+    const draw = (k) => {
+      const cont = { innerHTML: '' };
+      Karyo.render(cont, ISCN.parse(k).clones[0], { theme: 'detailed', level, affected: {} });
+      return cont.innerHTML;
+    };
+    const fra = draw('46,X,fra(X)(q27.3)');
+    assert.match(fra, /<clipPath id="[^"]*"><path /, `the clip follows the waist (level ${level})`);
+    assert.match(fra, /<path d="[^"]+" fill="none" stroke/, `so does the outline (level ${level})`);
+    const clipped = fra.match(/<line [^>]*clip-path[^>]*>/g) || [];
+    assert.ok(clipped.length >= 2, `the gap hairlines clip to the pinched body (level ${level})`);
+    assert.doesNotMatch(draw('46,XX'), /<clipPath id="[^"]*"><path /,
+      `a normal chromosome keeps its plain capsule (level ${level})`);
+  }
+});
