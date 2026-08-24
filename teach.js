@@ -87,7 +87,10 @@
     // the centromere band. It is real α-satellite, but it is not this derivative's
     // centromere, so it must not be named one: a chromosome with two centromeres is a
     // dicentric, and ISCN spells that dic(), not der().
-    acen_carried: { name: "Pericentromeric heterochromatin", bio: "Centromere-region α-satellite carried across a rearrangement junction, because the breakpoint fell inside the centromere band. This derivative's working centromere is the one from the chromosome it is named for, so this block is not drawn as a centromere. A chromosome that truly keeps two is a dicentric, written dic()." }
+    acen_carried: { name: "Pericentromeric heterochromatin", bio: "Centromere-region α-satellite carried across a rearrangement junction, because the breakpoint fell inside the centromere band. This derivative's working centromere is the one from the chromosome it is named for, so this block is not drawn as a centromere. A chromosome that truly keeps two is a dicentric, written dic()." },
+    // Not a Giemsa stain: the pseudo-stain the fra gap rect carries so the hover
+    // tooltip can say what the constriction is instead of going silent on it.
+    fra: { name: "Fragile site (unstained gap)", bio: "An achromatic gap: under replication stress the chromatin at the site decondenses and fails to take up Giemsa, so it is drawn unstained even inside a dark band. The fragment beyond the gap stays attached; this is not a deletion (ISCN 5.5.7)." }
   };
   function stainInfo(s) { return STAIN_INFO[s] || { name: s, bio: "" }; }
 

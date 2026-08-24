@@ -464,3 +464,16 @@ test('the corrected sex reading is exported so every surface can use it', () => 
   const row = Teach.decode(fra).filter((r) => r.tag === 'sex')[0].text;
   assert.ok(row.indexOf(Teach.sexNote(fra)) >= 0, 'the decode row is built from the same reading');
 });
+
+// The karyogram tooltip prints Teach.stainInfo(stain).name for whatever rect the
+// pointer is on. The fra gap rect now presents data-stain="fra", a pseudo-stain in
+// the acen_carried tradition, so the tooltip must name the fragile site rather than
+// echo the raw token back. "Unstained" is the load-bearing word: the site is an
+// achromatic gap (the chromatin decondenses and fails to take up Giemsa), which is
+// why the constriction is drawn paper-white even inside gpos100 Xq27.3.
+test('the fra pseudo-stain names the fragile site and its unstained nature', () => {
+  const info = Teach.stainInfo('fra');
+  assert.match(info.name, /fragile site/i);
+  assert.match(info.name + ' ' + info.bio, /unstained|achromatic/i, 'teaches why the gap is white');
+  assert.match(info.bio, /attached/, 'and that the distal fragment is not lost');
+});
