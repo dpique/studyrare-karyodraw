@@ -370,6 +370,22 @@
         if (cutY != null) breakMark(cutY, OP_COLORS.del);
         return;
       }
+      if (ov.type === "fra") {                        // fragile site: an unstained gap
+        // Deliberately NOT a breakMark. The carets say "the chromosome was cut here",
+        // and a fragile site is the opposite claim: the material beyond the gap is
+        // still attached. A narrow unstained gap with the outline running past it is
+        // what the microscopist sees, and it cannot be confused with a deletion.
+        var fy = pointY(segments, ov.chrom, ov.at, pad);
+        if (fy == null) return;
+        var gh = 3.4, gy = Math.max(pad + 0.5, Math.min(pad + H - gh - 0.5, fy - gh / 2));
+        body.push('<rect class="fra-gap" x="' + pad + '" y="' + gy.toFixed(2) + '" width="' + W + '" height="' + gh +
+          '" fill="#fff" clip-path="url(#' + uid + ')"/>');
+        [gy, gy + gh].forEach(function (yy) {
+          body.push('<line x1="' + pad + '" y1="' + yy.toFixed(2) + '" x2="' + (pad + W) + '" y2="' + yy.toFixed(2) +
+            '" stroke="' + (simple ? "#64748b" : OP_COLORS.break) + '" stroke-width="0.9"/>');
+        });
+        return;
+      }
       var span = ov.segIndex != null ? segSpan(segments, ov.segIndex, pad) : mapRange(segments, ov.chrom, ov.from, ov.to, pad);
       if (!span) return;
       var hh = (span.y1 - span.y0).toFixed(2);
@@ -544,6 +560,17 @@
       var hbnd = resolveBand(chrom, (ab.breakpoints[0] || [])[0]), ov5 = [];
       if (hbnd) ov5.push({ type: "hsr", chrom: chrom, from: hbnd.start, to: hbnd.end });
       return { segments: [fullSeg(chrom)], overlays: ov5, caption: inst.label };
+    }
+    if (kind === "fra") {
+      // A fragile site is a GAP, not a break: one unbroken chromosome of normal
+      // length with an unstained gap at the band, and the fragment beyond it still
+      // attached. Drawn as a point rather than a band span because the gap is
+      // narrow and fixed-width on the page; the band it sits in can be several Mb.
+      // Without this branch fra fell through to the generic full-chromosome return,
+      // so 46,X,fra(X)(q27.3) drew an X indistinguishable from a normal X.
+      var fbnd = resolveBand(chrom, (ab.breakpoints[0] || [])[0]), ov6 = [];
+      if (fbnd) ov6.push({ type: "fra", chrom: chrom, at: fbnd.mid });
+      return { segments: [fullSeg(chrom)], overlays: ov6, caption: inst.label };
     }
     if (kind === "ring") {
       var rb = (ab.breakpoints[0] || []).map(function (x) { return resolveBand(chrom, x); }).filter(Boolean), from = 0, to = d0.length;

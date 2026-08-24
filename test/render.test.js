@@ -729,3 +729,29 @@ test('affected-view cells share a baseline, as the full view does', () => {
   const cenShift = Math.abs((cenOf('1') - h1) - (cenOf('21') - h21));
   assert.ok(cenShift > 5, 'a shared centromere line would put these cells visibly apart');
 });
+
+// ---- fragile sites (ISCN 2.6.2, 5.5.7) --------------------------------------
+// buildInstance had no fra branch, so a fragile site fell through to the generic
+// "draw the whole chromosome" return: 46,X,fra(X)(q27.3) rendered an X identical to
+// a normal X, with the caption as the only sign anything had been said. A fragile
+// site is a gap in the chromatid at one band, and the distal fragment stays attached.
+test('a fragile site marks its band instead of drawing an unmarked chromosome', () => {
+  const b = Karyo.buildInstance(derInst('46,X,fra(X)(q27.3)', 'X'));
+  assert.equal(b.segments.length, 1, 'one piece: nothing is deleted and nothing is joined');
+  assert.equal(totalBp(b.segments), IDEO.data['X'].length, 'full length, distal fragment still attached');
+  const gap = b.overlays.filter((o) => o.type === 'fra');
+  assert.equal(gap.length, 1, 'exactly one gap overlay');
+  const band = Karyo.resolveBand('X', 'q27.3');
+  assert.ok(gap[0].at > band.start && gap[0].at < band.end, 'the gap sits inside Xq27.3');
+});
+
+test('the fragile-site gap reaches the drawn SVG', () => {
+  const draw = (k) => {
+    const cont = { innerHTML: '' };
+    Karyo.render(cont, ISCN.parse(k).clones[0], { theme: 'detailed', level: 1, affected: {} });
+    return cont.innerHTML;
+  };
+  const fra = draw('46,X,fra(X)(q27.3)');
+  assert.match(fra, /class="fra-gap"/, 'the gap is drawn');
+  assert.doesNotMatch(draw('46,XX'), /fra-gap/, 'and only when a fragile site was written');
+});

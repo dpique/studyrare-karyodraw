@@ -1756,6 +1756,25 @@
       }
     }
 
+    // A fragile site written across a slash: 46,X,fra(X)(q27.3)[5]/46,XX[45]. This is
+    // how the old cytogenetic reports scored fragile X, and it is well-formed ISCN
+    // (4.5.3 b, e: abnormal line first, normal line last, absolute metaphase counts),
+    // so it draws and it must not warn. But a slash means two cell lines derived from
+    // the same zygote (4.5.2 a), and that is not what these numbers are. The expansion
+    // is in every cell; the SITE only expresses in a fraction of metaphases grown under
+    // stress, so the bracketed counts are scoring expression, not clonality. Every one
+    // of the five fra examples ISCN prints (2.6.2, 5.5.7 a) is written without a slash.
+    if (!result.note && !result.suggestion && result.clones.length > 1) {
+      var fraClone = result.clones.filter(function (cl) {
+        return (cl.aberrations || []).some(function (a) { return a.kind === "fra"; });
+      })[0];
+      if (fraClone) {
+        result.note = {
+          text: "A slash separates two cell lines derived from the same zygote (ISCN 4.5.2), but a fragile site is present in every cell: what varies is whether it is EXPRESSED in a given metaphase, which depends on the culture conditions. So these counts score how often the site was seen, not how many cells carry it. The notation is accepted and drawn as written; the five fragile-site examples ISCN prints are all written without a slash."
+        };
+      }
+    }
+
     // The user may have typed only the rearrangement, dropping the leading count and
     // sex ("t(9;22)(q34;q11.2)" instead of "46,XY,t(9;22)(q34;q11.2)"). If prefixing a
     // normal constitution parses as a real karyotype, offer that as a one-click fix,

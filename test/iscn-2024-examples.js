@@ -162,6 +162,7 @@ module.exports = [
   { k: '46,XY,dup(1)(q25q22)', supported: true },
   { k: '47,XY,-10,+fis(10)(p10),+fis(10)(q10)', supported: false, needs: 'fis, centromeric fission (ISCN 5.5.6)' },
   { k: '46,X,fra(X)(q27.3)', supported: true },
+  { k: '45,fra(X)(q27.3)', supported: true },
   { k: '46,Y,fra(X)(q27.3)', supported: true },
   { k: '47,XY,fra(X)(q27.3)', supported: true },
   { k: '46,XX,fra(11)(q23)', supported: true },

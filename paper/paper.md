@@ -192,8 +192,8 @@ built-in runner, gating every pull request and every deploy) covering
 designations from aneuploidy through three-way translocations and mosaicism,
 Robertsonian derivatives, isodicentrics, polyploidy, segregation-mode
 enumeration, count-reconciliation and invalid-band edge cases, and real-browser
-interface tests. Conformance is checked against a corpus of 394 karyotype-format
-examples transcribed verbatim from ISCN 2024, of which 336 are currently drawn;
+interface tests. Conformance is checked against a corpus of 395 karyotype-format
+examples transcribed verbatim from ISCN 2024, of which 337 are currently drawn;
 the remainder are marked with the feature they need, so notation the tool does not
 model reads as a recorded coverage gap rather than as bad input. A separate stress
 corpus of 173 designations, built from what students actually type, is rendered

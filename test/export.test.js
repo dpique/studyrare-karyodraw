@@ -160,3 +160,13 @@ test('the export watermark carries the export date', () => {
   assert.match(html, /karyodraw\.com · ' \+ stamp/, 'the watermark appends the date stamp');
   assert.match(html, /var stamp = _d\.getFullYear\(\)/, 'and the stamp is built at export time');
 });
+
+// The print sheet built its sex line from clone.sex.note, the parser's field-only
+// reading, while the screen used the corrected Teach.sexNote. For 46,X,fra(X)(q27.3)
+// the two disagreed: the exported sheet said "a single X (monosomy X)" about a
+// female with two X. The sheet is the copy that travels, so it has to read the same.
+test('the print sheet takes its sex reading from Teach, not raw off the parser', () => {
+  const fn = html.match(/ {2}function renderPrintSheet\(model\) \{[\s\S]*?\n {2}\}\n/)[0];
+  assert.doesNotMatch(fn, /c\.sex\.note/, 'the field-only note says monosomy X for 46,X,fra(X)(q27.3)');
+  assert.match(fn, /Teach\.sexNote\(/, 'uses the same corrected reading the decode row uses');
+});

@@ -307,9 +307,9 @@ Every one of these was the app's model failing and the message blaming the input
 
 ## Checking against ISCN itself
 
-`test/iscn-2024-examples.js` holds 394 karyotype-format examples printed in ISCN 2024
+`test/iscn-2024-examples.js` holds 395 karyotype-format examples printed in ISCN 2024
 (Cytogenet Genome Res 2024;164(suppl 1):1-224), and `test/iscn-conformance.test.js` runs
-every one through the page's gate. 302 are accepted. The rest are marked
+every one through the page's gate. 337 are accepted. The rest are marked
 `supported: false` with the ISCN section naming the feature they need, so an unmodelled
 feature is recorded rather than mistaken for bad input.
 

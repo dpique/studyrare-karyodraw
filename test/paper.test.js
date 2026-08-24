@@ -80,3 +80,16 @@ test('the stated test-suite size is still honest', () => {
 test('the paper uses no em dashes', () => {
   assert.ok(paper.indexOf('—') < 0, 'em dash in paper.md');
 });
+
+// docs/VALIDATION.md states the same two numbers as the paper and nothing was
+// checking them: it still said 302 accepted long after the corpus reached 337.
+// A count in prose goes stale silently, which is the one failure mode a reader
+// cannot detect, so pin it the way the paper's copy is pinned.
+test('the VALIDATION.md conformance numbers match the corpus', () => {
+  const doc = fs.readFileSync(path.join(__dirname, '..', 'docs', 'VALIDATION.md'), 'utf8');
+  const examples = require('./iscn-2024-examples.js');
+  const m = /holds (\d+) karyotype-format examples[\s\S]{0,200}?(\d+) are accepted/.exec(doc);
+  assert.ok(m, 'VALIDATION.md should state the corpus size and how much of it is accepted');
+  assert.equal(Number(m[1]), examples.length, 'total ISCN 2024 examples');
+  assert.equal(Number(m[2]), examples.filter((e) => e.supported !== false).length, 'examples accepted');
+});
