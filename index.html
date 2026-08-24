@@ -1561,7 +1561,7 @@
       // matching the on-screen clinical card.
       return "<p><b>" + s.name + "</b><br>" + s.note + "</p>";
     }).join("") + "</div>" : "";
-    var meta = model.clones.map(function (c) { return c.sex.note; }).join(" · ") + (model.isMosaic ? " · mosaic (" + model.clones.length + " clones)" : "");
+    var meta = model.clones.map(function (c) { return window.Teach.sexNote(c); }).join(" · ") + (model.isMosaic ? " · mosaic (" + model.clones.length + " clones)" : "");
 
     ps.innerHTML =
       '<div class="ps-head"><span class="ps-brand">Karyo<span>Draw</span></span><span class="ps-sub">a StudyRare teaching tool</span></div>' +

@@ -378,3 +378,89 @@ test('a break inside Xq13 itself is reported as uncertain rather than guessed', 
   assert.ok(!/the normal X is silenced, and both derivatives stay active/.test(text),
     'must not assert the usual balanced answer when the break is in the center itself');
 });
+
+// ---- sex-chromosome syndromes are decided on DOSAGE, not on the sex field ----
+// ISCN 5.5.18.1.1 iii moves a rearranged sex chromosome out of the sex field, so the
+// field alone cannot say how many X a clone carries. ISCN 5.5.7 glosses three of its
+// own fragile-site examples by name and the matchers disagreed with every one:
+// 46,X,fra(X)(q27.3) is "a female" (5.5.7 a i) and was labelled Turner syndrome;
+// 45,fra(X)(q27.3) is "an individual with Turner syndrome" (a iii) and got no card;
+// 47,XY,fra(X)(q27.3) is "an individual with Klinefelter syndrome" (a iv), likewise.
+// clone.complement already counts a rearranged X as an X. sexNote() fixed exactly
+// this misreading for the decode row above and left these matchers reading the field.
+const called = (k) => Teach.syndromes(ISCN.parse(k).clones[0]).map((s) => s.name).join(' | ');
+
+test('a whole second X is not monosomy, whatever the sex field spells', () => {
+  for (const k of ['46,X,fra(X)(q27.3)', '46,X,t(X;13)(q27;q12)', '46,X,t(X;18)(p11.1;q11.2)']) {
+    assert.doesNotMatch(called(k), /Turner/, k + ' carries two whole X -> ' + called(k));
+  }
+});
+
+test('the card names the syndrome ISCN names for its own fragile-site examples', () => {
+  assert.match(called('45,fra(X)(q27.3)'), /Turner/, 'ISCN 5.5.7 a iii');
+  assert.match(called('47,XY,fra(X)(q27.3)'), /Klinefelter/, 'ISCN 5.5.7 a iv');
+  assert.doesNotMatch(called('46,Y,fra(X)(q27.3)'), /Turner|Klinefelter/,
+    'ISCN 5.5.7 a ii is an ordinary male sex complement');
+});
+
+test('Turner and Klinefelter still fire for the karyotypes they were written for', () => {
+  for (const k of ['45,X', '46,X,i(X)(q10)', '46,X,r(X)(p22q28)', '46,X,idic(Y)(q11.2)', '46,X,del(X)(p21)']) {
+    assert.match(called(k), /Turner/, k);
+  }
+  // 48,XXYY is named in the Klinefelter note as a higher-grade variant, but the
+  // sex-field matcher only ever listed XXY and XXXY, so the note described a
+  // karyotype it could not match.
+  for (const k of ['47,XXY', '48,XXXY', '48,XXYY']) assert.match(called(k), /Klinefelter/, k);
+  assert.match(called('47,XYY'), /XYY/);
+  assert.match(called('47,XXX'), /Triple X/);
+  for (const k of ['46,XX', '46,XY', '46,XY,del(X)(p21)']) assert.equal(called(k), '', k);
+});
+
+// A euploid polyploid is not aneuploid for anything: 69,XXX was reported as Down
+// syndrome, Edwards, Patau AND Triple X at once, because every matcher counted
+// copies without asking how many a full set is for this clone.
+test('a euploid polyploid gets no aneuploidy card', () => {
+  assert.equal(called('69,XXX'), '', 'triploidy is not trisomy 21 and not Triple X');
+  assert.equal(called('92,XXXX'), '', 'tetraploidy is not trisomy anything');
+  assert.match(called('47,XX,+21'), /Down/, 'a real trisomy 21 still fires');
+});
+
+// ---- fragile sites (ISCN 2.6.2, 5.5.7) --------------------------------------
+// fra parsed and drew from the start, so it passed the draw gate, but the decode
+// row for it was the generic unknown-aberration fallback — on a karyotype whose
+// only abnormality IS the fragile site.
+test('a fragile site is decoded, not handed to the generic fallback', () => {
+  const txt = decodeText('46,X,fra(X)(q27.3)');
+  assert.doesNotMatch(txt, /as best it could/, 'not the unknown-aberration fallback');
+  assert.match(txt, /fragile site/i, 'names it a fragile site');
+  assert.match(txt, /Xq27\.3/, 'names the band');
+  const auto = decodeText('46,XX,fra(11)(q23)');
+  assert.match(auto, /fragile site/i);
+  assert.match(auto, /11q23/, 'names the band on an autosome too');
+});
+
+test('the FRAXA site carries the molecular note; another fragile site does not', () => {
+  const fx = Teach.syndromes(ISCN.parse('46,X,fra(X)(q27.3)').clones[0]).find((s) => /fragile X/i.test(s.name));
+  assert.ok(fx, 'Xq27.3 is FRAXA');
+  assert.match(fx.note, /<i>FMR1<\/i>/, 'italicizes the gene symbol like the other clinical notes');
+  assert.match(fx.note, /CGG/, 'names the repeat the fragile site reflects');
+  assert.match(fx.note, /molecular|repeat analysis/i, 'says where the diagnosis actually comes from');
+  assert.doesNotMatch(called('46,XX,fra(11)(q23)'), /fragile X syndrome/i, 'FRA11B is not fragile X syndrome');
+  assert.doesNotMatch(called('46,XX'), /fragile/i);
+});
+
+// The print sheet is the copy that ends up in a slide deck. It read clone.sex.note
+// straight off the parser, which is built from the sex FIELD before any aberration
+// is known, so the sheet for 46,X,fra(X)(q27.3) said "a single X (monosomy X)" while
+// the decode row beside it said the opposite. One corrected reading, exported once.
+test('the corrected sex reading is exported so every surface can use it', () => {
+  assert.equal(typeof Teach.sexNote, 'function');
+  const fra = ISCN.parse('46,X,fra(X)(q27.3)').clones[0];
+  // Saying "not monosomy X" out loud is the point, so match the assertion, not the phrase.
+  assert.doesNotMatch(Teach.sexNote(fra), /a single X \(monosomy X\)/, 'the second X is inside the fra');
+  assert.match(Teach.sexNote(fra), /not monosomy X/, 'and names the trap directly');
+  assert.match(Teach.sexNote(ISCN.parse('45,X').clones[0]), /a single X \(monosomy X\)/, '45,X genuinely is');
+  // The decode row and the export must not be able to drift apart.
+  const row = Teach.decode(fra).filter((r) => r.tag === 'sex')[0].text;
+  assert.ok(row.indexOf(Teach.sexNote(fra)) >= 0, 'the decode row is built from the same reading');
+});

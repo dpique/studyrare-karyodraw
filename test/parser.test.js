@@ -1273,3 +1273,23 @@ test('a mistyped sex field is still read as a sex field', () => {
     assert.ok(!ISCN.parse(k).clones[0].sexOmitted, k + ' is a bad sex field, not an omission');
   }
 });
+
+// A fragile site is present in every cell — the FMR1 expansion is constitutional —
+// and only EXPRESSES cytogenetically in a fraction of metaphases grown under stress.
+// Writing that fraction with a slash is legal ISCN (4.5.3 b) and is how the old
+// reports were written, but a slash means two cell lines from one zygote (4.5.2 a),
+// which is not what a fragile-site count is. A note, never a warning: the notation
+// is correct, and warning on correct input is how a warning box loses its authority.
+test('a fragile site written as a mosaic gets a note about what the slash means', () => {
+  const m = ISCN.parse('46,X,fra(X)(q27.3)[5]/46,XX[45]');
+  assert.equal(m.warnings.length, 0, 'correct ISCN must not warn');
+  assert.ok(m.note, 'a neutral note beside the drawing');
+  assert.match(m.note.text, /express/i, 'names what the count is actually scoring');
+  assert.ok(!m.note.fix, 'no rewrite on offer: the notation as written is correct');
+});
+
+test('the fragile-site note fires only when the fragile site is in a mosaic', () => {
+  assert.ok(!ISCN.parse('46,X,fra(X)(q27.3)').note, 'single clone, nothing to explain');
+  assert.ok(!ISCN.parse('mos 45,X[12]/46,XX[18]').note, 'a real two-cell-line mosaic');
+  assert.ok(!ISCN.parse('46,XX,fra(11)(q23)').note);
+});

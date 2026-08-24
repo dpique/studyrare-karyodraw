@@ -3,6 +3,55 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-24 (the clinical card counts chromosomes instead of reading the sex field)
+
+- **A rearranged X is still an X, so stop calling those karyotypes Turner syndrome.**
+  The sex-chromosome matchers behind the clinical card read `clone.sex.label`, the sex
+  field exactly as written. ISCN 5.5.18.1.1 iii moves a rearranged sex chromosome out of
+  that field and into the aberration list, so the field cannot say how many X a clone
+  carries, and the card was wrong in both directions. `46,X,fra(X)(q27.3)`, which ISCN
+  5.5.7 a i glosses as "a female", was labelled Turner syndrome; so was
+  `46,X,t(X;4)(p21;p16)`, a balanced carrier with two whole X. Meanwhile
+  `45,fra(X)(q27.3)` ("an individual with Turner syndrome", 5.5.7 a iii) and
+  `47,XY,fra(X)(q27.3)` ("Klinefelter syndrome", a iv) matched nothing at all, and
+  `48,XXYY` matched nothing although the Klinefelter note names it as a variant. The
+  matchers now read `clone.complement`, which already counts a rearranged X as an X, the
+  same correction `sexNote` had made for the decode row and nothing else. Turner turns on
+  whether the second sex chromosome lost material, which is what makes `46,X,i(X)(q10)`
+  and `46,X,r(X)` variants and leaves a fragile site or a balanced translocation out.
+- **A euploid polyploid is not aneuploid for anything.** `69,XXX` was reported as Down
+  syndrome, Edwards, Patau *and* Triple X at once, and `92,XXXX` as the first three,
+  because every matcher counted copies without asking how many a full set is for that
+  clone. All of them now require a diploid clone. Three published pages carried this:
+  `/karyotype/triploidy/` (four wrong syndromes), `/karyotype/tetraploidy/` (three), and
+  `/karyotype/x-autosome-translocation-manifesting-carrier/` (Turner syndrome on a
+  balanced carrier). `/karyotype/xxyy-syndrome/` gains the Klinefelter note it describes.
+- **The print sheet said "monosomy X" about a female.** It built its sex line from
+  `clone.sex.note`, the parser's field-only reading, while the screen beside it used the
+  corrected one. For `46,X,fra(X)(q27.3)` the exported sheet and the decode row said
+  opposite things. `Teach.sexNote` is exported now and both read it.
+- **Fragile sites are drawn and explained.** `fra` parsed and passed the draw gate from
+  the start, but there was no branch for it in either the renderer or the decode: the
+  chromosome was drawn identical to a normal one, and the decode row for the only
+  abnormality in the karyotype was the generic "an aberration that KaryoDraw drew as best
+  it could". It now draws as an unstained gap at the band, deliberately not as a
+  breakpoint, because the point of a fragile site is that the fragment beyond the gap is
+  still attached. The decode says so, names the band, and separates the normal-variant
+  case (ISCN 2.6.2) from the disease-associated one (5.5.7). `fra(X)(q27.3)` gets a
+  clinical note: the gap reflects a CGG expansion in <i>FMR1</i>, and the diagnosis is
+  molecular, not cytogenetic.
+- **A fragile site written across a slash gets a note, not a warning.**
+  `46,X,fra(X)(q27.3)[5]/46,XX[45]` is well-formed ISCN (4.5.3 b, e) and is how the old
+  reports scored fragile X, so it draws as written. But a slash means two cell lines from
+  one zygote (4.5.2 a), and the expansion is in every cell: what varies is whether the
+  site is *expressed* in a given metaphase. The note says the counts score expression
+  rather than clonality, and that all five fragile-site examples ISCN prints are written
+  without a slash.
+- **`45,fra(X)(q27.3)` joins the conformance corpus**, which had ISCN 5.5.7 a i, ii, iv
+  and v and had dropped iii. The corpus is 395 examples, 337 drawn. `docs/VALIDATION.md`
+  still said 302 accepted, a number the project had outgrown by 35, and there was no test
+  on it; there is one now, matching the one that already pins the paper's copy.
+
 ## 2026-08-24 (every word in the title now matches something people type)
 
 - **"Online", "free" and "tool" come out of the homepage title.** Checked against the

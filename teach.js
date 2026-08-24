@@ -286,6 +286,21 @@
         "); the deletion is inferred from the inversion rather than written (ISCN 5.4.3.2 c). " +
         "The carrier parent is balanced and healthy; this chromosome is not the parent’s chromosome", tag: "rec" };
     }
+    if (k === "fra") {
+      // A fragile site is a gap, not a break: the chromosome stays one piece and the
+      // fragment beyond the gap stays attached, which is what separates fra from del
+      // on the page and in the drawing. ISCN 2.6.2 is the normal-variant case and
+      // 5.5.7 the disease-associated one; the notation is identical for both, so the
+      // decode has to name which one this band is rather than leave the reader to guess.
+      var fband = c + ((bp[0] || [])[0] || "?");
+      var fbase = "a FRAGILE SITE at " + fband +
+        " (fra): a gap that appears at this band when the cells are cultured under stress. " +
+        "It is not a deletion, and the piece beyond the gap stays attached";
+      if (fband === "Xq27.3") {
+        return { text: fbase + ". Xq27.3 is FRAXA, the site that gave fragile X syndrome its name (ISCN 5.5.7 a)", tag: "fra" };
+      }
+      return { text: fbase + ". Most fragile sites are harmless normal variants (ISCN 2.6.2)", tag: "fra" };
+    }
     return { text: "an aberration (" + (ab.raw || k) + ") that KaryoDraw drew as best it could", tag: "unknown" };
   }
 
@@ -452,6 +467,9 @@
   // from the field alone, before any aberration is known, so a lone X there was read as
   // monosomy X even when a second X is drawn inside the rearrangement. Corrected here
   // rather than in the parser, because only the assembled clone knows what was drawn.
+  // Exported, because the print sheet was reading clone.sex.note straight off the
+  // parser and so said "a single X (monosomy X)" about a karyotype the screen beside
+  // it correctly called a female. The sheet is the copy that travels.
   function sexNote(clone) {
     var xDrawn = (clone.complement && clone.complement.X) || 0;
     if (clone.sex.label === "X" && xDrawn >= 2) {
@@ -508,23 +526,75 @@
     return rows;
   }
 
+  // ---- how many sex chromosomes are actually there --------------------------
+  // The matchers below used to read clone.sex.label, the sex FIELD as written. ISCN
+  // 5.5.18.1.1 iii moves a rearranged sex chromosome out of that field and into the
+  // aberration list, so the field cannot say how many X a clone carries, and every
+  // one of ISCN's own fragile-site examples was read wrong: 46,X,fra(X)(q27.3) is "a
+  // female" (5.5.7 a i) and was labelled Turner syndrome, while 45,fra(X)(q27.3) ("an
+  // individual with Turner syndrome", a iii) and 47,XY,fra(X)(q27.3) ("Klinefelter
+  // syndrome", a iv) matched nothing at all. clone.complement already counts a
+  // rearranged X as an X; sexNote() above corrected the same misreading for the
+  // decode row and left these untouched. Read the complement here too.
+
+  // Turner syndrome is loss of all or PART of the second sex chromosome, so a
+  // 46-count variant turns on whether the second one lost material: i(X)(q10) has no
+  // Xp, r(X) lost both tips, idic(Y) lost distal Yq. A fragile site, a balanced
+  // reciprocal translocation, or an inversion leaves the dosage whole and is not Turner.
+  var LOSSY = { del: 1, ring: 1, iso: 1, dic: 1, add: 1, der: 1, rec: 1 };
+  function lossOn(clone, chrom) {
+    return (clone.aberrations || []).some(function (ab) {
+      return LOSSY[ab.kind] && (ab.chroms || []).indexOf(chrom) >= 0;
+    });
+  }
+
+  // Diploid only. 69,XXX is euploid for triploidy, not Triple X, and it was being
+  // reported as Down, Edwards, Patau and Triple X at once because every matcher
+  // counted copies without asking how many a full set is for this clone.
+  function sexCall(clone) {
+    if (clone.ploidy !== 2) return "";
+    var x = clone.complement.X || 0, y = clone.complement.Y || 0;
+    if (x >= 2 && y >= 1) return "klinefelter";               // 47,XXY / 48,XXXY / 48,XXYY
+    if (x === 1 && y === 2) return "xyy";
+    if (x === 3 && y === 0) return "xxx";
+    if (x === 1 && y === 0) return "turner";                  // 45,X and 45,fra(X)(q27.3)
+    if (x === 2 && y === 0 && lossOn(clone, "X")) return "turner";  // 46,X,i(X)(q10), 46,X,r(X)
+    if (x === 1 && y === 1 && lossOn(clone, "Y")) return "turner";  // 46,X,idic(Y)(q11.2)
+    return "";
+  }
+
+  function trisomy(clone, chrom) { return clone.ploidy === 2 && clone.complement[chrom] >= 3; }
+
+  // Which fragile site this is, since fra carries no disease information of its own.
+  function hasFra(clone, band) {
+    return (clone.aberrations || []).some(function (ab) {
+      return ab.kind === "fra" && (ab.chroms || [])[0] + ((ab.breakpoints[0] || [])[0] || "") === band;
+    });
+  }
+
   // ---- curated clinical / board notes --------------------------------------
   // Each matcher inspects a clone and returns notes when it fits.
   var SYNDROMES = [
-    { test: function (c) { return c.complement["21"] >= 3; }, name: "Trisomy 21, Down syndrome",
+    { test: function (c) { return trisomy(c, "21"); }, name: "Trisomy 21, Down syndrome",
       note: "The most common autosomal trisomy compatible with life (~1/700 births). Three copies of chromosome 21. Features: characteristic facies, hypotonia, intellectual disability, ~50% congenital heart disease (AV canal), ↑ risk of AML/ALL and early Alzheimer disease. ~95% free trisomy (nondisjunction, ↑ with maternal age), ~4% Robertsonian translocation, ~1% mosaic." },
-    { test: function (c) { return c.complement["18"] >= 3; }, name: "Trisomy 18, Edwards syndrome",
+    { test: function (c) { return trisomy(c, "18"); }, name: "Trisomy 18, Edwards syndrome",
       note: "Three copies of chromosome 18. Clenched fists with overlapping fingers, rocker-bottom feet, micrognathia, congenital heart disease; most die in the first year." },
-    { test: function (c) { return c.complement["13"] >= 3; }, name: "Trisomy 13, Patau syndrome",
+    { test: function (c) { return trisomy(c, "13"); }, name: "Trisomy 13, Patau syndrome",
       note: "Three copies of chromosome 13. Holoprosencephaly, cleft lip/palate, polydactyly, cutis aplasia; high early mortality." },
-    { test: function (c) { return c.sex.label === "X"; }, name: "Turner syndrome (45,X and variants)",
+    { test: function (c) { return sexCall(c) === "turner"; }, name: "Turner syndrome (45,X and variants)",
       note: "Loss of all or part of the second sex chromosome. 45,X (monosomy X) is classic; variants include an isochromosome i(Xq), a ring r(X), an idic(Y), and 45,X mosaicism (e.g. 45,X/46,XX). Short stature, ovarian dysgenesis/streak gonads, webbed neck, coarctation/bicuspid aortic valve, lymphedema." },
-    { test: function (c) { return c.sex.label === "XXY" || c.sex.label === "XXXY"; }, name: "Klinefelter syndrome (47,XXY and variants)",
+    { test: function (c) { return sexCall(c) === "klinefelter"; }, name: "Klinefelter syndrome (47,XXY and variants)",
       note: "An extra X in a male (≥1 Y with ≥2 X); 47,XXY is classic, with 48,XXXY and 48,XXYY as higher-grade variants. Tall stature, small firm testes, gynecomastia, infertility, low testosterone. The extra X (or Xs) inactivate as Barr bodies." },
-    { test: function (c) { return c.sex.label === "XYY"; }, name: "47,XYY",
+    { test: function (c) { return sexCall(c) === "xyy"; }, name: "47,XYY",
       note: "An extra Y. Usually tall stature; typically normal fertility and intelligence within the normal range. Often incidental." },
-    { test: function (c) { return c.sex.label === "XXX"; }, name: "47,XXX, Triple X",
+    { test: function (c) { return sexCall(c) === "xxx"; }, name: "47,XXX, Triple X",
       note: "An extra X in a female. Often mild/absent phenotype; tall stature, sometimes learning difficulties. Two Barr bodies." },
+    // The fragile site carries no disease information of its own: fra(11)(q23) and
+    // fra(X)(q27.3) are written the same way and mean very different things, so the
+    // card is pinned to the band. Xq27.3 is FRAXA (ISCN 5.5.7 a i-iv), which is the
+    // only reason the notation is still taught.
+    { test: function (c) { return hasFra(c, "Xq27.3"); }, name: "fra(X)(q27.3), Fragile X syndrome (FRAXA)",
+      note: "The gap at Xq27.3 reflects an expanded CGG repeat in <i>FMR1</i>: over about 200 repeats the promoter is methylated and the gene is silenced. Intellectual disability, a long face with large ears, macroorchidism after puberty. Diagnosis is molecular, by CGG repeat analysis (PCR and Southern blot), not by karyotype. Cytogenetic scoring was the original test and gave the syndrome its name, but it misses premutation carriers entirely and is no longer used for diagnosis." },
     { test: function (c) { return hasT(c, "9", "22"); }, acquired: true, name: "t(9;22), Philadelphia chromosome",
       note: "The reciprocal t(9;22)(q34;q11.2) fuses <i>BCR</i> (22) with <i>ABL1</i> (9), creating <i>BCR::ABL1</i>, the hallmark of chronic myeloid leukemia (also some ALL). Target of imatinib and other tyrosine-kinase inhibitors." },
     { test: function (c) { return hasT(c, "15", "17"); }, acquired: true, name: "t(15;17), Acute promyelocytic leukemia",
@@ -701,6 +771,7 @@
 
   window.Teach = {
     decode: decode,
+    sexNote: sexNote,
     plainSummary: plainSummary,
     bandInfo: bandInfo,
     stainInfo: stainInfo,
