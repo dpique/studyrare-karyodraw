@@ -422,13 +422,19 @@
         var fy = pointY(segments, ov.chrom, ov.at, pad);
         if (fy == null) return;
         var gh = 3.4, gy = Math.max(pad + 0.5, Math.min(pad + H - gh - 0.5, fy - gh / 2));
-        body.push('<rect class="fra-gap" x="' + pad + '" y="' + gy.toFixed(2) + '" width="' + W + '" height="' + gh +
+        // The gap presents itself as a band (class + data attributes) because the
+        // hover pipeline keys on those, and this rect covers the exact pixels a
+        // reader points at to ask what the constriction is. The stain is the fra
+        // pseudo-stain Teach.stainInfo names; the band is the one as written.
+        var hover = ov.band ? ' data-chrom="' + esc(ov.chrom) + '" data-band="' + esc(ov.band) + '" data-stain="fra"' : "";
+        body.push('<rect class="band fra-gap"' + hover + ' x="' + pad + '" y="' + gy.toFixed(2) + '" width="' + W + '" height="' + gh +
           '" fill="#fff" clip-path="url(#' + uid + ')"/>');
         // Clipped to the body: a rect body happened to end exactly where these
         // lines do, the waisted body does not, and unclipped lines overhang it.
+        // pointer-events none, or the hairlines shadow the gap rect they border.
         [gy, gy + gh].forEach(function (yy) {
           body.push('<line x1="' + pad + '" y1="' + yy.toFixed(2) + '" x2="' + (pad + W) + '" y2="' + yy.toFixed(2) +
-            '" stroke="' + (simple ? "#64748b" : OP_COLORS.break) + '" stroke-width="0.9" clip-path="url(#' + uid + ')"/>');
+            '" stroke="' + (simple ? "#64748b" : OP_COLORS.break) + '" stroke-width="0.9" clip-path="url(#' + uid + ')" pointer-events="none"/>');
         });
         return;
       }
@@ -613,8 +619,9 @@
       // narrow and fixed-width on the page; the band it sits in can be several Mb.
       // Without this branch fra fell through to the generic full-chromosome return,
       // so 46,X,fra(X)(q27.3) drew an X indistinguishable from a normal X.
-      var fbnd = resolveBand(chrom, (ab.breakpoints[0] || [])[0]), ov6 = [];
-      if (fbnd) ov6.push({ type: "fra", chrom: chrom, at: fbnd.mid });
+      var fraBand = (ab.breakpoints[0] || [])[0];
+      var fbnd = resolveBand(chrom, fraBand), ov6 = [];
+      if (fbnd) ov6.push({ type: "fra", chrom: chrom, at: fbnd.mid, band: fraBand });
       return { segments: [fullSeg(chrom)], overlays: ov6, caption: inst.label };
     }
     if (kind === "ring") {

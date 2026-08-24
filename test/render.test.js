@@ -752,7 +752,7 @@ test('the fragile-site gap reaches the drawn SVG', () => {
     return cont.innerHTML;
   };
   const fra = draw('46,X,fra(X)(q27.3)');
-  assert.match(fra, /class="fra-gap"/, 'the gap is drawn');
+  assert.match(fra, /fra-gap/, 'the gap is drawn');
   assert.doesNotMatch(draw('46,XX'), /fra-gap/, 'and only when a fragile site was written');
 });
 
@@ -778,4 +778,22 @@ test('a fragile site pinches the body into a waist at the band', () => {
     assert.doesNotMatch(draw('46,XX'), /<clipPath id="[^"]*"><path /,
       `a normal chromosome keeps its plain capsule (level ${level})`);
   }
+});
+
+// The karyogram hover pipeline keys on `.band` rects and their data attributes
+// (index.html wireInteractions), and the gap rect sat on top of the q27.3 band
+// with neither, so the one region of this chromosome a reader would point at was
+// the one region the tooltip went silent on. The gap now presents itself as a
+// hoverable band with a fra pseudo-stain, and the hairlines pass the pointer
+// through so they cannot shadow it.
+test('the fragile-site gap is hoverable and names its band', () => {
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, ISCN.parse('46,X,fra(X)(q27.3)').clones[0], { theme: 'detailed', level: 1, affected: {} });
+  const gap = (cont.innerHTML.match(/<rect class="band fra-gap"[^>]*>/) || [])[0];
+  assert.ok(gap, 'the gap rect is a band the hover pipeline can see');
+  assert.match(gap, /data-chrom="X"/);
+  assert.match(gap, /data-band="q27.3"/, 'the band as written, so the tooltip reads Xq27.3');
+  assert.match(gap, /data-stain="fra"/, 'the pseudo-stain Teach.stainInfo names');
+  const hairlines = cont.innerHTML.match(/<line [^>]*pointer-events="none"[^>]*>/g) || [];
+  assert.ok(hairlines.length >= 2, 'the hairlines do not intercept the hover');
 });

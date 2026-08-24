@@ -3,6 +3,23 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-24 (the waist answers the pointer)
+
+- **Hovering the fragile-site gap now says what it is.** The karyogram tooltip keys on
+  `.band` rects, and the unstained gap rect sat on top of the q27.3 band with neither
+  the class nor the data attributes, so pointing at the one feature this chromosome is
+  about made the tooltip go silent. The gap rect now presents itself as a hoverable
+  band with a `fra` pseudo-stain (the `acen_carried` precedent), so the tooltip reads
+  "Xq27.3 Fragile site (unstained gap)", the amber box outlines the gap, and the detail
+  plate scrubs to the band. The hairlines pass the pointer through so they cannot
+  shadow it.
+- **Why the constriction stays white, recorded once.** Xq27.3 is a gpos100 band, the
+  darkest stain on the chromosome, and the fragile site is an achromatic gap inside it:
+  the chromatin decondenses under replication stress and fails to take up Giemsa.
+  Paper-white against the dark band is the observation itself; painting the gap to
+  match the band would claim stained chromatin where the whole point is that there is
+  none. `Teach.stainInfo("fra")` now carries this explanation.
+
 ## 2026-08-24 (a fragile site now looks like one)
 
 - **The body constricts into a waist at a fragile site.** `fra` drew a flat unstained
