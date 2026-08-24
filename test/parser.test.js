@@ -1293,3 +1293,13 @@ test('the fragile-site note fires only when the fragile site is in a mosaic', ()
   assert.ok(!ISCN.parse('mos 45,X[12]/46,XX[18]').note, 'a real two-cell-line mosaic');
   assert.ok(!ISCN.parse('46,XX,fra(11)(q23)').note);
 });
+
+// derLabel had no fra case, so the red sub-label under a fragile-site chromosome
+// fell through to the bare chromosome name: 46,X,fra(X)(q27.3) drew its second X
+// captioned only "X", while every other abnormality names its operation (del(5),
+// dup(1), i(X)...). The caption is the same kind(chrom) shorthand the rest get.
+test('a fragile-site chromosome is sub-labelled fra(N) like every other abnormality', () => {
+  const fraSlot = (k, c) => (ISCN.parse(k).clones[0].slots[c] || []).find((i) => i.kind === 'fra');
+  assert.equal(fraSlot('46,X,fra(X)(q27.3)', 'X').label, 'fra(X)');
+  assert.equal(fraSlot('46,XX,fra(11)(q23)', '11').label, 'fra(11)');
+});

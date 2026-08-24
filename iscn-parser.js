@@ -903,6 +903,7 @@
       if (ab.kind === "der") return "der(" + c + ")";
       if (ab.kind === "hsr") return "hsr(" + c + ")";
       if (ab.kind === "rec") return "rec(" + c + ")";
+      if (ab.kind === "fra") return "fra(" + c + ")";
       if (ab.kind === "t" || ab.kind === "dic" || ab.kind === "ins") return "der(" + c + ")";
       return c;
     }

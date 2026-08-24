@@ -3,6 +3,23 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-24 (a fragile site now looks like one)
+
+- **The body constricts into a waist at a fragile site.** `fra` drew a flat unstained
+  gap crossed by two hairlines, near-invisible at karyogram scale: the affected X of
+  `46,X,fra(X)(q27.3)` read as a normal X unless you knew where to squint. The clip
+  path and the outline now both follow a pinched capsule, so the bands end at the
+  constriction the way they do under the microscope (Gardner 5e calls the appearance
+  an "apparent rupture", with the distal material still attached, which is exactly
+  what a waist claims and a break mark would not). The gap and its hairlines still
+  sit inside the waist, now clipped to the pinched body so they cannot overhang it.
+  Waist centers are clamped clear of the end caps, and multiple sites on one
+  chromosome each get their own pinch.
+- **The red sub-label finally names the operation.** `derLabel` had a case for every
+  abnormality kind except `fra`, so while a deletion is captioned `del(5)` and a
+  duplication `dup(1)`, a fragile-site chromosome fell through to a bare `X`. It now
+  reads `fra(X)`.
+
 ## 2026-08-24 (the clinical card counts chromosomes instead of reading the sex field)
 
 - **A rearranged X is still an X, so stop calling those karyotypes Turner syndrome.**
