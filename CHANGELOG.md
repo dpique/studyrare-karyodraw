@@ -3,6 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-24 (every word in the title now matches something people type)
+
+- **"Online", "free" and "tool" come out of the homepage title.** Checked against the
+  Search Console export rather than argued about: across 144 reported queries, "karyotype"
+  appears in 53 of them for 98 impressions, "karyogram" in 3 for 7, "draw" in 2, "ISCN" in
+  1, and "online", "free" and "tool" in **none**. Those three were filling space. The
+  earlier round of this title had kept all three and then dropped "free" to buy room for
+  the brand suffix, which was the wrong one to drop of the three, and the answer was that
+  none of them had earned the space. The title is now
+  `Draw Any ISCN Karyotype as a Banded Karyogram | KaryoDraw`, 57 characters, where every
+  word either matches a real query or is the brand. "Banded" says what the drawing is, in
+  the same words the subhead uses.
+
 ## 2026-08-24 (the site name needed the title to agree with it)
 
 - **The brand goes back in the title.** The `WebSite` node added on 2026-08-18 was
