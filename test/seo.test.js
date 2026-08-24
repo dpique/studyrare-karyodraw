@@ -34,12 +34,17 @@ test('homepage title front-loads the keyword, not the brand, and does not trunca
   assert.ok(title, 'homepage should have a <title>');
   assert.doesNotMatch(title, /^KaryoDraw/i, 'title should start with a search term, not the brand');
   assert.match(title.slice(0, 32), /karyotype/i, 'the primary keyword should be front-loaded');
-  // Google truncated the 67-character predecessor in the live SERP. The site name now
-  // comes from the WebSite node below, so the "| KaryoDraw" suffix is not needed here.
+  // Google truncated the 67-character predecessor in the live SERP, so it stays short.
   assert.ok(title.length <= 60, `homepage title is ${title.length} chars; Google cuts near 60`);
 });
 
-test('homepage declares a WebSite node so the SERP prints the site name, not the domain', () => {
+// Google's site-name guidance lists four sources and asks that they agree: the WebSite
+// node, og:site_name, the <title>, and the headings. Declaring the node alone is not
+// enough. It shipped on 2026-08-18 with the brand simultaneously stripped from the title,
+// and six days later the result still read "karyodraw.com" while already showing the new
+// title, which is what proves the markup was crawled and passed over rather than missed.
+// So this checks the sources agree, not merely that the node exists.
+test('every source Google reads for the site name spells the brand the same way', () => {
   const html = read('index.html');
   const blocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
     .map((m) => JSON.parse(m[1]));
@@ -47,9 +52,16 @@ test('homepage declares a WebSite node so the SERP prints the site name, not the
   assert.ok(site, 'homepage should carry a WebSite JSON-LD node (Google reads it for the site name)');
   assert.equal(site.name, 'KaryoDraw');
   assert.equal(site.url, 'https://karyodraw.com/');
-  // The three brand signals must agree or Google discards all of them.
+  // alternateName is what Google falls back to when it declines the preferred name, so a
+  // description parked in that field is worse in the result than the domain it replaces.
+  assert.ok(!('alternateName' in site) || /^KaryoDraw\S*$/.test(site.alternateName),
+    `alternateName must be a name, not a description (got ${JSON.stringify(site.alternateName)})`);
   assert.match(html, /<meta property="og:site_name" content="KaryoDraw"/,
     'og:site_name must spell the brand the same way as the WebSite node');
+  assert.match(titleOf(html), /KaryoDraw/,
+    'the <title> is one of the four sources; leaving the brand out of it silenced a signal once already');
+  assert.match(html, /<span class="sitebar-word">KaryoDraw<\/span>/,
+    'and the brand must appear as visible text on the page, not only in metadata');
 });
 
 test('generated karyotype sub-pages keep the brand as a span and a topic h1', () => {

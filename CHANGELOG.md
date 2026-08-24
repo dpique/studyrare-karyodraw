@@ -3,6 +3,32 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-24 (the site name needed the title to agree with it)
+
+- **The brand goes back in the title.** The `WebSite` node added on 2026-08-18 was
+  supposed to make the result read "KaryoDraw" instead of "karyodraw.com". Six days on it
+  still read the domain, while already showing the new title, which is what proves the
+  markup had been crawled and passed over rather than missed. Google's site-name guidance
+  names four sources and asks that they agree: the `WebSite` node, `og:site_name`, the
+  `<title>`, and the headings. The same change that added the node had stripped
+  "| KaryoDraw" from the title on the theory that the node made it redundant, so two of
+  the four were saying nothing. "Free" comes out to pay for the suffix, which keeps the
+  title at 58 characters, under where Google truncated its 67-character predecessor.
+  Whether Google takes the hint is still Google's call; what changed is that it is no
+  longer being given a reason to decline.
+
+- **`alternateName` is gone.** It read "KaryoDraw ISCN karyotype visualizer", which is a
+  description in the name field. Google falls back to `alternateName` when it declines the
+  preferred name, so that string would have been worse in the result than the domain it
+  was meant to replace.
+
+- **`npm run seo-check` checks the deployed site, not the repo.** Both search-appearance
+  bugs so far were invisible to `test/seo.test.js`, which reads files, and both were one
+  command to see: `www` and `http` answering 200 for days, and a correct `WebSite` node
+  sitting beside a title that had gone quiet. The script fetches the live homepage and
+  reports the four site-name sources, the title length, the canonical, and the redirects,
+  exiting non-zero when they disagree. It found both of today's defects on the first run.
+
 ## 2026-08-18 (four spellings of every page, and a heading no one was searching for)
 
 - **One origin.** `www.karyodraw.com` and plain `http://` each answered 200, so Google
