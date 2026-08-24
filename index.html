@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
-<title>Draw Any ISCN Karyotype Online: Free Karyogram Tool</title>
+<title>Draw Any ISCN Karyotype Online: Karyogram Tool | KaryoDraw</title>
 <link rel="canonical" href="https://karyodraw.com/" />
 <meta name="description" content="Free browser tool that draws any ISCN karyotype as a correctly banded karyogram and explains every symbol in plain language. Built for genetics, cytogenetics, and board exam prep." />
 <meta name="keywords" content="ISCN karyotype, karyotype visualizer, karyotype interpreter, cytogenetics, chromosome nomenclature, karyogram, genetic counseling, medical genetics board prep" />
@@ -45,17 +45,25 @@
 }
 </script>
 <!-- WebSite, homepage only. This is the node Google reads to decide the site name it
-     prints above the result, and without it the SERP falls back to the bare domain
-     ("karyodraw.com"). The sub-pages already reference the same WebSite via isPartOf
-     (scripts/build-pages.mjs); this declares it. Keep name, og:site_name, and the
-     "| KaryoDraw" title suffix on sub-pages spelling the brand identically: Google
-     treats a disagreement between them as a reason to ignore all three. -->
+     prints above the result, and without it the SERP falls back to the bare domain.
+     Declaring it is necessary and not sufficient: it shipped on 2026-08-18 and six days
+     later the result still read "karyodraw.com" while already showing the NEW title,
+     which proves the markup had been crawled and passed over rather than missed.
+     Google's site-name guidance names four sources and asks that they agree: this node,
+     og:site_name, the <title>, and the headings. Two of the four were saying nothing,
+     because the same change that added this node stripped "| KaryoDraw" from the title
+     on the theory that this node made it redundant. It does not. The title carries the
+     brand again; keep all of them spelling it identically.
+
+     No alternateName. It used to read "KaryoDraw ISCN karyotype visualizer", which is a
+     description wearing the name field: Google may pick alternateName when it declines
+     the preferred one, and that string would have been worse in the result than the
+     domain it was meant to replace. -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "WebSite",
   "name": "KaryoDraw",
-  "alternateName": "KaryoDraw ISCN karyotype visualizer",
   "url": "https://karyodraw.com/"
 }
 </script>

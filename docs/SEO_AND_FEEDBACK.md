@@ -52,6 +52,31 @@ Validate notations first with the parser if unsure (all must parse with no warni
 - Homepage `?k=<notation>` views set their `<link rel=canonical>` to the matching
   landing page (client-side), so tool views consolidate onto one canonical URL.
 
+**Checking the deployed site: `npm run seo-check`** (`scripts/check-seo-signals.mjs`;
+local and on-demand, not in CI, takes an optional origin argument). It fetches the live
+homepage and reports the four sources Google reads for a site name, the title length, the
+canonical, and the `www`/`http` redirects, exiting non-zero when any of them disagree.
+
+Run it after any deploy that touches the head of `index.html`, and before concluding that
+a search-appearance problem is Google's fault. Both such bugs so far were invisible to
+`test/seo.test.js`, which reads the repo rather than the deployed site, and both were one
+command to see:
+
+- `www` and `http` each answered 200 for days because the Worker was never invoked for
+  static-asset paths (#187).
+- The `WebSite` node was live and correct while the brand had been stripped from
+  `<title>`, so two of Google's four sources said nothing and the result kept printing
+  the bare domain (#188).
+
+**Site name.** Google's four sources are the `WebSite` node, `og:site_name`, `<title>`,
+and the headings, and its guidance asks that they agree
+(<https://developers.google.com/search/docs/appearance/site-names>). Declaring the node is
+necessary and not sufficient. Keep the brand spelled identically in all of them, leave
+`alternateName` off unless there is a genuine second name for the site (Google falls back
+to it when it declines the preferred one, so a description parked there is worse in the
+result than the domain), and expect weeks rather than days for a change to appear, since
+site names are computed per domain rather than per page.
+
 ## 2. "Not right?" feedback flagging
 
 A one-click flag on the karyogram (`#flagbtn`), leading the toolbar on the left in amber:
