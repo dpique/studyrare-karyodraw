@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-26 (the export stops telling you when it was drawn)
+
+- **Exported and copied figures no longer carry a date.** The watermark under the
+  karyogram read `karyodraw.com · 2026-08-26`; it now reads `karyodraw.com`. The date
+  was there to tie a figure found in a slide deck years later back to the date-grouped
+  entries in this file, which serves the repo rather than the person exporting. These
+  figures go into lecture decks and question banks that get reused for years, and a
+  visible date makes a still-correct karyogram look stale the moment the year turns.
+  The export now reads no clock at all. Provenance is still recoverable: the karyotype
+  travels in the filename, and the site always runs the latest deploy.
+
 ## 2026-08-24 (the waist answers the pointer)
 
 - **Hovering the fragile-site gap now says what it is.** The karyogram tooltip keys on
