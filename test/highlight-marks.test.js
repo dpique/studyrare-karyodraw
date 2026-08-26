@@ -3,17 +3,17 @@
 // (2026-08-26, preview-dup-mark.html; see docs/INTERFACE.md "A span mark is a
 // frame on the margin"). The grammar:
 //
-//   frame  = the span of interest, wrapped from OUTSIDE the body so no band
-//            loses width; its color names the op (amber duplicated, teal
-//            inverted, both in the legend);
-//   hooks  = opposed quarter-turn arrows at the top-right and bottom-left
-//            frame corners, ALWAYS teal: the span is drawn end-for-end.
+//   frame  = a DUPLICATED span, wrapped from OUTSIDE the body so no band
+//            loses width, in the dup amber. One device, one meaning: a box
+//            appears exactly when something is extra (Dan's call, round 6);
+//   hooks  = opposed quarter-turn arrows at the top-right and bottom-left of
+//            the span, ALWAYS teal: the span is drawn end-for-end.
 //
-// The channels compose: a plain inversion is a teal frame with teal hooks; a
-// direct duplication is an amber frame with no hooks; the rec graft and any
-// inverted duplication are an amber frame with teal hooks, which is the whole
-// point, because "an extra copy, and it is flipped" is what dup(2p) from an
-// inversion carrier means. Reversal is read off the MODEL (the segment's
+// The devices compose by shape, not color: a plain inversion is hooks alone
+// (balanced, nothing gained, so no box); a direct duplication is a box alone;
+// the rec graft and any inverted duplication are box plus hooks, which is the
+// whole point, because "an extra copy, and it is flipped" is what dup(2p)
+// from an inversion carrier means. Reversal is read off the MODEL (the segment's
 // reversed flag), not off the notation, so the rule cannot drift from the
 // geometry. The Realistic theme stays bare (#196), and every mark lets the
 // pointer through (#197's invariant test enforces that part).
@@ -54,13 +54,13 @@ test('a direct duplication gets an amber frame and no hooks', () => {
   assert.equal((svg.match(hookRe(TEAL)) || []).length, 0, 'nothing is flipped, so no hooks');
 });
 
-test('an inversion gets a teal frame and both teal hooks', () => {
+test('an inversion gets the hooks alone: balanced, so no box', () => {
   const svg = drawOut('46,XX,inv(2)(p21q31)', '2', 'simple').svg;
-  assert.match(svg, frameRe(TEAL));
+  assert.ok(!/rx="2\.5"/.test(svg), 'no frame of any color: a box means an extra copy');
   assert.equal((svg.match(hookRe(TEAL)) || []).length, 2, 'top-right and bottom-left hooks');
 });
 
-test('the rec graft composes the channels: amber frame, teal hooks', () => {
+test('the rec graft composes the devices: amber box, teal hooks', () => {
   const svg = drawOut('46,XX,rec(2)dup(2p)inv(2)(p21q31)dmat', '2', 'simple').svg;
   assert.match(svg, frameRe(AMBER), 'the extra copy is framed as a duplication');
   assert.equal((svg.match(hookRe(TEAL)) || []).length, 2, 'and hooked as flipped');

@@ -479,39 +479,42 @@
       if (simple) [span.y0, span.y1].forEach(function (yy) { if (yy > pad + 0.5 && yy < pad + H - 0.5) breakMark(yy, "#1e293b"); });
     });
     // A dup/inv span mark, Highlight theme only (Realistic promises a bare
-    // slide, #196). Designed with Dan over five preview rounds, 2026-08-26:
-    //  - the FRAME wraps the span from OUTSIDE the body, riding the white
-    //    margin, so no band loses width; its color names the op (amber
-    //    duplicated, teal inverted; the legend teaches both);
-    //  - when the span is drawn end-for-end (every inv, and any dup whose
-    //    copy is inverted, the rec graft included), two opposed quarter-turn
-    //    HOOKS grip the top-right and bottom-left frame corners, each lead-in
-    //    collinear with the span-edge line, so the line itself appears to
-    //    swing around: the rotational-couple picture of a flip. Hooks are
-    //    ALWAYS teal, whatever the frame: teal means turned around, so an
-    //    amber frame with teal hooks reads "an extra copy, and it is flipped".
-    // Reversal is read off the segment's reversed flag, never re-derived from
-    // notation, so the glyph cannot disagree with the drawn geometry. All of
-    // it pointer-events none: the tooltip invariant (#197) owns that rule.
+    // slide, #196). Designed with Dan over six preview rounds, 2026-08-26.
+    // One device, one meaning, distinguished by shape rather than color:
+    //  - the FRAME means a DUPLICATED span, and nothing else. It wraps the
+    //    span from OUTSIDE the body, riding the white margin, so no band
+    //    loses width. A box appears exactly when something is extra; a plain
+    //    inversion is balanced, so it gets no box (Dan's call, round 6).
+    //  - the HOOKS mean drawn END-FOR-END: opposed quarter-turn arrows at
+    //    the top-right and bottom-left of the span, lead-ins collinear with
+    //    the span-edge line so the line itself appears to swing around.
+    //    Always teal. Every inv gets them; a dup gets them exactly when its
+    //    copy is inverted (the rec graft, or a proximal-first dup).
+    // The devices compose: amber box + teal hooks on the rec graft reads "an
+    // extra copy, and it is flipped". Reversal is read off the segment's
+    // reversed flag, never re-derived from notation, so the glyph cannot
+    // disagree with the drawn geometry. All of it pointer-events none: the
+    // tooltip invariant (#197) owns that rule.
     function drawSpanMark(ov, span) {
-      var col = ov.type === "dup" ? OP_COLORS.dup : OP_COLORS.inv;
-      body.push('<rect x="' + (pad - 2) + '" y="' + span.y0.toFixed(2) + '" width="' + (W + 4) +
-        '" height="' + (span.y1 - span.y0).toFixed(2) + '" rx="2.5" fill="none" stroke="' + col +
+      var isDup = ov.type === "dup";
+      if (isDup) body.push('<rect x="' + (pad - 2) + '" y="' + span.y0.toFixed(2) + '" width="' + (W + 4) +
+        '" height="' + (span.y1 - span.y0).toFixed(2) + '" rx="2.5" fill="none" stroke="' + OP_COLORS.dup +
         '" stroke-width="1.8" pointer-events="none"/>');
       var rev = ov.type === "inv" || (ov.segIndex != null && segments[ov.segIndex] && segments[ov.segIndex].reversed);
       if (!rev) return;
-      var hk = OP_COLORS.inv, r = 3.6, lead = 2.8, gap = 1.3;
+      // Hooks clear the frame when there is one, else the body edge.
+      var hk = OP_COLORS.inv, r = 3.6, lead = 2.8, gap = 1.3, edge = isDup ? 2 : 0;
       var head = function (ex, ey, dir) {
         return '<path d="M' + (ex - 2.1).toFixed(2) + ' ' + ey.toFixed(2) + ' L' + (ex + 2.1).toFixed(2) + ' ' + ey.toFixed(2) +
           ' L' + ex.toFixed(2) + ' ' + (ey + dir * 3.6).toFixed(2) + ' Z" fill="' + hk + '" pointer-events="none"/>';
       };
-      var bx1 = pad + W + 2 + gap + lead;
-      body.push('<path d="M' + (pad + W + 2 + gap).toFixed(2) + ' ' + span.y0.toFixed(2) + ' H' + bx1.toFixed(2) +
+      var bx1 = pad + W + edge + gap + lead;
+      body.push('<path d="M' + (pad + W + edge + gap).toFixed(2) + ' ' + span.y0.toFixed(2) + ' H' + bx1.toFixed(2) +
         ' A' + r + ' ' + r + ' 0 0 1 ' + (bx1 + r).toFixed(2) + ' ' + (span.y0 + r).toFixed(2) +
         '" fill="none" stroke="' + hk + '" stroke-width="1.5" pointer-events="none"/>');
       body.push(head(bx1 + r, span.y0 + r, 1));
-      var bx0 = pad - 2 - gap - lead;
-      body.push('<path d="M' + (pad - 2 - gap).toFixed(2) + ' ' + span.y1.toFixed(2) + ' H' + bx0.toFixed(2) +
+      var bx0 = pad - edge - gap - lead;
+      body.push('<path d="M' + (pad - edge - gap).toFixed(2) + ' ' + span.y1.toFixed(2) + ' H' + bx0.toFixed(2) +
         ' A' + r + ' ' + r + ' 0 0 1 ' + (bx0 - r).toFixed(2) + ' ' + (span.y1 - r).toFixed(2) +
         '" fill="none" stroke="' + hk + '" stroke-width="1.5" pointer-events="none"/>');
       body.push(head(bx0 - r, span.y1 - r, -1));

@@ -1070,17 +1070,26 @@
   var CEN_SW = { angle: -45, gap: 3.4 }, HET_SW = { angle: 45, gap: 7 };
   function buildLegend() {
     var box = $("#legend"), OP = window.Karyo.OP_COLORS;
+    // A legend row appears exactly when its mark is in the drawn karyogram,
+    // read off the DOM after render so the two cannot disagree. Dan drew a
+    // plain t(9;22) and was taught a dup frame, inversion hooks and red
+    // carets, none of them on screen, while the dashed fusion seam, the one
+    // mark the figure DOES carry, had no entry. Each fingerprint below is the
+    // renderer's own emission (see drawSpanMark and breakMark).
+    var kar = $("#karyo");
+    var has = function (sel) { return !!(kar && kar.querySelector(sel)); };
     if (MODE === "simple") {
-      // Plain baseline + only the involved chromosomes are colored. The mark
-      // swatches live HERE, not in the Realistic legend: since the Realistic
-      // theme stopped drawing marks, a legend teaching them there described
-      // nothing on screen. The frame/hook grammar is the 2026-08-26 preview
-      // round with Dan (see docs/INTERFACE.md).
       var html = swatch("#ffffff", "gray = a chromosome not involved in the abnormality") +
-        hatchSwatch("centromere", CEN_SW) + hatchSwatch("variable region / stalk", HET_SW) +
-        swatch(OP.dup, "frame: duplicated segment") +
-        swatch(OP.inv, "frame: inverted segment · hooks: drawn end-for-end") +
-        swatch(OP.del, "carets: a breakpoint");
+        hatchSwatch("centromere", CEN_SW) + hatchSwatch("variable region / stalk", HET_SW);
+      if (has('rect[rx="2.5"]')) html += swatch(OP.dup, "box: duplicated segment");
+      if (has('path[stroke="' + OP.inv + '"]')) html += swatch(OP.inv, "hooks: inverted, drawn end-for-end");
+      // Caret swatch takes the color actually drawn: red for a deletion
+      // break, slate for the edges of a marked span.
+      if (has('path[fill="' + OP.del + '"]')) html += swatch(OP.del, "carets: a breakpoint");
+      else if (has('path[fill="#1e293b"]')) html += swatch("#1e293b", "carets: a breakpoint");
+      if (has('line[stroke-dasharray="2 1.5"]')) {
+        html += '<span class="item"><span class="sw" style="background:repeating-linear-gradient(90deg,#0f172a 0,#0f172a 4px,#fff 4px,#fff 7px)"></span>dashed line: where two chromosomes fused</span>';
+      }
       var keys = Object.keys(AFFECTED);
       if (keys.length) {
         html += '<span class="item" style="color:#94a3b8">│ involved:</span>';
@@ -1091,16 +1100,19 @@
       }
       box.innerHTML = html;
     } else {
-      // Realistic: stains and structures only. No mark swatches, because the
-      // theme draws no marks (#196); add is the exception, unknown material
-      // being content rather than commentary.
+      // Realistic: stains and structures only, marks having left the theme in
+      // #196. The add hatch is content rather than commentary and still
+      // draws; its row follows the same rule and appears only when it does.
+      // Discriminator: the add hatch rect is the one pattern-filled rect that
+      // is neither a band nor pointer-transparent (the centromere hatch
+      // carries pointer-events="none" since #197).
       var S = window.Karyo.STAIN;
       var items = [
         [S.gneg, "G-neg (pale, gene-rich)"], [S.gpos50, "G-pos (dark, gene-poor)"], [S.gpos100, "darkest band"]
       ];
       var html2 = items.map(function (i) { return swatch(i[0], i[1]); }).join("");
       html2 += hatchSwatch("centromere", CEN_SW) + hatchSwatch("variable region / stalk", HET_SW);
-      html2 += swatch(OP.add, "added (unknown)");
+      if (has('rect[fill^="url("]:not(.band):not([pointer-events])')) html2 += swatch(OP.add, "added (unknown)");
       box.innerHTML = html2;
     }
   }
