@@ -1069,11 +1069,18 @@
   // make the swatches lean the same way as the chromosomes.
   var CEN_SW = { angle: -45, gap: 3.4 }, HET_SW = { angle: 45, gap: 7 };
   function buildLegend() {
-    var box = $("#legend");
+    var box = $("#legend"), OP = window.Karyo.OP_COLORS;
     if (MODE === "simple") {
-      // Plain baseline + only the involved chromosomes are colored.
+      // Plain baseline + only the involved chromosomes are colored. The mark
+      // swatches live HERE, not in the Realistic legend: since the Realistic
+      // theme stopped drawing marks, a legend teaching them there described
+      // nothing on screen. The frame/hook grammar is the 2026-08-26 preview
+      // round with Dan (see docs/INTERFACE.md).
       var html = swatch("#ffffff", "gray = a chromosome not involved in the abnormality") +
-        hatchSwatch("centromere", CEN_SW) + hatchSwatch("variable region / stalk", HET_SW);
+        hatchSwatch("centromere", CEN_SW) + hatchSwatch("variable region / stalk", HET_SW) +
+        swatch(OP.dup, "frame: duplicated segment") +
+        swatch(OP.inv, "frame: inverted segment · hooks: drawn end-for-end") +
+        swatch(OP.del, "carets: a breakpoint");
       var keys = Object.keys(AFFECTED);
       if (keys.length) {
         html += '<span class="item" style="color:#94a3b8">│ involved:</span>';
@@ -1084,13 +1091,16 @@
       }
       box.innerHTML = html;
     } else {
-      var S = window.Karyo.STAIN, OP = window.Karyo.OP_COLORS;
+      // Realistic: stains and structures only. No mark swatches, because the
+      // theme draws no marks (#196); add is the exception, unknown material
+      // being content rather than commentary.
+      var S = window.Karyo.STAIN;
       var items = [
         [S.gneg, "G-neg (pale, gene-rich)"], [S.gpos50, "G-pos (dark, gene-poor)"], [S.gpos100, "darkest band"]
       ];
       var html2 = items.map(function (i) { return swatch(i[0], i[1]); }).join("");
       html2 += hatchSwatch("centromere", CEN_SW) + hatchSwatch("variable region / stalk", HET_SW);
-      [[OP.del, "deleted"], [OP.dup, "duplicated"], [OP.inv, "inverted"], [OP.add, "added (unknown)"]].forEach(function (i) { html2 += swatch(i[0], i[1]); });
+      html2 += swatch(OP.add, "added (unknown)");
       box.innerHTML = html2;
     }
   }

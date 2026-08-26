@@ -3,6 +3,23 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-26 (the span wears its meaning on the margin)
+
+- **Highlight mode now marks duplicated and inverted spans with an outset frame, and
+  flipped spans with quarter-turn hooks.** Until now the only span-level mark was a pair
+  of carets at the breakpoints; nothing said which piece was the extra copy or that a
+  stretch runs backwards. The frame wraps the span from outside the body, so every band
+  keeps its full width; amber means duplicated, teal means inverted, and the legend
+  teaches both in this mode instead of in Realistic, where nothing has drawn them since
+  the marks left that theme. Opposed quarter-turn hooks at the frame's diagonal corners,
+  always teal, mark any span drawn end-for-end, read straight off the segment model. The
+  channels compose on the recombinant: an amber frame with teal hooks says "an extra
+  copy, and it is flipped", the two facts a rec(2)dup(2p) reader needs. The inversion
+  color moved from #5e72e4, which was the same hex as the first affected-palette hue and
+  vanished on its own chromosome, to the app's existing segregation teal. Designed with
+  Dan over five rendered preview rounds; docs/INTERFACE.md records the grammar and the
+  losing alternatives.
+
 ## 2026-08-26 (the decode stops denying the inheritance it names)
 
 - **The recombinant paragraph now affirms the inheritance the dmat row states.** It used

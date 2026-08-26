@@ -34,7 +34,10 @@
   // Figure-level encodings (not UI chrome): error / amber / periwinkle / navy.
   // The brand amber (the CTA accent) is single-sourced so its three uses stay in step.
   var AMBER = "#ec9b27";
-  var OP_COLORS = { del: "#e0554f", dup: AMBER, inv: "#5e72e4", add: "#808ba8", break: "#242a45", hsr: "#d6409f" };
+  // inv is the segregation figures' teal, reused rather than minted: the old
+  // inv blue #5e72e4 was the SAME hex as AFFECTED_PALETTE[0], so an inversion
+  // mark vanished against the very chromosome it sat on (found 2026-08-26).
+  var OP_COLORS = { del: "#e0554f", dup: AMBER, inv: "#1f9e8f", add: "#808ba8", break: "#242a45", hsr: "#d6409f" };
 
   // Affected-chromosome hues. Leads with the brand pair — periwinkle "field"
   // then amber "signal" — so a 2-way rearrangement echoes StudyRare's motif.
@@ -284,6 +287,11 @@
     var H = h(totalBp);
     var pad = 3, cap = W * CAP_RATIO, CEN_H = 9;
     var svgW = W + pad * 2, svgH = H + pad * 2;
+    // Span marks (dup/inv frames and hooks, Highlight theme) ride the margin
+    // OUTSIDE the body, so a marked figure widens by nine units each side.
+    // Symmetric on purpose: -9 to svgW+9 keeps the body's visual center, so a
+    // marked chromosome still lines up with its unmarked homolog in a pair.
+    var padX = (simple && overlays.some(function (o) { return o.type === "dup" || o.type === "inv"; })) ? 9 : 0;
     var uid = "c" + (renderComposite._n = (renderComposite._n || 0) + 1);
 
     // A fragile site is a constriction the whole body has, not paint on top of it,
@@ -465,9 +473,49 @@
         // Amplified block: a solid vivid band (the homogeneously staining region).
         body.push('<rect x="' + pad + '" y="' + span.y0.toFixed(2) + '" width="' + W + '" height="' + hh +
           '" fill="' + OP_COLORS.hsr + '" clip-path="url(#' + uid + ')"/>');
+      } else if (simple && (ov.type === "dup" || ov.type === "inv")) {
+        drawSpanMark(ov, span);
       }
       if (simple) [span.y0, span.y1].forEach(function (yy) { if (yy > pad + 0.5 && yy < pad + H - 0.5) breakMark(yy, "#1e293b"); });
     });
+    // A dup/inv span mark, Highlight theme only (Realistic promises a bare
+    // slide, #196). Designed with Dan over five preview rounds, 2026-08-26:
+    //  - the FRAME wraps the span from OUTSIDE the body, riding the white
+    //    margin, so no band loses width; its color names the op (amber
+    //    duplicated, teal inverted; the legend teaches both);
+    //  - when the span is drawn end-for-end (every inv, and any dup whose
+    //    copy is inverted, the rec graft included), two opposed quarter-turn
+    //    HOOKS grip the top-right and bottom-left frame corners, each lead-in
+    //    collinear with the span-edge line, so the line itself appears to
+    //    swing around: the rotational-couple picture of a flip. Hooks are
+    //    ALWAYS teal, whatever the frame: teal means turned around, so an
+    //    amber frame with teal hooks reads "an extra copy, and it is flipped".
+    // Reversal is read off the segment's reversed flag, never re-derived from
+    // notation, so the glyph cannot disagree with the drawn geometry. All of
+    // it pointer-events none: the tooltip invariant (#197) owns that rule.
+    function drawSpanMark(ov, span) {
+      var col = ov.type === "dup" ? OP_COLORS.dup : OP_COLORS.inv;
+      body.push('<rect x="' + (pad - 2) + '" y="' + span.y0.toFixed(2) + '" width="' + (W + 4) +
+        '" height="' + (span.y1 - span.y0).toFixed(2) + '" rx="2.5" fill="none" stroke="' + col +
+        '" stroke-width="1.8" pointer-events="none"/>');
+      var rev = ov.type === "inv" || (ov.segIndex != null && segments[ov.segIndex] && segments[ov.segIndex].reversed);
+      if (!rev) return;
+      var hk = OP_COLORS.inv, r = 3.6, lead = 2.8, gap = 1.3;
+      var head = function (ex, ey, dir) {
+        return '<path d="M' + (ex - 2.1).toFixed(2) + ' ' + ey.toFixed(2) + ' L' + (ex + 2.1).toFixed(2) + ' ' + ey.toFixed(2) +
+          ' L' + ex.toFixed(2) + ' ' + (ey + dir * 3.6).toFixed(2) + ' Z" fill="' + hk + '" pointer-events="none"/>';
+      };
+      var bx1 = pad + W + 2 + gap + lead;
+      body.push('<path d="M' + (pad + W + 2 + gap).toFixed(2) + ' ' + span.y0.toFixed(2) + ' H' + bx1.toFixed(2) +
+        ' A' + r + ' ' + r + ' 0 0 1 ' + (bx1 + r).toFixed(2) + ' ' + (span.y0 + r).toFixed(2) +
+        '" fill="none" stroke="' + hk + '" stroke-width="1.5" pointer-events="none"/>');
+      body.push(head(bx1 + r, span.y0 + r, 1));
+      var bx0 = pad - 2 - gap - lead;
+      body.push('<path d="M' + (pad - 2 - gap).toFixed(2) + ' ' + span.y1.toFixed(2) + ' H' + bx0.toFixed(2) +
+        ' A' + r + ' ' + r + ' 0 0 1 ' + (bx0 - r).toFixed(2) + ' ' + (span.y1 - r).toFixed(2) +
+        '" fill="none" stroke="' + hk + '" stroke-width="1.5" pointer-events="none"/>');
+      body.push(head(bx0 - r, span.y1 - r, -1));
+    }
     // A breakpoint: thin SOLID line + inward carets. Distinct from the centromere.
     // pointer-events none on all three pieces, or the mark sits exactly on the
     // breakpoint band, the pixels a reader most wants to inspect, and mutes it.
@@ -490,9 +538,9 @@
     body.push(bodyShape + ' fill="none" stroke="' + outlineFor(ctx, idChrom) + '" stroke-width="1.1"/>');
 
     return {
-      svg: '<svg class="ideo" width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '"><defs>' +
+      svg: '<svg class="ideo" width="' + (svgW + padX * 2) + '" height="' + svgH + '" viewBox="' + (-padX) + ' 0 ' + (svgW + padX * 2) + ' ' + svgH + '"><defs>' +
         defs.join("") + '</defs>' + body.join("") + '</svg>',
-      width: svgW, height: svgH,
+      width: svgW + padX * 2, height: svgH,
       cenY: cenList.length ? cenList[0].y : null,  // centromere y (for aligning homologs)
       cenSeam: cenIsSeam                            // ...but only comparable when false
     };
