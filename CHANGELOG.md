@@ -3,6 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-26 (the decode stops denying the inheritance it names)
+
+- **The recombinant paragraph now affirms the inheritance the dmat row states.** It used
+  to end "The carrier parent is balanced and healthy; this chromosome is not the
+  parent's chromosome", which a careful reader parses as contradicting "inherited from
+  the mother" two lines below it. Dan read exactly that and asked which was right. Both
+  clauses were true and the sentence was still wrong, because the mechanism connecting
+  them was missing. It now says the recombinant IS inherited from the carrier parent,
+  yet no body cell of that parent contains it, because it first exists in the egg or
+  sperm the crossover made, which is the distinction ISCN 4.2.1 g builds the d- suffix
+  to carry. "Healthy" also became "typically unaffected"; a balanced karyotype licenses
+  the weaker claim, not the stronger one.
+
 ## 2026-08-26 (the marks let the pointer through)
 
 - **Hovering a decorated region now names the band beneath it.** The tooltip reads the
