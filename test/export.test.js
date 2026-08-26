@@ -151,14 +151,17 @@ test('an unreadable breakpoint blocks the karyogram', () => {
   assert.match(html, /c\.unreadable/, 'and reads it off the clone');
 });
 
-test('the export watermark carries the export date', () => {
-  // The exported figure is the copy that outlives deploys, in slides and question
-  // banks in front of people who never typed the input. The date lets it be
-  // matched to the date-grouped changelog, so "was this drawn before or after the
-  // fix" has an answer. The site always runs the latest deploy, so the export
-  // date is the renderer's state date; no version counter is needed or kept.
-  assert.match(html, /karyodraw\.com · ' \+ stamp/, 'the watermark appends the date stamp');
-  assert.match(html, /var stamp = _d\.getFullYear\(\)/, 'and the stamp is built at export time');
+test('the export watermark is the site, with no date on it', () => {
+  // The watermark used to append the export date, to tie a figure found in a slide
+  // deck years later back to the date-grouped changelog. That served the repo, not
+  // the person exporting: a dated figure reads as stale the moment the year turns,
+  // and these figures go into lectures and question banks that get reused for
+  // years. Provenance stays available through the karyotype in the filename and
+  // the changelog itself. The watermark is the attribution and nothing more.
+  const line = html.match(/text-anchor="end"[^\n]*karyodraw\.com[^\n]*/)[0];
+  assert.doesNotMatch(line, /stamp/, 'no date stamp is appended to the watermark');
+  assert.doesNotMatch(html, /var stamp = _d\.getFullYear\(\)/, 'and none is built at export time');
+  assert.doesNotMatch(html, /var _d = new Date\(\)/, 'the export reads no clock at all');
 });
 
 // The print sheet built its sex line from clone.sex.note, the parser's field-only
