@@ -62,3 +62,31 @@ test('one button style, exports grouped left, flag anchoring right', () => {
     'a spacer separates the export group from the flag');
   assert.ok(!/class="kfoot"/.test(html), 'the under-figure flag row is gone');
 });
+
+// Which chromosomes get drawn on arrival is chrome too, and it drifted the other way:
+// scripts/lib/render.mjs isolates the affected chromosomes for the generated condition
+// pages, the print sheet does the same, and the launch figures come off the same
+// renderer -- while the app opened on all 46. Someone typing t(9;22) met two derivatives
+// a few pixels wide in a field of 46, and the comparison that teaches it, derivative
+// against its normal homolog, was scattered across four rows. Both surfaces now open on
+// the same view.
+test('the app opens on the same view the generated pages render', () => {
+  const html = read('index.html');
+  const decl = html.match(/\n {2}var SHOW = "(all|affected)";/);
+  assert.ok(decl, 'the SHOW default is declared where it can be read');
+  assert.equal(decl[1], 'affected', 'the app opens isolated, as the generated pages do');
+
+  // render.mjs is the generated-page side of the pair. It passes `only` whenever there
+  // is something to isolate, which is the same condition the app calls isolatable.
+  const rendermjs = read('scripts/lib/render.mjs');
+  assert.match(rendermjs, /const only = \(affKeys\.length \|\| hasMar\) \? affKeys : null/,
+    'the generated pages still isolate when there is an abnormality');
+
+  // A normal karyotype has nothing to isolate, so the default must not strand the
+  // reader on an empty figure: the app falls back to the full karyogram and hides the
+  // toggle rather than drawing nothing.
+  assert.match(html, /var only = \(SHOW === "affected" && isolatable\) \? affKeys : null/,
+    'affected without an abnormality falls back to the full karyogram');
+  assert.match(html, /showOpt\.style\.display = isolatable \? "" : "none"/,
+    'and the toggle hides itself when there is nothing to isolate');
+});

@@ -850,7 +850,15 @@
   var detailHotBand = null;   // band currently decoded in the detail panel, or null for the chromosome overview
   var MODE = "simple";     // "simple" | "detailed"
   var LEVEL = 1;           // band resolution: 0 (~400), 1 (~550), 99 (~850)
-  var SHOW = "all";        // "all" | "affected" (isolate the involved chromosomes)
+  // "all" | "affected" (isolate the involved chromosomes, each with its normal homolog).
+  // Affected is the default because it is what every other surface already shows: the
+  // generated condition pages, the printable summary, and the launch figures all render
+  // affected-only through scripts/lib/render.mjs. The app was the one place that opened
+  // on 46 chromosomes at thumbnail size, where the finding the person typed is a few
+  // pixels wide and the comparison that teaches it, derivative against homolog, is
+  // scattered across four rows. A normal karyotype has nothing to isolate, so it still
+  // draws in full: the toggle hides itself when there is no abnormality.
+  var SHOW = "affected";
   var AFFECTED = {};       // chrom -> hex color (Simple mode highlight key)
   var spokenText = "";     // current karyotype rendered for text-to-speech
   var currentModel = null; // last successfully parsed model (for image export)

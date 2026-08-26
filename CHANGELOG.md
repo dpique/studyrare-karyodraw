@@ -3,6 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-26 (the app opens on the chromosomes you asked about)
+
+- **A karyotype with an abnormality now opens isolated, not as all 46.** Typing
+  `46,XY,t(9;22)(q34;q11.2)` used to draw the full karyogram, where the two derivatives
+  are a few pixels wide in a field of 46 and the comparison that teaches them, each
+  derivative against its own normal homolog, is scattered across four rows. It now opens
+  on chromosome 9 with its der(9) and chromosome 22 with its der(22), side by side and
+  large. `All` is one click away and unchanged. This also settles a split the product
+  had with itself: the generated condition pages, the printable summary, and the launch
+  figures all render affected-only through the shared renderer, and the app was the only
+  surface that did not. A normal karyotype has nothing to isolate, so `46,XX` still draws
+  in full and the toggle hides itself.
+
 ## 2026-08-26 (the inheritance suffix gets its own line)
 
 - **`dmat`, `mat`, `pat`, `dn` and `c` now decode on a row of their own.** They used to
