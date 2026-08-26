@@ -515,13 +515,21 @@
     clone.aberrations.forEach(function (ab) {
       var d = describeAberration(ab);
       var q = ab.qualifier && QUALIFIER_PHRASE[ab.qualifier];
-      var body = d.text + (q ? " (" + ab.qualifier + " = " + q + ")" : "") + robNote(ab, clone);
+      var body = d.text + robNote(ab, clone);
       // The der() descriptions already end in a full stop while the t() ones do not, and
       // xciNote opens with one. Drop a trailing stop before joining rather than teaching
       // every branch above about what might follow it.
       var xci = xciNote(ab, clone);
       if (xci) body = body.replace(/\.\s*$/, "") + xci;
-      rows.push({ code: ab.raw, text: body, tag: d.tag });
+      // The qualifier is its own ISCN element (4.2.1 g), a suffix saying where the
+      // rearrangement came from rather than part of the rearrangement, so it decodes on
+      // its own row like the count and sex fields do. It used to ride in a parenthesis at
+      // the end of the aberration's paragraph, which on rec() meant four more lines of
+      // prose after ten, and buried the fact that decides the counseling: the child's
+      // chromosome is NOT the balanced parent's chromosome. The aberration's own chip
+      // sheds the suffix at the same time, so exactly one row claims it.
+      rows.push({ code: q ? ab.raw.slice(0, ab.raw.length - ab.qualifier.length) : ab.raw, text: body, tag: d.tag });
+      if (q) rows.push({ code: ab.qualifier, text: q, tag: "qual" });
     });
     if (clone.cellCount != null) {
       rows.push({ code: "[" + (clone.composite ? "cp" : "") + clone.cellCount + "]", text: (clone.composite ? "composite of " : "seen in ") + clone.cellCount + " cells counted for this clone", tag: "cells" });
