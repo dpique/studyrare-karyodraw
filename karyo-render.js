@@ -399,12 +399,15 @@
     // centromere: hatched constriction with a guaranteed-visible height + a thin
     // dashed line at the exact p/q boundary. A texture, so it never reads as a
     // breakpoint marker.
+    // pointer-events none, or the hatch and midline swallow the pointer and
+    // the tooltip goes silent over the centromere: the acen band rects beneath
+    // are the honest answer, so the decoration must let the pointer reach them.
     cenList.forEach(function (c) {
       var col = heteroColor(c.chrom, "acen");
       body.push('<rect x="' + pad + '" y="' + (c.y - CEN_H / 2).toFixed(2) + '" width="' + W + '" height="' + CEN_H +
-        '" fill="url(#' + hatch(col, c.reversed ? mirrorHatch(CEN_HATCH) : CEN_HATCH) + ')" clip-path="url(#' + uid + ')"/>');
+        '" fill="url(#' + hatch(col, c.reversed ? mirrorHatch(CEN_HATCH) : CEN_HATCH) + ')" clip-path="url(#' + uid + ')" pointer-events="none"/>');
       body.push('<line x1="' + pad + '" y1="' + c.y.toFixed(2) + '" x2="' + (pad + W) + '" y2="' + c.y.toFixed(2) +
-        '" stroke="' + col + '" stroke-width="1" stroke-dasharray="2.5 2"/>');
+        '" stroke="' + col + '" stroke-width="1" stroke-dasharray="2.5 2" pointer-events="none"/>');
     });
 
     // Overlays are of two kinds, and the Style toggle is the split. Marks that
@@ -466,10 +469,12 @@
       if (simple) [span.y0, span.y1].forEach(function (yy) { if (yy > pad + 0.5 && yy < pad + H - 0.5) breakMark(yy, "#1e293b"); });
     });
     // A breakpoint: thin SOLID line + inward carets. Distinct from the centromere.
+    // pointer-events none on all three pieces, or the mark sits exactly on the
+    // breakpoint band, the pixels a reader most wants to inspect, and mutes it.
     function breakMark(yy, color) {
-      body.push('<line x1="' + pad + '" y1="' + yy.toFixed(2) + '" x2="' + (pad + W) + '" y2="' + yy.toFixed(2) + '" stroke="' + color + '" stroke-width="1.1"/>');
-      body.push('<path d="M' + (pad - 3.2) + ' ' + (yy - 2.6) + ' L' + (pad + 0.6) + ' ' + yy + ' L' + (pad - 3.2) + ' ' + (yy + 2.6) + ' Z" fill="' + color + '"/>');
-      body.push('<path d="M' + (pad + W + 3.2) + ' ' + (yy - 2.6) + ' L' + (pad + W - 0.6) + ' ' + yy + ' L' + (pad + W + 3.2) + ' ' + (yy + 2.6) + ' Z" fill="' + color + '"/>');
+      body.push('<line x1="' + pad + '" y1="' + yy.toFixed(2) + '" x2="' + (pad + W) + '" y2="' + yy.toFixed(2) + '" stroke="' + color + '" stroke-width="1.1" pointer-events="none"/>');
+      body.push('<path d="M' + (pad - 3.2) + ' ' + (yy - 2.6) + ' L' + (pad + 0.6) + ' ' + yy + ' L' + (pad - 3.2) + ' ' + (yy + 2.6) + ' Z" fill="' + color + '" pointer-events="none"/>');
+      body.push('<path d="M' + (pad + W + 3.2) + ' ' + (yy - 2.6) + ' L' + (pad + W - 0.6) + ' ' + yy + ' L' + (pad + W + 3.2) + ' ' + (yy + 2.6) + ' Z" fill="' + color + '" pointer-events="none"/>');
     }
 
     // Fusion junctions between different chromosome pieces. Highlight theme
@@ -477,7 +482,7 @@
     // continuous body with no seam, which is what the Realistic theme draws.
     if (simple) junctionYs.forEach(function (jy) {
       body.push('<line x1="' + (pad - 1) + '" y1="' + jy.toFixed(2) + '" x2="' + (pad + W + 1) + '" y2="' + jy.toFixed(2) +
-        '" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="2 1.5"/>');
+        '" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="2 1.5" pointer-events="none"/>');
     });
 
     // Outline color follows the chromosome the derivative is named for, not
