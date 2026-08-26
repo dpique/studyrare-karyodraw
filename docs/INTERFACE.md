@@ -103,3 +103,23 @@ itself because it once sat on the button handler alone, and the deep link, the o
 the landing pages have, started the tour wherever the page happened to be. Step
 navigation re-pins the card only when it has drifted out of view, so Next never lurches a
 page that is already showing it.
+
+## A span mark is a frame on the margin (2026-08-26)
+
+In Highlight mode a duplicated or inverted span wears a rounded frame wrapped from
+OUTSIDE the body, its vertical sides on the white margin, so no band loses width to its
+own marker. The frame color names the operation: amber duplicated, teal inverted. When
+the span is drawn end-for-end, every inversion and any duplication whose copy is
+inverted, opposed quarter-turn hooks grip the frame's top-right and bottom-left corners,
+each lead-in collinear with the span-edge line, always teal whatever the frame color.
+The channels compose, and the recombinant is why: an amber frame with teal hooks reads
+"an extra copy, and it is flipped", which is exactly what dup(2p) from an inversion
+carrier means. Reversal comes from the segment model's reversed flag, never re-derived
+from notation. Decided with Dan over five rendered preview rounds; the alternatives and
+the reasons they lost (translucent washes blend with the tint, an inset frame narrows
+the bars, circulating repeat-arrows collapse at size and gesture at duplication) are in
+PR #199. Teal is the segregation figures' #1f9e8f, reused because the old inversion blue
+was the same hex as the first affected-palette hue and vanished on its own chromosome.
+Realistic mode stays bare (#196), every mark is pointer-transparent (#197), and the
+legend teaches marks only in the mode that draws them. `test/highlight-marks.test.js`
+pins all of it.
