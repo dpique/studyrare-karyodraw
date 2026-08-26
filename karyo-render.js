@@ -407,9 +407,18 @@
         '" stroke="' + col + '" stroke-width="1" stroke-dasharray="2.5 2"/>');
     });
 
-    // overlays (del / dup / inv / add)
+    // Overlays are of two kinds, and the Style toggle is the split. Marks that
+    // COMMENT on the figure (break carets, the dashed fusion seam below) exist
+    // to point at the abnormality, so they draw only in the Highlight (simple)
+    // theme. The Realistic theme's own caption promises "nothing highlighted.
+    // Try to spot the abnormality yourself", and from the toggle rename
+    // (2601e2e) until #196 the renderer broke that promise on every dup, inv
+    // and breakpoint. Overlays that ARE material stay in both themes, because
+    // a real slide shows them too: add()'s unknown-material hatch, an hsr's
+    // homogeneously staining block, and a fragile site's gap.
     overlays.forEach(function (ov) {
       if (ov.type === "cut") {                        // deletion break / repair join
+        if (!simple) return;
         var cutY = pointY(segments, ov.chrom, ov.at, pad);
         if (cutY != null) breakMark(cutY, OP_COLORS.del);
         return;
@@ -438,21 +447,15 @@
         });
         return;
       }
+      // del, dup and inv are already geometry: the segment list has the piece
+      // removed, repeated or reversed, so in the Realistic theme they need no
+      // mark at all. (The del wash this branch used to carry had no emitter
+      // left and is gone; a del arrives as a "cut" or as reshaped segments.)
+      if (!simple && ov.type !== "add" && ov.type !== "hsr") return;
       var span = ov.segIndex != null ? segSpan(segments, ov.segIndex, pad) : mapRange(segments, ov.chrom, ov.from, ov.to, pad);
       if (!span) return;
       var hh = (span.y1 - span.y0).toFixed(2);
-      if (ov.type === "del") {
-        body.push('<rect x="' + pad + '" y="' + span.y0.toFixed(2) + '" width="' + W + '" height="' + hh +
-          '" fill="url(#' + hatch(simple ? "#64748b" : OP_COLORS.del) + ')" clip-path="url(#' + uid + ')"/>');
-        if (!simple) body.push('<rect x="' + pad + '" y="' + span.y0.toFixed(2) + '" width="' + W + '" height="' + hh +
-          '" fill="' + OP_COLORS.del + '" fill-opacity="0.14" clip-path="url(#' + uid + ')"/>');
-      } else if (ov.type === "dup" && !simple) {
-        body.push('<rect x="' + pad + '" y="' + span.y0.toFixed(2) + '" width="' + W + '" height="' + hh +
-          '" fill="' + OP_COLORS.dup + '" fill-opacity="0.3" clip-path="url(#' + uid + ')"/>');
-      } else if (ov.type === "inv" && !simple) {
-        body.push('<rect x="' + pad + '" y="' + span.y0.toFixed(2) + '" width="' + W + '" height="' + hh +
-          '" fill="' + OP_COLORS.inv + '" fill-opacity="0.12" clip-path="url(#' + uid + ')"/>');
-      } else if (ov.type === "add") {
+      if (ov.type === "add") {
         body.push('<rect x="' + pad + '" y="' + span.y0.toFixed(2) + '" width="' + W + '" height="' + hh +
           '" fill="url(#' + hatch(OP_COLORS.add) + ')" clip-path="url(#' + uid + ')"/>');
       } else if (ov.type === "hsr") {
@@ -460,8 +463,7 @@
         body.push('<rect x="' + pad + '" y="' + span.y0.toFixed(2) + '" width="' + W + '" height="' + hh +
           '" fill="' + OP_COLORS.hsr + '" clip-path="url(#' + uid + ')"/>');
       }
-      var mk = simple ? "#1e293b" : OP_COLORS.break;
-      [span.y0, span.y1].forEach(function (yy) { if (yy > pad + 0.5 && yy < pad + H - 0.5) breakMark(yy, mk); });
+      if (simple) [span.y0, span.y1].forEach(function (yy) { if (yy > pad + 0.5 && yy < pad + H - 0.5) breakMark(yy, "#1e293b"); });
     });
     // A breakpoint: thin SOLID line + inward carets. Distinct from the centromere.
     function breakMark(yy, color) {
@@ -470,8 +472,10 @@
       body.push('<path d="M' + (pad + W + 3.2) + ' ' + (yy - 2.6) + ' L' + (pad + W - 0.6) + ' ' + yy + ' L' + (pad + W + 3.2) + ' ' + (yy + 2.6) + ' Z" fill="' + color + '"/>');
     }
 
-    // fusion junctions between different chromosome pieces
-    junctionYs.forEach(function (jy) {
+    // Fusion junctions between different chromosome pieces. Highlight theme
+    // only: the dashed seam is an annotation, and a real derivative shows one
+    // continuous body with no seam, which is what the Realistic theme draws.
+    if (simple) junctionYs.forEach(function (jy) {
       body.push('<line x1="' + (pad - 1) + '" y1="' + jy.toFixed(2) + '" x2="' + (pad + W + 1) + '" y2="' + jy.toFixed(2) +
         '" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="2 1.5"/>');
     });
