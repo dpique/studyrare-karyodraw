@@ -181,7 +181,11 @@ test('the decode names the inferred deletion, not only the stated duplication', 
   assert.match(t, /inversion/i, 'the parental inversion is named as the origin');
   assert.match(t, /inferred|not stated|only the dup/i,
     'the reader is told the deletion is inferred rather than written');
-  assert.match(t, /dmat/, 'the inheritance qualifier is spelled out');
+  // dmat decodes on a row of its own, so the literal suffix is the row's code chip and
+  // the explanation is its text. Both still have to be there; only the shape moved.
+  const q = Teach.decode(clone0('46,XX,rec(6)dup(6p)inv(6)(p22.2q25.2)dmat')).find((r) => r.tag === 'qual');
+  assert.equal(q.code, 'dmat', 'the inheritance qualifier gets its own row');
+  assert.match(q.text, /maternal/i, 'and is spelled out there');
 });
 
 test('the decode says which parent carried the inversion', () => {

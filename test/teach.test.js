@@ -23,6 +23,7 @@ const decodeText = (k) => {
   const clone = ISCN.parse(k).clones[0];
   return Teach.decode(clone).filter((r) => r.tag !== 'count' && r.tag !== 'sex').map((r) => r.text).join(' ');
 };
+const decodeRows = (k) => Teach.decode(ISCN.parse(k).clones[0]);
 
 test('teach module loads', () => {
   assert.equal(typeof Teach.decode, 'function');
@@ -89,12 +90,33 @@ test('gene fusions in clinical notes use the :: nomenclature', () => {
   assert.match(ph.note, /BCR::ABL1/, 'writes BCR::ABL1, not the legacy hyphen form');
 });
 
-// Inheritance/origin qualifiers (c/mat/pat/dn) are spelled out in the decode.
+// Inheritance/origin qualifiers (c/mat/pat/dn and the d- forms) are their own decoded
+// element, not a parenthesis trailing the aberration's paragraph. ISCN 4.2.1 g makes
+// them a suffix that says where the rearrangement came from; they are not part of the
+// rearrangement. So each gets a row of its own, the way the count and sex fields do.
 test('inheritance qualifiers are explained, not just shown in the code', () => {
-  assert.match(decodeText('46,XX,del(7)(q22)mat'), /mat = maternal in origin/i);
-  assert.match(decodeText('47,XX,+21c'), /c = constitutional/i);
-  assert.match(decodeText('46,XY,r(13)(p11q34) dn'), /dn = de novo/i);
-  assert.match(decodeText('46,XX,del(5)(q31)pat'), /pat = paternal in origin/i);
+  const qual = (k) => decodeRows(k).find((r) => r.tag === 'qual');
+  assert.match(qual('46,XX,del(7)(q22)mat').text, /maternal in origin/i);
+  assert.match(qual('47,XX,+21c').text, /constitutional/i);
+  assert.match(qual('46,XY,r(13)(p11q34) dn').text, /de novo/i);
+  assert.match(qual('46,XX,del(5)(q31)pat').text, /paternal in origin/i);
+  assert.equal(qual('46,XX,del(7)(q22)mat').code, 'mat', 'the suffix itself is the code chip');
+});
+
+// rec() is the case that forced this. Its paragraph runs ten lines before the qualifier
+// starts, and dmat carried the one fact a counselor needs from it: the child's
+// chromosome is not the balanced parent's chromosome. Read inline at the end of that
+// wall it was the easiest thing in the panel to miss.
+test('a qualifier splits off the aberration it trails, which keeps its own chip clean', () => {
+  const rows = decodeRows('46,XX,rec(2)dup(2p)inv(2)(p21q31)dmat');
+  const ab = rows.find((r) => r.tag === 'rec');
+  const q = rows.find((r) => r.tag === 'qual');
+
+  assert.equal(ab.code, 'rec(2)dup(2p)inv(2)(p21q31)', 'the aberration chip drops the suffix');
+  assert.doesNotMatch(ab.text, /dmat/, 'and its paragraph no longer carries it inline');
+  assert.equal(q.code, 'dmat', 'the suffix is a row of its own');
+  assert.match(q.text, /her chromosome and this one are not the same/, 'carrying the whole explanation');
+  assert.equal(rows.indexOf(q), rows.indexOf(ab) + 1, 'directly under the aberration it qualifies');
 });
 
 // A numbered marker decodes with its count; a single marker stays singular.

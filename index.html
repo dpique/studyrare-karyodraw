@@ -413,6 +413,9 @@
      deletion is both the part driving the phenotype and the part ISCN never writes. */
   .decode-code.gain { color: #894f18; } .decode-code.loss,.decode-code.del,.decode-code.rec { color: #a2302c; }
   .decode-code.t { color: #4a6b3a; } .decode-code.inv { color: #3e4bb0; }
+  /* An inheritance qualifier says where the rearrangement came from, not what it is, so
+     it reads as neutral metadata rather than joining the lesion colors above. */
+  .decode-code.qual { color: #55617a; }
   /* 15rem is the narrowest the sentence is allowed to get before it takes its own
      line. Below that it reads as a column of fragments rather than prose. */
   .decode-text { flex: 1 1 15rem; min-width: 0; font-size: 13.5px; color: #334155; }

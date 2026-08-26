@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-26 (the inheritance suffix gets its own line)
+
+- **`dmat`, `mat`, `pat`, `dn` and `c` now decode on a row of their own.** They used to
+  ride in a parenthesis at the end of the aberration's paragraph. On a recombinant
+  chromosome that meant four more lines of prose after ten, so the panel read as one
+  block of text and the fact that decides the counseling, that the child's chromosome is
+  not the balanced parent's chromosome, was the easiest thing in it to miss. ISCN 4.2.1 g
+  treats these as a suffix saying where the rearrangement came from rather than part of
+  the rearrangement, so the decode now gives each one a row and a code chip, the way the
+  count and sex fields have always had one. The aberration's own chip sheds the suffix at
+  the same time: `rec(2)dup(2p)inv(2)(p21q31)dmat` is now a `rec(2)dup(2p)inv(2)(p21q31)`
+  row followed by a `dmat` row, so exactly one row claims it. The chip is slate rather
+  than a lesion color, because origin is not a finding.
+
 ## 2026-08-26 (the export stops telling you when it was drawn)
 
 - **Exported and copied figures no longer carry a date.** The watermark under the
