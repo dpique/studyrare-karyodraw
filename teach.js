@@ -276,10 +276,13 @@
       // half that is not driving the phenotype, so both segments get named here and the
       // sentence says outright which one the notation left out.
       //
-      // The other thing worth saying is that the parent and the child do not have the
-      // same chromosome. The parent is a balanced inversion carrier; the recombinant is
-      // the unbalanced product, and that distinction is the entire reason ISCN spells
-      // the qualifier dmat rather than mat (4.2.1 g).
+      // The other thing worth saying is HOW the child has a chromosome the parent
+      // does not: it is inherited, and yet it first exists in the gamete, because
+      // the crossover that builds it happens during the parent's meiosis. An earlier
+      // wording ("this chromosome is not the parent's chromosome") stated only the
+      // second half and read as denying the first; Dan parsed it as contradicting
+      // the dmat row below it. Both facts now sit in one sentence. That distinction
+      // is the entire reason ISCN spells the qualifier dmat rather than mat (4.2.1 g).
       var recInv = (ab.recInvBands || []).join("");
       return { text: "a RECOMBINANT chromosome rec(" + c + "): what a carrier of the pericentric inversion inv(" +
         c + ")(" + recInv + ") passes on when a crossover falls inside the inversion loop at meiosis I. " +
@@ -287,7 +290,10 @@
         ", so it is unbalanced: a duplication of the segment beyond one breakpoint and a deletion of the segment beyond the other. " +
         "The notation states only the duplication, dup(" + c + ab.recDupArm +
         "); the deletion is inferred from the inversion rather than written (ISCN 5.4.3.2 c). " +
-        "The carrier parent is balanced and healthy; this chromosome is not the parent’s chromosome", tag: "rec" };
+        "The recombinant IS inherited from the carrier parent, yet no body cell of that parent contains it: " +
+        "it first exists in the egg or sperm the crossover made, so ISCN marks it as derived from the parental " +
+        "rearrangement rather than simply inherited (4.2.1 g). The parent, carrying the balanced inversion, is " +
+        "typically unaffected", tag: "rec" };
     }
     if (k === "fra") {
       // A fragile site is a gap, not a break: the chromosome stays one piece and the

@@ -193,6 +193,23 @@ test('the decode says which parent carried the inversion', () => {
   assert.match(decodeText('46,XY,rec(18)dup(18q)inv(18)(p11.32q21)dpat'), /father|paternal/i);
 });
 
+// Dan read "this chromosome is not the parent's chromosome" as denying the
+// inheritance the dmat row asserts two lines below it, and asked which was
+// right. Both were, and that is the problem: a sentence a careful reader
+// parses as a contradiction is wrong even when every clause is true. The
+// teaching has to hold both facts in one breath: the recombinant IS inherited
+// from the carrier parent, AND no body cell of that parent contains it,
+// because it first exists in the gamete the crossover made (ISCN 4.2.1 g is
+// the d- suffix carrying exactly this distinction).
+test('the decode affirms inheritance while explaining why the parent lacks the chromosome', () => {
+  const t = decodeText('46,XX,rec(6)dup(6p)inv(6)(p22.2q25.2)dmat');
+  assert.match(t, /inherited/i, 'the recombinant is stated to be inherited');
+  assert.match(t, /egg or sperm|gamete/i, 'and where it first exists is stated');
+  assert.ok(!/is not the parent(’|')s chromosome/i.test(t),
+    'the phrasing that reads as denying inheritance is gone');
+  assert.ok(!/\bhealthy\b/i.test(t), 'no absolute health claim about the carrier');
+});
+
 // ---- what is deliberately refused ----------------------------------------
 
 // A paracentric inversion cannot give this chromosome, so drawing one would be
