@@ -3,6 +3,21 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-26 (the marks let the pointer through)
+
+- **Hovering a decorated region now names the band beneath it.** The tooltip reads the
+  band rect under the pointer, so anything drawn on top of the bands without
+  `pointer-events="none"` was a silent stripe: the centromere hatch and its dashed
+  midline muted the tooltip over every centromere, and Highlight mode's break carets
+  and fusion seam muted it at the exact breakpoints a reader most wants to inspect.
+  Dan hit the class first on the rec(2) duplication wash, which the previous entry
+  removed; these were the survivors. The rule, pinned by test across shapes and both
+  styles: a mark overlaying true content lets the pointer through, and a mark that
+  replaces content must answer for itself, the way the fragile-site gap already does.
+  Known remaining gap, deliberate: `add` and `hsr` regions stay opaque and silent,
+  because the bands under them are not really there and naming them would be false;
+  giving those regions their own answer is a follow-up.
+
 ## 2026-08-26 (the Realistic style keeps its promise)
 
 - **Realistic mode no longer highlights the abnormality it tells you to spot.** The
