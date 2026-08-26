@@ -104,22 +104,30 @@ the landing pages have, started the tour wherever the page happened to be. Step
 navigation re-pins the card only when it has drifted out of view, so Next never lurches a
 page that is already showing it.
 
-## A span mark is a frame on the margin (2026-08-26)
+## A span mark is a box for gain, hooks for a flip (2026-08-26, revised same day)
 
-In Highlight mode a duplicated or inverted span wears a rounded frame wrapped from
-OUTSIDE the body, its vertical sides on the white margin, so no band loses width to its
-own marker. The frame color names the operation: amber duplicated, teal inverted. When
-the span is drawn end-for-end, every inversion and any duplication whose copy is
-inverted, opposed quarter-turn hooks grip the frame's top-right and bottom-left corners,
-each lead-in collinear with the span-edge line, always teal whatever the frame color.
-The channels compose, and the recombinant is why: an amber frame with teal hooks reads
-"an extra copy, and it is flipped", which is exactly what dup(2p) from an inversion
-carrier means. Reversal comes from the segment model's reversed flag, never re-derived
-from notation. Decided with Dan over five rendered preview rounds; the alternatives and
-the reasons they lost (translucent washes blend with the tint, an inset frame narrows
-the bars, circulating repeat-arrows collapse at size and gesture at duplication) are in
-PR #199. Teal is the segregation figures' #1f9e8f, reused because the old inversion blue
-was the same hex as the first affected-palette hue and vanished on its own chromosome.
-Realistic mode stays bare (#196), every mark is pointer-transparent (#197), and the
-legend teaches marks only in the mode that draws them. `test/highlight-marks.test.js`
-pins all of it.
+In Highlight mode the marks ride the white margin OUTSIDE the body, so no band loses
+width to its own marker, and each device carries exactly one meaning, told apart by
+shape rather than color: an amber BOX means a duplicated span, and always-teal
+quarter-turn HOOKS at the top-right and bottom-left of a span mean it is drawn
+end-for-end. A plain inversion is hooks alone, because it is balanced and a box would
+claim a gain; the recombinant graft is box plus hooks, "an extra copy, and it is
+flipped", which is exactly what dup(2p) from an inversion carrier means; a direct
+duplication is a box alone. The first shipped version (#199) also framed inversions,
+in teal; Dan cut the frame the same day so that a box appears exactly when something
+is extra, and one device never has two meanings. Hook lead-ins run collinear with the
+span-edge line, so the line appears to swing around its corner. Reversal comes from
+the segment model's reversed flag, never re-derived from notation. The losing
+alternatives from the preview rounds: translucent washes blend with the tint, an
+inset frame narrows the bars, circulating repeat-arrows collapse at size and gesture
+at duplication, and a mid-span glyph reads as marking the band it sits beside. Teal
+is the segregation figures' #1f9e8f, reused because the old inversion blue was the
+same hex as the first affected-palette hue and vanished on its own chromosome.
+Realistic mode stays bare (#196) and every mark is pointer-transparent (#197).
+
+**The legend describes the figure it sits under.** A legend row appears exactly when
+its mark is in the drawn karyogram, read off the DOM after render, so the two cannot
+disagree: a plain t(9;22) teaches only the dashed fusion seam it actually shows, and
+never a dup box, hooks or carets it does not. `test/highlight-marks.test.js` pins the
+marks; `test/legend-describes-the-figure-browser.test.js` pins the legend rule in a
+real browser.

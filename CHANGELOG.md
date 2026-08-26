@@ -3,6 +3,21 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-26 (a box for gain, hooks for a flip, and a legend that tells the truth)
+
+- **The inversion mark is now the hooks alone; the box means duplication and nothing
+  else.** Shipping #199 put a teal frame around inversions and an amber one around
+  duplications, one shape with two meanings split by color. Dan cut the inversion
+  frame the same day: a box now appears exactly when something is extra, hooks mean
+  drawn end-for-end, and the two devices compose on the recombinant (amber box, teal
+  hooks) while differing by shape, which no colorblindness can erase.
+- **The legend lists exactly the marks the drawn figure contains.** It was static: a
+  plain t(9;22) was taught a dup frame, inversion hooks and red carets, none on
+  screen, while the dashed fusion seam it actually shows had no entry. Rows are now
+  read off the rendered karyogram, the seam has its entry, the caret swatch takes the
+  color actually drawn, and the Realistic add row follows the same rule. Pinned in a
+  real browser by test/legend-describes-the-figure-browser.test.js.
+
 ## 2026-08-26 (the span wears its meaning on the margin)
 
 - **Highlight mode now marks duplicated and inverted spans with an outset frame, and
