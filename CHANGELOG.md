@@ -3,6 +3,23 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-26 (the Realistic style keeps its promise)
+
+- **Realistic mode no longer highlights the abnormality it tells you to spot.** The
+  style's own caption reads "true-to-life Giemsa banding on every chromosome, nothing
+  highlighted. Try to spot the abnormality yourself", and since the toggle was renamed
+  (2026-07-01) the renderer had broken that promise on the same screen: a duplication
+  carried an amber wash, an inversion a blue one, every breakpoint a pair of red carets,
+  and a derivative a dashed seam at the fusion. Dan caught it on
+  `46,XX,rec(2)dup(2p)inv(2)(p21q31)dmat`, whose grafted p-distal copy drew as a solid
+  amber block with red carets pointing at the junction. The rule now enforced by test:
+  in Realistic mode an overlay draws only if it IS material rather than commentary
+  about material. The unknown-material hatch of `add`, the homogeneously staining block
+  of `hsr` and the unstained gap of `fra` stay, because a real slide shows those too;
+  washes, carets and seams belong to Highlight mode, whose whole job is marking. The
+  never-emitted `del` wash branch is deleted rather than gated. Highlight mode is
+  unchanged.
+
 ## 2026-08-26 (the app opens on the chromosomes you asked about)
 
 - **A karyotype with an abnormality now opens isolated, not as all 46.** Typing
