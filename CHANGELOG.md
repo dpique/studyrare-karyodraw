@@ -19,6 +19,22 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   `LICENSING.md`; contributors are now asked for a relicensing grant in
   `CONTRIBUTING.md`, which is what keeps the commercial option alive.
 
+## 2026-08-27 (the caption and the legend describe the figure, part two)
+
+- **The landing-page caption now states what its own figure shows.** Every single-clone
+  affected figure was captioned "showing the involved chromosomes with their normal
+  homolog", which is false on the marker page, where the figure is one small capsule
+  with no homolog to draw and no chromosome banding can assign it to, and quietly wrong
+  for pure count changes. The suffix now comes from the model: a structural change
+  keeps the homolog comparison, a whole-chromosome gain says all copies of the gained
+  chromosome, a marker says only the marker itself, and a bare count change says the
+  chromosomes whose count changed. test/seo.test.js reads the generated pages, which
+  pretest rebuilds, so template and output cannot drift apart.
+- **The fused-junction legend swatch now looks like the mark it names.** It rendered as
+  thick vertical stripes filling the chip; it is now a thin dashed midline on a white
+  chip, the same line the figure draws. The stray box-drawing bar before "involved:"
+  is gone.
+
 ## 2026-08-26 (a box for gain, hooks for a flip, and a legend that tells the truth)
 
 - **The inversion mark is now the hooks alone; the box means duplication and nothing

@@ -381,7 +381,26 @@ function karyoNote(e) {
     return `, showing ${clones.length === 2 ? 'both' : 'all ' + clones.length} cell lines` +
       ' at the same scale, with the cells counted in each';
   }
-  return affectedOnly ? ', showing the involved chromosomes with their normal homolog' : '';
+  if (!affectedOnly) return '';
+  // The suffix states what the figure actually shows, and that differs by
+  // class. The homolog phrase is true only when some chromosome pairs a
+  // structural abnormal against its normal copy. A marker has no homolog to
+  // draw (banding cannot even assign it a chromosome), a whole-chromosome
+  // gain shows three ordinary copies with nothing abnormal about any of
+  // them, and a bare count change (45,X and kin) shows what the count left.
+  // Dan caught the marker page claiming a homolog comparison over a figure
+  // that is one small capsule.
+  const slots = clones[0].slots;
+  const paired = Object.keys(slots).some((c) =>
+    slots[c].some((i) => i.kind === 'normal') &&
+    slots[c].some((i) => i.kind !== 'normal' && i.kind !== 'gain'));
+  if (paired) return ', showing the involved chromosomes with their normal homolog';
+  const kinds = new Set();
+  Object.keys(slots).forEach((c) => slots[c].forEach((i) => { if (i.kind !== 'normal') kinds.add(i.kind); }));
+  if (kinds.has('mar')) return ', showing only the marker itself';
+  if (kinds.has('dmin')) return ', showing only the double minutes';
+  if (kinds.has('gain')) return ', showing all copies of the gained chromosome';
+  return ', showing the chromosomes whose count changed';
 }
 
 // The karyogram figure: a pre-rendered PNG (indexable in Google Images, with alt
