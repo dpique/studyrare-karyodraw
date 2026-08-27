@@ -10,7 +10,7 @@ authors:
     affiliation: "StudyRare"
 repository-code: "https://github.com/dpique/studyrare-karyodraw"
 url: "https://karyodraw.com"
-license: MIT
+license: AGPL-3.0-or-later
 keywords:
   - genetics
   - cytogenetics
