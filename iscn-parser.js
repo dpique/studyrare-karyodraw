@@ -1851,6 +1851,37 @@
       }
     }
 
+    // A derivative chromosome is one rebuilt either by a rearrangement involving
+    // two or more chromosomes or by MORE THAN ONE change within a single
+    // chromosome (ISCN 5.5.3 a). der(15)ins(15)(p11q23q26) wraps exactly one
+    // single-chromosome change, so the wrapper adds nothing and ISCN writes the
+    // change plain. Accepted and drawn as typed, because warning on
+    // interpretable input is how the warning box loses its authority; the plain
+    // spelling is offered beside the drawing instead. Guarded on a clean parse:
+    // a note never shares the box with a warning.
+    if (!result.note && !result.suggestion && !warnings.length && result.clones.length === 1) {
+      var dnCl = result.clones[0];
+      var loneDer = (dnCl.aberrations || []).filter(function (a) {
+        var subs = a.subOps || [];
+        return a.kind === "der" && (a.chroms || []).length === 1 && subs.length === 1 &&
+          ["del", "dup", "inv", "ins"].indexOf(subs[0].op) >= 0 &&
+          (subs[0].chroms || []).length >= 1 &&
+          (subs[0].chroms || []).every(function (x) { return String(x) === String(a.chroms[0]); }) &&
+          String(a.raw || "").indexOf("der(" + a.chroms[0] + ")") === 0;
+      })[0];
+      if (loneDer) {
+        var plainAb = String(loneDer.raw).slice(("der(" + loneDer.chroms[0] + ")").length);
+        result.note = {
+          text: "A derivative chromosome (der) is one rebuilt either by a rearrangement involving two or more " +
+            "chromosomes, or by more than one change within a single chromosome (ISCN 5.5.3). This chromosome " +
+            loneDer.chroms[0] + " carries a single change, so the der() wrapper adds nothing: ISCN writes it " +
+            plainAb + ".",
+          fixLabel: "Write it without the wrapper:",
+          fix: (result.normalized || raw).replace(loneDer.raw, plainAb)
+        };
+      }
+    }
+
     // The user may have typed only the rearrangement, dropping the leading count and
     // sex ("t(9;22)(q34;q11.2)" instead of "46,XY,t(9;22)(q34;q11.2)"). If prefixing a
     // normal constitution parses as a real karyotype, offer that as a one-click fix,

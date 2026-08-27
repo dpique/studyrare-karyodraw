@@ -104,6 +104,19 @@
   function bandsPhrase(chrom, bands) {
     return bands.map(function (b) { return chrom + b; }).join(" and ");
   }
+  // What the band order of an inserted segment encodes (ISCN 5.5.9.1): listed
+  // proximal-first the segment keeps its own orientation in its new place;
+  // distal-first it sits end-for-end. Read off the band midpoints, the same
+  // comparison the renderer uses, so the sentence and the drawing cannot
+  // disagree. Silent when a band does not resolve.
+  function insOrientPhrase(chrom, segBands) {
+    if (!segBands || segBands.length < 2 || !window.Karyo) return "";
+    var a = window.Karyo.resolveBand(chrom, segBands[0]), b = window.Karyo.resolveBand(chrom, segBands[1]);
+    if (!a || !b || a.mid === b.mid) return "";
+    return a.mid > b.mid
+      ? ", turned end-for-end (an inverted insertion, said by the band order)"
+      : ", where it keeps its own orientation (said by the band order)";
+  }
   // Short phrases describing a derivative's make-up (kept part + attached part).
   function throughShort(chrom, band) { return band ? " (out to " + chrom + band + ")" : ""; }
   // The segment from a breakpoint out to the nearer telomere, written the way ISCN
@@ -143,11 +156,12 @@
         if (String(derChrom) === donor && donor !== recip) {
           return "the loss of its segment between " + segBands + ", inserted into chromosome " + recip + " at " + site;
         }
-        return "an inserted segment from chromosome " + donor + " (between " + segBands + ") at " + site;
+        return "an inserted segment from chromosome " + donor + " (between " + segBands + ") at " + site +
+          insOrientPhrase(donor, s.breakpoints[1] || []);
       }
       var ig = s.breakpoints[0] || [];
       return "an insertion within chromosome " + sc + ": the segment between " + bandsPhrase(sc, ig.slice(1)) +
-        " moved to " + sc + (ig[0] || "?");
+        " moved to " + sc + (ig[0] || "?") + insOrientPhrase(sc, ig.slice(1));
     }
     return null;
   }
@@ -271,12 +285,13 @@
       var ic = ab.chroms;
       if (ic.length >= 2) {
         return { text: "an INSERTION: the segment between " + bandsPhrase(ic[1], bp[1] || []) + " of chromosome " + ic[1] +
-          " is moved into chromosome " + ic[0] + " at " + ic[0] + ((bp[0] || [])[0] || "?") +
+          " is moved into chromosome " + ic[0] + " at " + ic[0] + ((bp[0] || [])[0] || "?") + insOrientPhrase(ic[1], bp[1] || []) +
           ". Chromosome " + ic[0] + " grows by that piece; chromosome " + ic[1] + " loses it.", tag: "add" };
       }
       var ig = bp[0] || [];
       return { text: "an INSERTION within chromosome " + c + ": the segment between " + bandsPhrase(c, ig.slice(1)) +
-        " is moved to a new position (at " + c + (ig[0] || "?") + "). Nothing is gained or lost overall.", tag: "add" };
+        " is moved to a new position (at " + c + (ig[0] || "?") + ")" + insOrientPhrase(c, ig.slice(1)) +
+        ". Nothing is gained or lost overall.", tag: "add" };
     }
     if (k === "add") return { text: "ADDITIONAL material of unknown origin attached to chromosome " + c + " at " + c + ((bp[0] || [])[0] || "?"), tag: "add" };
     if (k === "mar") {
