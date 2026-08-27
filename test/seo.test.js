@@ -321,3 +321,29 @@ test('binary assets stay on the free path, and the app still loads its own scrip
    '/ideogram-data.js', '/robots.txt'].forEach((p) =>
     assert.ok(!runsWorkerFirst(first, p), `${p} should be served by the asset layer, not the Worker`));
 });
+
+// The figure caption states what the figure shows, and the figures differ by
+// class. Dan caught the marker page claiming "the involved chromosomes with
+// their normal homolog" under a figure that draws only the mar glyph, which
+// HAS no homolog: banding cannot even say which chromosome it came from. The
+// same fixed phrase was quietly wrong for pure count changes. These read the
+// GENERATED pages, which pretest regenerates, so the assertions hold the
+// template and its output together.
+test('each landing-page caption describes its own figure class', () => {
+  const cap = (slug) => {
+    const m = read(`karyotype/${slug}/index.html`).match(/<figcaption class="lp-figcap">([^<]+)<\/figcaption>/);
+    assert.ok(m, `${slug} has a figure caption`);
+    return m[1];
+  };
+  const marker = cap('marker-chromosome');
+  assert.match(marker, /only the marker itself/, 'a mar figure is the marker alone');
+  assert.doesNotMatch(marker, /normal homolog/, 'nothing in it has a homolog to show');
+  assert.match(cap('down-syndrome'), /all copies of the gained chromosome/,
+    'a whole-chromosome gain shows three ordinary copies, none abnormal');
+  assert.match(cap('turner-syndrome'), /count changed/,
+    'a bare count change shows the chromosomes that remain');
+  assert.match(cap('cri-du-chat-syndrome'), /normal homolog/,
+    'a structural change keeps the homolog comparison caption');
+  assert.match(cap('mosaic-turner-syndrome'), /cell lines/,
+    'a mosaic keeps its every-cell-line caption');
+});
