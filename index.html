@@ -670,7 +670,7 @@
           <span class="vlabel" id="show-lbl">Show</span>
           <div class="seg" id="showseg" role="group" aria-labelledby="show-lbl">
             <button data-show="all" title="The full karyogram, all 46 chromosomes.">All</button>
-            <button data-show="affected" title="Only the chromosomes involved in the abnormality, each with its normal homolog.">Affected</button>
+            <button data-show="affected" title="Only the chromosomes involved in the abnormality, each with its normal homolog.">Involved</button>
           </div>
         </div>
         <div class="viewopt">
@@ -873,6 +873,16 @@
   // like what is on screen. Old values are still accepted so existing links work.
   var STYLE_TO_URL = { simple: "highlight", detailed: "realistic" };
   var BANDS_TO_URL = { 0: "400", 1: "550", 99: "850" };
+  // SHOW follows the same split. One concept had two names in front of the reader:
+  // the button said "Affected" while its own tooltip, the Highlight caption, the
+  // legend and the condition pages all said "involved". The app needs "affected" to
+  // keep its clinical meaning, which is about a PERSON with the phenotype (Teach says
+  // a rec carrier's parent is "typically unaffected"), so the chromosome sense gave
+  // way: the button reads "Involved", which is also how ISCN and lab reports name the
+  // chromosomes in a rearrangement. Internally SHOW stays "affected" alongside
+  // AFFECTED / computeAffected / .affected-only, and `show=affected` is still read,
+  // so every link already copied keeps working.
+  var SHOW_TO_URL = { all: "all", affected: "involved" };
   // Reverse maps, derived from the forward ones so they cannot drift. Each accepts
   // either the URL token ("highlight") or the internal value ("simple") as input.
   function invertMap(fwd, coerce) {
@@ -882,6 +892,7 @@
   }
   var URL_TO_STYLE = invertMap(STYLE_TO_URL);
   var URL_TO_BANDS = invertMap(BANDS_TO_URL, Number);
+  var URL_TO_SHOW = invertMap(SHOW_TO_URL);
 
   function speakKaryotype() {
     if (!window.speechSynthesis || !spokenText) return;
@@ -1015,7 +1026,7 @@
     tourIdx = Math.max(0, Math.min(TOUR.length - 1, i));
     var step = TOUR[tourIdx];
     // Keep whatever Style/Bands/Show the viewer has set, so their choice (e.g.
-    // "Affected") carries across tour steps instead of resetting each time.
+    // "Involved") carries across tour steps instead of resetting each time.
     input.value = step.k;
     beaconDraw.skipOnce = true;   // guided-tour navigation does not count toward usage
     run();
@@ -1253,7 +1264,7 @@
     var hasMar = model.clones.some(function (c) { return (c.slots.mar || []).length; });
     // With nothing to isolate, the Show control hides rather than offering a dead
     // end (the old path drew an empty state telling the viewer to switch back). A
-    // held "Affected" choice falls back to the full karyogram and is not cleared,
+    // held "Involved" choice falls back to the full karyogram and is not cleared,
     // so it survives a normal tour step and applies again on the next abnormal one.
     var isolatable = affKeys.length > 0 || hasMar;
     var showOpt = $("#showseg").parentNode;
@@ -1743,7 +1754,7 @@
     try {
       var k = (val != null ? String(val) : input.value).trim();
       var url = "?k=" + prettyEncode(k) +
-        "&style=" + STYLE_TO_URL[MODE] + "&bands=" + BANDS_TO_URL[LEVEL] + "&show=" + SHOW;
+        "&style=" + STYLE_TO_URL[MODE] + "&bands=" + BANDS_TO_URL[LEVEL] + "&show=" + SHOW_TO_URL[SHOW];
       history[push ? "pushState" : "replaceState"](null, "", url);
     } catch (e) {}
   }
@@ -1753,7 +1764,7 @@
   function applyUrlView() {
     var pStyle = getParam("style"); if (pStyle && URL_TO_STYLE[pStyle]) MODE = URL_TO_STYLE[pStyle];
     var pBands = getParam("bands"); if (pBands !== null && pBands in URL_TO_BANDS) LEVEL = URL_TO_BANDS[pBands];
-    var pShow = getParam("show"); if (pShow === "all" || pShow === "affected") SHOW = pShow;
+    var pShow = getParam("show"); if (URL_TO_SHOW[pShow]) SHOW = URL_TO_SHOW[pShow];
     syncSeg();
   }
   function getParam(name) {

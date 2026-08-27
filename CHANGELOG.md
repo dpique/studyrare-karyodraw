@@ -3,6 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-27 (one word for the chromosomes in the rearrangement)
+
+- **The Show toggle reads "Involved", which is the word the rest of the app was already
+  using.** The button said "Affected" while its own tooltip, the Highlight caption, both
+  legend rows, the About and Guide copy, and every condition page said "involved", so one
+  idea reached the reader under two names on a single screen. "Affected" also has a job it
+  cannot share: in genetics it describes a person who has the phenotype, which is exactly
+  how KaryoDraw uses it elsewhere when it calls a recombinant carrier's parent typically
+  unaffected. Chromosomes taking part in a rearrangement are involved, which is how ISCN
+  and laboratory reports put it. Links copied before today keep working: a shared link
+  carrying `show=affected` still opens the isolated view, and new links say
+  `show=involved`.
+
 ## 2026-08-27 (the legend draws its marks)
 
 - **The legend shows each mark's shape, not only its color.** Three rows name a shape,
