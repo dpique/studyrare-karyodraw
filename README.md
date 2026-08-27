@@ -217,17 +217,14 @@ one of those only when the exact archived snapshot matters.
 ## License
 
 KaryoDraw is free software under the **GNU Affero General Public License, version
-3 or later** ([`LICENSE`](LICENSE)). You may use, modify, and redistribute it,
-including commercially. If you modify it and serve it to users over a network,
-section 13 requires you to offer those users the source of your modified version
-under the same terms.
+3 or later** ([`LICENSE`](LICENSE)). You may use, modify, and redistribute it. If
+you modify it and serve it to users over a network, section 13 requires you to
+offer those users the source of your modified version under the same terms.
 
 The teaching material (the decode text and clinical notes, the curated karyotype
 entries, and the prose in `docs/` and the guide) is **additionally** offered under
 [CC BY-SA 4.0](LICENSE-CC-BY-SA-4.0.txt), so an explanation can go into a lecture
 slide or a handout without carrying a software license with it.
 
-Neither license restricts making money. What the AGPL restricts is keeping your
-changes to itself: publish them and you may sell the result. If you want to build
-on KaryoDraw without publishing your source, StudyRare sells a separate license for
-that. Terms and contact are in [`LICENSING.md`](LICENSING.md).
+If you want to build on KaryoDraw without publishing your source, StudyRare
+offers a separate license. Terms and contact are in [`LICENSING.md`](LICENSING.md).
