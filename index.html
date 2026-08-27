@@ -438,6 +438,10 @@
   .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; }
   .legend .item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #475569; }
   .legend .sw { width: 16px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,.12); }
+  /* Two kinds of legend row, two kinds of swatch. `.sw` is a filled block and belongs
+     to rows where the COLOR is the whole meaning (gray = uninvolved, "chr 2"). `.sw-mk`
+     belongs to rows that name a MARK, and draws that mark. */
+  .legend .sw-mk { width: 30px; height: 16px; flex: none; display: block; }
 
   .warnbox { margin: 0 0 14px; padding: 12px 15px; border-radius: 10px; background: var(--amber-50); border: 1px solid #f7d392; color: var(--amber-800); font-size: 13.5px; }
   .warnbox ul { margin: 6px 0 0; padding-left: 18px; }
@@ -1068,6 +1072,43 @@
   // so the legend angles are the negatives of the render's CEN_HATCH/HET_HATCH to
   // make the swatches lean the same way as the chromosomes.
   var CEN_SW = { angle: -45, gap: 3.4 }, HET_SW = { angle: 45, gap: 7 };
+
+  // A mark row draws its mark. "box:", "hooks:" and "carets:" name shapes, and all
+  // three used to arrive as the same filled block, so the swatch carried the color
+  // and the words carried everything else. The block also contradicted the label it
+  // sat next to: the dup frame is an OUTLINE (drawSpanMark emits fill="none"), the
+  // hooks are opposed quarter-turn arrows, the carets a rule with two inward heads.
+  // Each miniature below is that emission scaled down over the same pale body the
+  // figure marks up, so a reader matches legend to karyogram by shape and not by
+  // color alone. The hatch rows above always worked this way; these did not.
+  // Geometry tracks karyo-render.js drawSpanMark / breakMark, including the arc
+  // sweep, so the hooks swing the same way here as they do on a chromosome.
+  // The body is deliberately narrow (9 of 30 units): the hooks live OUTSIDE it, and
+  // at legend size they need the room or they shrink to two teal ticks.
+  var MK_BODY = '<rect x="10.5" y="1.5" width="9" height="13" rx="2" fill="#e2e8f0"/>';
+  function markSwatch(kind, color, label) {
+    var g = "";
+    if (kind === "box") {
+      // Clears the body by 2 on each side, as the real frame does, and covers a
+      // span rather than the full length: a box marks a segment, not a chromosome.
+      g = '<rect x="8.5" y="3" width="13" height="10" rx="2.5" fill="none" stroke="' + color + '" stroke-width="1.7"/>';
+    } else if (kind === "hooks") {
+      // Top-right and bottom-left: lead-in, quarter turn, arrowhead. The line
+      // appears to swing around, which is the end-for-end reading.
+      g = '<path d="M20.7 4 H22.4 A2.2 2.2 0 0 1 24.6 6.2" fill="none" stroke="' + color + '" stroke-width="1.5"/>' +
+          '<path d="M22.7 6.2 L26.5 6.2 L24.6 9.2 Z" fill="' + color + '"/>' +
+          '<path d="M9.3 12 H7.6 A2.2 2.2 0 0 1 5.4 9.8" fill="none" stroke="' + color + '" stroke-width="1.5"/>' +
+          '<path d="M3.5 9.8 L7.3 9.8 L5.4 6.8 Z" fill="' + color + '"/>';
+    } else if (kind === "carets") {
+      g = '<line x1="10.5" y1="8" x2="19.5" y2="8" stroke="' + color + '" stroke-width="1.2"/>' +
+          '<path d="M7.6 5.6 L11 8 L7.6 10.4 Z" fill="' + color + '"/>' +
+          '<path d="M22.4 5.6 L19 8 L22.4 10.4 Z" fill="' + color + '"/>';
+    } else if (kind === "seam") {
+      g = '<line x1="9.5" y1="8" x2="20.5" y2="8" stroke="' + color + '" stroke-width="1.6" stroke-dasharray="2 1.5"/>';
+    }
+    return '<span class="item"><svg class="sw-mk" viewBox="0 0 30 16" aria-hidden="true">' +
+      MK_BODY + g + '</svg>' + label + '</span>';
+  }
   function buildLegend() {
     var box = $("#legend"), OP = window.Karyo.OP_COLORS;
     // A legend row appears exactly when its mark is in the drawn karyogram,
@@ -1081,16 +1122,14 @@
     if (MODE === "simple") {
       var html = swatch("#ffffff", "gray = a chromosome not involved in the abnormality") +
         hatchSwatch("centromere", CEN_SW) + hatchSwatch("variable region / stalk", HET_SW);
-      if (has('rect[rx="2.5"][stroke="' + OP.dup + '"]')) html += swatch(OP.dup, "box: duplicated segment");
-      if (has('rect[rx="2.5"][stroke="' + OP.mov + '"]')) html += swatch(OP.mov, "box: moved segment (nothing gained or lost)");
-      if (has('path[stroke="' + OP.inv + '"]')) html += swatch(OP.inv, "hooks: inverted, drawn end-for-end");
+      if (has('rect[rx="2.5"][stroke="' + OP.dup + '"]')) html += markSwatch("box", OP.dup, "box: duplicated segment");
+      if (has('rect[rx="2.5"][stroke="' + OP.mov + '"]')) html += markSwatch("box", OP.mov, "box: moved segment (nothing gained or lost)");
+      if (has('path[stroke="' + OP.inv + '"]')) html += markSwatch("hooks", OP.inv, "hooks: inverted, drawn end-for-end");
       // Caret swatch takes the color actually drawn: red for a deletion
       // break, slate for the edges of a marked span.
-      if (has('path[fill="' + OP.del + '"]')) html += swatch(OP.del, "carets: a breakpoint");
-      else if (has('path[fill="#1e293b"]')) html += swatch("#1e293b", "carets: a breakpoint");
-      if (has('line[stroke-dasharray="2 1.5"]')) {
-        html += '<span class="item"><span class="sw" style="background-color:#fff;background-image:repeating-linear-gradient(90deg,#0f172a 0,#0f172a 3px,transparent 3px,transparent 5.5px);background-size:100% 2px;background-position:50% 50%;background-repeat:no-repeat"></span>dashed line: where two chromosomes fused</span>';
-      }
+      if (has('path[fill="' + OP.del + '"]')) html += markSwatch("carets", OP.del, "carets: a breakpoint");
+      else if (has('path[fill="#1e293b"]')) html += markSwatch("carets", "#1e293b", "carets: a breakpoint");
+      if (has('line[stroke-dasharray="2 1.5"]')) html += markSwatch("seam", "#0f172a", "dashed line: where two chromosomes fused");
       var keys = Object.keys(AFFECTED);
       if (keys.length) {
         html += '<span class="item" style="color:#94a3b8">involved:</span>';

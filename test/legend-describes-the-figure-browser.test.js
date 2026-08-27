@@ -98,6 +98,94 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
   }
 });
 
+// A mark row draws its mark. "box:", "hooks:" and "carets:" name shapes, and all
+// three arrived as the same filled block, so the swatch carried only the color and
+// the words carried the rest. The block also contradicted its own label: the dup
+// frame is an outline, drawn fill="none". The hatch rows had always reproduced
+// their hatch, at the render's own angle; these rows now reproduce their mark.
+// Rows where the COLOR is the meaning (gray = uninvolved, "chr 2") keep the block.
+test('the mark rows draw their mark, not a colored block', async (t) => {
+  if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
+  const puppeteer = require('puppeteer-core');
+  const server = await serve();
+  const port = server.address().port;
+  const browser = await puppeteer.launch({
+    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
+  });
+  // Every legend row as { label, sw } where sw is the swatch's outerHTML, so a test
+  // can ask what a given row actually drew rather than trusting the label alone.
+  const rows = (page) => page.evaluate(() =>
+    [...document.querySelectorAll('#legend .item')].map((el) => ({
+      label: el.textContent.trim(),
+      sw: (el.firstElementChild && el.firstElementChild.outerHTML) || '',
+    })));
+  try {
+    const page = await browser.newPage();
+    await page.setCacheEnabled(false);
+    await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent('46,XX,rec(2)dup(2p)inv(2)(p21q31)dmat')}&style=highlight&show=affected`,
+      { waitUntil: 'load' });
+    await page.waitForSelector('#karyo svg');
+    const got = await rows(page);
+    const find = (re) => got.find((r) => re.test(r.label));
+
+    const box = find(/^box: duplicated/), hooks = find(/^hooks:/), carets = find(/^carets:/);
+    assert.ok(box && hooks && carets, 'the rec draws all three marks');
+    [box, hooks, carets].forEach((r) =>
+      assert.match(r.sw, /^<svg class="sw-mk"/, `"${r.label}" should draw its mark, not a block`));
+
+    // Each swatch is the mark the label names, not three recolorings of one shape.
+    assert.match(box.sw, /<rect[^>]*fill="none"[^>]*stroke=/, 'the dup box is an outline, as the figure draws it');
+    assert.equal((hooks.sw.match(/<path/g) || []).length, 4, 'two lead-in arcs and two arrowheads');
+    assert.match(hooks.sw, /A[\d.]+ [\d.]+ 0 0 1/, 'the quarter turn, same sweep as drawSpanMark');
+    assert.match(carets.sw, /<line[^>]*stroke-width="1\.2"/, 'the breakpoint rule');
+    assert.equal((carets.sw.match(/<path/g) || []).length, 2, 'and two inward heads');
+    const shapeOf = (s) => s.replace(/(stroke|fill)="#[0-9a-f]{3,8}"/gi, '');
+    assert.notEqual(shapeOf(box.sw), shapeOf(hooks.sw), 'box and hooks differ by more than color');
+    assert.notEqual(shapeOf(hooks.sw), shapeOf(carets.sw), 'hooks and carets differ by more than color');
+
+    // Each mark keeps the operator color it is drawn in on the karyogram.
+    const OP = await page.evaluate(() => window.Karyo.OP_COLORS);
+    assert.ok(box.sw.includes(OP.dup), 'the dup box stays amber');
+    assert.ok(hooks.sw.includes(OP.inv), 'the hooks stay teal');
+
+    // A color-only row is still a block: there the color IS the meaning.
+    const chr = find(/^chr \d/);
+    assert.ok(chr, 'the involved-chromosome key is present');
+    assert.match(chr.sw, /^<span class="sw"/, 'a color key stays a filled block');
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+// The dashed fusion seam is a mark too, and joins the same grammar: the seam row
+// draws a dashed rule over the body instead of a block striped by CSS gradient.
+test('the fusion seam row draws the seam', async (t) => {
+  if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
+  const puppeteer = require('puppeteer-core');
+  const server = await serve();
+  const port = server.address().port;
+  const browser = await puppeteer.launch({
+    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setCacheEnabled(false);
+    await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent('46,XY,t(9;22)(q34;q11.2)')}&style=highlight&show=affected`,
+      { waitUntil: 'load' });
+    await page.waitForSelector('#karyo svg');
+    const seam = await page.evaluate(() => {
+      const el = [...document.querySelectorAll('#legend .item')].find((e) => /fused/i.test(e.textContent));
+      return el && el.firstElementChild ? el.firstElementChild.outerHTML : '';
+    });
+    assert.match(seam, /^<svg class="sw-mk"/, 'the seam row draws a mark');
+    assert.match(seam, /stroke-dasharray="2 1\.5"/, 'the same dash the renderer emits');
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
 // The visitor's der(15)ins URL, end to end: the spelling is repaired and the
 // page DRAWS, so the message about it is a note, not an alarm ("Let us sort
 // this out" over a finished drawing contradicts itself), the moved span is
