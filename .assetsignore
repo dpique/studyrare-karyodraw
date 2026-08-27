@@ -22,6 +22,8 @@ start.sh
 wrangler.jsonc
 .assetsignore
 LICENSE
+LICENSE-CC-BY-SA-4.0.txt
+LICENSING.md
 package.json
 package-lock.json
 content/karyogram-images.json

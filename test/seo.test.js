@@ -137,18 +137,52 @@ test('a submicroscopic deletion page says what banding actually sees', () => {
     assert.ok(!/<p class="lp-res">/.test(read(`karyotype/${slug}/index.html`)), `${slug} needs no caveat`));
 });
 
-// The site serves the repo tree as static assets, minus `.assetsignore`. Internal
-// engineering files must be on that list. `NEXT_SESSION_HANDOFF.md` was not, so it was
-// live at karyodraw.com/NEXT_SESSION_HANDOFF.md carrying working notes and absolute paths
-// under the author's home directory. That file is gone from the repo entirely now, since
-// a session handoff primes a session rather than serving the product, and it is
-// gitignored so it cannot come back; `.assetsignore` keeps its entry as a second guard in
-// case one ever does. The rest of the list is what a reader should not be served.
-test('internal engineering files are excluded from the served assets', () => {
-  const ignore = read('.assetsignore').split('\n').map((l) => l.trim());
-  for (const f of ['NEXT_SESSION_HANDOFF.md', 'README.md', 'CHANGELOG.md', 'docs/', 'test/']) {
-    assert.ok(ignore.includes(f), `${f} must be in .assetsignore, not served publicly`);
-  }
+// The site serves the repo tree as static assets, minus `.assetsignore`. Serving is
+// therefore opt-OUT: a new file at the root is public the moment it is committed.
+// `NEXT_SESSION_HANDOFF.md` was live at karyodraw.com carrying working notes and absolute
+// paths under the author's home directory. That file is gone from the repo entirely now,
+// since a session handoff primes a session rather than serving the product, and it is
+// gitignored so it cannot come back; `.assetsignore` keeps its entry as a second guard.
+//
+// This test used to name five files and assert they were on the list, which by
+// construction cannot catch a file nobody thought of, and it did not: the AGPL relicense
+// added `LICENSING.md` and `LICENSE-CC-BY-SA-4.0.txt` and both were live within the hour,
+// while `LICENSE` sitting beside them was correctly hidden. So the assertion is inverted.
+// Enumerate what MAY be served and fail on everything else, and the next internal file
+// trips this test instead of shipping. Adding a genuinely public file means adding it
+// here, once, on purpose.
+const PUBLIC_ASSETS = new Set([
+  'index.html', '404.html', 'robots.txt',
+  'favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png', 'preview.png',
+  // Runtime modules, loaded by <script src> from index.html.
+  'ideogram-data.js', 'iscn-parser.js', 'karyo-render.js', 'teach.js',
+  'segregation.js', 'pachytene.js',
+  // The homepage loads the curriculum at runtime (index.html `<script src>`), so unlike
+  // every other build input under content/ this one has to stay public.
+  'content/karyotypes.js',
+]);
+// Bing verifies domain ownership for IndexNow by fetching a hex-named key file at the root.
+const isIndexNowKey = (f) => /^[0-9a-f]{32}\.txt$/.test(f);
+// The landing pages themselves are generated and gitignored, but their two rendered PNGs
+// are committed (rendering them needs a browser, which the deploy does not have) and are
+// served as the page image and the social card.
+const isLandingImage = (f) => /^karyotype\/[a-z0-9-]+\/(karyogram|card)\.png$/.test(f);
+
+test('no tracked file is served publicly unless it is meant to be', () => {
+  const ignore = read('.assetsignore').split('\n').map((l) => l.trim()).filter(Boolean);
+  const ignoredDirs = ignore.filter((l) => l.endsWith('/'));
+  const isIgnored = (f) => ignore.includes(f) || ignoredDirs.some((d) => f.startsWith(d));
+
+  const tracked = require('node:child_process')
+    .execSync('git ls-files', { cwd: root, encoding: 'utf8' })
+    .split('\n').filter(Boolean);
+
+  const leaked = tracked
+    .filter((f) => !isIgnored(f))
+    .filter((f) => !PUBLIC_ASSETS.has(f) && !isIndexNowKey(f) && !isLandingImage(f));
+
+  assert.deepEqual(leaked, [], 'these tracked files would be served at karyodraw.com; '
+    + 'add each to .assetsignore, or to PUBLIC_ASSETS above if it is meant to be public');
 });
 
 // A handoff is working state for a session, not part of an open-source product, and this
