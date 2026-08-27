@@ -43,7 +43,9 @@
   // inv is the segregation figures' teal, reused rather than minted: the old
   // inv blue #5e72e4 was the SAME hex as AFFECTED_PALETTE[0], so an inversion
   // mark vanished against the very chromosome it sat on (found 2026-08-26).
-  var OP_COLORS = { del: "#e0554f", dup: AMBER, inv: "#1f9e8f", add: "#808ba8", break: "#242a45", hsr: "#d6409f" };
+  // mov is the moved-span box (an insertion's segment in its new home): a
+  // neutral slate, because the move is balanced, nothing gained or lost.
+  var OP_COLORS = { del: "#e0554f", dup: AMBER, inv: "#1f9e8f", mov: "#64748b", add: "#808ba8", break: "#242a45", hsr: "#d6409f" };
 
   // Affected-chromosome hues. Leads with the brand pair — periwinkle "field"
   // then amber "signal" — so a 2-way rearrangement echoes StudyRare's motif.
@@ -297,7 +299,7 @@
     // OUTSIDE the body, so a marked figure widens by nine units each side.
     // Symmetric on purpose: -9 to svgW+9 keeps the body's visual center, so a
     // marked chromosome still lines up with its unmarked homolog in a pair.
-    var padX = (simple && overlays.some(function (o) { return o.type === "dup" || o.type === "inv"; })) ? 9 : 0;
+    var padX = (simple && overlays.some(function (o) { return o.type === "dup" || o.type === "inv" || o.type === "mov"; })) ? 9 : 0;
     var uid = "c" + (renderComposite._n = (renderComposite._n || 0) + 1);
 
     // A fragile site is a constriction the whole body has, not paint on top of it,
@@ -479,7 +481,7 @@
         // Amplified block: a solid vivid band (the homogeneously staining region).
         body.push('<rect x="' + pad + '" y="' + span.y0.toFixed(2) + '" width="' + W + '" height="' + hh +
           '" fill="' + OP_COLORS.hsr + '" clip-path="url(#' + uid + ')"/>');
-      } else if (simple && (ov.type === "dup" || ov.type === "inv")) {
+      } else if (simple && (ov.type === "dup" || ov.type === "inv" || ov.type === "mov")) {
         drawSpanMark(ov, span);
       }
       if (simple) [span.y0, span.y1].forEach(function (yy) { if (yy > pad + 0.5 && yy < pad + H - 0.5) breakMark(yy, "#1e293b"); });
@@ -502,14 +504,17 @@
     // disagree with the drawn geometry. All of it pointer-events none: the
     // tooltip invariant (#197) owns that rule.
     function drawSpanMark(ov, span) {
-      var isDup = ov.type === "dup";
-      if (isDup) body.push('<rect x="' + (pad - 2) + '" y="' + span.y0.toFixed(2) + '" width="' + (W + 4) +
-        '" height="' + (span.y1 - span.y0).toFixed(2) + '" rx="2.5" fill="none" stroke="' + OP_COLORS.dup +
+      // The box means a span with a dosage-or-place story: amber = an extra
+      // copy (dup), slate = moved here with nothing gained or lost (mov, an
+      // insertion's segment in its new home). An inversion gets no box at all.
+      var boxCol = ov.type === "dup" ? OP_COLORS.dup : ov.type === "mov" ? OP_COLORS.mov : null;
+      if (boxCol) body.push('<rect x="' + (pad - 2) + '" y="' + span.y0.toFixed(2) + '" width="' + (W + 4) +
+        '" height="' + (span.y1 - span.y0).toFixed(2) + '" rx="2.5" fill="none" stroke="' + boxCol +
         '" stroke-width="1.8" pointer-events="none"/>');
       var rev = ov.type === "inv" || (ov.segIndex != null && segments[ov.segIndex] && segments[ov.segIndex].reversed);
       if (!rev) return;
       // Hooks clear the frame when there is one, else the body edge.
-      var hk = OP_COLORS.inv, r = 3.6, lead = 2.8, gap = 1.3, edge = isDup ? 2 : 0;
+      var hk = OP_COLORS.inv, r = 3.6, lead = 2.8, gap = 1.3, edge = boxCol ? 2 : 0;
       var head = function (ex, ey, dir) {
         return '<path d="M' + (ex - 2.1).toFixed(2) + ' ' + ey.toFixed(2) + ' L' + (ex + 2.1).toFixed(2) + ' ' + ey.toFixed(2) +
           ' L' + ex.toFixed(2) + ' ' + (ey + dir * 3.6).toFixed(2) + ' Z" fill="' + hk + '" pointer-events="none"/>';
@@ -820,19 +825,33 @@
       var g = bps[0] || [];
       var site = resolveBand(chrom, g[0]), a = resolveBand(chrom, g[1]), b = resolveBand(chrom, g[2]);
       if (!site || !a || !b) return null;
-      var d = IDEO.data[chrom], lo = Math.min(a.mid, b.mid), hi = Math.max(a.mid, b.mid), inv = a.mid > b.mid, sp = site.mid, out = [];
+      var d = IDEO.data[chrom], lo = Math.min(a.mid, b.mid), hi = Math.max(a.mid, b.mid), inv = a.mid > b.mid, sp = site.mid, out = [], moved;
       if (sp <= lo) {                              // insertion site proximal to the moved segment
         if (sp > 0) out.push(insSeg(chrom, 0, sp));
-        out.push(insSeg(chrom, lo, hi, inv));      // the moved segment, in its new home
+        out.push(moved = insSeg(chrom, lo, hi, inv)); // the moved segment, in its new home
         out.push(insSeg(chrom, sp, lo));           // backbone between the site and the old location
         if (hi < d.length) out.push(insSeg(chrom, hi, d.length));
       } else {                                     // insertion site distal to the moved segment
         if (lo > 0) out.push(insSeg(chrom, 0, lo));
         out.push(insSeg(chrom, hi, sp));
-        out.push(insSeg(chrom, lo, hi, inv));      // the moved segment
+        out.push(moved = insSeg(chrom, lo, hi, inv)); // the moved segment
         if (sp < d.length) out.push(insSeg(chrom, sp, d.length));
       }
-      return { segments: out.filter(function (s) { return s.to > s.from; }), overlays: [] };
+      // The move gets marks, or the figure keeps the secret: both pieces are the
+      // same chromosome, so not even a fusion seam betrays an internal insertion,
+      // and 46,XY,ins(15)(p11q23q26) drew indistinguishable-at-a-glance from a
+      // normal 15. The moved span wears the mov box; the excision point it left
+      // is careted like any other repair join (same as an interstitial del).
+      var kept = out.filter(function (s) { return s.to > s.from; });
+      // The excision caret anchors at hi + 1, one base INSIDE the distal
+      // remnant, not at lo: pointY takes the first segment containing the
+      // coordinate, and the moved segment itself starts at lo, so an anchor of
+      // lo drew the carets on the box up at the insertion site instead of down
+      // at the join the segment left behind.
+      return { segments: kept, overlays: [
+        { type: "mov", chrom: chrom, segIndex: kept.indexOf(moved) },
+        { type: "cut", chrom: chrom, at: hi + 1 }
+      ] };
     }
     var recip = String(chroms[0]), donor = String(chroms[1]);
     var site2 = resolveBand(recip, (bps[0] || [])[0]);
@@ -840,11 +859,11 @@
     if (!site2 || !s1 || !s2 || !IDEO.data[recip] || !IDEO.data[donor]) return null;
     var dlo = Math.min(s1.mid, s2.mid), dhi = Math.max(s1.mid, s2.mid), dinv = s1.mid > s2.mid;
     if (chrom === recip) {                         // der(recipient): grows by the donor segment
-      var dr = IDEO.data[recip], rs = [];
+      var dr = IDEO.data[recip], rs = [], movedIn;
       if (site2.mid > 0) rs.push(insSeg(recip, 0, site2.mid));
-      rs.push(insSeg(donor, dlo, dhi, dinv));
+      rs.push(movedIn = insSeg(donor, dlo, dhi, dinv));
       if (site2.mid < dr.length) rs.push(insSeg(recip, site2.mid, dr.length));
-      return { segments: rs, overlays: [] };
+      return { segments: rs, overlays: [{ type: "mov", chrom: donor, segIndex: rs.indexOf(movedIn) }] };
     }
     var dd2 = IDEO.data[donor], ds = [];           // der(donor): loses the excised segment
     if (dlo > 0) ds.push(insSeg(donor, 0, dlo));

@@ -3,6 +3,28 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-27 (the insertion shows its move, and a repaired spelling stops sounding like an alarm)
+
+- **A drawn insertion now wears marks.** An intrachromosomal insertion drew with no mark
+  at all, both pieces being the same chromosome, so not even a fusion seam betrayed the
+  move; Dan looked at the visitor's der(15)ins page and said there was no mention of an
+  insertion in the figure. The moved span now wears a slate box, the neutral member of
+  the box family (amber = an extra copy, slate = moved here, nothing gained or lost),
+  the teal hooks arrive automatically when the insertion is inverted, because the hooks
+  read the segment model, and red carets sit at the excision point the segment left,
+  down in the arm it came from. The legend gains its conditional row.
+- **The spelling repair teaches the insertion's own rule.** The generic "breakpoints on
+  the same chromosome are written one after the other" did not explain why the insertion
+  site leads, and Dan flagged it as probably wrong. Checked against ISCN 2024: the
+  repair was right and the citation was lazy. It now says an insertion within one
+  chromosome is written as one run, the insertion site first and then the segment's own
+  breakpoints (ISCN 5.5.9.1), in the standalone form and the der-carried one alike.
+- **A repaired spelling that drew presents as a note, not an alarm.** "Let us sort this
+  out" over a finished, correct drawing contradicts itself the same way the old
+  cannot-draw heading did. When every message is a so-X-is-Y repair and no alternative
+  reading is on offer, the box takes the neutral note styling under "One spelling note,
+  already applied".
+
 ## 2026-08-27 (the lone derivative names its imbalance)
 
 - **A single der from a reciprocal translocation now states what it implies.** Dan looked

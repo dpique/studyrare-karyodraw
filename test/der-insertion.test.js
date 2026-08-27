@@ -45,7 +45,8 @@ const decodeText = (k) => Teach.decode(clone0(k)).map((r) => r.text).join(' ');
 
 test('a same-chromosome ins sub-op with a semicolon is repaired with the same lesson as the standalone form', () => {
   const w = warns('46,XY,der(15)ins(15)(p11;q23q26)').join(' ');
-  assert.match(w, /written one after the other/, 'the standalone ins already taught this; the der form now does too');
+  assert.match(w, /5\.5\.9\.1/, 'the insertion cites its own rule, not the generic two-breakpoint one');
+  assert.match(w, /insertion site first/, 'and teaches why p11 leads');
   const sub = clone0('46,XY,der(15)ins(15)(p11;q23q26)').aberrations[0].subOps[0];
   assert.equal(sub.breakpoints.length, 1, 'the two groups merge into one');
   assert.equal(sub.breakpoints[0].join(','), 'p11,q23,q26');

@@ -90,3 +90,34 @@ test('the Realistic theme draws no frames and no hooks', () => {
     assert.ok(!/A3\.6 3\.6/.test(svg), `${k}: no hooks in Realistic`);
   }
 });
+
+// The moved-segment box, added after Dan drew the visitor's der(15)ins and
+// said "there is no mention of an insertion here!": an intrachromosomal
+// insertion drew with NO mark at all (both pieces are the same chromosome, so
+// not even a fusion seam appears), leaving the move invisible unless you
+// compare banding by eye. The grammar extends without bending: a box in the
+// neutral slate means "this span moved here, nothing gained or lost", the
+// hooks still mean end-for-end (so an INVERTED insertion earns them from the
+// model automatically), and red carets mark the excision point the segment
+// left behind.
+test('an insertion boxes the moved span in slate and carets its excision point', () => {
+  const out = drawOut('46,XY,ins(15)(p11q23q26)', '15', 'simple');
+  assert.match(out.svg, frameRe(Karyo.OP_COLORS.mov), 'the moved span wears the neutral box');
+  assert.equal((out.svg.match(hookRe(TEAL)) || []).length, 0, 'orientation kept, so no hooks');
+  assert.ok(/fill="#e0554f"/.test(out.svg), 'the excision point is careted');
+  assert.equal(out.width, 52, 'the box rides the margin, so the canvas widens');
+});
+
+test('an inverted insertion earns the hooks from the model', () => {
+  const svg = drawOut('46,XX,ins(2)(p13q31q21)', '2', 'simple').svg;
+  assert.match(svg, frameRe(Karyo.OP_COLORS.mov));
+  assert.equal((svg.match(hookRe(TEAL)) || []).length, 2, 'the segment is drawn end-for-end (ISCN 5.5.9.1 i)');
+});
+
+test('the der-wrapped insertion wears the same marks, and Realistic stays bare', () => {
+  const svg = drawOut('46,XY,der(15)ins(15)(p11q23q26)', '15', 'simple').svg;
+  assert.match(svg, frameRe(Karyo.OP_COLORS.mov));
+  const real = drawOut('46,XY,ins(15)(p11q23q26)', '15', 'detailed');
+  assert.ok(!/rx="2\.5"/.test(real.svg), 'no box in Realistic');
+  assert.equal(real.width, 34, 'and no widening');
+});

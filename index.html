@@ -1081,7 +1081,8 @@
     if (MODE === "simple") {
       var html = swatch("#ffffff", "gray = a chromosome not involved in the abnormality") +
         hatchSwatch("centromere", CEN_SW) + hatchSwatch("variable region / stalk", HET_SW);
-      if (has('rect[rx="2.5"]')) html += swatch(OP.dup, "box: duplicated segment");
+      if (has('rect[rx="2.5"][stroke="' + OP.dup + '"]')) html += swatch(OP.dup, "box: duplicated segment");
+      if (has('rect[rx="2.5"][stroke="' + OP.mov + '"]')) html += swatch(OP.mov, "box: moved segment (nothing gained or lost)");
       if (has('path[stroke="' + OP.inv + '"]')) html += swatch(OP.inv, "hooks: inverted, drawn end-for-end");
       // Caret swatch takes the color actually drawn: red for a deletion
       // break, slate for the edges of a marked span.
@@ -1654,6 +1655,19 @@
         ? chips.slice(0, -1).join(", ") + " or " + chips[chips.length - 1]
         : chips[0];
       parts.push('<div class="dym-row">Did you mean ' + joined + '?</div>');
+    }
+    // A spelling the parser repaired and drew is a lesson, not a problem, and an
+    // amber "Let us sort this out" over a finished drawing contradicts itself the
+    // same way the notDrawn heading once did. Repair messages all carry the
+    // so-X-is-Y shape; when every message is one and no fix chip is on offer,
+    // the box takes the neutral note styling. Dan hit this on the visitor's
+    // der(15)ins URL: repaired, drawn, decoded, and still framed as an error.
+    var allRepairs = w.length && !fix && w.every(function (x) { return x.indexOf("” is “") >= 0; });
+    if (allRepairs) {
+      box.innerHTML = '<div class="notebox"><div class="note-title">' +
+        (w.length === 1 ? "One spelling note, already applied:" : "Spelling notes, already applied:") + '</div>' +
+        '<ul>' + w.map(function (x) { return "<li>" + escapeHtml(x) + "</li>"; }).join("") + '</ul></div>';
+      return;
     }
     if (w.length) {
       // A karyotype the app simply has no drawing for is not the reader's problem, and

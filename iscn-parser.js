@@ -405,7 +405,8 @@
     insOps.forEach(function (s) {
       if (s.chroms.length === 1 && s.breakpoints.length === 2) {
         var joined = s.breakpoints[0].concat(s.breakpoints[1]);
-        warnings.push("Breakpoints on the same chromosome are written one after the other, so “ins(" +
+        warnings.push("An insertion within one chromosome is written as one run, the insertion site first and then " +
+          "the segment’s own breakpoints (ISCN 5.5.9.1), so “ins(" +
           s.chroms[0] + ")(" + s.breakpoints.map(function (g) { return g.join(""); }).join(";") + ")” is “ins(" +
           s.chroms[0] + ")(" + joined.join("") + ")”.");
         s.breakpoints = [joined];
@@ -1601,9 +1602,18 @@
     var joined = joinSameChrom(suggestion);
     suggestion = joined.text;
     joined.hits.forEach(function (pair) {
-      warnings.push("Breakpoints on the same chromosome are written one after the other, so “" +
-        pair[0] + "” is “" + pair[1] + "”. The semicolon separates different chromosomes, " +
-        "as in t(9;22)(q34;q11.2).");
+      // An insertion has its own spelling rule, so the generic two-breakpoint
+      // lesson would teach the wrong thing about the order: 5.5.9.1 says the
+      // insertion site comes first, then the segment's breakpoints, all in one
+      // run. Everything else gets the general rule (4.2.1 h).
+      if (/^[+\-−–]?ins\(/i.test(pair[0])) {
+        warnings.push("An insertion within one chromosome is written as one run, the insertion site first and then " +
+          "the segment’s own breakpoints (ISCN 5.5.9.1), so “" + pair[0] + "” is “" + pair[1] + "”.");
+      } else {
+        warnings.push("Breakpoints on the same chromosome are written one after the other, so “" +
+          pair[0] + "” is “" + pair[1] + "”. The semicolon separates different chromosomes, " +
+          "as in t(9;22)(q34;q11.2).");
+      }
     });
 
     // An empty field between commas. 47~49,XY,+8,, drew a full karyogram and said
