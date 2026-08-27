@@ -376,6 +376,41 @@
   // decode panel says what the notation means and names the alternative. When the
   // count already contradicts the t (45,XX,t(13;15)(q10;q10)) the warning box and its
   // rob() fix are doing this job, so stay quiet rather than say it twice.
+  // A lone derivative from a reciprocal translocation implies an imbalance the
+  // notation never writes down, the der's version of the rec's inferred
+  // deletion (5.4.3.2 c). 46,XX,der(8)t(4;8)(p16.1;p23.1) means the reciprocal
+  // der(4) is NOT here: with two intact 4s beside it, the attached 4p segment
+  // is present three times and the replaced 8p segment once. Dan looked at the
+  // figure and asked "where is the swap?", which is exactly the question this
+  // note answers. It speaks only in the textbook count situation (two intact
+  // partners, this der beside one normal homolog, no reciprocal der in the
+  // clone); anywhere else the arithmetic differs and a wrong dosage claim
+  // would be worse than silence.
+  function loneDerNote(ab, clone) {
+    if (!ab || ab.kind !== "der" || ab.wholeArmAcro) return "";
+    var td = (ab.subOps || []).filter(function (s) { return s.op === "t"; })[0];
+    if (!td || !td.chroms || td.chroms.length !== 2) return "";
+    var c = String(ab.chroms[0]);
+    var di = td.chroms.map(String).indexOf(c); if (di < 0) return "";
+    var partner = String(td.chroms[1 - di]);
+    if (partner === c) return "";
+    var bpDer = (td.breakpoints[di] || [])[0], bpPar = (td.breakpoints[1 - di] || [])[0];
+    if (!bpDer || !bpPar || /\?/.test(String(bpDer) + String(bpPar))) return "";
+    var hasPartnerDer = (clone.aberrations || []).some(function (a) {
+      return a !== ab && a.kind === "der" && String((a.chroms || [])[0]) === partner;
+    });
+    if (hasPartnerDer) return "";
+    var pSlot = (clone.slots || {})[partner] || [], cSlot = (clone.slots || {})[c] || [];
+    if (pSlot.length !== 2 || !pSlot.every(function (i) { return i.kind === "normal"; })) return "";
+    if (cSlot.length !== 2 || cSlot.filter(function (i) { return i.kind === "normal"; }).length !== 1) return "";
+    var origin = ab.qualifier === "dn" ? "" :
+      " The usual origin is a parent who carries the balanced t(" + td.chroms.join(";") + "), with only this product passed on.";
+    return " Only this derivative is present: the reciprocal der(" + partner + ") with the swapped pieces is not in " +
+      "this karyotype, and both chromosome " + partner + "s are intact. So the result is unbalanced: " +
+      distalSeg(partner, bpPar) + " is present in three copies (partial trisomy) and " + distalSeg(c, bpDer) +
+      " in one (partial monosomy)." + origin;
+  }
+
   function robNote(ab, clone) {
     if (!ab.wholeArmAcro) return "";
     if (!clone.counts || !clone.counts.ok || clone.modalNumber == null) return "";
@@ -549,7 +584,7 @@
     clone.aberrations.forEach(function (ab) {
       var d = describeAberration(ab);
       var q = ab.qualifier && QUALIFIER_PHRASE[ab.qualifier];
-      var body = d.text + robNote(ab, clone);
+      var body = d.text + robNote(ab, clone) + loneDerNote(ab, clone);
       // The der() descriptions already end in a full stop while the t() ones do not, and
       // xciNote opens with one. Drop a trailing stop before joining rather than teaching
       // every branch above about what might follow it.

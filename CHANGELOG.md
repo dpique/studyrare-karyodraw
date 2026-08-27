@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-27 (the lone derivative names its imbalance)
+
+- **A single der from a reciprocal translocation now states what it implies.** Dan looked
+  at 46,XX,der(8)t(4;8)(p16.1;p23.1) and asked where the swap was. The figure was right,
+  two intact 4s and one der(8), and the page never said why: a lone derivative means the
+  reciprocal der(4) is NOT in this karyotype, so the attached 4p16.1→4pter segment is
+  present in three copies and the replaced 8p23.1→8pter segment in one. The decode now
+  says exactly that, names the absent partner, and teaches the usual origin (a parent
+  carrying the balanced translocation), dropping the parental sentence when the change
+  is marked de novo. The note speaks only in the textbook count situation and never on
+  a balanced der pair; anywhere the arithmetic differs it stays silent, because a wrong
+  dosage claim is worse than none. This is the der's version of the rec's inferred
+  deletion (ISCN 5.4.3.2 c): the half the notation leaves out is the half that matters.
+
 ## 2026-08-27 (the derivative draws its insertion, and nothing it carries is dropped in silence)
 
 - **der(N) carrying ins(...) now draws the insertion.** A visitor's one-click flag, sent
