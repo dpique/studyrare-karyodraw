@@ -372,6 +372,65 @@
     return sub;
   }
 
+  // Decide whether the renderer has a shape for every sub-operation a der()
+  // carries, and refuse the whole drawing when it does not. Found by a visitor's
+  // one-click flag: der(15)ins(15)(p11;q23q26) parsed clean and drew an
+  // untouched chromosome 15 labeled der(15), because the renderer applied only
+  // del/dup/inv/t sub-ops and dropped everything else in silence. A figure that
+  // looks authoritative and is false is the worst output this app can produce,
+  // so a der whose make-up cannot be drawn draws nothing and says why instead.
+  function classifyDerSubOps(ab, warnings) {
+    var subs = ab.subOps || [];
+    if (!subs.length) return;
+    function undrawn(msg) { ab.kind = "unknown"; ab.notDrawn = "der"; warnings.push(msg); }
+    var DRAWABLE = { del: 1, dup: 1, inv: 1, t: 1, ins: 1, add: 1, hsr: 1 };
+    for (var i = 0; i < subs.length; i++) {
+      if (subs[i].op === "r") {
+        return undrawn("“" + (ab.note || "der(" + ab.chroms.join(";") + ")") + "” is correct ISCN: a monocentric " +
+          "ring is written as a derivative, with the chromosome that provides the centromere first (ISCN 5.5.16 b). " +
+          "KaryoDraw does not yet have a drawing for a ring built from named segments, so it draws nothing rather " +
+          "than a wrong figure.");
+      }
+      if (!DRAWABLE[subs[i].op]) {
+        return undrawn("“" + (ab.note || "der(" + ab.chroms.join(";") + ")") + "” is correct ISCN: a derivative " +
+          "chromosome may be built by more than one rearrangement (ISCN 5.5.2). KaryoDraw does not yet have a " +
+          "drawing for a derivative carrying “" + subs[i].op + "”, so it draws nothing rather than a wrong figure.");
+      }
+    }
+    var insOps = subs.filter(function (s) { return s.op === "ins"; });
+    if (!insOps.length) return;
+    // A same-chromosome ins sub-op with two groups gets the same repair and the
+    // same lesson as the standalone form (4.2.1 h): breakpoints on one
+    // chromosome are written one after the other.
+    insOps.forEach(function (s) {
+      if (s.chroms.length === 1 && s.breakpoints.length === 2) {
+        var joined = s.breakpoints[0].concat(s.breakpoints[1]);
+        warnings.push("Breakpoints on the same chromosome are written one after the other, so “ins(" +
+          s.chroms[0] + ")(" + s.breakpoints.map(function (g) { return g.join(""); }).join(";") + ")” is “ins(" +
+          s.chroms[0] + ")(" + joined.join("") + ")”.");
+        s.breakpoints = [joined];
+      }
+    });
+    var primary = String(ab.chroms[0]);
+    var ins0 = insOps[0];
+    var insBands = ins0.breakpoints.reduce(function (a, g) { return a.concat(g); }, []);
+    if (ins0.chroms.some(function (x) { return /\?/.test(x); }) || insBands.some(function (b) { return /\?/.test(String(b)); })) {
+      return undrawn("“ins(" + ins0.chroms.join(";") + ")…” is correct ISCN: the ? is a placeholder for a chromosome " +
+        "or breakpoint that was not determined (ISCN 4.2.1 k). With the inserted material undetermined there is " +
+        "nothing to draw, so the karyotype stays undrawn.");
+    }
+    if (insOps.length > 1 || subs.some(function (s) { return s.op === "t"; })) {
+      return undrawn("“" + (ab.note || "der") + "” is correct ISCN: a derivative chromosome may be built by more " +
+        "than one rearrangement (ISCN 5.5.2). KaryoDraw does not yet have a drawing for a derivative that combines " +
+        "an insertion with a translocation or a second insertion, so it draws nothing rather than a wrong figure.");
+    }
+    if (ins0.chroms.map(String).indexOf(primary) < 0) {
+      return undrawn("“der(" + primary + ")” names the chromosome whose centromere the derivative keeps, so its " +
+        "insertion needs to involve chromosome " + primary + ", like der(5)ins(5;2)(q31;p23p13). KaryoDraw has no " +
+        "drawing for this combination.");
+    }
+  }
+
   // Work out which recombinant chromosome was written, and whether this app has a
   // shape for it. rec(N) names the chromosome whose CENTROMERE the recombinant
   // carries (ISCN 5.5.15 d); after it come the stated duplication and the parental
@@ -583,7 +642,7 @@
       case "der":
         ab.kind = "der";
         // der(N) may be followed by t(...)/del(...) sub-ops describing its make-up.
-        if (rest) { ab.note = "der(" + ab.chroms.join(";") + ")" + rest; readSubOps(ab, rest, warnings, raw); }
+        if (rest) { ab.note = "der(" + ab.chroms.join(";") + ")" + rest; readSubOps(ab, rest, warnings, raw); classifyDerSubOps(ab, warnings); }
         break;
       // rec(N) is a recombinant chromosome: what an inversion carrier passes on
       // when a crossover falls inside the inversion loop. Its make-up is written

@@ -120,14 +120,35 @@
       ? "the end of chromosome " + partner + "’s long arm (" + partner + band + "→qter)"
       : "the end of chromosome " + partner + "’s short arm (pter→" + partner + band + ")";
   }
-  // One phrase for an extra del/dup/inv operation inside a der() chain (the t/dic
-  // join is described separately, so those return null here).
-  function subOpPhrase(s) {
-    if (!s || ["del", "dup", "inv"].indexOf(s.op) < 0) return null;
+  // One phrase for an extra del/dup/inv/ins operation inside a der() chain (the
+  // t/dic join is described separately, so those return null here). The ins
+  // phrase takes the derivative's own chromosome so it can say which side of an
+  // interchromosomal insertion this derivative is: the recipient grew, the
+  // donor shrank. Before it existed, der(15)ins(15)(p11q23q26) decoded to
+  // nothing but the centromere sentence, and a visitor's flag asked what the
+  // q23q26 even meant.
+  function subOpPhrase(s, derChrom) {
+    if (!s || ["del", "dup", "inv", "ins", "add", "hsr"].indexOf(s.op) < 0) return null;
     var sc = (s.chroms || [])[0], g = (s.breakpoints || [])[0] || [], bands = bandsPhrase(sc, g);
     if (s.op === "del") return g.length >= 2 ? "an interstitial deletion between " + bands : "a terminal deletion at " + (bands || ("chromosome " + sc));
     if (s.op === "dup") return "a duplication of the segment between " + bands;
     if (s.op === "inv") return "an inversion between " + bands;
+    if (s.op === "add") return "additional material of unknown origin attached at " + sc + (g[0] || "?");
+    if (s.op === "hsr") return "an amplified homogeneously staining region (hsr) at " + sc + (g[0] || "?");
+    if (s.op === "ins") {
+      if ((s.chroms || []).length >= 2) {
+        var recip = String(s.chroms[0]), donor = String(s.chroms[1]);
+        var segBands = bandsPhrase(donor, s.breakpoints[1] || []);
+        var site = recip + (((s.breakpoints[0] || [])[0]) || "?");
+        if (String(derChrom) === donor && donor !== recip) {
+          return "the loss of its segment between " + segBands + ", inserted into chromosome " + recip + " at " + site;
+        }
+        return "an inserted segment from chromosome " + donor + " (between " + segBands + ") at " + site;
+      }
+      var ig = s.breakpoints[0] || [];
+      return "an insertion within chromosome " + sc + ": the segment between " + bandsPhrase(sc, ig.slice(1)) +
+        " moved to " + sc + (ig[0] || "?");
+    }
     return null;
   }
   function describeAberration(ab) {
@@ -233,10 +254,11 @@
       var base = "an abnormal (“derivative”) chromosome that has chromosome " + c + "’s centromere";
       var subs = ab.subOps || [];
       var td = subs.filter(function (s) { return s.op === "t"; })[0];
-      // The der can also carry del/dup/inv on its own chromosome (a chain like
-      // der(9)del(9)(p12)t(9;22)); the renderer draws them, so name them here too.
-      var extras = subs.map(subOpPhrase).filter(Boolean);
-      var extraText = extras.length ? " It also carries " + listJoin(extras) + "." : "";
+      // The der can also carry del/dup/inv/ins on its own chromosome (a chain
+      // like der(9)del(9)(p12)t(9;22)); the renderer draws them, so name them
+      // here too. "also" only when a join sentence precedes.
+      var extras = subs.map(function (s) { return subOpPhrase(s, c); }).filter(Boolean);
+      var extraText = extras.length ? " It " + (td ? "also " : "") + "carries " + listJoin(extras) + "." : "";
       if (td && td.chroms.length >= 2) {
         var di = td.chroms.indexOf(c); if (di < 0) di = 0;
         var partner = td.chroms[1 - di];
