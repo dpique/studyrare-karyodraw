@@ -1,6 +1,6 @@
 {
   "name": "karyodraw",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A zero-install browser tool that draws and explains ISCN karyotypes for genetics education.",
   "homepage": "https://karyodraw.com",
   "repository": {
