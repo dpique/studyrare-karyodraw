@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-27 (the legend draws its marks)
+
+- **The legend shows each mark's shape, not only its color.** Three rows name a shape,
+  "box: duplicated segment", "hooks: inverted, drawn end-for-end" and "carets: a
+  breakpoint", and each arrived as the same filled block, so the words carried the
+  meaning and color was the only thing a reader could match against the figure. The
+  block also disagreed with its own label, since the duplication box is drawn as an
+  open frame. Every mark row now draws its mark: the box as that open frame, the hooks
+  as opposed quarter-turn arrows, the carets as a rule with two inward heads, and the
+  fusion seam as a dashed rule across the body. The geometry comes from the renderer,
+  down to the direction the hooks turn, so a mark in the legend and the same mark on a
+  chromosome are one picture. Rows where the color is the whole meaning, gray for an
+  uninvolved chromosome and the per-chromosome keys, keep the filled block.
+
 ## 2026-08-27 (the segments state their size)
 
 - **Every segment the decode names now carries a size estimate.** Requested by Luis
