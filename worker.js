@@ -1,5 +1,11 @@
 /* KaryoDraw Worker.
  *
+ * Copyright (C) 2026 StudyRare. KaryoDraw is free software: you may
+ * redistribute it and/or modify it under the terms of the GNU Affero General
+ * Public License, version 3 or later; see LICENSE. If you run a modified
+ * version as a network service you must offer its source to your users (AGPL
+ * section 13). Commercial licensing: see LICENSING.md.
+ *
  * Serves the static site (via the ASSETS binding) and handles three endpoints:
  * POST /api/collect records an anonymous usage event to D1, GET /api/top returns
  * the most-drawn karyotypes for the on-page "Most-studied" panel, and POST

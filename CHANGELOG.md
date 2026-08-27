@@ -3,6 +3,22 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-26 (the terms follow the tool onto the network)
+
+- **KaryoDraw is now AGPL-3.0-or-later, and its teaching material is additionally
+  offered under CC BY-SA 4.0.** MIT let anyone take the parser, the renderer, and the
+  curated explanations, close the source, and sell the result, asking only that a
+  copyright line survive in a file nobody opens. The Affero clause follows the work
+  onto the network instead: a modified KaryoDraw served to users has to ship its
+  source under the same terms. The content grant runs the other way, so an educator
+  can lift a decode paragraph into a slide under CC BY-SA without inheriting a
+  software license. Neither license restricts commercial use; both require
+  reciprocity, and StudyRare grants separate commercial licenses for anyone who
+  wants neither. Relicensing is not retroactive: every commit through `e707ddb`
+  stays MIT. Scope, the band-data note, and the contact address are in
+  `LICENSING.md`; contributors are now asked for a relicensing grant in
+  `CONTRIBUTING.md`, which is what keeps the commercial option alive.
+
 ## 2026-08-26 (a box for gain, hooks for a flip, and a legend that tells the truth)
 
 - **The inversion mark is now the hooks alone; the box means duplication and nothing

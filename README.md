@@ -197,3 +197,23 @@ python3 build_ideogram.py       # writes ../ideogram-data.js
 
 KaryoDraw is an **educational** visualizer for cytogenetic nomenclature — not a
 diagnostic tool.
+
+## License
+
+KaryoDraw is free software under the **GNU Affero General Public License, version
+3 or later** ([`LICENSE`](LICENSE)). You may use, modify, and redistribute it,
+including commercially. If you modify it and serve it to users over a network,
+section 13 requires you to offer those users the source of your modified version
+under the same terms.
+
+The teaching material (the decode text and clinical notes, the curated karyotype
+entries, and the prose in `docs/` and the guide) is **additionally** offered under
+[CC BY-SA 4.0](LICENSE-CC-BY-SA-4.0.txt), so an explanation can go into a lecture
+slide or a handout without carrying a software license with it.
+
+Neither is a non-commercial license; both permit commercial use. For proprietary
+use, StudyRare grants commercial licenses. Scope, terms, and contact are in
+[`LICENSING.md`](LICENSING.md).
+
+Releases from 2026-07-01 to 2026-08-26 were under the MIT License. Relicensing is
+not retroactive.

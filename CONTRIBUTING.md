@@ -59,6 +59,25 @@ workflow will not ship a commit that fails it.
    `studyrare-brand` kit.
 5. Open a pull request describing the change and how you verified it.
 
+## Licensing of contributions
+
+KaryoDraw is licensed under the GNU Affero General Public License, version 3 or
+later, and its teaching material is additionally offered under CC BY-SA 4.0. See
+[`LICENSING.md`](LICENSING.md).
+
+By opening a pull request you agree that:
+
+1. your contribution is licensed to the project under those same terms, and
+2. you grant StudyRare a perpetual, worldwide, non-exclusive, royalty-free,
+   irrevocable right to use, modify, and relicense your contribution, including
+   under commercial terms.
+
+The second point is what allows StudyRare to grant the commercial licenses
+described in `LICENSING.md`. Without it, a single outside contribution would
+remove that option for the whole project. If you would rather not grant it, say
+so in the pull request; the change can be discussed and reimplemented
+independently.
+
 ## Code of conduct
 
 By participating you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md).

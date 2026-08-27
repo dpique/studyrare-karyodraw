@@ -185,7 +185,9 @@ parser, an SVG karyogram renderer, and a teaching module) that requires no bundl
 or transpiler. It is served as static assets by a small Cloudflare Worker, which
 also handles an anonymous usage beacon and a feedback channel. It is deployed at
 <https://karyodraw.com> and the source is available at
-<https://github.com/dpique/studyrare-karyodraw> under the MIT license. Chromosome band data are
+<https://github.com/dpique/studyrare-karyodraw> under the GNU Affero General Public License
+(AGPL-3.0-or-later), with the teaching content additionally offered under CC BY-SA 4.0 so that
+explanations can be reused in course material. Chromosome band data are
 derived from the UCSC Genome Browser `cytoBandIdeo` table (hg38). The application
 is validated by a dependency-free suite of nearly 500 behavioral tests (Node's
 built-in runner, gating every pull request and every deploy) covering
