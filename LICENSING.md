@@ -56,14 +56,6 @@ UCSC hg38 `cytoBandIdeo` table, which UCSC makes freely available. It is
 measured data rather than original expression, and nothing here adds a
 restriction to it.
 
-## History
-
-KaryoDraw was released under the MIT License from 2026-07-01 to 2026-08-26.
-Relicensing is not retroactive. Any copy obtained under MIT before 2026-08-26
-stays available under MIT to whoever obtained it, and every commit through
-`e707ddb` remains MIT in the public history. Everything from the relicensing
-commit forward is AGPL-3.0-or-later.
-
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md). Contributions are accepted under the
