@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-27 (the segments state their size)
+
+- **Every segment the decode names now carries a size estimate.** Requested by Luis
+  Valiño Castrillón on LinkedIn, and the data was already in the model: the ideogram is
+  UCSC hg38 with band boundaries in base pairs, so every drawn segment's length was an
+  arithmetic fact the renderer computed and never said. Deletions, duplications,
+  triplications, inversions, insertions, the recombinant's duplicated and deleted
+  halves, the derivative's attached piece, and the lone derivative's trisomic and
+  monosomic segments all state "about N Mb" (or kb); the band map states each band's
+  own span with its GRCh38 coordinates. The "about" is load-bearing: a breakpoint
+  written at a band can sit anywhere within that band, so sizes are measured from band
+  midpoints, and the method is stated once on the how-to-read card. Tests assert each
+  stated number falls within the bounds the band edges allow, not exact strings.
+
 ## 2026-08-27 (the wrapper earns its letters, and the band order speaks)
 
 - **der() wrapping a single one-chromosome change is offered the plain spelling.** ISCN

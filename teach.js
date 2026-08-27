@@ -76,6 +76,10 @@
       else if (frac < 0.67) where = "in the middle of the arm";
       else where = "out toward the telomere (tip)";
       out.position = "This band sits " + where + " on the " + out.armName + " of chromosome " + chrom + ".";
+      if (exact) {
+        out.position += " It spans " + aboutSize(exact[2] - exact[1]) +
+          " (GRCh38 " + (exact[1] / 1e6).toFixed(1) + " to " + (exact[2] / 1e6).toFixed(1) + " Mb).";
+      }
     }
     return out;
   }
@@ -104,6 +108,31 @@
   function bandsPhrase(chrom, bands) {
     return bands.map(function (b) { return chrom + b; }).join(" and ");
   }
+  // A segment size in reader units: whole Mb from 10 up, one decimal from 1
+  // to 10, kb below. Always prefixed "about", and the "about" is load-bearing:
+  // a breakpoint written at a band can sit anywhere within that band, so
+  // sizes are measured from band midpoints on GRCh38 (the ideogram's
+  // assembly), and the method is stated once on the how-to-read card.
+  // Requested by a user: the model always knew every segment's length in bp
+  // and the decode never said it.
+  function aboutSize(bpLen) {
+    if (!(bpLen > 0)) return "";
+    if (bpLen >= 1e7) return "about " + Math.round(bpLen / 1e6) + " Mb";
+    if (bpLen >= 1e6) return "about " + (Math.round(bpLen / 1e5) / 10) + " Mb";
+    return "about " + Math.round(bpLen / 1e3) + " kb";
+  }
+  function sizeParen(bpLen) { var t = aboutSize(bpLen); return t ? " (" + t + ")" : ""; }
+  function midOf(c, b) { var r = window.Karyo && window.Karyo.resolveBand(c, b); return r ? r.mid : null; }
+  function sizeBetween(c, b1, b2) {
+    var m1 = midOf(c, b1), m2 = midOf(c, b2);
+    return m1 != null && m2 != null ? Math.abs(m2 - m1) : 0;
+  }
+  function sizeDistal(c, b) {
+    var m = midOf(c, b), d = IDEO.data[c];
+    if (m == null || !d) return 0;
+    return /^p/.test(String(b)) ? m : d.length - m;
+  }
+
   // What the band order of an inserted segment encodes (ISCN 5.5.9.1): listed
   // proximal-first the segment keeps its own orientation in its new place;
   // distal-first it sits end-for-end. Read off the band midpoints, the same
@@ -188,8 +217,8 @@
       : { text: "LOSS of one chromosome " + c + " (one copy = monosomy " + c + ")", tag: "loss" };
     if (k === "del") {
       var b0 = (bp[0] || []);
-      if (b0.length >= 2) return { text: "an interstitial DELETION in chromosome " + c + ": the segment between " + bandsPhrase(c, b0) + " is missing", tag: "del" };
-      return { text: "a terminal DELETION of chromosome " + c + ": everything distal to " + c + (b0[0] || "?") + " (out to the tip) is lost", tag: "del" };
+      if (b0.length >= 2) return { text: "an interstitial DELETION in chromosome " + c + ": the segment between " + bandsPhrase(c, b0) + sizeParen(sizeBetween(c, b0[0], b0[1])) + " is missing", tag: "del" };
+      return { text: "a terminal DELETION of chromosome " + c + ": everything distal to " + c + (b0[0] || "?") + " (out to the tip) is lost" + sizeParen(sizeDistal(c, b0[0])), tag: "del" };
     }
     if (k === "dup") {
       // ISCN encodes orientation by the order of the breakpoints, and the rule
@@ -201,13 +230,14 @@
         if (rd0 && rd1) invDup = rd0.mid > rd1.mid;
       }
       return { text: (invDup ? "an INVERTED DUPLICATION" : "a DUPLICATION") + " in chromosome " + c +
-        ": the segment " + bandsPhrase(c, dbp0) + " is present twice" +
+        ": the segment " + bandsPhrase(c, dbp0) + (dbp0.length >= 2 ? sizeParen(sizeBetween(c, dbp0[0], dbp0[1])) : "") + " is present twice" +
         (invDup ? ", with the extra copy flipped end-for-end" : ""), tag: "dup" };
     }
     if (k === "inv") {
       var arms = (bp[0] || []).map(function (b) { return b[0]; });
       var peri = arms.indexOf("p") >= 0 && arms.indexOf("q") >= 0;
-      return { text: "an INVERSION in chromosome " + c + ": the segment between " + bandsPhrase(c, bp[0] || []) + " is flipped end-for-end (" + (peri ? "pericentric, it spans the centromere" : "paracentric, within one arm") + ")", tag: "inv" };
+      var ivb = bp[0] || [];
+      return { text: "an INVERSION in chromosome " + c + ": the segment between " + bandsPhrase(c, ivb) + (ivb.length >= 2 ? sizeParen(sizeBetween(c, ivb[0], ivb[1])) : "") + " is flipped end-for-end (" + (peri ? "pericentric, it spans the centromere" : "paracentric, within one arm") + ")", tag: "inv" };
     }
     if (k === "t" || k === "dic") {
       var chroms = ab.chroms, n = chroms.length;
@@ -277,19 +307,19 @@
         var di = td.chroms.indexOf(c); if (di < 0) di = 0;
         var partner = td.chroms[1 - di];
         var bpDer = (td.breakpoints[di] || [])[0], bpPar = (td.breakpoints[1 - di] || [])[0];
-        return { text: base + ". This is chromosome " + c + throughShort(c, bpDer) + " with " + endShort(partner, bpPar) + " attached." + extraText, tag: "der" };
+        return { text: base + ". This is chromosome " + c + throughShort(c, bpDer) + " with " + endShort(partner, bpPar) + sizeParen(sizeDistal(partner, bpPar)) + " attached." + extraText, tag: "der" };
       }
       return { text: base + "." + extraText, tag: "der" };
     }
     if (k === "ins") {
       var ic = ab.chroms;
       if (ic.length >= 2) {
-        return { text: "an INSERTION: the segment between " + bandsPhrase(ic[1], bp[1] || []) + " of chromosome " + ic[1] +
+        return { text: "an INSERTION: the segment between " + bandsPhrase(ic[1], bp[1] || []) + sizeParen(sizeBetween(ic[1], (bp[1] || [])[0], (bp[1] || [])[1])) + " of chromosome " + ic[1] +
           " is moved into chromosome " + ic[0] + " at " + ic[0] + ((bp[0] || [])[0] || "?") + insOrientPhrase(ic[1], bp[1] || []) +
           ". Chromosome " + ic[0] + " grows by that piece; chromosome " + ic[1] + " loses it.", tag: "add" };
       }
       var ig = bp[0] || [];
-      return { text: "an INSERTION within chromosome " + c + ": the segment between " + bandsPhrase(c, ig.slice(1)) +
+      return { text: "an INSERTION within chromosome " + c + ": the segment between " + bandsPhrase(c, ig.slice(1)) + sizeParen(sizeBetween(c, ig[1], ig[2])) +
         " is moved to a new position (at " + c + (ig[0] || "?") + ")" + insOrientPhrase(c, ig.slice(1)) +
         ". Nothing is gained or lost overall.", tag: "add" };
     }
@@ -310,7 +340,7 @@
         : "a MARKER chromosome (mar): a small extra chromosome") +
         " whose origin cannot be identified by banding alone", tag: "mar" };
     }
-    if (k === "trp") return { text: "a TRIPLICATION in chromosome " + c + ": the segment " + bandsPhrase(c, bp[0] || []) + " is present three times", tag: "dup" };
+    if (k === "trp") { var tb = bp[0] || []; return { text: "a TRIPLICATION in chromosome " + c + ": the segment " + bandsPhrase(c, tb) + (tb.length >= 2 ? sizeParen(sizeBetween(c, tb[0], tb[1])) : "") + " is present three times", tag: "dup" }; }
     if (k === "rec") {
       // The one aberration whose written form states half of what it is. ISCN 5.4.3.2 c:
       // "In a recombinant chromosome (rec) there is a duplication and deletion of
@@ -329,7 +359,7 @@
       var recInv = (ab.recInvBands || []).join("");
       return { text: "a RECOMBINANT chromosome rec(" + c + "): what a carrier of the pericentric inversion inv(" +
         c + ")(" + recInv + ") passes on when a crossover falls inside the inversion loop at meiosis I. " +
-        "It carries " + distalSeg(c, ab.recDupBand) + " twice and is missing " + distalSeg(c, ab.recDelBand) +
+        "It carries " + distalSeg(c, ab.recDupBand) + sizeParen(sizeDistal(c, ab.recDupBand)) + " twice and is missing " + distalSeg(c, ab.recDelBand) + sizeParen(sizeDistal(c, ab.recDelBand)) +
         ", so it is unbalanced: a duplication of the segment beyond one breakpoint and a deletion of the segment beyond the other. " +
         "The notation states only the duplication, dup(" + c + ab.recDupArm +
         "); the deletion is inferred from the inversion rather than written (ISCN 5.4.3.2 c). " +
@@ -422,8 +452,8 @@
       " The usual origin is a parent who carries the balanced t(" + td.chroms.join(";") + "), with only this product passed on.";
     return " Only this derivative is present: the reciprocal der(" + partner + ") with the swapped pieces is not in " +
       "this karyotype, and both chromosome " + partner + "s are intact. So the result is unbalanced: " +
-      distalSeg(partner, bpPar) + " is present in three copies (partial trisomy) and " + distalSeg(c, bpDer) +
-      " in one (partial monosomy)." + origin;
+      distalSeg(partner, bpPar) + sizeParen(sizeDistal(partner, bpPar)) + " is present in three copies (partial trisomy) and " + distalSeg(c, bpDer) +
+      sizeParen(sizeDistal(c, bpDer)) + " in one (partial monosomy)." + origin;
   }
 
   function robNote(ab, clone) {
@@ -741,7 +771,8 @@
     q: "The LONG arm. 'q' simply follows 'p' in the alphabet. Always drawn on the BOTTOM. Bands numbered from the centromere (q1…) out to the telomere.",
     centromere: "The primary constriction that joins the two arms. The kinetochore assembles here and spindle fibers attach during cell division. Its position (metacentric / submetacentric / acrocentric) helps identify a chromosome.",
     telomere: "The very tip of each arm ('ter' = pter / qter). Repetitive TTAGGG caps that protect chromosome ends and shorten with each division.",
-    band: "A stretch of chromosome that stains light or dark with Giemsa (G-banding). The reproducible pattern of bands is a chromosome's 'barcode', it is how each one is identified and how breakpoints are pinpointed."
+    band: "A stretch of chromosome that stains light or dark with Giemsa (G-banding). The reproducible pattern of bands is a chromosome's 'barcode', it is how each one is identified and how breakpoints are pinpointed.",
+    sizes: "Segment sizes in the decode are estimates. A breakpoint written at a band can sit anywhere within that band, so sizes are measured from band midpoints on the GRCh38 assembly, the same coordinates every figure is drawn to."
   };
 
   // ---- spoken pronunciation (fed to the browser's free Web Speech API) -----
