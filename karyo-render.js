@@ -727,15 +727,41 @@
       return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label, note: "complex" };
     }
     if (kind === "t" || kind === "der") {
-      var segs = translocationSegments(inst);
+      // A der can be built by an insertion instead of a translocation join:
+      // der(15)ins(15)(p11q23q26) is the internal move, der(5)ins(5;2)(...) the
+      // recipient side, der(3)ins(16;3)(...) the donor side (all printed in
+      // ISCN 2024). The parser's classifyDerSubOps guarantees at most one ins,
+      // never combined with a t, and always involving this derivative's own
+      // chromosome, so the standalone insertion geometry applies verbatim.
+      var insOp = (kind === "der" && ab && ab.subOps) ? ab.subOps.filter(function (s) { return s.op === "ins"; })[0] : null;
+      var segs = null, derOv = [];
+      if (insOp) {
+        var insB = buildInsertion({ chrom: chrom, aberration: { chroms: insOp.chroms, breakpoints: insOp.breakpoints } });
+        if (insB) { segs = insB.segments; derOv = insB.overlays || []; }
+      } else {
+        segs = translocationSegments(inst);
+      }
       // A der(N) chain can carry more than the join — a del/dup/inv on its own
       // chromosome (e.g. der(9)del(9)(p12)t(9;22)). Start from the join (or the
       // whole chromosome if there is no join) and apply those extra ops in turn.
       if (kind === "der" && ab && ab.subOps) {
         if (!segs) segs = [fullSeg(chrom)];
         segs = applyDerSubOps(inst, segs);
+        // add and hsr sub-ops are overlays rather than segment edits: unknown
+        // material hatched beyond its terminal band, an amplified block at its
+        // band, the same vocabulary as the standalone kinds, mapped through
+        // the composite's own segments. Before this loop they were dropped in
+        // silence and der(5)add(5)(p15.3)add(5)(q23) drew an untouched 5.
+        ab.subOps.forEach(function (s) {
+          if (s.op !== "add" && s.op !== "hsr") return;
+          var sc = String((s.chroms || [])[0] || chrom), sb = (s.breakpoints[0] || [])[0];
+          var bnd = resolveBand(sc, sb), dsc = IDEO.data[sc];
+          if (!bnd || !dsc) return;
+          if (s.op === "add") derOv.push(bnd.arm === "p" ? { type: "add", chrom: sc, from: 0, to: bnd.mid } : { type: "add", chrom: sc, from: bnd.mid, to: dsc.length });
+          else derOv.push({ type: "hsr", chrom: sc, from: bnd.start, to: bnd.end });
+        });
       }
-      if (segs) return { segments: segs, overlays: [], caption: inst.label, composite: true };
+      if (segs) return { segments: segs, overlays: derOv, caption: inst.label, composite: true };
       return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label, note: "complex" };
     }
     return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label };

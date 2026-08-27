@@ -3,6 +3,26 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-27 (the derivative draws its insertion, and nothing it carries is dropped in silence)
+
+- **der(N) carrying ins(...) now draws the insertion.** A visitor's one-click flag, sent
+  with no message, carried the URL that exposed it: 46,XY,der(15)ins(15)(p11;q23q26)
+  parsed with zero warnings and drew an untouched full-length chromosome 15 labeled
+  der(15), because the derivative sub-op path applied only del/dup/inv/t and dropped
+  everything else silently. The intrachromosomal move, the recipient side, and the donor
+  side (ISCN prints 46,XY,der(3)ins(16;3)(p12;p21p13)dmat) all draw now, composing with
+  del/dup/inv on the same derivative, and the decode names the moved segment and its
+  destination instead of stopping at the centromere sentence. The same-chromosome
+  semicolon form gets the same repair and lesson as the standalone ins.
+- **add and hsr sub-ops draw as overlays instead of vanishing.** der(5)add(5)(p15.3)add(5)(q23)
+  and the der+hsr forms are printed in ISCN 2024 and drew as untouched chromosomes.
+- **What still cannot be drawn now refuses and says why**: ring-built derivatives
+  (der(1)r(1;3)..., ISCN 5.5.16 b), an insertion combined with a translocation on one
+  derivative, and insertions of undetermined (?) material. Eleven conformance-ledger
+  entries were marked supported while silently drawing nothing; they are re-flagged
+  honestly, and the paper and VALIDATION.md tallies drop from 337 to 326 accordingly.
+  Losing eleven from the number is the cost of the number being true.
+
 ## 2026-08-27 (the caption and the legend describe the figure, part two)
 
 - **The landing-page caption now states what its own figure shows.** Every single-clone
