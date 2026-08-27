@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-27 (the legend labels stop describing themselves)
+
+- **Two legend rows read "inversion" and "breakpoint".** They used to read "hooks:
+  inverted, drawn end-for-end" and "carets: a breakpoint", which was the swatch's job
+  before the swatch could do it: with every mark drawn as the same colored block, the
+  label had to say what shape to look for. The swatch draws the hooks and the carets
+  now, so a row that also spells them out says the same thing twice. The picture names
+  the mark, the words name what it means.
+
 ## 2026-08-27 (one word for the chromosomes in the rearrangement)
 
 - **The Show toggle reads "Involved", which is the word the rest of the app was already

@@ -66,7 +66,7 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
       const leg = await legendText(page);
       assert.match(leg, /fused/i, 'the dashed fusion junction, the mark actually on screen');
       assert.ok(!/duplicated segment/.test(leg), 'no dup frame drawn, no dup row');
-      assert.ok(!/end-for-end/.test(leg), 'no hooks drawn, no hook row');
+      assert.ok(!/inversion/i.test(leg), 'no hooks drawn, no inversion row');
       assert.ok(!/breakpoint/.test(leg), 'no carets drawn, no caret row');
     });
 
@@ -74,7 +74,7 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
       await open(page, '46,XX,rec(2)dup(2p)inv(2)(p21q31)dmat');
       const leg = await legendText(page);
       assert.match(leg, /duplicated segment/, 'the amber box is on screen');
-      assert.match(leg, /end-for-end/, 'the teal hooks are on screen');
+      assert.match(leg, /inversion/i, 'the teal hooks are on screen');
       assert.match(leg, /breakpoint/, 'the junction carets are on screen');
       assert.ok(!/fused/i.test(leg), 'one chromosome, no fusion seam');
     });
@@ -82,7 +82,7 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
     await t.test('an inversion teaches hooks without any box row', async () => {
       await open(page, '46,XX,inv(2)(p21q31)');
       const leg = await legendText(page);
-      assert.match(leg, /end-for-end/, 'hooks alone mean inverted');
+      assert.match(leg, /inversion/i, 'hooks alone mean inverted');
       assert.ok(!/duplicated segment/.test(leg), 'nothing is duplicated');
     });
 
@@ -90,7 +90,7 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
       await open(page, '46,XX');
       const leg = await legendText(page);
       assert.match(leg, /nothing to highlight/i);
-      assert.ok(!/duplicated segment|end-for-end|breakpoint|fused/i.test(leg));
+      assert.ok(!/duplicated segment|inversion|breakpoint|fused/i.test(leg));
     });
   } finally {
     await browser.close();
@@ -98,12 +98,16 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
   }
 });
 
-// A mark row draws its mark. "box:", "hooks:" and "carets:" name shapes, and all
-// three arrived as the same filled block, so the swatch carried only the color and
-// the words carried the rest. The block also contradicted its own label: the dup
-// frame is an outline, drawn fill="none". The hatch rows had always reproduced
-// their hatch, at the render's own angle; these rows now reproduce their mark.
-// Rows where the COLOR is the meaning (gray = uninvolved, "chr 2") keep the block.
+// A mark row draws its mark. These arrived as the same filled block whatever they
+// meant, so the swatch carried only the color and the words carried the rest. The
+// block also contradicted its own label: the dup frame is an outline, drawn
+// fill="none". The hatch rows had always reproduced their hatch, at the render's own
+// angle; these rows now reproduce their mark. Rows where the COLOR is the meaning
+// (gray = uninvolved, "chr 2") keep the block.
+//
+// And because the swatch shows the shape, the label stopped naming it: "hooks:
+// inverted, drawn end-for-end" is now "inversion", "carets: a breakpoint" is now
+// "breakpoint". A row that both draws a mark and spells the mark out says it twice.
 test('the mark rows draw their mark, not a colored block', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
   const puppeteer = require('puppeteer-core');
@@ -128,7 +132,7 @@ test('the mark rows draw their mark, not a colored block', async (t) => {
     const got = await rows(page);
     const find = (re) => got.find((r) => re.test(r.label));
 
-    const box = find(/^box: duplicated/), hooks = find(/^hooks:/), carets = find(/^carets:/);
+    const box = find(/^box: duplicated/), hooks = find(/^inversion$/i), carets = find(/^breakpoint$/i);
     assert.ok(box && hooks && carets, 'the rec draws all three marks');
     [box, hooks, carets].forEach((r) =>
       assert.match(r.sw, /^<svg class="sw-mk"/, `"${r.label}" should draw its mark, not a block`));

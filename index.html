@@ -1084,14 +1084,17 @@
   // make the swatches lean the same way as the chromosomes.
   var CEN_SW = { angle: -45, gap: 3.4 }, HET_SW = { angle: 45, gap: 7 };
 
-  // A mark row draws its mark. "box:", "hooks:" and "carets:" name shapes, and all
-  // three used to arrive as the same filled block, so the swatch carried the color
-  // and the words carried everything else. The block also contradicted the label it
-  // sat next to: the dup frame is an OUTLINE (drawSpanMark emits fill="none"), the
-  // hooks are opposed quarter-turn arrows, the carets a rule with two inward heads.
-  // Each miniature below is that emission scaled down over the same pale body the
-  // figure marks up, so a reader matches legend to karyogram by shape and not by
-  // color alone. The hatch rows above always worked this way; these did not.
+  // A mark row draws its mark. These used to arrive as one filled block whatever they
+  // meant, so the swatch carried the color and the words carried everything else, and
+  // the block contradicted the label beside it: the dup frame is an OUTLINE
+  // (drawSpanMark emits fill="none"), the hooks are opposed quarter-turn arrows, the
+  // carets a rule with two inward heads. Each miniature below is that emission scaled
+  // down over the same pale body the figure marks up, so a reader matches legend to
+  // karyogram by shape and not by color alone. The hatch rows always worked this way.
+  // Because the swatch now shows the shape, the label no longer has to name it: the
+  // rows read "inversion" and "breakpoint" rather than "hooks: inverted, drawn
+  // end-for-end" and "carets: a breakpoint". The picture says which mark, the words
+  // say what it means, and neither repeats the other.
   // Geometry tracks karyo-render.js drawSpanMark / breakMark, including the arc
   // sweep, so the hooks swing the same way here as they do on a chromosome.
   // The body is deliberately narrow (9 of 30 units): the hooks live OUTSIDE it, and
@@ -1135,11 +1138,11 @@
         hatchSwatch("centromere", CEN_SW) + hatchSwatch("variable region / stalk", HET_SW);
       if (has('rect[rx="2.5"][stroke="' + OP.dup + '"]')) html += markSwatch("box", OP.dup, "box: duplicated segment");
       if (has('rect[rx="2.5"][stroke="' + OP.mov + '"]')) html += markSwatch("box", OP.mov, "box: moved segment (nothing gained or lost)");
-      if (has('path[stroke="' + OP.inv + '"]')) html += markSwatch("hooks", OP.inv, "hooks: inverted, drawn end-for-end");
+      if (has('path[stroke="' + OP.inv + '"]')) html += markSwatch("hooks", OP.inv, "inversion");
       // Caret swatch takes the color actually drawn: red for a deletion
       // break, slate for the edges of a marked span.
-      if (has('path[fill="' + OP.del + '"]')) html += markSwatch("carets", OP.del, "carets: a breakpoint");
-      else if (has('path[fill="#1e293b"]')) html += markSwatch("carets", "#1e293b", "carets: a breakpoint");
+      if (has('path[fill="' + OP.del + '"]')) html += markSwatch("carets", OP.del, "breakpoint");
+      else if (has('path[fill="#1e293b"]')) html += markSwatch("carets", "#1e293b", "breakpoint");
       if (has('line[stroke-dasharray="2 1.5"]')) html += markSwatch("seam", "#0f172a", "dashed line: where two chromosomes fused");
       var keys = Object.keys(AFFECTED);
       if (keys.length) {
