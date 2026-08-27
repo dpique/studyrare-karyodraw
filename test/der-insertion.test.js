@@ -134,3 +134,42 @@ test('the decode explains the insertion instead of stopping at the centromere se
   assert.match(t2, /chromosome 2/, 'the donor chromosome is named');
   assert.match(t2, /5q31/, 'and the site on the derivative');
 });
+
+// ---- the der() wrapper, and what the band order says ----------------------
+// From auditing an outside answer against the app: ISCN 5.5.3 a defines a
+// derivative as rebuilt either by a rearrangement involving two or more
+// chromosomes or by MORE THAN ONE change within a single chromosome. So
+// der(15)ins(15)(p11q23q26), one single-chromosome change in a wrapper,
+// is redundant spelling; the app accepted it without a word. It stays
+// accepted and drawn (warning on interpretable input is how the box loses
+// authority) and the plain form is offered as a neutral note. The same
+// audit showed the decode never named what the band order encodes: q23q26
+// keeps the segment's own orientation, q26q23 would turn it end-for-end.
+
+test('a der wrapping a single one-chromosome change is offered the plain spelling as a note', () => {
+  const m = ISCN.parse('46,XY,der(15)ins(15)(p11q23q26)');
+  assert.equal(m.warnings.join(' '), '', 'nothing to warn about');
+  assert.ok(m.note, 'a note beside the drawing, never a warning');
+  assert.match(m.note.text, /5\.5\.3/, 'the derivative definition is cited');
+  assert.equal(m.note.fix, '46,XY,ins(15)(p11q23q26)');
+  const md = ISCN.parse('46,XY,der(9)del(9)(p12)');
+  assert.ok(md.note && md.note.fix === '46,XY,del(9)(p12)', 'a lone del in the wrapper is the same redundancy');
+});
+
+test('the note stays away from true derivatives and from repaired spellings', () => {
+  assert.equal(ISCN.parse('46,XY,der(9)del(9)(p12)del(9)(q31)').note, null,
+    'two changes make a true derivative (ISCN 5.5.3 c i prints this one)');
+  assert.equal(ISCN.parse('46,XY,der(5)ins(5;2)(q31;p23p13)dmat').note, null,
+    'two chromosomes make a true derivative');
+  assert.equal(ISCN.parse('46,XY,der(15)ins(15)(p11;q23q26)').note, null,
+    'the semicolon form already carries its spelling note, and a note never shares the box');
+});
+
+test('the decode names the orientation the band order encodes', () => {
+  assert.match(decodeText('46,XY,ins(15)(p11q23q26)'), /keeps its own orientation/,
+    'proximal band first: the segment reads the same way in its new place');
+  assert.match(decodeText('46,XX,ins(2)(p13q31q21)'), /end-for-end/,
+    'distal band first: an inverted insertion (ISCN 5.5.9.1 i)');
+  assert.match(decodeText('46,XY,der(5)ins(5;2)(q31;p13p23)dmat'), /end-for-end/,
+    'the der-carried inter form names it too when inverted');
+});

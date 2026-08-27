@@ -3,6 +3,23 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-27 (the wrapper earns its letters, and the band order speaks)
+
+- **der() wrapping a single one-chromosome change is offered the plain spelling.** ISCN
+  5.5.3 defines a derivative as rebuilt either by a rearrangement involving two or more
+  chromosomes or by more than one change within a single chromosome, so
+  der(15)ins(15)(p11q23q26) wraps a wrapper around nothing: ISCN writes
+  ins(15)(p11q23q26). The app accepted the wrapped form without a word. It still draws
+  as typed, and a Worth-knowing note beside the drawing now cites the rule and offers
+  the plain form as a one-click redraw, never as a warning. Same treatment for a lone
+  del, dup, or inv in the wrapper; true derivatives (two chromosomes, or two changes)
+  and inputs that already carry a spelling note are left alone.
+- **The decode names the orientation the band order encodes.** ins(15)(p11q23q26)
+  now says the moved segment keeps its own orientation, and ins(2)(p13q31q21) that it
+  sits end-for-end (ISCN 5.5.9.1), read off the same band comparison the renderer uses,
+  so the sentence and the hooks in the figure cannot disagree. Both came from auditing
+  an outside answer about this exact karyotype against what the app teaches.
+
 ## 2026-08-27 (the isochromosome owns its centromere)
 
 - **Hovering an isochromosome's seam-flanking centromere band now answers "Centromere",
