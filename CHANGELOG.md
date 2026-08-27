@@ -5,12 +5,14 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
 
 ## 2026-08-27 (the legend labels stop describing themselves)
 
-- **Two legend rows read "inversion" and "breakpoint".** They used to read "hooks:
-  inverted, drawn end-for-end" and "carets: a breakpoint", which was the swatch's job
-  before the swatch could do it: with every mark drawn as the same colored block, the
-  label had to say what shape to look for. The swatch draws the hooks and the carets
-  now, so a row that also spells them out says the same thing twice. The picture names
-  the mark, the words name what it means.
+- **No legend row spells out its own shape any more.** The rows read "duplicated
+  segment", "moved segment (nothing gained or lost)", "inversion", "breakpoint" and
+  "where two chromosomes fused", where they used to open with "box:", "hooks: inverted,
+  drawn end-for-end", "carets:" and "dashed line:". Naming the shape was the swatch's
+  job before the swatch could do it: with every mark drawn as the same colored block,
+  the label had to say what to look for. Now that each row draws its mark, spelling the
+  mark out says the same thing twice. The picture names the mark, the words name what
+  it means.
 
 ## 2026-08-27 (one word for the chromosomes in the rearrangement)
 

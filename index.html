@@ -1091,10 +1091,13 @@
   // carets a rule with two inward heads. Each miniature below is that emission scaled
   // down over the same pale body the figure marks up, so a reader matches legend to
   // karyogram by shape and not by color alone. The hatch rows always worked this way.
-  // Because the swatch now shows the shape, the label no longer has to name it: the
-  // rows read "inversion" and "breakpoint" rather than "hooks: inverted, drawn
-  // end-for-end" and "carets: a breakpoint". The picture says which mark, the words
-  // say what it means, and neither repeats the other.
+  // Because the swatch shows the shape, no label names one. Naming it was the swatch's
+  // job before the swatch could do it: while every mark was the same colored block, the
+  // words had to say what to look for. So the rows read "duplicated segment",
+  // "inversion", "breakpoint" and "where two chromosomes fused", not "box: …",
+  // "hooks: inverted, drawn end-for-end", "carets: …" or "dashed line: …". The picture
+  // says which mark, the words say what it means, and neither repeats the other. Any
+  // new mark row follows the same rule: describe the meaning, never the glyph.
   // Geometry tracks karyo-render.js drawSpanMark / breakMark, including the arc
   // sweep, so the hooks swing the same way here as they do on a chromosome.
   // The body is deliberately narrow (9 of 30 units): the hooks live OUTSIDE it, and
@@ -1136,14 +1139,14 @@
     if (MODE === "simple") {
       var html = swatch("#ffffff", "gray = a chromosome not involved in the abnormality") +
         hatchSwatch("centromere", CEN_SW) + hatchSwatch("variable region / stalk", HET_SW);
-      if (has('rect[rx="2.5"][stroke="' + OP.dup + '"]')) html += markSwatch("box", OP.dup, "box: duplicated segment");
-      if (has('rect[rx="2.5"][stroke="' + OP.mov + '"]')) html += markSwatch("box", OP.mov, "box: moved segment (nothing gained or lost)");
+      if (has('rect[rx="2.5"][stroke="' + OP.dup + '"]')) html += markSwatch("box", OP.dup, "duplicated segment");
+      if (has('rect[rx="2.5"][stroke="' + OP.mov + '"]')) html += markSwatch("box", OP.mov, "moved segment (nothing gained or lost)");
       if (has('path[stroke="' + OP.inv + '"]')) html += markSwatch("hooks", OP.inv, "inversion");
       // Caret swatch takes the color actually drawn: red for a deletion
       // break, slate for the edges of a marked span.
       if (has('path[fill="' + OP.del + '"]')) html += markSwatch("carets", OP.del, "breakpoint");
       else if (has('path[fill="#1e293b"]')) html += markSwatch("carets", "#1e293b", "breakpoint");
-      if (has('line[stroke-dasharray="2 1.5"]')) html += markSwatch("seam", "#0f172a", "dashed line: where two chromosomes fused");
+      if (has('line[stroke-dasharray="2 1.5"]')) html += markSwatch("seam", "#0f172a", "where two chromosomes fused");
       var keys = Object.keys(AFFECTED);
       if (keys.length) {
         html += '<span class="item" style="color:#94a3b8">involved:</span>';
