@@ -703,7 +703,16 @@
     if (kind === "iso") {
       var arm = (ab.breakpoints[0] || [])[0] || "q10", isQ = /^q/.test(arm);
       var af = isQ ? d0.centromere : 0, at = isQ ? d0.length : d0.centromere;
-      return { segments: [{ chrom: chrom, from: af, to: at, hasCen: false, reversed: isQ }, { chrom: chrom, from: af, to: at, hasCen: false, reversed: !isQ }], overlays: [], caption: inst.label };
+      // hasCen true on both arms, the whole-arm (rob) convention: each arm's
+      // centromeric edge material is the working centromere's OWN, so its acen
+      // bands must paint and answer as a centromere rather than take the #181
+      // "carried across a junction" downgrade, which is for der grafts whose
+      // working centromere lies elsewhere. hasCen:false here made hovering
+      // 18q11.1 on i(18) say "Pericentromeric heterochromatin" while the
+      // normal homolog said "Centromere". The single waist is unaffected: a
+      // centromere at a segment's EDGE never enters cenList, so the seam
+      // still provides it, exactly as on a Robertsonian.
+      return { segments: [{ chrom: chrom, from: af, to: at, hasCen: true, reversed: isQ }, { chrom: chrom, from: af, to: at, hasCen: true, reversed: !isQ }], overlays: [], caption: inst.label };
     }
     if (kind === "ins") {
       var isb = buildInsertion(inst);

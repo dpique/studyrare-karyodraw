@@ -797,3 +797,31 @@ test('the fragile-site gap is hoverable and names its band', () => {
   const hairlines = cont.innerHTML.match(/<line [^>]*pointer-events="none"[^>]*>/g) || [];
   assert.ok(hairlines.length >= 2, 'the hairlines do not intercept the hover');
 });
+
+// --- The isochromosome owns its centromere -----------------------------------
+// Dan hovered 18q11.1 on i(18)(q10) and was told "Pericentromeric
+// heterochromatin" while the normal homolog's same band answers "Centromere".
+// The #181 downgrade (acen on a hasCen:false segment paints as carried
+// heterochromatin, so a der graft cannot read as dicentric) was overshooting:
+// the iso branch flagged both mirror arms hasCen:false, but the acen flanking
+// an isochromosome's seam IS the working centromere's own material, exactly as
+// on a Robertsonian, whose whole-arm segments carry hasCen:true and answer
+// "Centromere" there. The iso now follows the rob convention; the seam still
+// draws the single waist, because a centromere at a segment's EDGE never
+// enters cenList, and the true der-graft case must keep its downgrade.
+test('i(18)(q10) answers Centromere at its seam acen, like the rob and the homolog', () => {
+  const svg = Karyo.drawInstance(derInst('46,XY,i(18)(q10)', '18'), { theme: 'simple', level: 99, affected: {} }).svg;
+  const stains = (svg.match(/data-band="q11\.1" data-stain="([a-z_]+)"/g) || []);
+  assert.equal(stains.length, 2, 'both mirror arms carry the q11.1 band');
+  assert.ok(stains.every((s) => s.indexOf('"acen"') >= 0), `the working centromere's own material is acen, got ${stains}`);
+  assert.ok(!/acen_carried/.test(svg), 'nothing on an isochromosome is carried across from elsewhere');
+  const waists = (svg.match(/stroke-dasharray="2\.5 2"/g) || []).length;
+  assert.equal(waists, 1, 'and still exactly one centromere waist, at the seam');
+});
+
+test('the true der graft keeps its acen_carried downgrade (#181 must not regress)', () => {
+  const svg = Karyo.drawInstance(derInst('46,XX,der(19)t(X;19)(q11.1;p13.3)', '19'), { theme: 'simple', level: 99, affected: {} }).svg;
+  assert.match(svg, /acen_carried/, 'grafted centromere-band material still paints as carried heterochromatin');
+  const waists = (svg.match(/stroke-dasharray="2\.5 2"/g) || []).length;
+  assert.equal(waists, 1, 'and the derivative stays monocentric');
+});
