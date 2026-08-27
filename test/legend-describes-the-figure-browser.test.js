@@ -97,3 +97,36 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
     server.close();
   }
 });
+
+// The visitor's der(15)ins URL, end to end: the spelling is repaired and the
+// page DRAWS, so the message about it is a note, not an alarm ("Let us sort
+// this out" over a finished drawing contradicts itself), the moved span is
+// boxed in slate with its legend row, and the repair cites the insertion's
+// own rule (ISCN 5.5.9.1) rather than the generic two-breakpoint lesson.
+test('a repaired insertion reads as a note, and the figure shows the move', async (t) => {
+  if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
+  const puppeteer = require('puppeteer-core');
+  const server = await serve();
+  const port = server.address().port;
+  const browser = await puppeteer.launch({
+    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setCacheEnabled(false);
+    await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent('46,XY,der(15)ins(15)(p11;q23q26)')}&style=highlight&show=affected`,
+      { waitUntil: 'load' });
+    await page.waitForSelector('#karyo svg');
+    const warn = await page.evaluate(() => document.getElementById('warnings').textContent);
+    assert.match(warn, /already applied/, 'the repair presents as a done deed');
+    assert.match(warn, /5\.5\.9\.1/, 'and cites the insertion rule');
+    assert.ok(!/sort this out/i.test(warn), 'no alarm over a drawing that succeeded');
+    const noteStyled = await page.evaluate(() => !!document.querySelector('#warnings .notebox'));
+    assert.ok(noteStyled, 'neutral note styling, not the amber warnbox');
+    const leg = await page.evaluate(() => document.getElementById('legend').textContent);
+    assert.match(leg, /moved segment/, 'the legend names the box the figure now draws');
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});

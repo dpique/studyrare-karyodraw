@@ -1076,7 +1076,6 @@ test('a semicolon between breakpoints on one chromosome is named and repaired', 
    ['46,XX,inv(2)(p23;p13)', '46,XX,inv(2)(p23p13)'],
    ['46,XY,r(18)(p11.2;q23)', '46,XY,r(18)(p11.2q23)'],
    ['46,XY,dup(1)(q22;q25)', '46,XY,dup(1)(q22q25)'],
-   ['46,XY,ins(2)(q13;p23;p13)', '46,XY,ins(2)(q13p23p13)'],
    // A comma there is the same mistake. It must NOT be answered with the
    // comma-inside-parentheses rule, which would offer the semicolon form.
    ['46,XX,del(15)(q11.2,q13)', '46,XX,del(15)(q11.2q13)'],
@@ -1088,6 +1087,14 @@ test('a semicolon between breakpoints on one chromosome is named and repaired', 
     assert.ok(!/separate values with a semicolon/.test(m.warnings.join(' ')),
       `${bad} must not be told to use the semicolon it just used`);
   });
+  // An insertion is repaired the same way but taught its OWN rule: 5.5.9.1
+  // puts the insertion site first, then the segment's breakpoints, in one
+  // run. The generic two-breakpoint lesson does not explain why the site
+  // leads, and Dan flagged it as dubious on exactly this shape.
+  const mi = ISCN.parse('46,XY,ins(2)(q13;p23;p13)');
+  assert.equal(mi.suggestion, '46,XY,ins(2)(q13p23p13)');
+  assert.match(mi.warnings.join(' '), /5\.5\.9\.1/);
+  assert.match(mi.warnings.join(' '), /insertion site first/);
 });
 
 test('one mistake, one message', () => {
