@@ -22,9 +22,10 @@ keywords:
   - medical education
   - genetic counseling
 # The doi above is the Zenodo *concept* DOI (10.5281/zenodo.22119721). It always
-# resolves to the newest release, so a citation to it never goes stale. The v1.0.0
-# snapshot has its own version DOI, 10.5281/zenodo.22119722; cite that one only when
-# the exact archived version matters.
+# resolves to the newest release, so a citation to it never goes stale and this line
+# never needs editing. Every release also gets its own version DOI, listed on that
+# record; cite one of those only when the exact archived snapshot matters. Do not
+# put a version DOI here, or this file goes stale at the next release.
 #
 # When the JOSE paper is published, add it as a `preferred-citation:` block rather
 # than replacing the doi above. The software archive and the paper are separate

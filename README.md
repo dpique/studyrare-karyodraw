@@ -209,10 +209,10 @@ the newest version:
 > karyotypes for genetics education.* 2026.
 > doi:[10.5281/zenodo.22119721](https://doi.org/10.5281/zenodo.22119721)
 
-The `v1.0.0` snapshot has its own version DOI,
-[10.5281/zenodo.22119722](https://doi.org/10.5281/zenodo.22119722); cite that one
-only when the exact archived version matters. [`CITATION.cff`](CITATION.cff) carries
-the machine-readable form and powers GitHub's "Cite this repository" button.
+Every release also gets its own version DOI, listed on that same Zenodo record; cite
+one of those only when the exact archived snapshot matters.
+[`CITATION.cff`](CITATION.cff) carries the machine-readable form and powers GitHub's
+"Cite this repository" button.
 
 ## License
 
