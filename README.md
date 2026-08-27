@@ -227,9 +227,8 @@ entries, and the prose in `docs/` and the guide) is **additionally** offered und
 [CC BY-SA 4.0](LICENSE-CC-BY-SA-4.0.txt), so an explanation can go into a lecture
 slide or a handout without carrying a software license with it.
 
-Neither is a non-commercial license; both permit commercial use. For proprietary
-use, StudyRare grants commercial licenses. Scope, terms, and contact are in
-[`LICENSING.md`](LICENSING.md).
-
-Releases from 2026-07-01 to 2026-08-26 were under the MIT License. Relicensing is
-not retroactive.
+Neither license restricts making money. What the AGPL restricts is keeping your
+changes to itself: publish them and you may sell the result. If you want to build
+on KaryoDraw without publishing your source, StudyRare sells a separate license for
+that. Terms and contact are in [`LICENSING.md`](LICENSING.md), which also records
+the licensing history.
