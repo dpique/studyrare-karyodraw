@@ -230,5 +230,4 @@ slide or a handout without carrying a software license with it.
 Neither license restricts making money. What the AGPL restricts is keeping your
 changes to itself: publish them and you may sell the result. If you want to build
 on KaryoDraw without publishing your source, StudyRare sells a separate license for
-that. Terms and contact are in [`LICENSING.md`](LICENSING.md), which also records
-the licensing history.
+that. Terms and contact are in [`LICENSING.md`](LICENSING.md).
