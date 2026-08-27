@@ -105,9 +105,11 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
 // angle; these rows now reproduce their mark. Rows where the COLOR is the meaning
 // (gray = uninvolved, "chr 2") keep the block.
 //
-// And because the swatch shows the shape, the label stopped naming it: "hooks:
-// inverted, drawn end-for-end" is now "inversion", "carets: a breakpoint" is now
-// "breakpoint". A row that both draws a mark and spells the mark out says it twice.
+// And because the swatch shows the shape, no label names one: "box: duplicated
+// segment" is "duplicated segment", "hooks: inverted, drawn end-for-end" is
+// "inversion", "carets: a breakpoint" is "breakpoint", "dashed line: where two
+// chromosomes fused" is "where two chromosomes fused". A row that both draws a mark
+// and spells the mark out says it twice.
 test('the mark rows draw their mark, not a colored block', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
   const puppeteer = require('puppeteer-core');
@@ -132,7 +134,7 @@ test('the mark rows draw their mark, not a colored block', async (t) => {
     const got = await rows(page);
     const find = (re) => got.find((r) => re.test(r.label));
 
-    const box = find(/^box: duplicated/), hooks = find(/^inversion$/i), carets = find(/^breakpoint$/i);
+    const box = find(/^duplicated segment$/i), hooks = find(/^inversion$/i), carets = find(/^breakpoint$/i);
     assert.ok(box && hooks && carets, 'the rec draws all three marks');
     [box, hooks, carets].forEach((r) =>
       assert.match(r.sw, /^<svg class="sw-mk"/, `"${r.label}" should draw its mark, not a block`));
@@ -151,6 +153,13 @@ test('the mark rows draw their mark, not a colored block', async (t) => {
     const OP = await page.evaluate(() => window.Karyo.OP_COLORS);
     assert.ok(box.sw.includes(OP.dup), 'the dup box stays amber');
     assert.ok(hooks.sw.includes(OP.inv), 'the hooks stay teal');
+
+    // The rule, over every row rather than the four that exist today: a label
+    // describes what the mark MEANS. The moment one goes back to naming the glyph,
+    // the swatch beside it is saying the same thing and one of them is redundant.
+    const GLYPH = /^(box|hooks?|carets?|dashed line|line|arrow|frame|outline|triangle)\b\s*:/i;
+    const named = got.map((r) => r.label).filter((l) => GLYPH.test(l));
+    assert.deepEqual(named, [], `legend labels should name the meaning, not the shape: ${JSON.stringify(named)}`);
 
     // A color-only row is still a block: there the color IS the meaning.
     const chr = find(/^chr \d/);
