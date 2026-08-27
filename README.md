@@ -1,5 +1,7 @@
 # KaryoDraw
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22119721.svg)](https://doi.org/10.5281/zenodo.22119721)
+
 A modern, **teaching-first** karyogram tool, following **ISCN 2024** (the current
 International System for Human Cytogenomic Nomenclature). Type an ISCN karyotype
 (`46,XY`, `47,XX,+21`, `46,XY,t(9;22)(q34;q11.2)`, …) and KaryoDraw:
@@ -197,6 +199,20 @@ python3 build_ideogram.py       # writes ../ideogram-data.js
 
 KaryoDraw is an **educational** visualizer for cytogenetic nomenclature — not a
 diagnostic tool.
+
+## Citing KaryoDraw
+
+Every release is archived on Zenodo. Cite the concept DOI, which always resolves to
+the newest version:
+
+> Pique D. *KaryoDraw: a zero-install browser tool that draws and explains ISCN
+> karyotypes for genetics education.* 2026.
+> doi:[10.5281/zenodo.22119721](https://doi.org/10.5281/zenodo.22119721)
+
+The `v1.0.0` snapshot has its own version DOI,
+[10.5281/zenodo.22119722](https://doi.org/10.5281/zenodo.22119722); cite that one
+only when the exact archived version matters. [`CITATION.cff`](CITATION.cff) carries
+the machine-readable form and powers GitHub's "Cite this repository" button.
 
 ## License
 

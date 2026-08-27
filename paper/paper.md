@@ -187,7 +187,9 @@ also handles an anonymous usage beacon and a feedback channel. It is deployed at
 <https://karyodraw.com> and the source is available at
 <https://github.com/dpique/studyrare-karyodraw> under the GNU Affero General Public License
 (AGPL-3.0-or-later), with the teaching content additionally offered under CC BY-SA 4.0 so that
-explanations can be reused in course material. Chromosome band data are
+explanations can be reused in course material. Each release is archived on Zenodo; the
+concept DOI 10.5281/zenodo.22119721 resolves to the current version, and v1.0.0 is
+10.5281/zenodo.22119722. Chromosome band data are
 derived from the UCSC Genome Browser `cytoBandIdeo` table (hg38). The application
 is validated by a dependency-free suite of nearly 500 behavioral tests (Node's
 built-in runner, gating every pull request and every deploy) covering

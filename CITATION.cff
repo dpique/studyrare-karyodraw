@@ -10,6 +10,9 @@ authors:
     affiliation: "StudyRare"
 repository-code: "https://github.com/dpique/studyrare-karyodraw"
 url: "https://karyodraw.com"
+doi: "10.5281/zenodo.22119721"
+version: "1.0.0"
+date-released: "2026-08-27"
 license: AGPL-3.0-or-later
 keywords:
   - genetics
@@ -18,4 +21,11 @@ keywords:
   - ISCN
   - medical education
   - genetic counseling
-# A DOI will be added here once the JOSE paper (or a preprint) is published.
+# The doi above is the Zenodo *concept* DOI (10.5281/zenodo.22119721). It always
+# resolves to the newest release, so a citation to it never goes stale. The v1.0.0
+# snapshot has its own version DOI, 10.5281/zenodo.22119722; cite that one only when
+# the exact archived version matters.
+#
+# When the JOSE paper is published, add it as a `preferred-citation:` block rather
+# than replacing the doi above. The software archive and the paper are separate
+# records with separate DOIs, and both should stay reachable from here.
