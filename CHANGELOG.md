@@ -3,6 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-27 (the isochromosome owns its centromere)
+
+- **Hovering an isochromosome's seam-flanking centromere band now answers "Centromere",
+  the same as the normal homolog.** On i(18)(q10) the two 18q11.1 bands answered
+  "Pericentromeric heterochromatin", with body text about material carried across a
+  derivative junction. That was the #181 downgrade overshooting: it exists so a der
+  graft's acen material cannot read as a second centromere, but an isochromosome's
+  seam-flanking acen IS its working centromere's own material, sitting at the drawn
+  waist. A Robertsonian, with the same seam geometry, already answered "Centromere"
+  there, because its whole-arm segments carry hasCen; the iso now follows the same
+  convention. The single seam waist is unchanged at every band level, and the true
+  der-graft case keeps its downgrade, both pinned by test.
+
 ## 2026-08-27 (the insertion shows its move, and a repaired spelling stops sounding like an alarm)
 
 - **A drawn insertion now wears marks.** An intrachromosomal insertion drew with no mark
