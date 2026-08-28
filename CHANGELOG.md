@@ -3,6 +3,38 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the whole-arm body carries its own grafts)
+
+- **A whole-arm der(A;B) with trailing sub-ops now draws its actual composition.**
+  ISCN 5.5.3 c iv, `der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12)`, is the two long
+  arms of chromosome 8 fused at the centromeres, one truncated at q22, chromosome 9
+  material on the other at q24.1. The whole-arm path demanded no sub-ops, so this
+  fell to the single-join builder and drew an intact 8p with one centromere; worse,
+  `der(13;14)(q10;q10)t(9;14)(q22;q24)` came out as a der(9) figure with chromosome
+  13 nowhere on it. The body now comes from the whole-arm geometry and each sub-op
+  modifies one arm, applied in notation order to the first piece whose span holds
+  its band. The detailed form emits the standard's exact strings, both pinned from
+  print, and the corpus entry for c iv is now `generated: true`.
+
+- **The seam constriction sits where the arms meet.** The whole-arm seam was drawn
+  at the FIRST segment boundary, right for a bare two-segment Robertsonian and wrong
+  once a graft rides above the arms: the waist sat on the chromosome 9 junction, a
+  centromere the model does not claim there. It now sits at the boundary where the
+  two centromere-bearing arms meet.
+
+- **The reading direction of a whole-arm derivative follows the standard.** ISCN
+  5.4.2.2 e reads a derivative from the first-named chromosome's material, so
+  `der(13;14)(q10;q10)` now serialises as `13qter→13q10::14q10→14qter` even when the
+  drawing puts 14q on top (orientation on screen stays a morphology decision, short
+  arm up). Same body, read the way the standard prints it.
+
+- **Sub-ops that name what the derivative does not carry are refused, with the rule
+  stated.** A join touching neither named chromosome nor anything grafted on, a
+  breakpoint on the arm the q10/p10 letters do not keep, and a der(N) chain join
+  connected to nothing each used to vanish or mis-draw in silence. The decode also
+  now describes the fused body and each arm change instead of the Robertsonian text
+  (which ignored the sub-ops) or the one-chromosome text (which misread the body).
+
 ## 2026-08-28 (a headless chain is told what its head would be)
 
 - **A run-together t() chain with no der() in front now teaches the two readings.**

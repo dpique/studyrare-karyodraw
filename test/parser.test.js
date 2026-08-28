@@ -1538,3 +1538,48 @@ test('a t() chain with no der() head teaches the two readings', () => {
   assert.match(ISCN.parse('46,XY,t(9;22)(q34;q11.2)ort(1;2)(p10;q10)').warnings.join(' '),
     /two possible readings/, 'the "or" branch still wins for an "or" alternative');
 });
+
+// The whole-arm der(A;B) keeps exactly the arms its q10/p10 letters name, so a
+// sub-op naming anything else describes material the derivative does not carry.
+// Each used to be dropped or mis-drawn in silence; each now refuses with the rule.
+// The printed compositions (5.5.3 c iv) keep drawing warning-free, and a der whose
+// t sub-ops include a three-way join is left alone entirely, since
+// der(22)t(6;9;22) is printed in the standard and drawn by the older path.
+test('a whole-arm der(A;B) refuses sub-ops naming what it does not carry', () => {
+  const gate = (k) => {
+    const m = ISCN.parse(k);
+    return { unreadable: m.clones[0].unreadable, w: m.warnings.join(' ') };
+  };
+  const stray = gate('45,XX,der(13;14)(q10;q10)t(5;6)(q21;q21)');
+  assert.equal(stray.unreadable, true, 'a join that touches nothing on the body');
+  assert.match(stray.w, /t\(5;6\)\(q21;q21\)/);
+  const wrongArm = gate('45,XX,der(13;14)(q10;q10)t(9;14)(q22;p11)');
+  assert.equal(wrongArm.unreadable, true, 'a host break on the arm the derivative does not keep');
+  assert.match(wrongArm.w, /14p11/);
+  const delArm = gate('45,XX,der(8;8)(q10;q10)del(8)(p22)');
+  assert.equal(delArm.unreadable, true, 'a deletion on an arm that is not there');
+
+  ['45,XX,der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12)',
+   '45,XX,der(7;9)(q10;q10)t(9;22)(q34;q11.2)',
+   '45,XX,der(13;14)(q10;q10)t(9;14)(q22;q24)'].forEach((k) => {
+    const m = ISCN.parse(k);
+    assert.equal(m.clones[0].unreadable, false, k);
+    assert.equal(m.warnings.length, 0, k);
+  });
+});
+
+// The same silent drop existed for a der naming ONE chromosome: a chain is walked
+// outward from that chromosome, and a join naming nothing already on the derivative
+// simply vanished from the figure. ISCN 5.5.3 c allows two joins on the derivative's
+// own two arms, so connectivity is to the growing body, not to the previous join.
+test('a der(N) chain join connected to nothing is refused', () => {
+  const m = ISCN.parse('46,XY,der(1)t(1;3)(p32;q21)t(9;11)(q22;q13)');
+  assert.equal(m.clones[0].unreadable, true);
+  assert.match(m.warnings.join(' '), /t\(9;11\)\(q22;q13\)/);
+  ['46,XY,der(1)t(1;3)(p32;q21)t(3;7)(q28;q11.2)',
+   '46,XY,der(1)t(1;3)(p32;q21)t(1;11)(q25;q13)'].forEach((k) => {
+    const ok = ISCN.parse(k);
+    assert.equal(ok.clones[0].unreadable, false, k);
+    assert.equal(ok.warnings.length, 0, k);
+  });
+});

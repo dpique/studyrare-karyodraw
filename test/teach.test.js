@@ -780,3 +780,24 @@ test('a nine-join der(5;7) is still decoded as the dicentric it draws', () => {
   assert.match(t, /nine joins/);
   assert.match(t, /chromosomes 2, 3, 4, 5, 7, 11, 12, 14, 16, and 18/);
 });
+
+// The whole-arm der(A;B) with sub-ops used to collect the wrong prose on both
+// sides of the fork: the Robertsonian text ignored the sub-ops entirely, and the
+// general der text read "chromosome 7 (out to 7q34)" off a join whose band is on
+// chromosome NINE, the monocentric misreading the renderer no longer draws.
+test('a whole-arm der(A;B) with sub-ops decodes the body and each arm change', () => {
+  const a = decodeText('45,XX,der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12)');
+  assert.match(a, /two long arms of chromosome 8/);
+  assert.match(a, /cut at 8q24\.1/);
+  assert.match(a, /terminal deletion at 8q22/);
+  assert.ok(!/out to 8q24\.1/.test(a), 'the monocentric misreading is gone');
+  const b = decodeText('45,XX,der(7;9)(q10;q10)t(9;22)(q34;q11.2)');
+  assert.match(b, /long arm of chromosome 7 and the long arm of chromosome 9/);
+  assert.match(b, /chromosome 9 arm is cut at 9q34/);
+  assert.match(b, /22q11\.2→qter/);
+  const c = decodeText('45,XX,der(13;14)(q10;q10)t(9;14)(q22;q24)');
+  assert.match(c, /ROBERTSONIAN translocation with more on it/);
+  assert.match(c, /9q22→qter/);
+  // The bare Robertsonian keeps its own fuller text, spelling note included.
+  assert.match(decodeText('45,XX,der(13;14)(q10;q10)'), /written lowest-number-first/);
+});
