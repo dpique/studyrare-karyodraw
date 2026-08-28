@@ -3,6 +3,31 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the stain rows follow the same rule as the mark rows)
+
+- **The Involved view no longer explains gray when nothing on screen is gray.** #213
+  gated every MARK row on what the figure draws and left the three stain rows
+  unconditional, so the rule held for half the legend and leaked on the other half. In
+  the Involved view of a plain `t(9;22)(q34;q11.2)` the figure draws chromosome 9 and
+  chromosome 22, both coloured, and the legend still carried "gray = a chromosome not
+  involved in the abnormality". The row now appears exactly when an uninvolved
+  chromosome is drawn, read off the DOM after render like every mark row. It is checked
+  against the involved set rather than against pixels, which is what makes the marker
+  case come out right: a `mar` is drawn gray and is never one of the involved
+  chromosomes, so `47,XY,t(9;22)(q34;q11.2),+mar` keeps the row that the plain
+  translocation loses.
+
+- **The same gate on the other two stain rows**, which leaked in the opposite
+  direction: `46,XX,del(5)(p15.2)` was taught "variable region / stalk" although
+  chromosome 5 carries no gvar or stalk band anywhere. Pericentromeric material carried
+  across a junction (the `acen_carried` stain from #181) counts toward that row rather
+  than the centromere row, since the variable-region texture is the one it wears.
+
+- **The gray swatch is gray.** It was `#ffffff`, under the word "gray". It is now
+  `BASELINE.gpos50`, the mid tone of the ramp an uninvolved chromosome is actually drawn
+  in, and a test asserts the computed background matches that value rather than merely
+  being dark.
+
 ## 2026-08-28 (a back-referenced rearrangement is drawn, not faked)
 
 - **The second cell line of a mosaic was drawing normal chromosomes under derivative

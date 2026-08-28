@@ -231,3 +231,110 @@ test('a repaired insertion reads as a note, and the figure shows the move', asyn
     server.close();
   }
 });
+
+// #213 gated every MARK row on what the figure draws and left the three stain rows
+// unconditional, so the same rule held for half the legend and leaked on the other
+// half. In the Involved view of a plain t(9;22) the figure draws chromosome 9 and
+// chromosome 22, both coloured, and nothing else: there is no gray chromosome on
+// screen and the legend explained gray anyway (Dan, 2026-08-28). del(5)(p15.2) leaks
+// the other way, since chromosome 5 carries no gvar or stalk band.
+//
+// "Gray" is checked against the involved set rather than against pixels, which is what
+// makes the marker case come out right: a mar is drawn gray and is never one of the
+// involved chromosomes, so it keeps a row that the plain translocation loses.
+test('the stain rows appear only when the figure contains that stain', async (t) => {
+  if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
+  const puppeteer = require('puppeteer-core');
+  const server = await serve();
+  const port = server.address().port;
+  const browser = await puppeteer.launch({
+    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
+  });
+  const rows = async (page, k, show) => {
+    await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent(k)}&style=highlight&bands=550&show=${show}`,
+      { waitUntil: 'load' });
+    await page.waitForSelector('#karyo svg');
+    return page.evaluate(() => [...document.querySelectorAll('#legend .item')].map((el) => el.textContent.trim()).join(' | '));
+  };
+  try {
+    const page = await browser.newPage();
+    await page.setCacheEnabled(false);
+
+    await t.test('the Involved view of a translocation has no gray chromosome to explain', async () => {
+      const leg = await rows(page, '46,XY,t(9;22)(q34;q11.2)', 'involved');
+      assert.ok(!/gray/.test(leg), 'every chromosome on screen is coloured');
+      assert.match(leg, /centromere/, 'the centromeres are on screen');
+      assert.match(leg, /variable region/, '9q12 is gvar and 22p is stalk');
+    });
+
+    await t.test('the All view of the same karyotype does have one', async () => {
+      const leg = await rows(page, '46,XY,t(9;22)(q34;q11.2)', 'all');
+      assert.match(leg, /gray/, 'the other 44 chromosomes are drawn uninvolved');
+    });
+
+    await t.test('a deletion with no variable region does not claim one', async () => {
+      const leg = await rows(page, '46,XX,del(5)(p15.2)', 'involved');
+      assert.ok(!/variable region/.test(leg), 'chromosome 5 has no gvar or stalk band');
+      assert.ok(!/gray/.test(leg));
+      assert.match(leg, /centromere/);
+    });
+
+    await t.test('a marker is gray, so it keeps the row the translocation loses', async () => {
+      const leg = await rows(page, '47,XY,t(9;22)(q34;q11.2),+mar', 'involved');
+      assert.match(leg, /gray/, 'the mar is drawn uninvolved even beside two coloured chromosomes');
+    });
+
+    await t.test('a normal karyotype is all gray', async () => {
+      const leg = await rows(page, '46,XX', 'all');
+      assert.match(leg, /gray/);
+    });
+
+    // #181: a breakpoint inside the centromere band grafts real acen material onto an
+    // acentric segment, drawn with the variable-region texture rather than the
+    // centromere one. It must light the row whose texture it wears.
+    await t.test('carried pericentromeric material counts as a variable region', async () => {
+      const leg = await rows(page, '46,XX,der(19)t(X;19)(q11.1;p13.3)', 'involved');
+      assert.match(leg, /variable region/);
+      assert.ok(!/gray/.test(leg), 'X and 19 are both involved');
+    });
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+// The row says "gray" and the swatch was #ffffff. A colour key whose swatch is not the
+// colour it names is the one thing it cannot afford to get wrong.
+test('the gray swatch is actually gray', async (t) => {
+  if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
+  const puppeteer = require('puppeteer-core');
+  const server = await serve();
+  const port = server.address().port;
+  const browser = await puppeteer.launch({
+    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setCacheEnabled(false);
+    await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent('46,XX')}&style=highlight&show=all`,
+      { waitUntil: 'load' });
+    await page.waitForSelector('#karyo svg');
+    const bg = await page.evaluate(() => {
+      const row = [...document.querySelectorAll('#legend .item')].find((el) => /gray/.test(el.textContent));
+      if (!row || !row.firstElementChild) return null;
+      return getComputedStyle(row.firstElementChild).backgroundColor;
+    });
+    assert.ok(bg, 'the gray row has a swatch');
+    const [r, g, b] = bg.match(/\d+/g).map(Number);
+    assert.ok(r < 240 && g < 240 && b < 240, `the swatch is not white (${bg})`);
+    // Neutral: the ramp is a desaturated navy-gray, so no channel runs away from the others.
+    assert.ok(Math.max(r, g, b) - Math.min(r, g, b) < 40, `the swatch reads as gray (${bg})`);
+    // And it is the tone an uninvolved chromosome is actually drawn in.
+    const baseline = await page.evaluate(() => window.Karyo.BASELINE.gpos50);
+    const hex = '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
+    assert.equal(hex, baseline, 'the swatch is BASELINE.gpos50, the mid tone of that ramp');
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
