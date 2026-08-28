@@ -711,3 +711,34 @@ test('the imbalance claim is withheld when it would be incomplete', () => {
   // An inversion is balanced, so it leaves the arithmetic intact.
   assert.match(decodeText('46,XX,der(9)inv(9)(p13p11)t(9;22)(q34;q11.2)'), /partial trisomy/);
 });
+
+// #226 taught the renderer that a der() named across two chromosomes and built from
+// joins is dicentric, and draws it with two constrictions under a der(5;7) caption. The
+// prose still opened "an abnormal derivative chromosome that has chromosome 5's
+// centromere", singular, which is the words contradicting the picture beside them.
+// Exactly the same shape as #224: a renderer fix leaving the decode behind.
+test('a der() naming two chromosomes says it carries both centromeres', () => {
+  const t = decodeText('45,XY,der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13)');
+  assert.match(t, /centromeres of BOTH chromosome 5 and chromosome 7/);
+  assert.match(t, /dicentric/);
+  assert.ok(!/has chromosome 5’s centromere/.test(t), 'the singular reading is gone');
+});
+
+test('a whole-arm derivative keeps the singular reading, and the careful note', () => {
+  // der(13;21)(q10;q10) also names two chromosomes, but the fusion is AT the
+  // centromeres, so the figure draws one seam constriction rather than two waists.
+  // Claiming a plain dicentric there would contradict the picture in the other
+  // direction. Keyed on the shape of the notation rather than on a centromere tally,
+  // because the model flags both whole arms hasCen (#207) while the drawing shows one.
+  const whole = decodeText('45,XX,der(13;21)(q10;q10)');
+  assert.match(whole, /has chromosome 13’s centromere/);
+  assert.ok(!/carries the centromeres of BOTH/.test(whole));
+
+  // And a Robertsonian keeps its own sentence, which states the nuance properly.
+  const rob = decodeText('45,XX,rob(13;14)(q10;q10)');
+  assert.match(rob, /usually dicentric, with one centromere inactivated/);
+});
+
+test('a derivative naming one chromosome is unchanged', () => {
+  assert.match(decodeText('46,XX,der(1)t(1;3)(p22;q13.1)'), /has chromosome 1’s centromere/);
+});
