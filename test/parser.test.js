@@ -1515,3 +1515,26 @@ test('a bare t() sub-op inherits the breakpoints of its first full mention', () 
   const der22 = cml.clones[0].aberrations.filter((a) => a.chroms[0] === '22')[0];
   assert.equal(der22.subOps[0].breakpoints.map((g) => g.join('')).join(';'), 'q34;q11.2');
 });
+
+// A run-together t() chain with no der() in front got the generic leftover message,
+// "Changes look like +21, del(5)(p15.2), or t(9;22)(q34;q11.2)", which names neither
+// of the two things the reader plausibly meant. The shape is diagnosable: operations
+// run together with no commas are how ISCN 5.5.3 writes the make-up of ONE
+// derivative, so either the der(...) head was dropped or the commas between
+// independent translocations were. The message now teaches both readings, the same
+// way the rob/t count message offers its two. It must still refuse: which reading
+// was meant changes the count and the figure, and guessing is not teaching.
+test('a t() chain with no der() head teaches the two readings', () => {
+  const m = ISCN.parse('45,XY,t(3;5)(q21;q22)t(3;11)(q29;q13)t(11;12)(q23;q13)'
+    + 't(12;17)(q24.1;q11.2)t(7;17)(p13;q21)');
+  const w = m.warnings.join(' ');
+  assert.match(w, /ONE derivative chromosome/);
+  assert.match(w, /der\(\) in front/);
+  assert.match(w, /t\(3;5\)\(q21;q22\),t\(3;11\)\(q29;q13\)/, 'the comma reading is paste-able');
+  assert.match(w, /count at 46/);
+  assert.equal(m.clones[0].unreadable, true, 'still refused; the app must not guess');
+  assert.ok(!/Changes look like \+21/.test(w), 'the generic fallback is replaced, not appended');
+  // The diagnosed branches above it are untouched.
+  assert.match(ISCN.parse('46,XY,t(9;22)(q34;q11.2)ort(1;2)(p10;q10)').warnings.join(' '),
+    /two possible readings/, 'the "or" branch still wins for an "or" alternative');
+});

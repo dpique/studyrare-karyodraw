@@ -215,6 +215,22 @@
       return "ISCN writes two possible readings of the same result with “or”, and KaryoDraw draws one " +
         "karyotype at a time, so “" + leftover.replace(/^or/i, "") + "” has to be entered on its own to see it.";
     }
+    // A run of t() groups after an operation is a diagnosable miss, not generic
+    // leftover: operations run together with NO commas are how ISCN 5.5.3 writes the
+    // make-up of ONE derivative chromosome, so either the der(...) head was dropped
+    // or the commas between independent translocations were. Both readings are
+    // offered, the same way the rob/t count message offers its two, and the count
+    // clauses are the disambiguator: one derivative replacing two chromosomes is 45,
+    // a list of balanced translocations stays 46. Refusal stands either way, since
+    // the two readings draw different figures.
+    if (/^(?:t\([^()]*\)\([^()]*\))+$/.test(leftover)) {
+      return "Operations run together with no commas describe the make-up of ONE derivative chromosome, " +
+        "so a chain like “" + raw + "” needs a der() in front naming the chromosome(s) whose centromere " +
+        "it carries, the way ISCN 5.5.3 writes der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13); one derivative " +
+        "replacing two chromosomes is how a count of 45 arises. Independent translocations are separated " +
+        "by commas instead, “" + raw.replace(/\)t\(/g, "),t(") + "”, and balanced translocations keep " +
+        "the count at 46.";
+    }
     return "A karyotype is a list of changes separated by commas, and “" + leftover + "” in “" + raw +
       "” is not one KaryoDraw can place. Changes look like +21, del(5)(p15.2), or t(9;22)(q34;q11.2).";
   }
