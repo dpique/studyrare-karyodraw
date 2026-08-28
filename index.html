@@ -1220,7 +1220,26 @@
       if (keys.length) {
         html += '<span class="item" style="color:#94a3b8">involved:</span>';
         keys.forEach(function (c) { html += swatch(AFFECTED[c], "chr " + c); });
-        html += '<span class="item" style="color:#64748b">(translocation pieces take the color of the chromosome they came from)</span>';
+        // Only when a drawn chromosome actually carries material from another one.
+        // The sentence explains why a der(9) is part blue and part orange, which is
+        // worth saying there and says nothing at all on a del(5) or an idic(15), where
+        // every piece on screen came from the chromosome it is filed under. Same rule
+        // as the mark rows and the stain rows: the legend describes THIS figure, read
+        // off the DOM after render (#213, #219).
+        //
+        // Keyed on the band rects rather than on the notation, because "carries foreign
+        // material" is exactly what the reader is looking at: a Robertsonian and a
+        // three-way both qualify, an isodicentric does not, and no list of operations
+        // has to be kept in step.
+        var mixed = !!kar && [].slice.call(kar.querySelectorAll(".kchrom[data-chrom]"))
+          .some(function (el) {
+            var seen = {};
+            [].slice.call(el.querySelectorAll(".band[data-chrom]")).forEach(function (b) {
+              seen[b.getAttribute("data-chrom")] = 1;
+            });
+            return Object.keys(seen).length > 1;
+          });
+        if (mixed) html += '<span class="item" style="color:#64748b">(translocation pieces take the color of the chromosome they came from)</span>';
       } else {
         html += '<span class="item" style="color:#64748b">nothing to highlight in a normal karyotype</span>';
       }

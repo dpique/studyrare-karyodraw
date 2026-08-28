@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the last legend row that was always on)
+
+- **"(translocation pieces take the color of the chromosome they came from)" now appears
+  only when a piece did.** It explains why a der(9) is drawn part blue and part orange,
+  which is worth saying on a translocation and says nothing at all on a `del(5)` or an
+  `idic(15)`, where every piece on screen came from the chromosome it is filed under.
+  It was the last row still printed unconditionally, after #213 gated the marks and #219
+  the stains, so the legend now describes the figure without exception.
+
+  Keyed on the band rects rather than on the notation. "Carries foreign material" is
+  exactly what the reader is looking at, so a Robertsonian and an insertion qualify and
+  an inversion and a duplication do not, with no list of operations to keep in step as
+  new ones are drawn.
+
 ## 2026-08-28 (the figure states what it drew, in ISCN's own notation)
 
 - **The detailed form now appears under the karyogram.** The short system names the
