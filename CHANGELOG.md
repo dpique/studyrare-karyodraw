@@ -3,6 +3,42 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the detailed system is read, not called gibberish)
+
+- **Typing ISCN's detailed system got you told that ISCN's own notation is not ISCN.**
+  `47,XX,+idic(15)(pter→q13::q13→pter)` came back with "“→” is not a character ISCN
+  uses", the arrow stripped, and `47,XX,+idic(15)(pterq13::q13pter)` offered as the
+  repair. It is a character ISCN uses: 5.4.2.2 c says "a single colon (:) is used to
+  indicate a chromosome break and a double colon (::) to indicate break and reunion. To
+  avoid an unwieldy description, an arrow (→ or –>), meaning from ... to, is employed",
+  and both marks are in the symbol list. Telling a reader that correct notation is not
+  notation, in the one place they came to check themselves against the standard, is the
+  worst thing this app can do (docs/VALIDATION.md).
+
+- **It is now read and drawn.** The two systems describe the same chromosome, and where
+  the short form is recoverable the karyotype simply appears: the bands meeting at each
+  "::" ARE the breakpoints, and a lone ":" is a break with nothing rejoined. All four
+  shapes the standard prints come back correctly, including the grouping rule, since the
+  chromosome numbers ride on the bands only when more than one chromosome is involved
+  (5.4.2.2 b) and have to come back off: `dic(13;15)(13pter→13q22::15q24→15pter)` reads
+  as `dic(13;15)(q22;q24)`. Both arrow spellings the standard gives are accepted, and so
+  is a plain ASCII `->`, which is what a keyboard produces. The string is re-parsed as an
+  ordinary short-system karyotype rather than rewritten in place, so no other rule in the
+  parser has to learn about arrows.
+
+- **A `der()` in the detailed system is explained rather than guessed at.** Its short
+  form has to name the operation that built it, and `9pter→9q34::22q11.2→22qter` does not
+  determine that, so the app says what the notation is, that it is correct, and that it
+  reads the short system. It does not invent `der(9)t(9;22)(q34;q11.2)`.
+
+- **It arrives as a note, not an alarm.** The message sits in the neutral box beside a
+  finished drawing of exactly what was typed, for the same reason the repair notes do:
+  an amber "Let us sort this out" over a correct figure contradicts itself.
+
+- **And the round trip closes.** The app reads the detailed system, converts, draws, and
+  its own serialiser prints back the string that was typed. A test pins that, which is
+  the strongest available statement that the reader and the writer agree.
+
 ## 2026-08-28 (the decode catches up with the chain, and stops claiming a dosage it cannot see)
 
 - **The prose described the first join and stopped, while the figure drew them all.**
