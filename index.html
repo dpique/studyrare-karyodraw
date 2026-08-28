@@ -1743,6 +1743,15 @@
     // so-X-is-Y shape; when every message is one and no fix chip is on offer,
     // the box takes the neutral note styling. Dan hit this on the visitor's
     // der(15)ins URL: repaired, drawn, decoded, and still framed as an error.
+    // The detailed system is not a mistake to sort out either: it is correct ISCN that
+    // the app converted to the short form and drew. Same reasoning as the repair box
+    // below, and it must not arrive under "Let us sort this out" over a finished
+    // drawing of exactly what was typed.
+    if (w.length === 1 && !fix && w[0].indexOf("DETAILED system") >= 0 && w[0].indexOf("Drawn here from") >= 0) {
+      box.innerHTML = '<div class="notebox"><div class="note-title">Read as the detailed system, and drawn:</div>' +
+        '<ul><li>' + escapeHtml(w[0]) + '</li></ul></div>';
+      return;
+    }
     var allRepairs = w.length && !fix && w.every(function (x) { return x.indexOf("” is “") >= 0; });
     if (allRepairs) {
       box.innerHTML = '<div class="notebox"><div class="note-title">' +

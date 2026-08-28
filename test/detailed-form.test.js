@@ -150,3 +150,18 @@ test('a single join is untouched by the chain walk', () => {
     '9pter→9q34::22q11.2→22qter 22pter→22q11.2::9q34→9qter');
   assert.equal(forms('46,XX,der(1)t(1;3)(p22;q13.1)')[0].detail, '3qter→3q13.1::1p22→1qter');
 });
+
+// The round trip closes. The app reads the detailed system, converts it to the short
+// form, draws it, and its own serialiser prints back the string that was typed. Neither
+// half can drift without this failing, which is the strongest statement available that
+// the reader and the writer agree.
+test('what is typed in the detailed system comes back out of the renderer', () => {
+  [['47,XX,+idic(15)(pter→q13::q13→pter)', 'pter→q13::q13→pter'],
+    ['46,XX,del(5)(pter→q13::q33→qter)', 'pter→q13::q33→qter'],
+    ['45,XX,dic(13;15)(13pter→13q22::15q24→15pter)', '13pter→13q22::15q24→15pter'],
+  ].forEach(([typed, expected]) => {
+    const built = forms(typed);
+    assert.equal(built.length, 1, `${typed} draws one abnormal chromosome`);
+    assert.equal(built[0].detail, expected, typed);
+  });
+});

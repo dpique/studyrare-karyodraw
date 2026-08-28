@@ -1403,3 +1403,61 @@ test('a fragile-site chromosome is sub-labelled fra(N) like every other abnormal
   assert.equal(fraSlot('46,X,fra(X)(q27.3)', 'X').label, 'fra(X)');
   assert.equal(fraSlot('46,XX,fra(11)(q23)', '11').label, 'fra(11)');
 });
+
+// ---- the detailed system as input --------------------------------------------
+// ISCN 5.4.2.2 c: "A single colon (:) is used to indicate a chromosome break and a
+// double colon (::) to indicate break and reunion. To avoid an unwieldy description, an
+// arrow (→ or –>), meaning from - to, is employed." Both marks are in the symbol list,
+// and the standard prints most of its examples both ways, so a reader copying one out
+// of ISCN is typing correct notation.
+//
+// The app used to strip the arrow and answer that it "is not a character ISCN uses",
+// then offer 47,XX,+idic(15)(pterq13::q13pter) as the repair. Telling a reader that
+// correct notation is not notation, in the one place they came to check themselves
+// against the standard, is the worst thing this app can do (docs/VALIDATION.md).
+test('the detailed system is read and drawn, not called gibberish', () => {
+  const m = ISCN.parse('47,XX,+idic(15)(pter→q13::q13→pter)');
+  assert.equal(m.clones.length, 1);
+  assert.equal(m.clones[0].unreadable, false, 'it draws');
+  assert.equal(m.suggestion, null, 'and needs no repair');
+  const w = m.warnings.join(' ');
+  assert.ok(!/is not a character ISCN uses/.test(w), 'the arrow is ISCN');
+  assert.match(w, /DETAILED system/, 'and the reader is told what they typed');
+  assert.match(w, /47,XX,\+idic\(15\)\(q13\)/, 'with the short form it was drawn from');
+});
+
+test('both arrow spellings and the ASCII one are accepted', () => {
+  // 5.4.2.2 c gives the arrow as "→ or –>"; a plain ASCII "->" is what a keyboard
+  // produces and means the same thing.
+  ['47,XX,+idic(15)(pter→q13::q13→pter)',
+    '47,XX,+idic(15)(pter–>q13::q13–>pter)',
+    '47,XX,+idic(15)(pter->q13::q13->pter)'].forEach((k) => {
+    const m = ISCN.parse(k);
+    assert.equal(m.clones[0].unreadable, false, k);
+    assert.match(m.warnings.join(' '), /47,XX,\+idic\(15\)\(q13\)/, k);
+  });
+});
+
+test('the breakpoints are recovered from where the pieces rejoin', () => {
+  // Every band that meets a "::" is a breakpoint, and a lone ":" is a break with
+  // nothing rejoined. All four shapes ISCN prints for a deletion and a dicentric.
+  const shortOf = (k) => (/“([^”]*)”\.$/.exec(ISCN.parse(k).warnings.find((w) => /DETAILED/.test(w))) || [])[1];
+  assert.equal(shortOf('46,XX,del(5)(pter→q13::q33→qter)'), '46,XX,del(5)(q13q33)', 'interstitial');
+  assert.equal(shortOf('46,XX,del(5)(pter→q13:)'), '46,XX,del(5)(q13)', 'terminal on q');
+  assert.equal(shortOf('46,XX,del(4)(:p15.2→qter)'), '46,XX,del(4)(p15.2)', 'terminal on p');
+  // Two chromosomes, so the numbers ride on the bands (5.4.2.2 b) and come back off.
+  assert.equal(shortOf('45,XX,dic(13;15)(13pter→13q22::15q24→15pter)'),
+    '45,XX,dic(13;15)(q22;q24)', 'grouped back onto the right chromosome');
+});
+
+test('a derivative in the detailed system is explained, not guessed at', () => {
+  // der() states the OPERATION that built it in its short form, so the band
+  // composition alone does not determine it: 9pter→9q34::22q11.2→22qter could be
+  // written der(9)t(9;22)(q34;q11.2) and the app must not invent that.
+  const m = ISCN.parse('46,XY,der(9)(9pter→9q34::22q11.2→22qter)');
+  const w = m.warnings.join(' ');
+  assert.match(w, /DETAILED system/);
+  assert.match(w, /correct ISCN/, 'it is not the reader who is wrong');
+  assert.ok(!/is not a character/.test(w));
+  assert.equal(m.suggestion, null, 'and no invented repair is offered');
+});

@@ -1528,6 +1528,57 @@
 
   // Spot common typos in the raw text and, where possible, build a corrected
   // "did you mean" string.
+
+  // Turn a detailed-system karyotype into its short form, where that is possible.
+  //
+  // Every band that touches a "::" is a breakpoint, and so is the band beside a lone ":"
+  // (a break with nothing rejoined, as in del(5)(pter→q13:)). Chromosome numbers are
+  // written on the bands only when more than one chromosome is involved (5.4.2.2 b), so
+  // they are stripped back off here and the groups are rebuilt in the order the symbol
+  // names its chromosomes. Returns "" when the reading would be a guess.
+  function shortFromDetailed(str) {
+    var m = /^([^,]*,[^,]*,)?\s*([+-]?)\s*([a-z]+)\(([^)]*)\)\(([^)]*)\)(.*)$/i.exec(String(str).trim());
+    if (!m) return "";
+    var head = m[1] || "", sign = m[2] || "", op = m[3].toLowerCase(), chromGroup = m[4], detail = m[5], tail = m[6] || "";
+    // der() states an operation in its short form, not just bands, so it cannot be
+    // rebuilt from the band composition alone.
+    if (op === "der" || op === "ider" || !/^[0-9XY;?]+$/i.test(chromGroup)) return "";
+    var chroms = chromGroup.split(";");
+    var norm = detail.replace(/–>|->/g, "→");
+    var bands = [];
+    norm.split("::").forEach(function (piece, i, all) {
+      var ends = piece.split("→");
+      // A band at an internal junction, or beside a lone colon at either outer end.
+      if (i > 0 || /^:/.test(piece)) bands.push(ends[0].replace(/^:/, ""));
+      if (i < all.length - 1 || /:$/.test(piece)) bands.push(ends[ends.length - 1].replace(/:$/, ""));
+    });
+    bands = bands.map(function (b) { return String(b).trim(); })
+      .filter(function (b) { return /^[0-9XY]*[pq](ter)?[\d.]*$/i.test(b) && !/ter$/i.test(b); });
+    if (!bands.length) return "";
+    // Group by chromosome when the numbers are written on the bands, else all on one.
+    var groups = chroms.map(function () { return []; });
+    var plain = [];
+    bands.forEach(function (b) {
+      var bm = /^([0-9XY]+)?([pq][\d.]*)$/i.exec(b);
+      if (!bm) return;
+      if (bm[1]) {
+        var gi = chroms.indexOf(bm[1]);
+        if (gi < 0) return;
+        if (groups[gi].indexOf(bm[2]) < 0) groups[gi].push(bm[2]);
+      } else if (plain.indexOf(bm[2]) < 0) plain.push(bm[2]);
+    });
+    var body;
+    if (chroms.length > 1) {
+      if (!groups.every(function (g) { return g.length; })) return "";
+      body = groups.map(function (g) { return g.join(""); }).join(";");
+    } else {
+      if (!plain.length && groups[0] && groups[0].length) plain = groups[0];
+      if (!plain.length) return "";
+      body = plain.join("");
+    }
+    return head + sign + op + "(" + chromGroup + ")(" + body + ")" + tail;
+  }
+
   function diagnose(raw, result, warnings) {
     var suggestion = raw;
 
@@ -1750,6 +1801,43 @@
     var warnings = [];
     var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [], suggestion: null, countFix: null, orderFix: null, sexFix: null, sexCountFix: null, fixes: [], note: null };
     if (!raw) { warnings.push("Type a karyotype to begin, e.g. 46,XY, 47,XX,+21, or 46,XY,t(9;22)(q34;q11.2)."); return result; }
+
+    // The DETAILED SYSTEM, read rather than refused. ISCN 5.4.2.2 c: "A single colon (:)
+    // is used to indicate a chromosome break and a double colon (::) to indicate break
+    // and reunion. To avoid an unwieldy description, an arrow (→ or –>), meaning
+    // from - to, is employed." Both marks are in the symbol list, and the standard
+    // prints most of its examples both ways, so someone copying one out of ISCN was
+    // typing correct notation.
+    //
+    // What the app used to answer was that the arrow "is not a character ISCN uses",
+    // having stripped it, and then offered 47,XX,+idic(15)(pterq13::q13pter) as the
+    // repair. Telling a reader that correct notation is not notation, in the one place
+    // they came to check themselves against the standard, is the worst thing this app
+    // can do (docs/VALIDATION.md).
+    //
+    // The two systems describe the same chromosome, so where the short form is
+    // recoverable the karyotype is simply drawn: the bands meeting at each "::" ARE the
+    // breakpoints. Re-parsed at depth+1 rather than rewritten in place, so every rule
+    // below sees an ordinary short-system string and none of them has to know about
+    // arrows. A der() is not recoverable this way, because its short form has to name
+    // the operation that built it, so it gets the explanation and no drawing.
+    if (/→|–>|->|::/.test(raw)) {
+      var asShort = depth < 2 ? shortFromDetailed(raw) : "";
+      if (asShort) {
+        var reparsed = parse(asShort, (depth || 0) + 1);
+        reparsed.raw = raw;
+        reparsed.detailedInput = asShort;
+        reparsed.warnings.unshift("That is the DETAILED system (ISCN 5.4.2.2), which spells out the band " +
+          "composition of the rearranged chromosome: “::” is a break and reunion, and the arrow means " +
+          "“from ... to”. Drawn here from the short form of the same karyotype, “" + asShort + "”.");
+        return reparsed;
+      }
+      warnings.push("That is the DETAILED system (ISCN 5.4.2.2), which spells out the band composition " +
+        "of the rearranged chromosome: “::” is a break and reunion, and the arrow means “from ... to”. " +
+        "It is correct ISCN. KaryoDraw reads the short system, the one that names the breakpoints, and " +
+        "cannot work back to it from a derivative's band composition alone.");
+      return result;
+    }
     diagnose(raw, result, warnings);
 
     var s = raw;
