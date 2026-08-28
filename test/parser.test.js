@@ -725,6 +725,13 @@ test('an operation given fewer breakpoints than it takes does not draw', () => {
     ['46,XY,dup(1)', /which segment is doubled/],
     ['46,XY,ins(5;2)(p14;q22)', /two bands that bound the piece/],
     ['46,XY,ins(5;2)(p14)', /two bands that bound the piece/],
+    // ISCN 5.5.4 a and b. Reported from the live site on 2026-08-28: 46,XX,idic(15)
+    // drew a full, untouched, one-centromere chromosome 15 under the caption
+    // der(15) and said nothing, which is a normal chromosome standing in for a
+    // two-centromere one. dic(9;20) was worse: chromosome 20 left the figure.
+    ['46,XX,idic(15)', /needs the band where it broke/],
+    ['45,XY,dic(9;20)', /one breakpoint on each chromosome/],
+    ['45,XY,dic(9;20)(p13)', /one breakpoint on each chromosome/],
   ].forEach(([k, re]) => {
     const m = ISCN.parse(k);
     assert.equal(m.clones[0].unreadable, true, `${k} should not draw`);
@@ -739,8 +746,35 @@ test('every correct spelling of those operations still draws', () => {
   ['46,XY,del(5)(p15.2)', '46,XY,del(5)(q13q33)', '46,XY,dup(1)(q22q25)',
     '46,XY,inv(9)(p12q13)', '46,XY,inv(11)(q21q23)', '46,XY,t(9;22)(q34;q11.2)',
     '46,XX,t(2;7;5)(q21;p13;q31)', '46,XX,t(13;15)(q10;q10)',
-    '46,XY,ins(5;2)(p14;q22q32)', '46,XY,ins(2)(q13p23p13)', '46,XX,trp(1)(q22q25)']
+    '46,XY,ins(5;2)(p14;q22q32)', '46,XY,ins(2)(q13p23p13)', '46,XX,trp(1)(q22q25)',
+    // Every dic and idic ISCN 2024 prints, section 5.5.4 f.
+    '45,XX,dic(13;13)(q14;q32)', '45,XX,dic(13;15)(q22;q24)', '45,XY,dic(14;21)(p11.2;p11.2)',
+    '46,X,idic(Y)(q12)', '46,XX,idic(21)(q22.3)', '47,XX,+idic(13)(q22)',
+    '47,XY,+dic(15;15)(q12;q12)', '46,XX,idic(17)(p11.2)']
     .forEach((k) => assert.equal(ISCN.parse(k).clones[0].unreadable, false, k));
+});
+
+// The three ways an arity message names a mistake the reader did not make. Two were
+// already covered (a bad band answers first, a back-reference states its breakpoints
+// once); the "?" was not, and adding dic to the table is what surfaced it. ISCN 4.2.1 k
+// writes "?" exactly where something was not determined, and 5.5.4 f v prints
+// 47,XY,+dic(17;?)(q22;?) verbatim, so "it needs two breakpoints" underneath asks the
+// reader to supply what the laboratory could not.
+test('a "?" breakpoint is not also told it is missing', () => {
+  ['47,XY,+dic(17;?)(q22;?)', '46,XY,t(9;?)(q34;?)', '46,XX,der(?)t(?;5)(?;q13)'].forEach((k) => {
+    const w = ISCN.parse(k).warnings.join(' ');
+    assert.match(w, /question mark/, `${k} explains the "?" itself`);
+    assert.doesNotMatch(w, /so it needs (one|two|three) breakpoints?/,
+      `${k}: and does not then demand the breakpoint the "?" stands in for`);
+  });
+});
+
+// "involves one chromosomes, so it needs one breakpoints" was the message for dic(15)
+// and for t(9). A dicentric of one chromosome is written dic(15;15)(q12;q12) or
+// idic(15)(q12) (ISCN 5.5.4 f ix), so a reader really can land here.
+test('the breakpoint count reads as English when there is one of them', () => {
+  const w = ISCN.parse('46,XY,dic(15)').warnings.join(' ');
+  assert.match(w, /involves one chromosome, so it needs one breakpoint\./);
 });
 
 test('operations that are legal without a breakpoint are left alone', () => {

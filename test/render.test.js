@@ -775,9 +775,74 @@ test('a fragile site pinches the body into a waist at the band', () => {
     assert.match(fra, /<path d="[^"]+" fill="none" stroke/, `so does the outline (level ${level})`);
     const clipped = fra.match(/<line [^>]*clip-path[^>]*>/g) || [];
     assert.ok(clipped.length >= 2, `the gap hairlines clip to the pinched body (level ${level})`);
-    assert.doesNotMatch(draw('46,XX'), /<clipPath id="[^"]*"><path /,
-      `a normal chromosome keeps its plain capsule (level ${level})`);
+    // The centromere pinches too, so "has a path body" no longer separates a fra
+    // from anything else; the COUNT of waists does. Every body on the page has one
+    // (its centromere) and the fra(X) has two (centromere plus site). Read off the
+    // clip path, which is the shape both the bands and the outline are cut to.
+    const counts = waistCounts(fra);
+    assert.equal(counts.filter((n) => n === 2).length, 1,
+      `exactly one body pinches twice, the fra(X) (level ${level})`);
+    assert.ok(counts.every((n) => n === 1 || n === 2),
+      `and every other body pinches once, at its centromere (level ${level})`);
   }
+});
+
+// Waists per drawn body, in document order, counted off each clip path. waistPath
+// emits one cubic per pinch per side, so the curve count is twice the waist count;
+// a plain capsule is a <rect> and contributes 0.
+function waistCounts(html) {
+  return [...html.matchAll(/<clipPath id="[^"]*">(<path d="([^"]+)"|<rect)/g)]
+    .map((m) => (m[2] ? (m[2].match(/C/g) || []).length / 2 : 0));
+}
+
+// The two reports of 2026-08-28 (a reader asking why an isodicentric showed one
+// centromere, a reader asking for a thinner centromere region) come to the same
+// invariant: every centromere the model gives an instance is a constriction in the
+// drawn body, so the count can be read off the shape rather than off the hatch.
+test('every centromere the model carries is a waist in the body', () => {
+  const cases = [
+    ['46,XX,idic(15)(q11.2)', [1, 2], 'the isodicentric shows both centromeres'],
+    ['45,XX,dic(13;15)(q22;q24)', [1, 2, 1], 'so does a dicentric of two chromosomes'],
+    ['45,XY,der(14;21)(q10;q10)', [1, 1, 1], 'a Robertsonian keeps the one at its seam'],
+    ['46,X,i(X)(q10)', [1, 1], 'an isochromosome pinches at the join'],
+    ['47,XX,+21', [1, 1, 1], 'the shortest acrocentric still has room'],
+  ];
+  for (const level of [0, 1, 99]) {
+    for (const [k, expected, why] of cases) {
+      const model = ISCN.parse(k);
+      const affected = Karyo.computeAffected(model.clones);
+      const only = Object.keys(affected);
+      const cont = { innerHTML: '' };
+      Karyo.render(cont, model.clones[0], { theme: 'detailed', level, affected, only: only.length ? only : null });
+      assert.deepEqual(waistCounts(cont.innerHTML), expected, `${k}: ${why} (level ${level})`);
+    }
+  }
+  // Every chromosome of a plain karyotype, one waist each: nothing in the table is
+  // too short or too acrocentric for its centromere to be a shape.
+  for (const level of [0, 1, 99]) {
+    const cont = { innerHTML: '' };
+    Karyo.render(cont, ISCN.parse('46,XY').clones[0], { theme: 'detailed', level, affected: {} });
+    const counts = waistCounts(cont.innerHTML);
+    assert.equal(counts.length, 46, `46 bodies drawn (level ${level})`);
+    assert.ok(counts.every((n) => n === 1), `each pinches exactly once (level ${level}): ${counts.join(',')}`);
+  }
+});
+
+// A centromere close to the tip gives up HEIGHT, never position: the dashed midline
+// marks the same y, and a waist clamped away from it would contradict the line drawn
+// beside it. Y is the tightest fit in the table (its centromere sits about five units
+// below the end cap), so it is the case that would break first.
+test('a centromere near the tip keeps its true y', () => {
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, ISCN.parse('46,XY').clones[0], { theme: 'detailed', level: 1, affected: {} });
+  const yBody = cont.innerHTML.split('data-chrom="Y"').pop();
+  const midline = /<line x1="3" y1="([\d.]+)"[^>]*stroke-dasharray/.exec(yBody);
+  const path = /<clipPath id="[^"]*"><path d="([^"]+)"/.exec(cont.innerHTML.split('data-chrom="Y"')[1]);
+  assert.ok(midline && path, 'the Y draws both a midline and a waisted body');
+  const waistY = path[1].match(/L31 ([\d.]+) C/);
+  assert.ok(waistY, 'the right edge steps in at the waist');
+  assert.ok(Math.abs(+waistY[1] - (+midline[1] - 4.5)) < 4.5,
+    `the waist brackets the midline at ${midline[1]}, starting at ${waistY[1]}`);
 });
 
 // The karyogram hover pipeline keys on `.band` rects and their data attributes

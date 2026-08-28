@@ -258,26 +258,61 @@
     return (wide * 0.55 + narrow * 0.32) * (size || 9);
   }
 
-  // The body capsule with an inward constriction at each fragile site: a rounded
-  // rect whose vertical edges pinch symmetrically to a waist at each pinch y.
+  // The body capsule with an inward constriction at each pinch: a rounded rect
+  // whose vertical edges pinch symmetrically to a waist at each pinch y.
   // Used for BOTH the clip and the outline, which must be the same shape or the
   // band paint and the border disagree about where the body is.
-  function waistPath(x, y, w, hh, r, pinches, halfH, depth) {
+  //
+  // Each pinch carries its OWN half-height and depth, because the two things that
+  // pinch a chromosome are not the same size: a centromere is a shallow waist the
+  // width of its hatched block, a fragile site a deeper one. They also have to
+  // coexist on one body (a fra on a chromosome still has a centromere), and one
+  // shared halfH/depth for the whole path could not draw both.
+  function waistPath(x, y, w, hh, r, pinches) {
     var xr = x + w, d = ["M" + (x + r) + " " + y, "H" + (xr - r), "A" + r + " " + r + " 0 0 1 " + xr + " " + (y + r)];
-    pinches.forEach(function (pc) {
-      d.push("L" + xr + " " + (pc - halfH).toFixed(2));
-      d.push("C" + (xr - depth).toFixed(2) + " " + (pc - halfH * 0.25).toFixed(2) + " " +
-        (xr - depth).toFixed(2) + " " + (pc + halfH * 0.25).toFixed(2) + " " + xr + " " + (pc + halfH).toFixed(2));
+    pinches.forEach(function (p) {
+      d.push("L" + xr + " " + (p.y - p.half).toFixed(2));
+      d.push("C" + (xr - p.depth).toFixed(2) + " " + (p.y - p.half * 0.25).toFixed(2) + " " +
+        (xr - p.depth).toFixed(2) + " " + (p.y + p.half * 0.25).toFixed(2) + " " + xr + " " + (p.y + p.half).toFixed(2));
     });
     d.push("L" + xr + " " + (y + hh - r), "A" + r + " " + r + " 0 0 1 " + (xr - r) + " " + (y + hh),
       "H" + (x + r), "A" + r + " " + r + " 0 0 1 " + x + " " + (y + hh - r));
-    pinches.slice().reverse().forEach(function (pc) {
-      d.push("L" + x + " " + (pc + halfH).toFixed(2));
-      d.push("C" + (x + depth).toFixed(2) + " " + (pc + halfH * 0.25).toFixed(2) + " " +
-        (x + depth).toFixed(2) + " " + (pc - halfH * 0.25).toFixed(2) + " " + x + " " + (pc - halfH).toFixed(2));
+    pinches.slice().reverse().forEach(function (p) {
+      d.push("L" + x + " " + (p.y + p.half).toFixed(2));
+      d.push("C" + (x + p.depth).toFixed(2) + " " + (p.y + p.half * 0.25).toFixed(2) + " " +
+        (x + p.depth).toFixed(2) + " " + (p.y - p.half * 0.25).toFixed(2) + " " + x + " " + (p.y - p.half).toFixed(2));
     });
     d.push("L" + x + " " + (y + r), "A" + r + " " + r + " 0 0 1 " + (x + r) + " " + y, "Z");
     return d.join(" ");
+  }
+
+  // Fit every pinch onto a body running from `top` to `bottom` (the flat part,
+  // inside both end caps). Each keeps its TRUE y and gives up HEIGHT when it runs
+  // out of room, never position: the dashed midline marks the same y, so a waist
+  // moved off it would contradict the line drawn beside it.
+  //
+  // Two things squeeze a pinch. The end cap, when the centromere sits near the tip
+  // (an acrocentric, or a derivative left with almost no short arm) — pinch inside
+  // the cap and the path folds back through the arc that rounds it. And the
+  // NEIGHBOURING pinch: an idic(15)(q11.2) puts its two centromeres about nine
+  // units apart, so each takes half the gap and they meet, rather than the second
+  // being dropped for crowding — which would have drawn one waist on the very
+  // chromosome whose whole point is that it has two.
+  //
+  // Depth shrinks with height, so a squeezed waist stays a curve and does not
+  // spike into a notch. Below MIN_HALF there is no room to pinch at all, and the
+  // hatch and the midline mark the spot on their own.
+  var MIN_HALF = 2.2;
+  function layoutPinches(list, top, bottom) {
+    var sorted = list.slice().sort(function (a, b) { return a.y - b.y; });
+    return sorted.map(function (p, i) {
+      var prev = sorted[i - 1], next = sorted[i + 1];
+      var room = Math.min(p.y - top, bottom - p.y);
+      if (prev) room = Math.min(room, (p.y - prev.y) / 2);
+      if (next) room = Math.min(room, (next.y - p.y) / 2);
+      var half = Math.min(p.half, room);
+      return half < MIN_HALF ? null : { y: p.y, half: half, depth: p.depth * (half / p.half) };
+    }).filter(Boolean);
   }
 
   // ----- composite ideogram renderer ----------------------------------------
@@ -310,23 +345,33 @@
     // clamped clear of the end caps, and pinches too close together collapse into
     // one so the path cannot fold back on itself.
     var FRA_HALF = 5, FRA_DEPTH = 8;
-    var fraLo = pad + cap + FRA_HALF, fraHi = pad + H - cap - FRA_HALF, fraPinches = [];
-    if (fraHi > fraLo) {
-      overlays.filter(function (o) { return o.type === "fra"; })
-        .map(function (o) { return pointY(segments, o.chrom, o.at, pad); })
-        .filter(function (v) { return v != null; })
-        .map(function (v) { return Math.max(fraLo, Math.min(fraHi, v)); })
-        .sort(function (a, b) { return a - b; })
-        .forEach(function (v) {
-          if (!fraPinches.length || v - fraPinches[fraPinches.length - 1] > FRA_HALF * 2 + 2) fraPinches.push(v);
-        });
-    }
-    var bodyShape = fraPinches.length
-      ? '<path d="' + waistPath(pad, pad, W, H, cap, fraPinches, FRA_HALF, FRA_DEPTH) + '"'
-      : '<rect x="' + pad + '" y="' + pad + '" width="' + W + '" height="' + H + '" rx="' + cap + '" ry="' + cap + '"';
+    var pinchTop = pad + cap, pinchBot = pad + H - cap, rawPinches = [];
+    overlays.filter(function (o) { return o.type === "fra"; })
+      .map(function (o) { return pointY(segments, o.chrom, o.at, pad); })
+      .filter(function (v) { return v != null; })
+      .forEach(function (v) {
+        // A fragile site keeps the old clamp: its own gap rect is clamped the same
+        // way, so the two stay together, and there is no midline to contradict.
+        rawPinches.push({ y: Math.max(pinchTop + FRA_HALF, Math.min(pinchBot - FRA_HALF, v)), half: FRA_HALF, depth: FRA_DEPTH });
+      });
+    // The centromere pinches too, and for the same reason: a chromosome IS narrower
+    // there, and the app was saying so with paint alone (a hatched block and a dashed
+    // midline) on a body of constant width. That reads as one more band on a stack of
+    // bands. Two readers arrived at it from opposite ends on 2026-08-28 — one asking
+    // why idic(15) showed a single centromere, one asking for a thinner centromere
+    // region — and they are the same request: give the primary constriction a shape,
+    // and a chromosome carrying two of them is obvious at a glance instead of
+    // needing the hatch counted.
+    //
+    // Filled after the segment loop below, which is what settles cenList (and the
+    // seam centromere an isochromosome or a Robertsonian gets). Hence the clip path
+    // is pushed into defs down there rather than here; defs is emitted as one block
+    // at the end and its internal order does not matter.
+    var CEN_HALF = CEN_H / 2, CEN_DEPTH = 4.2;
+    var bodyShape = null;
 
     // dynamic diagonal-hatch patterns (heterochromatin texture), de-duped by color
-    var defs = ['<clipPath id="' + uid + '">' + bodyShape + '/></clipPath>'];
+    var defs = [];
     var patCache = {};
     function hatch(color, o) {
       o = o || {};
@@ -412,6 +457,14 @@
       cenIsSeam = true;
     }
 
+    // The body shape, now that every centromere is known.
+    cenList.forEach(function (c) { rawPinches.push({ y: c.y, half: CEN_HALF, depth: CEN_DEPTH }); });
+    var pinches = layoutPinches(rawPinches, pinchTop, pinchBot);
+    bodyShape = pinches.length
+      ? '<path d="' + waistPath(pad, pad, W, H, cap, pinches) + '"'
+      : '<rect x="' + pad + '" y="' + pad + '" width="' + W + '" height="' + H + '" rx="' + cap + '" ry="' + cap + '"';
+    defs.push('<clipPath id="' + uid + '">' + bodyShape + '/></clipPath>');
+
     // centromere: hatched constriction with a guaranteed-visible height + a thin
     // dashed line at the exact p/q boundary. A texture, so it never reads as a
     // breakpoint marker.
@@ -422,8 +475,12 @@
       var col = heteroColor(c.chrom, "acen");
       body.push('<rect x="' + pad + '" y="' + (c.y - CEN_H / 2).toFixed(2) + '" width="' + W + '" height="' + CEN_H +
         '" fill="url(#' + hatch(col, c.reversed ? mirrorHatch(CEN_HATCH) : CEN_HATCH) + ')" clip-path="url(#' + uid + ')" pointer-events="none"/>');
+      // Clipped to the body, like the fra hairlines and for the same reason: the
+      // midline used to end exactly at the body edge because the body was a rect,
+      // and on a waisted body an unclipped line overhangs the constriction it is
+      // supposed to sit inside.
       body.push('<line x1="' + pad + '" y1="' + c.y.toFixed(2) + '" x2="' + (pad + W) + '" y2="' + c.y.toFixed(2) +
-        '" stroke="' + col + '" stroke-width="1" stroke-dasharray="2.5 2" pointer-events="none"/>');
+        '" stroke="' + col + '" stroke-width="1" stroke-dasharray="2.5 2" clip-path="url(#' + uid + ')" pointer-events="none"/>');
     });
 
     // Overlays are of two kinds, and the Style toggle is the split. Marks that
@@ -1483,7 +1540,16 @@
     var scale = (opts.height || 460) / d.length;
     var pad = 8, w = 34, cap = w * CAP_RATIO, labelX = pad + w + 12, H = d.length * scale;
     var svgW = 128, svgH = H + pad * 2 + 4, uid = "detail" + chrom;
-    var defs = ['<clipPath id="' + uid + '"><rect x="' + pad + '" y="' + pad + '" width="' + w + '" height="' + H + '" rx="' + cap + '" ry="' + cap + '"/></clipPath>'];
+    // The band map is the same chromosome as the karyogram beside it, drawn larger,
+    // so it wears the same centromere constriction. Sizes scale with this figure's
+    // own width and its taller hatched block (CEN_DH below), not the karyogram's.
+    var CEN_DH = 13;
+    var cy = pad + d.centromere * scale;
+    var detailPinches = layoutPinches([{ y: cy, half: CEN_DH / 2, depth: 5.1 }], pad + cap, pad + H - cap);
+    var detailShape = detailPinches.length
+      ? '<path d="' + waistPath(pad, pad, w, H, cap, detailPinches) + '"'
+      : '<rect x="' + pad + '" y="' + pad + '" width="' + w + '" height="' + H + '" rx="' + cap + '" ry="' + cap + '"';
+    var defs = ['<clipPath id="' + uid + '">' + detailShape + '/></clipPath>'];
     var patCache = {};
     var CEN_HD = { angle: 45, gap: 4, w: 2 }, HET_HD = { angle: -45, gap: 9, w: 1.7 };
     function hatch(color, o) {
@@ -1520,10 +1586,10 @@
       body.push('<line x1="' + (pad + w) + '" y1="' + ymid.toFixed(2) + '" x2="' + (labelX - 3) + '" y2="' + ymid.toFixed(2) + '" stroke="#cbd5e1" stroke-width="0.6"/>');
       body.push('<text class="bandlabel" x="' + labelX + '" y="' + (ymid + 3).toFixed(2) + '" data-chrom="' + chrom + '" data-band="' + esc(b[0]) + '">' + esc(b[0]) + '</text>');
     });
-    var cy = pad + d.centromere * scale, CEN_DH = 13, ccol = heteroColor("acen");
+    var ccol = heteroColor("acen");
     body.push('<rect x="' + pad + '" y="' + (cy - CEN_DH / 2).toFixed(2) + '" width="' + w + '" height="' + CEN_DH + '" fill="url(#' + hatch(ccol, CEN_HD) + ')" clip-path="url(#' + uid + ')"/>');
-    body.push('<line x1="' + pad + '" y1="' + cy.toFixed(2) + '" x2="' + (pad + w) + '" y2="' + cy.toFixed(2) + '" stroke="' + ccol + '" stroke-width="1.2" stroke-dasharray="3 2"/>');
-    body.push('<rect x="' + pad + '" y="' + pad + '" width="' + w + '" height="' + H + '" rx="' + cap + '" ry="' + cap + '" fill="none" stroke="' + (simple && hue ? hexMix(hue, "#000", 0.12) : OUTLINE) + '" stroke-width="1.4"/>');
+    body.push('<line x1="' + pad + '" y1="' + cy.toFixed(2) + '" x2="' + (pad + w) + '" y2="' + cy.toFixed(2) + '" stroke="' + ccol + '" stroke-width="1.2" stroke-dasharray="3 2" clip-path="url(#' + uid + ')"/>');
+    body.push(detailShape + ' fill="none" stroke="' + (simple && hue ? hexMix(hue, "#000", 0.12) : OUTLINE) + '" stroke-width="1.4"/>');
     return '<svg class="ideo-detail" width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '"><defs>' + defs.join("") + '</defs>' + body.join("") + '</svg>';
   }
 

@@ -422,11 +422,26 @@ one.
 | `inv` | one group, two bands: the ends of the segment that turns over |
 | `t` | one breakpoint per chromosome named, so three for a three-way |
 | `ins` | three breakpoints however written: the site, and the two bounding the piece |
+| `dic` | one breakpoint per chromosome, ISCN 5.5.4 a: "two breakpoints are specified" |
+| `idic` | one band, ISCN 5.5.4 b: "a single breakpoint on sister chromatids" |
 
 What made this worth a rule rather than four checks is that the drawing was invented
 silently. The explanations are where it showed: `inv(9)(p11)` came out as "the segment
 between 9p11 is flipped end-for-end (paracentric)", which invents both a second endpoint
 and a classification, and `dup(1)` as "the segment  is present twice".
+
+`dic` and `idic` joined the table on 2026-08-28, from a live report. `46,XX,idic(15)` had
+been drawing a whole, untouched, single-centromere chromosome 15 under the caption
+`der(15)`, with nothing on the page to say the breakpoint was missing: a NORMAL chromosome
+standing in for a two-centromere one, which is the worst shape this gate exists to stop.
+`dic(9;20)` was worse again, because the second chromosome left the figure entirely.
+
+A `?` now suppresses the arity message, alongside a bad band. ISCN 4.2.1 k writes `?`
+exactly where a chromosome or a breakpoint was not determined, and 5.5.4 f v prints
+`47,XY,+dic(17;?)(q22;?)` verbatim, so the group the `?` stands in is empty on purpose.
+The `?` explains itself a line above; "so it needs two breakpoints" underneath asked the
+reader to supply what the laboratory could not. `t(9;?)(q34;?)` had been doing this since
+the rule shipped; adding `dic` is what surfaced it.
 
 `r(13)`, `i(X)`, `add(19)`, `der(X)` and `rob(13;14)` are deliberately NOT in the table.
 Each reads sensibly with the breakpoints left off, real reports write them that way, and

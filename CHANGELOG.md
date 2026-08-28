@@ -3,6 +3,40 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the centromere is a shape, and a dicentric says so)
+
+- **Every centromere now pinches the chromosome into a waist.** It was a hatched block
+  and a dashed line on a body of constant width, which reads as one more band on a stack
+  of bands, and counting them is the only way to tell a dicentric from a normal
+  chromosome. A real chromosome is narrower at its primary constriction, so the body is:
+  the clip and the outline both follow the pinched path, the bands end at the waist, and
+  a chromosome carrying two centromeres is obvious at a glance. Two readers arrived at
+  this from opposite ends on the same day, one asking why `idic(15)` showed a single
+  centromere and one asking for a thinner centromere region, and it is one request. The
+  waist keeps its TRUE position and gives up height when it runs out of room, so an
+  acrocentric's centromere near the tip and the two centromeres of an `idic(15)(q11.2)`
+  about nine units apart each still get their own; the dashed midline marks the same y
+  and would contradict a waist moved off it. The band map beside the figure pinches to
+  match. `inv(9)(p11q13)` gains something it could not show before: the inverted
+  chromosome's constriction sits lower than its normal homolog's, which is what a
+  pericentric inversion does to the centromere.
+
+- **`idic(15)` with no breakpoint is refused instead of drawn as a normal 15.** ISCN
+  5.5.4 b: an isodicentric "involve[s] a single breakpoint on sister chromatids"; 5.5.4 a
+  for `dic`: "two breakpoints are specified", one per chromosome. Without them the
+  renderer had no break to mirror or fuse about and fell back to the whole untouched
+  chromosome, so `46,XX,idic(15)` drew a full, single-centromere chromosome 15 under the
+  caption `der(15)` and said nothing about it: a normal chromosome standing in for a
+  two-centromere one. `dic(9;20)` was worse, dropping chromosome 20 from the figure
+  altogether. Both now say which breakpoint the notation takes and name the ISCN form.
+
+- **A `?` breakpoint is no longer also told it is missing.** ISCN 4.2.1 k writes `?`
+  exactly where something was not determined, and 5.5.4 f v prints
+  `47,XY,+dic(17;?)(q22;?)` verbatim. The app explained the `?` and then, underneath,
+  demanded the breakpoint the `?` stands in for. `t(9;?)(q34;?)` had done this since the
+  arity rule shipped; adding `dic` to the table is what surfaced it. The same message
+  also said "involves one chromosomes, so it needs one breakpoints".
+
 ## 2026-08-27 (the legend labels stop describing themselves)
 
 - **No legend row spells out its own shape any more.** The rows read "duplicated
