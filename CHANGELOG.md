@@ -3,6 +3,33 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the decode catches up with the chain, and stops claiming a dosage it cannot see)
+
+- **The prose described the first join and stopped, while the figure drew them all.**
+  #223 taught the renderer to keep every join in a `der()` chain; the decode did not
+  follow, so `der(1)t(1;3)(p32;q21)t(1;11)(q25;q13)` read as "chromosome 1 out to 1p32
+  with the end of chromosome 3's long arm attached" and never mentioned chromosome 11,
+  which was right there in the picture in its own colour. A decode that omits a whole
+  chromosome the figure shows is the two contradicting each other. A chain is now
+  described as its joins, band to band, and names every chromosome it carries: "built
+  from two joins, 1p32 to 3q21 and 1q25 to 11q13, so it carries material from
+  chromosomes 1, 3, and 11". Band to band rather than by segment extent because that is
+  what the notation states and it stays true when the second join lands on the GRAFT
+  (`t(1;3)` then `t(3;7)`), where naming "the end of chromosome 3's long arm" would be
+  wrong: that piece is bounded at both ends.
+
+- **The lone-derivative note was stating a dosage it had not accounted for.** It names
+  one gain and one loss and reads as the whole imbalance, so it is only sayable when
+  that is true. On a chain it was flatly wrong, announcing partial trisomy for
+  3q21→3qter and partial monosomy for 1p32→1pter while ignoring both the 1q25→1qter
+  also missing and the chromosome 11 also present. One level down, the same held for a
+  `der()` carrying its own deletion: `der(9)del(9)(p12)t(9;22)(q34;q11.2)` counted the
+  translocation's gain and loss and said nothing about the 9pter→9p12 its own deletion
+  removed. The note now withholds the arithmetic whenever anything else on the
+  derivative changes dosage, and still gives it where it is true, including alongside an
+  inversion, which is balanced and leaves the count intact. The deletion is still
+  described; only the claim to have summed the imbalance is dropped.
+
 ## 2026-08-28 (a derivative built from a chain keeps every join)
 
 - **A `der()` chain dropped every join after the first, so the chromosome was drawn
