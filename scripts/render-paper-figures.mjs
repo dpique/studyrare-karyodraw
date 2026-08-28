@@ -27,18 +27,12 @@ import http from 'node:http';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { renderKaryogram, ROOT } from './lib/render.mjs';
+import { appCss, fontLinks, settleFonts } from './lib/page-assets.mjs';
 
 const CHROME = process.env.CHROME_PATH
   || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const OUT = path.join(ROOT, 'paper');
 const SCALE = 2;
-
-const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-const appCss = indexHtml.match(/<style>([\s\S]*?)<\/style>/)[1];
-const fontLinks = [
-  ...(indexHtml.match(/<link rel="preconnect"[^>]*>/g) || []),
-  ...(indexHtml.match(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis[^>]*>/g) || []),
-].join('\n');
 
 // The gallery. One entry per rearrangement CLASS rather than per condition, because
 // the point being evidenced is the breadth of the notation the parser accepts. Each
@@ -138,7 +132,7 @@ async function draw(page, base, k) {
     document.getElementById('kinput').value = val;
     document.getElementById('draw').click();
   }, k);
-  await page.evaluate(() => (document.fonts ? document.fonts.ready : null));
+  await settleFonts(page);
   await new Promise((r) => setTimeout(r, 500));
   const warn = await page.evaluate(() => (document.getElementById('warnings') || {}).innerText || '');
   if (warn.trim()) throw new Error(`"${k}" warned, so it must not go in the paper:\n${warn.trim()}`);
@@ -202,7 +196,7 @@ async function main() {
     // fig2: the gallery, composed offline from the shared renderer.
     await page.setViewport({ width: 1120, height: 1200, deviceScaleFactor: SCALE });
     await page.setContent(galleryDoc(), { waitUntil: 'load' });
-    await page.evaluate(() => (document.fonts ? document.fonts.ready : null));
+    await settleFonts(page);
     await fitGallery(page);
     await new Promise((r) => setTimeout(r, 200));
     await (await page.$('#sheet')).screenshot({ path: path.join(OUT, 'fig2-gallery.png') });

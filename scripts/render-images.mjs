@@ -16,18 +16,14 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import puppeteer from 'puppeteer-core';
 import { renderKaryogram, ROOT } from './lib/render.mjs';
+import { appCss, fontLinks, settleFonts } from './lib/page-assets.mjs';
 
 const require = createRequire(import.meta.url);
 const { CONTENT } = require(path.join(ROOT, 'content/karyotypes.js'));
 
 // Reuse the homepage stylesheet + font links so the karyogram looks identical to
-// what ships on the page (same band colors, label fonts, spacing).
-const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-const appCss = indexHtml.match(/<style>([\s\S]*?)<\/style>/)[1];
-const fontLinks = [
-  ...(indexHtml.match(/<link rel="preconnect"[^>]*>/g) || []),
-  ...(indexHtml.match(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis[^>]*>/g) || []),
-].join('\n');
+// what ships on the page (same band colors, label fonts, spacing), and refuse to
+// screenshot a figure whose webfonts never arrived (see lib/page-assets.mjs).
 
 const CHROME = process.env.CHROME_PATH
   || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
@@ -126,7 +122,6 @@ async function main() {
     // single-slug run does not drop the others' dimensions.
     const manifest = only && fs.existsSync(MANIFEST)
       ? JSON.parse(fs.readFileSync(MANIFEST, 'utf8')) : {};
-    const settleFonts = () => page.evaluate(() => (document.fonts ? document.fonts.ready : null));
     let n = 0;
     for (const e of items) {
       const dir = path.join(ROOT, 'karyotype', e.slug);
@@ -135,7 +130,7 @@ async function main() {
       // (1) natural-size karyogram figure -> karyogram.png (the in-body image)
       await page.setViewport({ width: 2200, height: 1600, deviceScaleFactor: SCALE });
       await page.setContent(docFor(e.k), { waitUntil: 'load' });
-      await settleFonts();
+      await settleFonts(page);
       const box = await (await page.$('#shot')).boundingBox();
       await (await page.$('#shot')).screenshot({ path: path.join(dir, 'karyogram.png') });
       const w = Math.round(box.width), h = Math.round(box.height);
@@ -149,7 +144,7 @@ async function main() {
       const f = Math.min(CARD_FIG_W / natW, CARD_FIG_H / natH, 3.2);
       await page.setViewport({ width: 1200, height: 630, deviceScaleFactor: CARD_SCALE });
       await page.setContent(cardFor(e), { waitUntil: 'load' });
-      await settleFonts();
+      await settleFonts(page);
       await applyScale(page, f);
       await (await page.$('#card')).screenshot({ path: path.join(dir, 'card.png') });
 
