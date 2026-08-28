@@ -410,3 +410,50 @@ test('the detailed form appears under the figure, per chromosome', async (t) => 
     server.close();
   }
 });
+
+// The last unconditional row. "(translocation pieces take the color of the chromosome
+// they came from)" explains why a der(9) is drawn part blue and part orange, which is
+// worth saying on a translocation and says nothing at all on a del(5) or an idic(15),
+// where every piece on screen came from the chromosome it is filed under. Dan asked for
+// it on 2026-08-28, and it is the same rule #213 set for the marks and #219 for the
+// stains: the legend describes THIS figure.
+//
+// Keyed on the band rects, not on the notation. "Carries foreign material" is exactly
+// what the reader is looking at, so a Robertsonian and an insertion qualify without any
+// list of operations having to be kept in step.
+test('the translocation colour note appears only when a piece came from elsewhere', async (t) => {
+  if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
+  const puppeteer = require('puppeteer-core');
+  const server = await serve();
+  const port = server.address().port;
+  const browser = await puppeteer.launch({
+    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
+  });
+  const shown = async (page, k) => {
+    await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent(k)}&style=highlight&bands=550&show=involved`,
+      { waitUntil: 'load' });
+    await page.waitForSelector('#karyo svg');
+    return page.evaluate(() =>
+      [...document.querySelectorAll('#legend .item')].some((el) => /translocation pieces/.test(el.textContent)));
+  };
+  try {
+    const page = await browser.newPage();
+    await page.setCacheEnabled(false);
+
+    await t.test('shown where a chromosome carries another chromosome', async () => {
+      assert.equal(await shown(page, '46,XY,t(9;22)(q34;q11.2)'), true, 'a reciprocal translocation');
+      assert.equal(await shown(page, '45,XX,rob(13;14)(q10;q10)'), true, 'a whole-arm fusion');
+      assert.equal(await shown(page, '46,XY,ins(5;2)(p14;q22q32)'), true, 'an insertion between chromosomes');
+    });
+
+    await t.test('hidden where every piece came from the chromosome it is filed under', async () => {
+      assert.equal(await shown(page, '46,XX,del(5)(p15.2)'), false, 'a deletion');
+      assert.equal(await shown(page, '46,XX,idic(15)(q11.2)'), false, 'an isodicentric of one chromosome');
+      assert.equal(await shown(page, '46,XY,inv(9)(p11q13)'), false, 'an inversion');
+      assert.equal(await shown(page, '46,XX,dup(1)(q22q25)'), false, 'a duplication');
+    });
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
