@@ -3,6 +3,44 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the app can state what it drew in ISCN's own notation)
+
+- **`Karyo.detailedForm` renders a built chromosome in ISCN's detailed system**
+  (5.4.2.2), from the same segment list the figure is drawn from. `46,XX,idic(15)(q11.2)`
+  serialises to `pter→q11.2::q11.2→pter`; the Philadelphia's derivatives to
+  `9pter→9q34::22q11.2→22qter` and `22pter→22q11.2::9q34→9qter`. Sharing the data with
+  the renderer is the whole point: the notation and the picture cannot drift apart,
+  because they are the same thing said twice.
+
+- **Which makes the standard a test oracle.** ISCN prints both forms for a hundred-odd
+  karyotypes, so `test/iscn-2024-detailed.js` holds 110 extracted pairs, each verified to
+  appear verbatim in the published text. 52 of them are fully generated today and
+  asserted to match exactly; the rest carry a stated reason, in the tradition of
+  `test/iscn-2024-examples.js`, and a second test asserts the gaps are still gaps so that
+  closing one has to be deliberate rather than silent. The largest clusters: `hsr`
+  modelled as an overlay rather than a segment (7), `der()` chains keeping only their
+  first `t` sub-op (5), and `der(A;B)` with sub-ops modelled under the wrong name (5).
+
+- **An isodicentric with a short-arm breakpoint was fused at the wrong end.** The two
+  copies meet at the breakpoint, which is the join an isodicentric is defined by, and for
+  a break on q the geometry produced that correctly. For a break on p the same code
+  joined the two long-arm telomeres instead and pushed the breakpoints out to the tips,
+  so `idic(17)(p11.2)` was a mirror image about the wrong point. ISCN prints it as
+  `(qter→p11.2::p11.2→qter)`, which is what caught it. No curated figure changes:
+  `idic(Y)(q11.2)`, the only isodicentric on a landing page, breaks on q.
+
+- **A triplication had no caption.** `derLabel` had no `trp` case, so it fell through to
+  the bare chromosome number and `trp(1)(q21q32)` drew a chromosome labelled `1` with
+  nothing to say it was abnormal. Same family as the `idic` caption fixed earlier today.
+
+- **Two formatting rules the detailed form needs, both from ISCN.** Contiguous
+  same-sense pieces of one chromosome are a single stretch, since the model splits at
+  every operation boundary for the drawing's sake while the notation breaks only where
+  the chromosome broke: `dup(1)(q22q25)` is `(pter→q25::q22→qter)`. And the chromosome
+  number is repeated on every band whenever the aberration names more than one
+  chromosome, not merely when more than one number appears among the segments, so
+  `dic(13;13)(q14;q32)` is `(13pter→13q14::13q32→13pter)` (5.5.4 f i).
+
 ## 2026-08-28 (a figure rendered in the wrong font now fails the build)
 
 - **Both render scripts pull webfonts from Google over the network, and a hiccup there

@@ -1017,9 +1017,21 @@
     var ab = inst.aberration, chrom = String(inst.chrom), br = (ab.breakpoints[0] || [])[0];
     if (!IDEO.data[chrom] || !br) return null;
     var s = splitAtBreak(chrom, br), p = s.centric;
+    // The two copies meet AT THE BREAKPOINT, which is the whole point of an
+    // isodicentric: that is where the sister chromatids fused. So the breakpoint end of
+    // each copy has to face the middle and the telomere ends have to be the outer tips.
+    //
+    // For a break on q the centric piece is [pter, bp] and its breakpoint end is its
+    // HIGH coordinate, so running it forward then reversed puts bp::bp in the middle.
+    // For a break on p the piece is [bp, qter] and its breakpoint end is its LOW
+    // coordinate, so the same order joins qter to qter instead: idic(17)(p11.2) was
+    // drawn fused at the long-arm telomeres, with the two 17p11.2 breakpoints out at
+    // the tips. ISCN prints it as (qter→p11.2::p11.2→qter), telomeres outside and the
+    // breakpoints meeting, which is what found this.
+    var flip = s.side === "p";
     return [
-      { chrom: chrom, from: p[0], to: p[1], hasCen: true, reversed: false },
-      { chrom: chrom, from: p[0], to: p[1], hasCen: true, reversed: true }
+      { chrom: chrom, from: p[0], to: p[1], hasCen: true, reversed: flip },
+      { chrom: chrom, from: p[0], to: p[1], hasCen: true, reversed: !flip }
     ];
   }
 
@@ -1613,10 +1625,111 @@
     return '<svg class="ideo-detail" width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '"><defs>' + defs.join("") + '</defs>' + body.join("") + '</svg>';
   }
 
+
+  // ----- the detailed system (ISCN 5.4.2.2) ---------------------------------
+  // The short system names the breakpoints; the detailed system names the band
+  // composition of the chromosome that came out. ":" is a break, "::" a break and
+  // reunion, and the arrow means "from - to" (5.4.2.2 c; both the arrow and the double
+  // colon are in ISCN's symbol list). 5.4.2.2 b fixes the order: the description "starts
+  // at the end of the short arm and proceeds to the end of the long arm (pter to qter),
+  // with the bands being identified in the order in which they occur in the rearranged
+  // chromosome", and the chromosome number is repeated on each band only when more than
+  // one chromosome is involved.
+  //
+  // Generated from the SAME segment list the figure is drawn from, deliberately. That is
+  // what makes it worth having twice over: it states in ISCN's own notation what the
+  // picture claims, and because ISCN prints both forms for a hundred-odd karyotypes, it
+  // can be checked against the standard (test/iscn-2024-detailed.js). It found a real
+  // bug the day it was written, a graft drawn end-for-end (#220).
+  //
+  // Endpoint names come from the breakpoints AS WRITTEN wherever one lines up, not from
+  // inverting the coordinate back into a band: resolveBand maps a band to its midpoint,
+  // so the written band is the honest name for that coordinate and re-deriving it would
+  // answer "8q24.12" where the karyotype said "8q24.1".
+  function writtenBands(ab) {
+    var out = {};
+    if (!ab) return out;
+    var add = function (chroms, groups) {
+      (groups || []).forEach(function (g, i) {
+        var c = String((chroms || [])[i] != null ? chroms[i] : (chroms || [])[0]);
+        (g || []).forEach(function (b) {
+          var r = IDEO.data[c] && resolveBand(c, b);
+          if (r) out[c + "@" + r.mid] = c + b;
+        });
+      });
+    };
+    add(ab.chroms, ab.breakpoints);
+    (ab.subOps || []).forEach(function (s) { add(s.chroms || ab.chroms, s.breakpoints); });
+    return out;
+  }
+
+  // One endpoint: a telomere, a written band, or (last resort) the nearest band name.
+  function endpointName(chrom, coord, names, prefix) {
+    var d = IDEO.data[chrom], tag = prefix ? String(chrom) : "";
+    if (!d) return tag;
+    if (coord <= 0) return tag + "pter";
+    if (coord >= d.length) return tag + "qter";
+    var written = names[chrom + "@" + coord];
+    if (written) return prefix ? written : written.slice(String(chrom).length);
+    var nb = nearestBand(chrom, coord);
+    return tag + (nb || "");
+  }
+
+  // The detailed form for one drawn instance, or "" when there is nothing to say.
+  function detailedForm(inst) {
+    var built = buildInstance(inst);
+    var segs = built && built.segments;
+    if (!segs || !segs.length || built.dmin || built.marker) return "";
+    var ab = inst.aberration;
+    var names = writtenBands(ab);
+    // 5.4.2.2 b: the chromosome number rides on every band only when the rearrangement
+    // involves more than one chromosome. An isodicentric from a single chromosome is
+    // explicitly exempt (5.5.4 d), and it falls out of the same test.
+    // Whether more than one CHROMOSOME is involved, not whether more than one distinct
+    // number appears in the segments. ISCN 5.5.4 f i spells the difference out on
+    // dic(13;13): "the chromosome number is given before pter and the breakpoint ... as
+    // different chromosome 15 homologues are involved". A dicentric of two homologues
+    // draws segments that all say 13 and still prefixes every band, because two
+    // chromosomes went into it.
+    var prefix = (ab && ab.chroms && ab.chroms.length > 1) ||
+      Object.keys(segs.reduce(function (m, g) { m[String(g.chrom)] = 1; return m; }, {})).length > 1;
+    // Adjacent pieces of the same chromosome that run on from one another are ONE
+    // stretch, and ISCN writes them as one: dup(1)(q22q25) is (pter->q25::q22->qter),
+    // not (pter->q25::q22->q25::q25->qter). The model splits at every operation
+    // boundary because the drawing needs the pieces separately (a duplicated span wears
+    // its own mark); the notation only breaks where the chromosome broke.
+    var merged = [];
+    segs.forEach(function (g) {
+      var prev = merged[merged.length - 1];
+      if (prev && String(prev.chrom) === String(g.chrom) && !prev.reversed && !g.reversed && prev.to === g.from) {
+        merged[merged.length - 1] = { chrom: g.chrom, from: prev.from, to: g.to, reversed: false };
+        return;
+      }
+      if (prev && String(prev.chrom) === String(g.chrom) && prev.reversed && g.reversed && prev.from === g.to) {
+        merged[merged.length - 1] = { chrom: g.chrom, from: g.from, to: prev.to, reversed: true };
+        return;
+      }
+      merged.push({ chrom: g.chrom, from: g.from, to: g.to, reversed: g.reversed });
+    });
+    var parts = merged.map(function (g) {
+      var top = g.reversed ? g.to : g.from, bot = g.reversed ? g.from : g.to;
+      return endpointName(g.chrom, top, names, prefix) + "\u2192" + endpointName(g.chrom, bot, names, prefix);
+    });
+    // A broken end that was never rejoined takes a single colon on that side: ISCN
+    // writes del(5)(q13) as (pter->q13:) and del(4)(p15.2) as (:p15.2->qter). Only the
+    // OUTER ends can be unjoined; every internal boundary is a reunion by construction.
+    var first = merged[0], last = merged[merged.length - 1];
+    var openTop = (first.reversed ? first.to : first.from) > 0 &&
+      (first.reversed ? first.to : first.from) < IDEO.data[first.chrom].length;
+    var openBot = (last.reversed ? last.from : last.to) < IDEO.data[last.chrom].length &&
+      (last.reversed ? last.from : last.to) > 0;
+    return (openTop ? ":" : "") + parts.join("::") + (openBot ? ":" : "");
+  }
+
   window.Karyo = {
     render: render, drawInstance: drawInstance, drawDetail: drawDetail, buildInstance: buildInstance,
     computeAffected: computeAffected, resolveBand: resolveBand, getBands: getBands, textWidth: textWidth,
-    armExtent: armExtent, nearestBand: nearestBand,
+    armExtent: armExtent, nearestBand: nearestBand, detailedForm: detailedForm,
     STAIN: STAIN, OP_COLORS: OP_COLORS, AFFECTED_PALETTE: AFFECTED_PALETTE, tintRamp: tintRamp, BASELINE: BASELINE
   };
 })();
