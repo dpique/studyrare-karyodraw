@@ -3,6 +3,33 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the same fusion is explained the same, whichever way it is spelled)
+
+- **`rob(13;14)(q10;q10)` was explained and `der(13;14)(q10;q10)` was not, though they
+  are the same event.** The Robertsonian sentence, which says the long arms fuse at the
+  centromere, the short arms are lost, the lowest-number-first order records nothing
+  about which centromere is kept, and the result is usually dicentric with one
+  centromere inactivated, was gated on the parser setting a note that only `rob()` sets.
+  Write the identical karyotype the other legal way and the decode collapsed to "an
+  abnormal (derivative) chromosome that has chromosome 13's centromere."
+
+  Backwards twice over. The same karyotype taught two different amounts depending on a
+  spelling choice, and it was the spelling ISCN PREFERS that got less: 5.5.18.3 b,
+  "Although either rob or der can adequately describe these whole-arm translocations,
+  der is the preferred designation." The note is keyed on the SHAPE now, two acrocentrics
+  with both breaks at a centromere, so both spellings get it. Written as `der`, the
+  reader is also told the two spellings are equivalent and which one ISCN prefers;
+  written as `rob`, they are not told to use what they already used.
+
+  Scoped to the acrocentrics on purpose. A whole-arm `der(1;3)(p10;q10)` is the 5.5.18.2
+  case, where real short-arm material is at stake, so it must not collect a sentence
+  saying the short arms are lost and nothing is missed.
+
+- **A correction to yesterday's entry, in place.** The #227 bullet claimed a whole-arm
+  `der(13;21)(q10;q10)` kept "the Robertsonian note's more careful" wording. It did not:
+  that was precisely the gap above, and the sentence overstated what shipped. Fixed both
+  the claim and the behaviour it described.
+
 ## 2026-08-28 (the decode agrees with the figure about how many centromeres there are)
 
 - **The prose said one centromere beside a picture of two.** #226 taught the renderer
@@ -19,8 +46,10 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
 
 - **A whole-arm `der(13;21)(q10;q10)` deliberately keeps the singular reading.** It also
   names two chromosomes, but its centromeres meet AT the fusion point, so the figure
-  draws one seam constriction rather than two waists, and the honest sentence is the
-  Robertsonian note's more careful "usually dicentric, with one centromere inactivated".
+  draws one seam constriction rather than two waists, and the join-built wording would
+  be wrong. (Corrected the next day: this bullet originally said such a karyotype gets
+  "the Robertsonian note's more careful 'usually dicentric, with one centromere
+  inactivated'". It did not, and that gap is fixed in the entry above.)
   The test is keyed on the shape of the notation and not on a centromere tally, because
   the model flags both whole arms `hasCen` (#207) while the drawing shows one: the two
   numbers legitimately differ there, and a rule reading the wrong one would be right by
