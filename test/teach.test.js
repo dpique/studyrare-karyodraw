@@ -601,3 +601,59 @@ test('a centromeric breakpoint gets no distal-segment claim', () => {
   assert.doesNotMatch(t, /→13qter|→14qter/, 'nothing is distal to a break at the centromere');
   assert.match(t, /two centromeres/, 'but it is still a dicentric');
 });
+
+// The convention has to be NAMED, not just applied. A single breakpoint describes a
+// whole isodicentric only because the piece that survives is the one carrying the
+// centromere, and a reader who does not already know that cannot get from
+// "idic(15)(q11.2)" to a segment at all. ISCN 5.5.3 a states the naming half ("the
+// abbreviation always refers to chromosome(s) with the intact centromere"); the reason
+// is cytogenetic rather than notational, and Gardner 5e gives it: "An acentric
+// chromosome is never viable, since it lacks a point of attachment to the spindle
+// fibers."
+test('the isodicentric decode states the rule it is applying, not only the result', () => {
+  const t = decodeText('46,XX,idic(15)(q11.2)');
+  assert.match(t, /piece carrying the centromere/, 'the rule is named');
+  assert.match(t, /spindle/, 'and the reason a fragment without one does not survive');
+});
+
+// The same rule governs a translocation, which is the half that reads as a paradox: a
+// t looks like it moves material away and an idic like it keeps material, so the two
+// invite being read as opposites. They are not. Each derivative of a t keeps its OWN
+// centric piece and receives the partner's acentric tip, which is exactly why ISCN
+// names it der(9) and der(22). Only the fate of the acentric tip differs between the
+// two: swapped in a translocation, dropped in an isodicentric.
+test('the translocation decode says the swapped pieces are the acentric tips', () => {
+  const t = decodeText('46,XY,t(9;22)(q34;q11.2)');
+  assert.match(t, /carry no centromere/, 'what moves is the centromere-free material');
+  assert.match(t, /keeps the centromere it started with/, 'what stays is the centric piece');
+  assert.match(t, /named for/, 'which is what the der() name records');
+});
+
+// Both decodes have to be making the SAME claim about which piece survives, because
+// the whole point of stating it twice is that a reader meeting one after the other
+// draws the right parallel. If a future edit rewords one of them into "the piece that
+// moves keeps the centromere", or drops the centromere from one side, this fails.
+test('the isodicentric and translocation decodes agree on which piece survives', () => {
+  const idic = decodeText('46,XX,idic(15)(q11.2)');
+  const t = decodeText('46,XY,t(9;22)(q34;q11.2)');
+  [idic, t].forEach((text, i) => {
+    assert.match(text, /centromere/, `decode ${i} mentions the centromere at all`);
+    assert.doesNotMatch(text, /without a centromere[^.]{0,40}survives|acentric piece is kept/i,
+      `decode ${i} never says an acentric piece is the one retained`);
+  });
+  // The idic keeps a piece running from a telomere to the breakpoint; the t keeps its
+  // own centromere and gains a tip. Neither may describe the centromere as moving.
+  assert.doesNotMatch(t, /swap.{0,30}centromere/i, 'centromeres are not what a translocation swaps');
+});
+
+// The standing explainer carries the rule once, in full, because it is cross-cutting:
+// it is why one breakpoint describes an isodicentric AND why a translocation swaps
+// tips. The per-aberration decodes state it compactly; this is where it is spelled out.
+test('the centromere anatomy copy explains what survives a rearrangement', () => {
+  const copy = Teach.ARM_INFO.centromere;
+  assert.match(copy, /spindle/);
+  assert.match(copy, /lost/, 'an acentric fragment is lost');
+  assert.match(copy, /named for it/, 'and the surviving piece is what the name records');
+  assert.match(copy, /isodicentric/, 'the rule is tied back to the two cases it explains');
+  assert.match(copy, /translocation/);
+});

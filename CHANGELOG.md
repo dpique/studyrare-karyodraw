@@ -3,6 +3,32 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the centromere rule is stated, not assumed)
+
+- **The decodes now name the convention they were quietly applying.** A single
+  breakpoint describes a whole isodicentric only because the piece that survives a break
+  is the one carrying the centromere, and a reader who does not already know that cannot
+  get from `idic(15)(q11.2)` to a segment. The idic decode says it outright, with the
+  reason: a fragment without a centromere cannot hold onto the spindle at cell division,
+  so it is lost. ISCN 5.5.3 a states the naming half ("the abbreviation always refers to
+  chromosome(s) with the intact centromere"); the reason is cytogenetic rather than
+  notational, and Gardner 5e puts it plainly ("An acentric chromosome is never viable,
+  since it lacks a point of attachment to the spindle fibers").
+
+- **The translocation decode states the same rule, because it is the same rule.** An
+  isodicentric and a translocation invite being read as opposites, one keeping material
+  and the other moving it away, and that reading is wrong: each derivative of a `t` keeps
+  its OWN centric piece and receives the partner's centromere-free tip, which is exactly
+  why ISCN names them `der(9)` and `der(22)`. What differs between the two is only the
+  fate of the acentric tip, swapped in a translocation and dropped in an isodicentric.
+  A test pins the two decodes to the same claim so a future edit cannot reword one into
+  contradicting the other.
+
+- **The centromere entry on the how-to-read card carries the rule in full**, since it is
+  cross-cutting: it is why one breakpoint is enough for an isodicentric and why the
+  pieces a translocation swaps are the tips. The per-aberration decodes state it
+  compactly; that card is where it is spelled out.
+
 ## 2026-08-28 (the isodicentric decode says which piece, and which way round)
 
 - **"15q11.2 to where?"** The isodicentric decode named the breakpoint and then said
