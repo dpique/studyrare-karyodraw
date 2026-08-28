@@ -254,9 +254,17 @@
       return head + "chromosome " + c + " is joined to a mirror image of itself, so one chromosome carries two centromeres";
     }
     var kept = centricSeg(c, band), lost = distalSeg(c, band);
-    var body = "chromosome " + c + " breaks at " + c + band + ", and the centromere side of that break, " +
-      kept + sizeParen(sizeCentric(c, band)) + ", is joined to a second copy of itself. The two copies meet at the " +
-      "breakpoint as mirror images rather than one behind the other, so each brings its own centromere. ";
+    // Name the convention, do not just apply it. One breakpoint describes a whole
+    // chromosome only because the piece that survives is always the one carrying the
+    // centromere, and a reader who does not know that cannot get from "idic(15)(q11.2)"
+    // to a segment. ISCN 5.5.3 a states the naming half of it ("the abbreviation always
+    // refers to chromosome(s) with the intact centromere"); the reason is cytogenetic
+    // rather than notational, and Gardner 5e puts it plainly: "An acentric chromosome is
+    // never viable, since it lacks a point of attachment to the spindle fibers."
+    var body = "chromosome " + c + " breaks at " + c + band + ". What survives a break is the piece carrying " +
+      "the centromere, since a fragment without one cannot hold onto the spindle at cell division, so the piece " +
+      "kept here is " + kept + sizeParen(sizeCentric(c, band)) + ", joined to a second copy of itself. The two " +
+      "copies meet at the breakpoint as mirror images rather than one behind the other, so each brings its own centromere. ";
     return head + body + (ab && ab.sign === "+"
       ? "It is supernumerary, sitting on top of an intact pair, so nothing is lost: " + kept +
         " simply arrives in two further copies, and " + lost + sizeParen(sizeDistal(c, band)) + " is not on it"
@@ -365,8 +373,17 @@
           "p10 and q10 are the two halves of a centromere, so they record which half each derivative ends up with rather than which arms join: " +
           "(p10;q10), (q10;q10) and (p10;p10) all describe the same two chromosomes and are drawn the same way", tag: "t" };
       }
+      // Each derivative keeps its OWN centric piece and takes on the partner's acentric
+      // tip. Saying so is what makes the der() names mean something: ISCN 5.5.3 a, "the
+      // abbreviation always refers to chromosome(s) with the intact centromere". It is
+      // also the same rule the isodicentric decode states, and naming it in both places
+      // is deliberate: the two are easy to read as opposites (a t looks like it moves
+      // material away, an idic like it keeps material), when in fact the piece with the
+      // centromere survives in both and only the fate of the acentric tip differs.
       return { text: "a reciprocal TRANSLOCATION: chromosomes " + listJoin(chroms) + " break (at " + listJoin(breaks) +
-        ") and swap the pieces beyond those breaks, giving two derivative chromosomes " + listJoin(ders), tag: "t" };
+        ") and swap the pieces beyond those breaks, giving two derivative chromosomes " + listJoin(ders) +
+        ". The pieces that move are the tips, which carry no centromere; each derivative keeps the centromere it " +
+        "started with, and that is the chromosome it is named for (ISCN 5.5.3 a)", tag: "t" };
     }
     if (k === "iso") {
       var arm = (bp[0] || [])[0] || "q10";
@@ -860,7 +877,7 @@
   var ARM_INFO = {
     p: "The SHORT arm. 'p' is for petit (French for small). Always drawn on TOP. Bands are numbered starting from the centromere (p1…) outward to the telomere.",
     q: "The LONG arm. 'q' simply follows 'p' in the alphabet. Always drawn on the BOTTOM. Bands numbered from the centromere (q1…) out to the telomere.",
-    centromere: "The primary constriction that joins the two arms. The kinetochore assembles here and spindle fibers attach during cell division. Its position (metacentric / submetacentric / acrocentric) helps identify a chromosome.",
+    centromere: "The primary constriction that joins the two arms. The kinetochore assembles here and spindle fibers attach during cell division. Its position (metacentric / submetacentric / acrocentric) helps identify a chromosome. It also decides what survives a rearrangement: a fragment with no centromere has nothing to hold onto the spindle and is lost, so a rearranged chromosome is built around the piece that carries one, and is named for it (ISCN 5.5.3). That is why a single breakpoint is enough to describe an isodicentric, and why the pieces a translocation swaps are the centromere-free tips.",
     telomere: "The very tip of each arm ('ter' = pter / qter). Repetitive TTAGGG caps that protect chromosome ends and shorten with each division.",
     band: "A stretch of chromosome that stains light or dark with Giemsa (G-banding). The reproducible pattern of bands is a chromosome's 'barcode', it is how each one is identified and how breakpoints are pinpointed.",
     sizes: "Segment sizes in the decode are estimates. A breakpoint written at a band can sit anywhere within that band, so sizes are measured from band midpoints on the GRCh38 assembly, the same coordinates every figure is drawn to."
