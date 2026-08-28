@@ -156,6 +156,27 @@
   function distalSeg(chrom, band) {
     return band ? chrom + band + "→" + chrom + (band.charAt(0) === "p" ? "pter" : "qter") : "";
   }
+  // The other side of the same break: the piece that runs from the FAR telomere,
+  // through the centromere, out to the breakpoint. It is the centric piece, which is
+  // what a dicentric keeps, and the direction matches the one ISCN writes in its
+  // detailed form: 46,X,idic(Y)(pter→q12::q12→pter) for a break on q, and
+  // 46,XX,idic(17)(qter→p11.2::p11.2→qter) for a break on p (5.5.4 f vi and 5.5.11 iv).
+  // So a break on the long arm keeps the short arm and starts at pter, and vice versa.
+  function centricSeg(chrom, band) {
+    if (!band) return "";
+    return chrom + (band.charAt(0) === "p" ? "qter" : "pter") + "→" + chrom + band;
+  }
+  // Size of that piece: the complement of sizeDistal over the whole chromosome.
+  function sizeCentric(c, b) {
+    var d = IDEO.data[c];
+    if (!d) return 0;
+    return d.length - sizeDistal(c, b);
+  }
+  // A breakpoint written AT the centromere (p10, q10, cen) does not divide the
+  // chromosome into a centric and an acentric piece (both halves are centric),
+  // so "the piece out to the breakpoint" and "everything past the break" have no
+  // meaning there. Those cases are whole-arm fusions and are described elsewhere.
+  function atCentromere(band) { return /^[pq]10$/.test(String(band || "")) || String(band) === "cen"; }
   function endShort(partner, band) {
     if (!band) return "part of chromosome " + partner;
     return band[0] === "q"
@@ -199,6 +220,80 @@
     // Appended once, here, rather than threaded through forty return statements.
     if (out && ab && ab.uncertain) out = { text: out.text + uncertainSuffix(ab), tag: out.tag };
     return out;
+  }
+
+  // An isodicentric, in full. The old sentence said the chromosome "breaks at 15q11.2
+  // and is duplicated as a mirror image", which leaves the reader's obvious question
+  // unanswered: 15q11.2 to WHERE? (Dan, 2026-08-28.) One breakpoint is genuinely the
+  // whole story, but only because a convention fills in the rest, and the decode has
+  // to say what that convention is:
+  //
+  //   - WHICH piece is kept. The centric one, always: ISCN's detailed form for
+  //     46,X,idic(Y)(q12) is (pter→q12::q12→pter) and for 46,XX,idic(17)(p11.2) it is
+  //     (qter→p11.2::p11.2→qter), in 5.5.4 f vi and 5.5.11 iv. A break on the long arm
+  //     therefore keeps the short arm, and a break on the short arm keeps the long one.
+  //   - IN WHAT ORIENTATION. Mirror images meeting at the breakpoint, not one behind
+  //     the other. That is the difference between an isodicentric and a tandem
+  //     duplication, and it is the reason there are two centromeres rather than one:
+  //     each copy brings its own.
+  //   - WHAT IT COSTS. ISCN states the imbalance itself for idic(Y) (5.5.4 f vi: "loss
+  //     of the segment Yq12 to Yqter and gain of Ypter to Yq12"), and the arithmetic
+  //     splits on the plus sign. Without one the idic REPLACES a homolog (5.5.4 b, "the
+  //     chromosome count is unchanged"), so that copy trades its distal material for a
+  //     second copy of the centric piece. With one it is supernumerary on top of an
+  //     intact pair (5.5.4 f viii, "two chromosomes 13 plus the idic(13)"), so nothing
+  //     is lost and the centric piece arrives twice over, the tetrasomy that makes
+  //     +idic(15)(q13) the chromosome it is.
+  //
+  // Copy TOTALS are deliberately not stated. They are right for an autosome and wrong
+  // for 46,X,idic(Y)(q12), where there is no second Y to count against, which is
+  // presumably why ISCN words its own general statement as gain and loss instead.
+  function idicText(c, band, ab) {
+    var head = "an ISODICENTRIC chromosome idic(" + c + "): ";
+    if (!band || atCentromere(band)) {
+      return head + "chromosome " + c + " is joined to a mirror image of itself, so one chromosome carries two centromeres";
+    }
+    var kept = centricSeg(c, band), lost = distalSeg(c, band);
+    var body = "chromosome " + c + " breaks at " + c + band + ", and the centromere side of that break, " +
+      kept + sizeParen(sizeCentric(c, band)) + ", is joined to a second copy of itself. The two copies meet at the " +
+      "breakpoint as mirror images rather than one behind the other, so each brings its own centromere. ";
+    return head + body + (ab && ab.sign === "+"
+      ? "It is supernumerary, sitting on top of an intact pair, so nothing is lost: " + kept +
+        " simply arrives in two further copies, and " + lost + sizeParen(sizeDistal(c, band)) + " is not on it"
+      : "It replaces one copy of chromosome " + c + ", trading everything past the break, " + lost +
+        sizeParen(sizeDistal(c, band)) + ", for a second copy of " + kept);
+  }
+
+  // A dicentric of two chromosomes. Same gap as the isodicentric above: naming the two
+  // breakpoints never said which side of each break survives. It is the centric side of
+  // both, joined at the broken ends, and ISCN states the consequence in its own prose
+  // for this very example (5.5.4 f ii, 45,XX,dic(13;15)(q22;q24): "The resulting net
+  // imbalance of this abnormality is loss of the segments distal to 13q22 and 15q24").
+  function dicText(chroms, bp, breaks) {
+    var bands = chroms.map(function (cc, i) { return (bp[i] || [])[0]; });
+    // dic(15;15) and dic(13;13) name ONE chromosome twice, because the two partners are
+    // the two homologues of a pair. ISCN says so where it prints them: 5.5.4 f i,
+    // "bands 13q14 and 13q32 on the two homologous chromosomes 13", and f ix, "the
+    // chromosome number is given before pter and the breakpoint ... as different
+    // chromosome 15 homologues are involved". Reading the list straight out gave
+    // "chromosomes 15 and 15 break (at 15q12 and 15q12)", which names a pair as though
+    // it were two different chromosomes and then says everything twice.
+    var homologs = chroms.length === 2 && String(chroms[0]) === String(chroms[1]);
+    var sameBand = homologs && String(bands[0]) === String(bands[1]);
+    var head = "a DICENTRIC chromosome: " + (homologs
+      ? (sameBand ? "both homologues of chromosome " + chroms[0] + " break at " + breaks[0]
+        : "the two homologues of chromosome " + chroms[0] + " break (at " + listJoin(breaks) + ")")
+      : "chromosomes " + listJoin(chroms) + " break (at " + listJoin(breaks) + ")") +
+      " and fuse into a single chromosome that carries two centromeres";
+    // Silent when either break sits at a centromere: both halves are centric there, so
+    // there is no distal piece to name. Those are whole-arm fusions, described as such.
+    if (bands.some(function (b) { return !b || atCentromere(b); })) return head;
+    var keep = function (i) { return centricSeg(chroms[i], bands[i]) + sizeParen(sizeCentric(chroms[i], bands[i])); };
+    var loss = function (i) { return distalSeg(chroms[i], bands[i]) + sizeParen(sizeDistal(chroms[i], bands[i])); };
+    var keeps = sameBand ? keep(0) : listJoin(chroms.map(function (cc, i) { return keep(i); }));
+    var losses = sameBand ? loss(0) : listJoin(chroms.map(function (cc, i) { return loss(i); }));
+    return head + ". Each keeps the centromere side of its break, " + keeps +
+      ", and the two broken ends are joined to each other. Everything past the breaks, " + losses + ", is lost";
   }
 
   function describeAberrationBase(ab) {
@@ -245,12 +340,8 @@
       var ders = chroms.map(function (cc) { return "der(" + cc + ")"; });
       var nWord = DIGIT_WORDS[n] || String(n);
       if (k === "dic") {
-        if (n < 2) {
-          return { text: "an ISODICENTRIC chromosome idic(" + chroms[0] + "): chromosome " + chroms[0] + " breaks at " +
-            (breaks[0] || chroms[0]) + " and is duplicated as a mirror image, giving one chromosome with two centromeres and two copies of the retained arm", tag: "t" };
-        }
-        return { text: "a DICENTRIC chromosome: chromosomes " + listJoin(chroms) + " break (at " + listJoin(breaks) +
-          ") and fuse into a single chromosome that carries two centromeres", tag: "t" };
+        if (n < 2) return { text: idicText(chroms[0], (bp[0] || [])[0], ab), tag: "t" };
+        return { text: dicText(chroms, bp, breaks), tag: "t" };
       }
       if (n >= 3) {
         var cycle = chroms.join("→") + "→" + chroms[0];   // e.g. 2→7→5→2
@@ -814,7 +905,7 @@
     if (clone.sex.tokens.length) parts.push(clone.sex.tokens.join(" "));
     clone.aberrations.forEach(function (ab) { parts.push(pronounceAb(ab)); });
     var out = parts.filter(Boolean).join(". ");
-    // Speak the cell count when present — the proportions are the point of a mosaic.
+    // Speak the cell count when present: the proportions are the point of a mosaic.
     if (clone.cellCount != null) {
       out += (out ? ", " : "") + (clone.composite ? "composite of " : "in ") +
         clone.cellCount + " cell" + (clone.cellCount === 1 ? "" : "s");
