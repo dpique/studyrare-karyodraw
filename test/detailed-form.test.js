@@ -113,3 +113,40 @@ test('a dicentric of two homologues repeats the chromosome number', () => {
   // distinct numbers appear in the segments.
   assert.equal(forms('45,XX,dic(13;13)(q14;q32)')[0].detail, '13pter→13q14::13q32→13pter');
 });
+
+// A der() built from a chain of joins. translocationSegments consumes one t and only
+// one, so every join past the first was dropped and the derivative was drawn missing
+// whole grafted pieces, with nothing said: der(1)t(1;3)(p32;q21)t(1;11)(q25;q13) came
+// out as 3qter->3q21::1p32->1qter, chromosome 11 nowhere on it.
+//
+// The two shapes a chain takes are both here, because they cut on different sides.
+// In the first, both joins name the derivative's OWN chromosome, so chromosome 1 is
+// trimmed to the stretch between its two breaks and a partner hangs off each end. In
+// the second, the later join names the GRAFT (t(3;7) after t(1;3)), so the chromosome 3
+// piece is itself cut and chromosome 7 hangs off that. Getting the second right needs
+// the surviving side read off the drawn orientation rather than the coordinate order:
+// a reversed graft has its low coordinate at the bottom, and reading the attachment off
+// the segment index alone kept the half that had been handed away.
+test('a der() chain keeps every join, not just the first', () => {
+  // ISCN 5.5.3 c: both joins on the derivative's own chromosome.
+  assert.equal(forms('46,XX,der(1)t(1;3)(p32;q21)t(1;11)(q25;q13)')[0].detail,
+    '3qter→3q21::1p32→1q25::11q13→11qter');
+  // The partners the other way round, so the fix cannot be an accident of ordering.
+  assert.equal(forms('46,XX,der(1)t(1;11)(p32;q13)t(1;3)(q25;q21)')[0].detail,
+    '11qter→11q13::1p32→1q25::3q21→3qter');
+  // ISCN 5.5.3 c: the second join names the graft, not the derivative.
+  assert.equal(forms('46,XY,der(1)t(1;3)(p32;q21)t(3;7)(q28;q11.2)')[0].detail,
+    '7qter→7q11.2::3q28→3q21::1p32→1qter');
+  // A chain with an inversion in the middle: three joins and a flip, and the whole
+  // sequence has to survive in order.
+  assert.equal(forms('46,XX,der(8)t(8;17)(p23;q21)inv(8)(p22q13)t(8;22)(q22;q12)')[0].detail,
+    '17qter→17q21::8p23→8p22::8q13→8p22::8q13→8q22::22q12→22qter');
+});
+
+test('a single join is untouched by the chain walk', () => {
+  // The regression guard: the overwhelmingly common case has exactly one t, and the
+  // walk must not reach it.
+  assert.equal(forms('46,XY,t(9;22)(q34;q11.2)').map((f) => f.detail).join(' '),
+    '9pter→9q34::22q11.2→22qter 22pter→22q11.2::9q34→9qter');
+  assert.equal(forms('46,XX,der(1)t(1;3)(p22;q13.1)')[0].detail, '3qter→3q13.1::1p22→1qter');
+});

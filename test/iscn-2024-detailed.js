@@ -93,14 +93,12 @@ module.exports = [
   {
     short: "46,XX,der(1)t(1;3)(p32;q21)t(1;11)(q25;q13)",
     detailed: "46,XX,der(1)(3qter→3q21::1p32→1q25::11q13→11qter)",
-    generated: false,
-    needs: "a der() chain with more than one t sub-op keeps only the first join, so the derivative is missing a grafted piece",
+    generated: true,
   },
   {
     short: "46,XY,der(1)t(1;3)(p32;q21)t(3;7)(q28;q11.2)",
     detailed: "46,XY,der(1)(7qter→7q11.2::3q28→3q21::1p32→1qter)",
-    generated: false,
-    needs: "a der() chain with more than one t sub-op keeps only the first join, so the derivative is missing a grafted piece",
+    generated: true,
   },
   {
     short: "46,XY,der(1)t(1;3)(p32;q21)dup(1)(q25q42)",
@@ -115,8 +113,7 @@ module.exports = [
   {
     short: "46,XX,der(1)t(1;11)(p32;q13)t(1;3)(q25;q21)",
     detailed: "46,XX,der(1)(11qter→11q13::1p32→1q25::3q21→3qter)",
-    generated: false,
-    needs: "a der() chain with more than one t sub-op keeps only the first join, so the derivative is missing a grafted piece",
+    generated: true,
   },
   {
     short: "47,XY,+der(8)r(8;17;1)(p23q13;q12q25;p36.3p32)",
@@ -138,8 +135,7 @@ module.exports = [
   {
     short: "46,XX,der(8)t(8;17)(p23;q21)inv(8)(p22q13)t(8;22)(q22;q12)",
     detailed: "46,XX,der(8)(17qter→17q21::8p23→8p22::8q13→8p22::8q13→8q22::22q12→22qter)",
-    generated: false,
-    needs: "a der() chain with more than one t sub-op keeps only the first join, so the derivative is missing a grafted piece",
+    generated: true,
   },
   {
     short: "46,XY,der(5)t(5;11)(p10;p10)t(5;8)(q31;q23),der(8)t(5;8),der(11)t(5;11)",
