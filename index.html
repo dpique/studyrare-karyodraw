@@ -426,6 +426,16 @@
   .detail-info { font-size: 13px; color: #334155; }
   .detail-info h3 { margin: 0 0 4px; font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--navy); }
   .detail-info .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin-top: 8px; }
+  /* The detailed form, under the figure it describes. Quiet by default: this is a
+     second reading of the same chromosome, not a second finding, so it must not
+     compete with the karyogram above it. */
+  #detailed:empty { display: none; }
+  #detailed { margin: 10px 2px 0; border-top: 1px solid var(--line); padding-top: 9px; }
+  .dtitle { font: 700 10.5px var(--font-sans); letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ink-2); margin-bottom: 5px; }
+  .dline { display: flex; gap: 10px; align-items: baseline; padding: 2px 0; flex-wrap: wrap; }
+  .dline .dlab { font: 600 11px var(--font-mono); color: #a2302c; min-width: 76px; }
+  .dline code { font: 12px var(--font-mono); color: var(--ink); word-break: break-word; }
   .bandlabel { font: 9px var(--font-mono); fill: var(--ink-2); cursor: pointer; }
   .bandlabel:hover, .bandlabel.hot { fill: var(--periwinkle); font-weight: 700; }
   .ideo-detail .band { cursor: crosshair; }
@@ -737,6 +747,9 @@
             <button class="pbtn flagbtn" id="flagbtn" type="button" title="Something in this karyogram or explanation looks wrong? One click flags it; then add detail if you like.">⚠ Not right?</button>
           </div>
           <div id="karyo" role="group" aria-label="Karyogram" aria-describedby="decode"></div>
+          <!-- ISCN's detailed system for the chromosomes drawn above. data-drawing so the
+               gate sweeps it with everything else that describes the current figure. -->
+          <div id="detailed" data-drawing></div>
         </div>
         <div class="card" id="legend-card" data-drawing>
           <h2>Band &amp; stain legend</h2>
@@ -1126,6 +1139,38 @@
     return '<span class="item"><svg class="sw-mk" viewBox="0 0 30 16" aria-hidden="true">' +
       MK_BODY + g + '</svg>' + label + '</span>';
   }
+  // ISCN's detailed system (5.4.2.2) for each abnormal chromosome drawn, under the
+  // figure. The short system names the breakpoints; this names the band composition of
+  // the chromosome that came out, so it is the unambiguous statement of what the picture
+  // above claims, in the standard's own notation. Karyo.detailedForm generates it from
+  // the very segment list the figure is drawn from, so the two cannot disagree.
+  //
+  // Per chromosome rather than as one karyotype-wide string, and silent for any
+  // chromosome it cannot serialise, because serialisability is per chromosome: an hsr is
+  // modelled as an overlay and has no band composition to state yet. A whole-karyotype
+  // line would have to either omit those silently or claim a completeness it does not
+  // have. The block hides itself when empty (#detailed:empty).
+  function renderDetailedForms(clones) {
+    var box = $("#detailed");
+    if (!box) return;
+    var lines = [];
+    (clones || []).forEach(function (clone) {
+      Object.keys(clone.slots || {}).forEach(function (ch) {
+        (clone.slots[ch] || []).forEach(function (inst) {
+          if (inst.kind === "normal") return;
+          var d = "";
+          try { d = window.Karyo.detailedForm(inst); } catch (e) { d = ""; }
+          if (!d) return;
+          lines.push('<div class="dline"><span class="dlab">' + escapeHtml(inst.label) +
+            '</span><code>' + escapeHtml(d) + '</code></div>');
+        });
+      });
+    });
+    box.innerHTML = lines.length
+      ? '<div class="dtitle">Detailed form (ISCN 5.4.2.2)</div>' + lines.join("")
+      : "";
+  }
+
   function buildLegend() {
     var box = $("#legend"), OP = window.Karyo.OP_COLORS;
     // A legend row appears exactly when its mark is in the drawn karyogram,
@@ -1605,6 +1650,7 @@
     renderSummary(model);
     renderKaryogram(model);
     $("#karyo").setAttribute("aria-label", "Karyogram of " + (model.normalized || model.raw || val));
+    renderDetailedForms(model.clones);
     renderDecode(model.clones);
     renderClinical(model.clones);
     renderSegregation(model.clones);
