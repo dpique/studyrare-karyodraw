@@ -252,7 +252,20 @@
     // events where each chromosome both donates and receives, written with four, e.g.
     // ins(5;6)(q13q23;q15q23). Requiring exactly three refused that verbatim example.
     ins: { perChrom: true, minTotal: 3, what: "An insertion", eg: "ins(5;2)(p14;q22q32)",
-      totalMsg: "An insertion moves a piece of chromosome, so it needs the two bands that bound the piece and the band it landed at. Between two chromosomes that is ins(5;2)(p14;q22q32); within one, ins(2)(q13p23p13)." }
+      totalMsg: "An insertion moves a piece of chromosome, so it needs the two bands that bound the piece and the band it landed at. Between two chromosomes that is ins(5;2)(p14;q22q32); within one, ins(2)(q13p23p13)." },
+    // ISCN 5.5.4 a: for a dicentric "two breakpoints are specified", one on each
+    // chromosome. 5.5.4 b: an isodicentric "involve[s] a single breakpoint on sister
+    // chromatids and a subsequent reunion". Every dic and idic printed in ISCN 2024
+    // carries them, and without them there is no break to fuse or mirror about.
+    //
+    // This one earns its place because the fallback was the worst kind of wrong.
+    // 46,XX,idic(15) drew an untouched chromosome 15 — one centromere, full length,
+    // captioned der(15) — so the figure asserted a normal chromosome for notation
+    // that names a two-centromere one, silently, with nothing on the page to say so
+    // (reported from the live site, 2026-08-28). dic(9;20) was worse again: the
+    // second chromosome vanished from the drawing entirely.
+    dic: { perChrom: true, what: "A dicentric chromosome", eg: "dic(13;15)(q22;q24)" },
+    idic: { bands: [1, 1], msg: "An isodicentric chromosome is broken at one point and rejoined to a mirror image of itself, so it needs the band where it broke: idic(15)(q11.2)." }
   };
 
   // Are these two breakpoints written in the wrong order along the chromosome?
@@ -308,9 +321,15 @@
       // completing t(2;7;5)(q21;p13) means choosing a band on chromosome 5, and an
       // invented band in a teaching message is the thing this whole check exists to
       // stop. State the rule with a real two-way, then apply the count to their input.
+      // Singular when the reader named one chromosome. dic(15) reaches this branch
+      // (a dicentric of one chromosome is written dic(15;15)(q12;q12) or idic(15)(q12),
+      // ISCN 5.5.4 f ix), and "involves one chromosomes, so it needs one breakpoints"
+      // is teaching copy that cannot be read as careful.
+      var word = NUM[n] || n;
       return rule.what + " names one breakpoint on each chromosome it involves, like " +
-        rule.eg + ". “" + op + "(" + ab.chroms.join(";") + ")” involves " + (NUM[n] || n) +
-        " chromosomes, so it needs " + (NUM[n] || n) + " breakpoints.";
+        rule.eg + ". “" + op + "(" + ab.chroms.join(";") + ")” involves " + word +
+        (n === 1 ? " chromosome, so it needs " : " chromosomes, so it needs ") + word +
+        (n === 1 ? " breakpoint." : " breakpoints.");
     }
     var bands = groups.length ? groups[0].length : 0;
     if (bands >= rule.bands[0] && bands <= rule.bands[1]) return "";
@@ -720,8 +739,16 @@
     // correct, and the bare t(9;22) in it is a back-reference, not a translocation
     // missing its breakpoints. Keyed on the operation and its chromosomes, which is
     // what the reader matches it up by.
+    //
+    // A "?" is the third way the arity message names a mistake nobody made. ISCN
+    // 4.2.1 k writes it exactly where a chromosome or a breakpoint was not
+    // determined, so t(9;?)(q34;?) and dic(17;?)(q22;?) are CORRECT as printed
+    // (the latter is ISCN 5.5.4 f v), and the group the "?" stands in is empty on
+    // purpose. Both already say so a line above; adding "so it needs two
+    // breakpoints" underneath told the reader to supply the one thing the
+    // laboratory could not determine. Same rule as badBands, one row down.
     var opKey = op + "(" + ab.chroms.join(";") + ")";
-    if (!ab.badBands.length) {
+    if (!ab.badBands.length && !(ab.uncertainChroms || []).length && !(ab.uncertainBands || []).length) {
       var stated = ab.breakpoints.some(function (g) { return g.length; });
       if (stated) statedFully[opKey] = true;
       if (!(!stated && statedFully[opKey])) {
