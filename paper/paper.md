@@ -200,7 +200,7 @@ interface tests. Conformance is checked against a corpus of 395 karyotype-format
 examples transcribed verbatim from ISCN 2024, of which 328 are currently drawn;
 the remainder are marked with the feature they need, so notation the tool does not
 model reads as a recorded coverage gap rather than as bad input. A separate stress
-corpus of 176 designations, built from what students actually type, is rendered
+corpus of 177 designations, built from what students actually type, is rendered
 through the real page and checked against the expected draw-or-refuse outcome.
 
 # References

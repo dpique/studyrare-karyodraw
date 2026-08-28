@@ -3,6 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (a headless chain is told what its head would be)
+
+- **A run-together t() chain with no der() in front now teaches the two readings.**
+  Typing the complex-karyotype chain without its `der(A;B)` head got the generic
+  leftover message, "Changes look like +21, del(5)(p15.2), or t(9;22)(q34;q11.2)",
+  which names neither of the things the reader plausibly meant. The shape is
+  diagnosable: operations run together with no commas are how ISCN 5.5.3 writes the
+  make-up of ONE derivative, so the message now says to put `der()` in front naming
+  the centromere carrier(s) for one derivative (a count of 45), or commas between the
+  groups for independent translocations (count 46), with the comma form printed
+  paste-ready. It still refuses to draw, since the two readings are different figures
+  and guessing is not teaching. Same two-readings pattern as the rob/t count message.
+
 ## 2026-08-28 (the chain is as long as the notation writes it)
 
 - **A der(A;B) built from translocations now draws at any chain length.** ISCN 5.5.3
