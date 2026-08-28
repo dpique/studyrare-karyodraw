@@ -3,6 +3,44 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (a derivative named across two chromosomes is the dicentric it says it is)
+
+- **`der(5;7)` was drawn as a monocentric `der(5)`.** ISCN 5.4.3.1 b: "der refers to the
+  chromosome(s) that has an intact centromere", so naming two means the derivative
+  carries two, and 5.5.3 c ii describes this very karyotype as "a dicentric derivative
+  chromosome with centromeres of chromosomes 5 and 7. An acentric chromosome 3 segment
+  (3q21→3q29) is inserted between the long arm of chromosome 5 and the short arm of
+  chromosome 7." It was reaching the single-join builder, which keeps one centromere and
+  grafts an acentric tip, so the figure had the wrong number of centromeres, the wrong
+  pieces, and a caption naming half of it.
+
+  The joins form a path, not a star: each `t` names two chromosomes and a band on each,
+  so the sub-ops chain the named chromosomes together and the derivative is that path
+  walked from the first named chromosome to the last. A chromosome in the MIDDLE is
+  bounded by both of its breaks; one at an END keeps its centric side when the der is
+  named for it, and its acentric side otherwise, which is how a trailing fragment like
+  3q21→3qter arrives. Both orderings ISCN prints come out right: 5 to 3 to 7 with the
+  chromosome 3 piece sandwiched, and 5 to 7 to 3 with it trailing.
+
+- **A sub-op on the derivative's SECOND named chromosome was dropped in silence.** Both
+  the segment it applied to and the coordinates it resolved against were hard-wired to
+  the primary, which is the same thing for a der naming one chromosome and wrong for a
+  `der(5;7)`. ISCN 5.5.3 c iii is that derivative plus `del(7)(q32)`, written with the
+  truncated end as an open break, `7p13→7q32:`; the deletion never reached the
+  chromosome 7 arm. Unchanged for a der naming one chromosome, where the two are the
+  same chromosome anyway.
+
+- **And the caption follows.** `der(5;7)` was captioned `der(5)`: the rule from earlier
+  today excluded a der carrying sub-ops, a guard aimed at `der(9)t(9;22)`, which names
+  ONE chromosome and was already excluded by the count. All the guard did was name half
+  of a dicentric derivative.
+
+- **The ledger moves to 59 of 110**, and it failed on cue again when the fix landed.
+  One structural hazard closed on the way: the new path already walks every join, so the
+  chain walk added earlier today must not run over it a second time. It had been
+  harmless only because a repeat application lands exactly on a segment boundary and is
+  refused, which is luck rather than a guarantee.
+
 ## 2026-08-28 (the detailed system is read, not called gibberish)
 
 - **Typing ISCN's detailed system got you told that ISCN's own notation is not ISCN.**

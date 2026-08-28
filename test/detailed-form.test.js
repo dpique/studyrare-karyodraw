@@ -165,3 +165,59 @@ test('what is typed in the detailed system comes back out of the renderer', () =
     assert.equal(built[0].detail, expected, typed);
   });
 });
+
+// der(A;B): a derivative NAMED across two chromosomes. ISCN 5.4.3.1 b, "der refers to
+// the chromosome(s) that has an intact centromere", so naming two means it carries two.
+// 5.5.3 c ii describes 45,XY,der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13) as "a dicentric
+// derivative chromosome with centromeres of chromosomes 5 and 7. An acentric chromosome
+// 3 segment (3q21→3q29) is inserted between the long arm of chromosome 5 and the short
+// arm of chromosome 7."
+//
+// It was reaching the single-join builder, which keeps ONE centromere and grafts an
+// acentric tip, so the figure was a monocentric der(5) with a piece of 7 hanging off it:
+// the wrong number of centromeres, the wrong pieces, and the wrong caption.
+test('a der() named across two chromosomes is built as the dicentric it is', () => {
+  const built = (k) => {
+    const clone = ISCN.parse(k).clones[0];
+    let inst = null;
+    Object.keys(clone.slots).forEach((ch) =>
+      (clone.slots[ch] || []).forEach((i) => { if (i.kind !== 'normal') inst = i; }));
+    return { label: inst.label, segs: Karyo.buildInstance(inst).segments, detail: Karyo.detailedForm(inst) };
+  };
+
+  // The joins chain 5 to 3 to 7, so the chromosome 3 piece sits between them.
+  const a = built('45,XY,der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13)');
+  assert.equal(a.detail, '5pter→5q22::3q21→3q29::7p13→7qter');
+  assert.equal(a.segs.filter((s) => s.hasCen).length, 2, 'two centromeres, as ISCN says');
+  assert.equal(a.label, 'der(5;7)', 'and named for both of them');
+
+  // The same name with the joins chained the other way, 5 to 7 to 3, which leaves the
+  // acentric chromosome 3 fragment trailing off the end instead of sandwiched.
+  const b = built('45,XX,der(5;7)t(5;7)(q22;p13)t(3;7)(q21;q21)');
+  assert.equal(b.detail, '5pter→5q22::7p13→7q21::3q21→3qter');
+  assert.equal(b.segs.filter((s) => s.hasCen).length, 2);
+});
+
+test('a sub-op on the second named chromosome is applied', () => {
+  // ISCN 5.5.3 c iii is the same derivative plus del(7)(q32), and writes the truncated
+  // end as an open break: "7p13→7q32:". Both the target segment and the coordinates
+  // were hard-wired to the der's primary chromosome, so a deletion on chromosome 7 was
+  // dropped in silence.
+  const clone = ISCN.parse('45,XY,der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13)del(7)(q32)').clones[0];
+  let inst = null;
+  Object.keys(clone.slots).forEach((ch) =>
+    (clone.slots[ch] || []).forEach((i) => { if (i.kind !== 'normal') inst = i; }));
+  assert.equal(Karyo.detailedForm(inst), '5pter→5q22::3q21→3q29::7p13→7q32:');
+});
+
+test('a der() naming one chromosome is untouched by any of it', () => {
+  // The regression guard. der(9)t(9;22) names ONE chromosome, so it keeps the
+  // single-join geometry, one centromere and its own caption.
+  const clone = ISCN.parse('46,XY,der(9)del(9)(p12)t(9;22)(q34;q11.2)').clones[0];
+  let inst = null;
+  Object.keys(clone.slots).forEach((ch) =>
+    (clone.slots[ch] || []).forEach((i) => { if (i.kind !== 'normal') inst = i; }));
+  assert.equal(inst.label, 'der(9)');
+  assert.equal(Karyo.detailedForm(inst), ':9p12→9q34::22q11.2→22qter');
+  assert.equal(Karyo.buildInstance(inst).segments.filter((s) => s.hasCen).length, 1);
+});
