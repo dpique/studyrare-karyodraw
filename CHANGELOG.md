@@ -3,6 +3,18 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (one junction per arm on the derivative's own chromosome)
+
+- **A der(N) whose own arm is cut twice is refused, with the der(A;B) form taught.**
+  `der(3)t(3;5)(q21;q22)t(3;11)(q29;q13)...` passed the chain-connectivity gate
+  (chromosome 3 is reachable) and then drew only the first join: after t(3;5) cuts
+  chromosome 3 at q21, the join at 3q29 names material this der(3) no longer
+  carries, so the renderer silently dropped it and the four joins after it, while
+  the decode beside the figure described all five. Each of the derivative's own
+  arms takes exactly one junction; a second join on the same arm now refuses with
+  that rule, naming both conflicting joins, and points at the der(A;B) naming the
+  run-on chain actually needs.
+
 ## 2026-08-28 (the whole-arm body carries its own grafts)
 
 - **A whole-arm der(A;B) with trailing sub-ops now draws its actual composition.**
