@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (a fused chromosome is captioned with what it is)
+
+- **`idic(15)` is captioned `idic(15)`, not `der(15)`.** The label under a drawn
+  abnormal chromosome came out as `der(<lowest chromosome number>)` for every
+  one-body derivative, which threw away both the symbol and the partner: an
+  isodicentric read `der(15)`, a `dic(13;15)` read `der(13)`, a `rob(13;14)` read
+  `der(13)`. ISCN's own prose is the model for how to name the object — "the karyotype
+  contains one normal chromosome 13, one normal chromosome 15, and the dic(13;15)"
+  (5.5.4 f ii), "two chromosomes 13 plus the idic(13)" (5.5.4 f viii), "one normal
+  chromosome 21, and the der(13;21)" (5.5.18.3 b i) — and two rules come out of those
+  sentences: the symbol is the one the writer used, and it names every chromosome the
+  symbol names. `idic` in particular may not be flattened to `dic` or `der`, because
+  ISCN 5.5.4 f ix keeps the two apart on mechanism: `dic(15;15)` for recombination
+  between homologues, `idic` only where fusion between sister chromatids is proven.
+
+  A translocation is the case that was already right and stays right. `t()` makes TWO
+  chromosomes, each derived from one, so they remain `der(9)` and `der(22)` (5.5.3,
+  "the der(9)t(9;22)"), as do the two products of an `ins()` and any `der()` whose join
+  lives in a sub-op. The multi-chromosome spelling is only for the symbols that fuse
+  into one body.
+
+  The caption had no test, so the whole family could be renamed with the suite green.
+  It has one now, across all four groups.
+
 ## 2026-08-28 (the centromere is a shape, and a dicentric says so)
 
 - **Every centromere now pinches the chromosome into a waist.** It was a hatched block

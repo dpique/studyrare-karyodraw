@@ -827,6 +827,65 @@ test('the count fix follows countWrong, like every other count claim', () => {
   assert.equal(ISCN.parse('47,XY,del(5)(zzqewdf2315.2)').countFix, null, 'not while a breakpoint is unreadable');
 });
 
+// ---- the caption under a drawn abnormal chromosome ---------------------------
+// The `.ksub` label, which had no test at all: the whole family could be renamed
+// and the suite stayed green. Dan noticed it on the figure, 2026-08-28 — an
+// idic(15)(q11.2) was captioned der(15), and it is not a der.
+//
+// Two rules, both read off ISCN's own prose rather than invented: the symbol is the
+// one the writer used, and it names every chromosome the symbol names. 5.5.4 f ii
+// "the karyotype contains one normal chromosome 13, one normal chromosome 15, and
+// the dic(13;15)"; 5.5.4 f viii "two chromosomes 13 plus the idic(13)"; 5.5.18.3 b i
+// "one normal chromosome 21, and the der(13;21)"; 5.5.3 "the der(9)t(9;22)".
+const labels = (k) => {
+  const clone = ISCN.parse(k).clones[0];
+  const out = [];
+  Object.keys(clone.slots).forEach((ch) =>
+    (clone.slots[ch] || []).forEach((i) => { if (i.kind !== 'normal') out.push(i.label); }));
+  return out.sort().join(' ');
+};
+
+test('a fused body is captioned with its symbol and every chromosome in it', () => {
+  // idic is not a der, and it is not a dic either: ISCN 5.5.4 f ix keeps the two
+  // apart on mechanism (dic(15;15) for recombination between homologues, idic only
+  // where sister-chromatid fusion is proven), so the caption may not flatten them.
+  assert.equal(labels('46,XX,idic(15)(q11.2)'), 'idic(15)');
+  assert.equal(labels('46,X,idic(Y)(q12)'), 'idic(Y)');
+  assert.equal(labels('47,XX,+idic(13)(q22)'), 'idic(13)');
+  // A dicentric of two chromosomes is ONE body, so naming one of them was naming
+  // half the object.
+  assert.equal(labels('45,XX,dic(13;15)(q22;q24)'), 'dic(13;15)');
+  assert.equal(labels('45,XY,dic(14;21)(p11.2;p11.2)'), 'dic(14;21)');
+  assert.equal(labels('47,XY,+dic(15;15)(q12;q12)'), 'dic(15;15)');
+  // Whole-arm fusions, the same shape. rob and der are both adequate per 5.5.18.3 b,
+  // so the caption echoes the one that was typed rather than rewriting it.
+  assert.equal(labels('45,XX,der(13;21)(q10;q10)'), 'der(13;21)');
+  assert.equal(labels('45,XX,rob(13;14)(q10;q10)'), 'rob(13;14)');
+});
+
+test('a translocation still makes two derivatives, each named for one chromosome', () => {
+  // The case that was already right and the reason the rule is scoped to fused
+  // bodies: t() makes TWO chromosomes, each derived from one of them.
+  assert.equal(labels('46,XY,t(9;22)(q34;q11.2)'), 'der(22) der(9)');
+  assert.equal(labels('46,XX,t(2;7;5)(q21;p13;q31)'), 'der(2) der(5) der(7)');
+  assert.equal(labels('46,XY,ins(5;2)(p14;q22q32)'), 'der(2) der(5)');
+  // A der() with sub-ops names the chromosome it is a derivative OF; the join is in
+  // the sub-op, and its chroms list has one entry, so the fused-body rule must not
+  // catch it.
+  assert.equal(labels('46,XY,der(9)t(9;22)(q34;q11.2)'), 'der(9)');
+  assert.equal(labels('46,XX,der(19)t(X;19)(q11.1;p13.3)'), 'der(19)');
+  assert.equal(labels('46,XY,der(5)ins(5;2)(p14;q22q32)'), 'der(5)');
+});
+
+test('every other symbol keeps the caption it already had', () => {
+  [['46,X,i(X)(q10)', 'i(X)'], ['46,XY,r(13)(p11q34)', 'r(13)'],
+    ['46,XY,del(5)(p15.2)', 'del(5)'], ['46,XY,dup(1)(q22q25)', 'dup(1)'],
+    ['46,XY,inv(9)(p12q13)', 'inv(9)'], ['46,XY,add(19)(p13)', 'add(19)'],
+    ['46,X,fra(X)(q27.3)', 'fra(X)'],
+    ['46,XX,rec(2)dup(2p)inv(2)(p21q31)dmat', 'rec(2)']]
+    .forEach(([k, want]) => assert.equal(labels(k), want, k));
+});
+
 // ---- whole-chromosome gains and losses are listed in chromosome order -------
 // 43,XY,rob(14;21)(q10;q10),-21,-20 lists 21 before 20 and drew silently.
 //
