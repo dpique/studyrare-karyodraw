@@ -407,7 +407,13 @@
      line when it does not, so the row is either tidy or full width, never a ribbon. */
   .decode-row { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); align-items: start; }
   .decode-row:last-child { border-bottom: none; }
-  .decode-code { flex: 0 0 auto; max-width: 100%; overflow-x: auto; font: 700 13px var(--font-mono); color: var(--ink); background: #f0f2f7; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+  /* A chip holding a long ISCN token scrolls sideways. The bottom padding gives the
+     scrollbar its own lane: without it the native bar rode ON the 13px text, which
+     read as a rendering glitch rather than as a control. Slim and quiet, but real. */
+  .decode-code { flex: 0 0 auto; max-width: 100%; overflow-x: auto; font: 700 13px var(--font-mono); color: var(--ink); background: #f0f2f7; padding: 2px 7px 4px; border-radius: 6px; white-space: nowrap; scrollbar-width: thin; scrollbar-color: #c3cae4 transparent; }
+  .decode-code::-webkit-scrollbar { height: 5px; }
+  .decode-code::-webkit-scrollbar-thumb { background: #c3cae4; border-radius: 3px; }
+  .decode-code::-webkit-scrollbar-track { background: transparent; }
   .decode-code.count { color: #3e4bb0; } .decode-code.sex { color: #37428a; }
   /* rec sits with the losses: it carries a duplication and a deletion, and the
      deletion is both the part driving the phenotype and the part ISCN never writes. */
@@ -436,6 +442,8 @@
   .dline { display: flex; gap: 10px; align-items: baseline; padding: 2px 0; flex-wrap: wrap; }
   .dline .dlab { font: 600 11px var(--font-mono); color: #a2302c; min-width: 76px; }
   .dline code { font: 12px var(--font-mono); color: var(--ink); word-break: break-word; }
+  /* The "::" junctions and unjoined ":" ends recede so the pieces read as pieces. */
+  .dline .dj { color: #9aa3bd; }
   .bandlabel { font: 9px var(--font-mono); fill: var(--ink-2); cursor: pointer; }
   .bandlabel:hover, .bandlabel.hot { fill: var(--periwinkle); font-weight: 700; }
   .ideo-detail .band { cursor: crosshair; }
@@ -1150,9 +1158,32 @@
   // modelled as an overlay and has no band composition to state yet. A whole-karyotype
   // line would have to either omit those silently or claim a completeness it does not
   // have. The block hides itself when empty (#detailed:empty).
+  // Each segment of the string takes the color its piece wears in the figure (the
+  // same computeAffected palette), junctions and unjoined ends in gray, so the
+  // notation points back at the picture it describes. Colored only in the Highlight
+  // style, because that is when the figure itself is colored; Realistic keeps plain
+  // ink, so the words never claim a color the picture does not show. Picked from a
+  // four-variant preview on 2026-08-28 (colored ink over chips and underlines).
+  function colorizeDetail(d, instChrom, colors) {
+    var openT = d.charAt(0) === ":" ? ":" : "";
+    var closeT = d.length > 1 && d.charAt(d.length - 1) === ":" ? ":" : "";
+    var core = d.slice(openT.length, d.length - closeT.length);
+    var J = '<span class="dj">::</span>';
+    var parts = core.split("::").map(function (t) {
+      // The leading chromosome of the piece; bare bands are the one-chromosome
+      // form (5.4.2.2 b), where the instance's own chromosome is the source.
+      var m = /^([0-9XY]+)[pq]/.exec(t);
+      var c = colors[m ? m[1] : String(instChrom)];
+      return c ? '<span style="color:' + c + '">' + escapeHtml(t) + "</span>" : escapeHtml(t);
+    });
+    return (openT ? '<span class="dj">:</span>' : "") + parts.join(J) +
+      (closeT ? '<span class="dj">:</span>' : "");
+  }
+
   function renderDetailedForms(clones) {
     var box = $("#detailed");
     if (!box) return;
+    var colors = MODE === "simple" ? window.Karyo.computeAffected(clones) : {};
     var lines = [];
     (clones || []).forEach(function (clone) {
       Object.keys(clone.slots || {}).forEach(function (ch) {
@@ -1162,7 +1193,7 @@
           try { d = window.Karyo.detailedForm(inst); } catch (e) { d = ""; }
           if (!d) return;
           lines.push('<div class="dline"><span class="dlab">' + escapeHtml(inst.label) +
-            '</span><code>' + escapeHtml(d) + '</code></div>');
+            '</span><code>' + colorizeDetail(d, inst.chrom, colors) + '</code></div>');
         });
       });
     });

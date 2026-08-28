@@ -3,6 +3,22 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the notation wears the figure's colors)
+
+- **Each piece of the detailed form takes the color its piece wears in the figure.**
+  The block under the karyogram states the band composition (ISCN 5.4.2.2); its
+  segments are now inked with the same per-chromosome palette the figure and legend
+  use, with the "::" junctions and unjoined ":" ends receding to gray, so the
+  notation points back at the picture it describes. Highlight style only, because
+  that is when the figure itself is colored; Realistic keeps plain ink. Picked from
+  a four-variant preview (colored ink over tinted chips and colored underlines).
+
+- **A long ISCN token scrolls inside its decode chip, scrollbar in its own lane.**
+  The chip in the decoded panel already scrolled sideways for a token too long to
+  fit, but the native scrollbar rode ON the 13px text, which read as a rendering
+  glitch rather than a control. The bar is now slim and sits in its own lane below
+  the text.
+
 ## 2026-08-28 (one junction per arm on the derivative's own chromosome)
 
 - **A der(N) whose own arm is cut twice is refused, with the der(A;B) form taught.**
