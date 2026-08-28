@@ -657,3 +657,57 @@ test('the centromere anatomy copy explains what survives a rearrangement', () =>
   assert.match(copy, /isodicentric/, 'the rule is tied back to the two cases it explains');
   assert.match(copy, /translocation/);
 });
+
+// #223 taught the RENDERER to keep every join in a der() chain. The prose did not
+// follow: it described the first join and stopped, so the decode for
+// der(1)t(1;3)(p32;q21)t(1;11)(q25;q13) never mentioned chromosome 11 while the figure
+// beside it drew chromosome 11 in its own colour. A decode that omits a whole
+// chromosome the picture shows is the two contradicting each other, which is the one
+// thing this app cannot afford.
+//
+// A chain is described as its joins, band to band, because that is what the notation
+// states and it holds for both shapes: a second join on the derivative's own chromosome
+// and a second join on the graft. "The end of chromosome 3's long arm" would be wrong
+// in the second, where the chromosome 3 piece is bounded at both ends.
+test('a der() chain decode names every join and every chromosome on it', () => {
+  const both = decodeText('46,XX,der(1)t(1;3)(p32;q21)t(1;11)(q25;q13)');
+  assert.match(both, /built from two joins/);
+  assert.match(both, /1p32 to 3q21/);
+  assert.match(both, /1q25 to 11q13/, 'the join the prose used to drop');
+  assert.match(both, /chromosomes 1, 3, and 11/, 'and every chromosome it carries');
+
+  // The second join lands on the graft, not on chromosome 1.
+  const onGraft = decodeText('46,XY,der(1)t(1;3)(p32;q21)t(3;7)(q28;q11.2)');
+  assert.match(onGraft, /3q28 to 7q11\.2/);
+  assert.match(onGraft, /chromosomes 1, 3, and 7/);
+});
+
+test('a single-join derivative keeps the description it had', () => {
+  // The regression guard: one join is the overwhelmingly common case and its wording
+  // is unchanged.
+  const one = decodeText('46,XX,der(1)t(1;3)(p22;q13.1)');
+  assert.match(one, /This is chromosome 1 \(out to 1p22\)/);
+  assert.ok(!/built from/.test(one), 'no chain wording for a single join');
+});
+
+// The lone-derivative note states one gain and one loss and reads as the WHOLE
+// imbalance, so it may only be said when that is true. On a chain it was flatly wrong:
+// it announced partial trisomy for 3q21->3qter and partial monosomy for 1p32->1pter
+// while ignoring both the 1q25->1qter that is also missing and the chromosome 11 that
+// is also present. A confident dosage claim missing half the imbalance is worse than
+// saying nothing.
+test('the imbalance claim is withheld when it would be incomplete', () => {
+  const chain = decodeText('46,XX,der(1)t(1;3)(p32;q21)t(1;11)(q25;q13)');
+  assert.ok(!/partial trisomy|partial monosomy/.test(chain), 'a chain gets no dosage arithmetic');
+
+  // One level down, and live before this: a del sub-op removes material the sentence
+  // never counted.
+  const withDel = decodeText('46,XY,der(9)del(9)(p12)t(9;22)(q34;q11.2)');
+  assert.ok(!/partial trisomy/.test(withDel), 'its own deletion is part of the imbalance too');
+  assert.match(withDel, /terminal deletion at 9p12/, 'but the deletion is still described');
+
+  // It must still fire where it is true: one join, nothing else changing dosage.
+  assert.match(decodeText('46,XX,der(1)t(1;3)(p22;q13.1)'), /partial trisomy/);
+  // An inversion is balanced, so it leaves the arithmetic intact.
+  assert.match(decodeText('46,XX,der(9)inv(9)(p13p11)t(9;22)(q34;q11.2)'), /partial trisomy/);
+});

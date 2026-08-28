@@ -411,6 +411,36 @@
       // here too. "also" only when a join sentence precedes.
       var extras = subs.map(function (s) { return subOpPhrase(s, c); }).filter(Boolean);
       var extraText = extras.length ? " It " + (td ? "also " : "") + "carries " + listJoin(extras) + "." : "";
+      // A der() can be built from a CHAIN of joins, and the prose used to describe the
+      // first and stop. der(1)t(1;3)(p32;q21)t(1;11)(q25;q13) read as "chromosome 1 out
+      // to 1p32 with the end of chromosome 3's long arm attached", never mentioning
+      // chromosome 11 at all, while the figure drew it (#223). A decode that omits a
+      // whole chromosome the picture shows is the two contradicting each other.
+      //
+      // A chain is described as its joins, band to band, rather than as segment
+      // extents. That is exactly what the notation states and it stays true for both
+      // shapes a chain takes: a second join on the derivative's own chromosome
+      // (t(1;3) then t(1;11)) and a second join on the graft (t(1;3) then t(3;7)),
+      // where "the end of chromosome 3's long arm" would be wrong because the 3 piece
+      // is bounded at both ends.
+      var joins = subs.filter(function (s) { return s.op === "t" && (s.chroms || []).length >= 2; });
+      if (joins.length > 1) {
+        var pieces = {}, pairs = [];
+        joins.forEach(function (j) {
+          var a = String(j.chroms[0]), b = String(j.chroms[1]);
+          var ba = (j.breakpoints[0] || [])[0] || "?", bb = (j.breakpoints[1] || [])[0] || "?";
+          pieces[a] = 1; pieces[b] = 1;
+          pairs.push(a + ba + " to " + b + bb);
+        });
+        pieces[String(c)] = 1;
+        var from = Object.keys(pieces).sort(function (x, y) {
+          var nx = +x, ny = +y;
+          return (isNaN(nx) || isNaN(ny)) ? String(x).localeCompare(String(y)) : nx - ny;
+        });
+        return { text: base + ". It is built from " + (DIGIT_WORDS[joins.length] || joins.length) +
+          " joins, " + listJoin(pairs) + ", so it carries material from chromosomes " +
+          listJoin(from) + "." + extraText, tag: "der" };
+      }
       if (td && td.chroms.length >= 2) {
         var di = td.chroms.indexOf(c); if (di < 0) di = 0;
         var partner = td.chroms[1 - di];
@@ -541,7 +571,25 @@
   // would be worse than silence.
   function loneDerNote(ab, clone) {
     if (!ab || ab.kind !== "der" || ab.wholeArmAcro) return "";
-    var td = (ab.subOps || []).filter(function (s) { return s.op === "t"; })[0];
+    var tds = (ab.subOps || []).filter(function (s) { return s.op === "t"; });
+    // Only for a derivative with ONE join. The arithmetic below counts exactly one
+    // gained piece and one lost piece, which is right for a lone reciprocal product and
+    // false for a chain: on der(1)t(1;3)(p32;q21)t(1;11)(q25;q13) it announced partial
+    // trisomy for 3q21->3qter and partial monosomy for 1p32->1pter while saying nothing
+    // about the 1q25->1qter that is also missing or the chromosome 11 that is also
+    // there. A confident dosage claim that omits half the imbalance is worse than none.
+    if (tds.length !== 1) return "";
+    // Same reasoning one level down. The sentence names one gain and one loss and reads
+    // as the whole imbalance, so any OTHER sub-op that changes dosage makes it
+    // incomplete: der(9)del(9)(p12)t(9;22)(q34;q11.2) announced trisomy 22q11.2->qter
+    // and monosomy 9q34->qter while saying nothing about the 9pter->9p12 its own
+    // deletion removed. An inversion is balanced and does not disturb the count, so it
+    // is the one companion that leaves the arithmetic true.
+    var dosage = (ab.subOps || []).filter(function (s) {
+      return ["del", "dup", "trp", "add", "hsr", "ins", "dic"].indexOf(s.op) >= 0;
+    });
+    if (dosage.length) return "";
+    var td = tds[0];
     if (!td || !td.chroms || td.chroms.length !== 2) return "";
     var c = String(ab.chroms[0]);
     var di = td.chroms.map(String).indexOf(c); if (di < 0) return "";
