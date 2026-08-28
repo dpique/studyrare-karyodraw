@@ -3,6 +3,46 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the isodicentric decode says which piece, and which way round)
+
+- **"15q11.2 to where?"** The isodicentric decode named the breakpoint and then said
+  the chromosome "is duplicated as a mirror image", which never answered the reader's
+  next question: duplicated from where to where, in what orientation, and at what cost.
+  One breakpoint really is the whole story, but only because a convention fills in the
+  rest, so the decode now states the convention instead of assuming it. For
+  `46,XX,idic(15)(q11.2)`: chromosome 15 breaks at 15q11.2, and the centromere side of
+  that break, 15pter to 15q11.2 (about 23 Mb), is joined to a second copy of itself; the
+  two copies meet at the breakpoint as mirror images rather than one behind the other, so
+  each brings its own centromere; and it replaces one copy of chromosome 15, trading
+  15q11.2 to 15qter (about 79 Mb) for that second copy.
+
+  Which side is kept comes from ISCN's own detailed forms, and it is not always the short
+  arm: `46,X,idic(Y)(pter->q12::q12->pter)` for a break on the long arm, but
+  `46,XX,idic(17)(qter->p11.2::p11.2->qter)` for one on the short arm (5.5.4 f vi and
+  5.5.11 iv). A break on q keeps the p side and a break on p keeps the q side, because the
+  piece that survives is the one carrying the centromere.
+
+- **The plus sign decides whether an isodicentric costs anything.** Without it the idic
+  replaces a homologue and the count is unchanged (5.5.4 b). With it the idic is
+  supernumerary on top of an intact pair (5.5.4 f viii, "two chromosomes 13 plus the
+  idic(13)"), so nothing is lost and the retained piece simply arrives twice more. That
+  second case is the tetrasomy that makes `+idic(15)(q13)` the chromosome it is, and the
+  decode had been describing both the same way. Copy TOTALS are still not stated: "three
+  copies" is right for an autosome and wrong for `46,X,idic(Y)(q12)`, where there is no
+  second Y to count against, which is presumably why ISCN words its own statement for that
+  example as gain and loss.
+
+- **A dicentric of two chromosomes names what each keeps and what is lost**, the same gap
+  on the two-chromosome form. ISCN states the consequence for its own example (5.5.4 f ii,
+  `45,XX,dic(13;15)(q22;q24)`: "loss of the segments distal to 13q22 and 15q24"). A
+  breakpoint written at a centromere (`q10`, `p10`, `cen`) gets no such sentence, because
+  both halves are centric there and nothing is distal to the break.
+
+- **`dic(15;15)` is no longer described as "chromosomes 15 and 15".** The two partners are
+  the two homologues of one pair, which is what ISCN calls them (5.5.4 f i, "the two
+  homologous chromosomes 13"), and reading the list straight out also said the identical
+  segment twice.
+
 ## 2026-08-28 (a fused chromosome is captioned with what it is)
 
 - **`idic(15)` is captioned `idic(15)`, not `der(15)`.** The label under a drawn

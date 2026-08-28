@@ -499,3 +499,105 @@ test('the fra pseudo-stain names the fragile site and its unstained nature', () 
   assert.match(info.name + ' ' + info.bio, /unstained|achromatic/i, 'teaches why the gap is white');
   assert.match(info.bio, /attached/, 'and that the distal fragment is not lost');
 });
+
+// "15q11.2 to where?" (Dan, 2026-08-28). The isodicentric decode named the breakpoint
+// and then said the chromosome "is duplicated as a mirror image", which never said
+// which piece was duplicated, in what orientation, or what it cost. One breakpoint IS
+// the whole story, but only because a convention fills in the rest, and the decode has
+// to state that convention rather than assume it.
+//
+// The retained piece is the centric one, and ISCN's detailed forms are where that is
+// visible: 46,X,idic(Y)(pter→q12::q12→pter) for a break on the long arm and
+// 46,XX,idic(17)(qter→p11.2::p11.2→qter) for one on the short arm (5.5.4 f vi,
+// 5.5.11 iv). Asserted as segment endpoints rather than as the verbatim detailed
+// string, because the decode explains the notation instead of reprinting it.
+test('an isodicentric decode names the retained segment, from the right telomere', () => {
+  const q = decodeText('46,XX,idic(15)(q11.2)');
+  assert.match(q, /15pter→15q11\.2/, 'a break on q keeps the short arm side, so it starts at pter');
+  assert.match(q, /15q11\.2→15qter/, 'and names what is past the break');
+  // 5.5.11 iv is the case that catches a hard-coded "pter": the break is on p, so the
+  // retained piece runs from qter.
+  const p = decodeText('46,XX,idic(17)(p11.2)');
+  assert.match(p, /17qter→17p11\.2/, 'a break on p keeps the long arm side, so it starts at qter');
+  assert.match(p, /17p11\.2→17pter/);
+  assert.doesNotMatch(p, /17pter→17p11\.2/, 'and never runs pter to a p band');
+});
+
+test('an isodicentric decode says the copies are mirrored, not tandem', () => {
+  const t = decodeText('46,XX,idic(15)(q11.2)');
+  assert.match(t, /mirror images/, 'the orientation is stated');
+  assert.match(t, /rather than one behind the other/, 'and contrasted with a tandem duplication');
+  assert.match(t, /each brings its own centromere/, 'which is why there are two centromeres');
+});
+
+// The plus sign changes the arithmetic completely, and ISCN prints both cases: without
+// it the idic replaces a homologue and the count is unchanged (5.5.4 b), with it the
+// idic is supernumerary on top of an intact pair (5.5.4 f viii, "two chromosomes 13
+// plus the idic(13)"). That second case is the tetrasomy that makes +idic(15) the
+// chromosome it is, and saying "it replaces one copy" there would be flatly wrong.
+test('the plus sign decides whether an isodicentric costs anything', () => {
+  const replacing = decodeText('46,XX,idic(15)(q11.2)');
+  assert.match(replacing, /replaces one copy of chromosome 15/);
+  assert.match(replacing, /trading everything past the break/, 'so it is a swap, not a pure gain');
+
+  const extra = decodeText('47,XX,+idic(15)(q13)');
+  assert.match(extra, /supernumerary/);
+  assert.match(extra, /nothing is lost/, 'an extra chromosome takes nothing away');
+  assert.doesNotMatch(extra, /replaces one copy/, 'and does not replace a homologue');
+});
+
+// Copy TOTALS are deliberately absent. "Three copies" is right for an autosome and
+// wrong for 46,X,idic(Y)(q12), where there is no second Y to count against, which is
+// presumably why ISCN words its own statement for that example as gain and loss:
+// "loss of the segment Yq12 to Yqter and gain of Ypter to Yq12" (5.5.4 f vi).
+test('the isodicentric decode states gain and loss, never a copy total', () => {
+  const y = decodeText('46,X,idic(Y)(q12)');
+  assert.match(y, /Ypter→Yq12/);
+  assert.match(y, /Yq12→Yqter/);
+  assert.doesNotMatch(y, /three copies|trisomy|tetrasomy/i,
+    'there is no second Y to count against, so no total is claimed');
+});
+
+// The same gap on the two-chromosome form: naming both breakpoints never said which
+// side of each survives. ISCN states the consequence for this exact karyotype (5.5.4
+// f ii): "loss of the segments distal to 13q22 and 15q24".
+test('a dicentric of two chromosomes names what each keeps and what is lost', () => {
+  const t = decodeText('45,XX,dic(13;15)(q22;q24)');
+  assert.match(t, /13pter→13q22/);
+  assert.match(t, /15pter→15q24/);
+  assert.match(t, /13q22→13qter/);
+  assert.match(t, /15q24→15qter/);
+  assert.match(t, /is lost/);
+  // A break on a short arm keeps the long arm side here too (ISCN 5.5.4 f iv).
+  const acro = decodeText('45,XY,dic(14;21)(p11.2;p11.2)');
+  assert.match(acro, /14qter→14p11\.2/);
+  assert.match(acro, /21qter→21p11\.2/);
+});
+
+// dic(15;15) names ONE chromosome twice, because the partners are the two homologues
+// of a pair: ISCN 5.5.4 f i calls them "the two homologous chromosomes 13", and f ix
+// spells out why the number is repeated. Reading the list straight out produced
+// "chromosomes 15 and 15 break (at 15q12 and 15q12)" and then said everything twice.
+test('a dicentric of two homologues is not described as two chromosomes', () => {
+  const same = decodeText('47,XY,+dic(15;15)(q12;q12)');
+  assert.doesNotMatch(same, /chromosomes 15 and 15/, 'a pair is not two different chromosomes');
+  assert.match(same, /both homologues of chromosome 15 break at 15q12/);
+  assert.equal(same.match(/15pter→15q12/g).length, 1, 'and the identical segment is named once');
+
+  // Different breakpoints on the two homologues is ISCN 5.5.4 f i verbatim, and there
+  // the two retained pieces really are different, so both must be named.
+  const split = decodeText('45,XX,dic(13;13)(q14;q32)');
+  assert.match(split, /the two homologues of chromosome 13/);
+  assert.match(split, /13pter→13q14/);
+  assert.match(split, /13pter→13q32/);
+});
+
+// A breakpoint written at the centromere (p10, q10, cen) does not split the chromosome
+// into a centric and an acentric piece, so there is no "past the break" to name. Those
+// are whole-arm fusions and are described as such; the segment sentence must stay off
+// rather than invent an endpoint.
+test('a centromeric breakpoint gets no distal-segment claim', () => {
+  const t = decodeText('45,XY,dic(13;14)(q10;q10)');
+  assert.doesNotMatch(t, /→13qter|→14qter/, 'nothing is distal to a break at the centromere');
+  assert.match(t, /two centromeres/, 'but it is still a dicentric');
+});
