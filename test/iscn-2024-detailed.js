@@ -158,20 +158,17 @@ module.exports = [
   {
     short: "45,XX,der(5;7)t(5;7)(q22;p13)t(3;7)(q21;q21)",
     detailed: "45,XX,der(5;7)(5pter→5q22::7p13→7q21::3q21→3qter)",
-    generated: false,
-    needs: "a der() named across two chromosomes with t sub-ops is modelled as a der of the first one, so the fused body is described under the wrong name",
+    generated: true,
   },
   {
     short: "45,XY,der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13)",
     detailed: "45,XY,der(5;7)(5pter→5q22::3q21→3q29::7p13→7qter)",
-    generated: false,
-    needs: "a der() named across two chromosomes with t sub-ops is modelled as a der of the first one, so the fused body is described under the wrong name",
+    generated: true,
   },
   {
     short: "45,XY,der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13)del(7)(q32)",
     detailed: "45,XY,der(5;7)(5pter→5q22::3q21→3q29::7p13→7q32:)",
-    generated: false,
-    needs: "a der() named across two chromosomes with t sub-ops is modelled as a der of the first one, so the fused body is described under the wrong name",
+    generated: true,
   },
   {
     short: "45,XX,der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12)",

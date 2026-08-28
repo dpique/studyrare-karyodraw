@@ -1049,8 +1049,12 @@
       // in it. A der() carrying sub-ops (der(9)t(9;22), der(19)t(X;19)) is not this
       // case: its chroms list is the one chromosome it is a derivative OF, and the
       // join lives in the sub-op.
+      // A der() named across two chromosomes is one body whether or not it carries
+      // sub-ops. The !subOps guard was aimed at der(9)t(9;22), but that names ONE
+      // chromosome, so chroms.length already excluded it; all the guard did was send
+      // der(5;7)t(3;5)t(3;7) back to "der(5)", naming half of a dicentric derivative.
       var oneBody = ab.kind === "dic" ||
-        (ab.kind === "der" && (ab.chroms || []).length >= 2 && !(ab.subOps || []).length);
+        (ab.kind === "der" && (ab.chroms || []).length >= 2);
       if (oneBody) return (ab.op || (ab.kind === "dic" ? "dic" : "der")) + "(" + ab.chroms.join(";") + ")";
       if (ab.kind === "der" || ab.kind === "t" || ab.kind === "ins") return "der(" + c + ")";
       return c;

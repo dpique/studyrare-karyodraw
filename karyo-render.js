@@ -797,6 +797,14 @@
       if (dsegs) return { segments: dsegs, overlays: [], caption: inst.label, composite: true };
       return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label, note: "complex" };
     }
+    // der(A;B) built from joins, before the single-join path below can mis-handle it.
+    if (kind === "der" && twoChrom && (ab.subOps || []).some(function (x) { return x.op === "t"; })) {
+      var tcd = twoChromDerSegments(inst);
+      if (tcd) {
+        var tcdSegs = applyDerSubOps(inst, tcd, true);
+        return { segments: tcdSegs, overlays: [], caption: inst.label, composite: true };
+      }
+    }
     if (kind === "t" || kind === "der") {
       // A der can be built by an insertion instead of a translocation join:
       // der(15)ins(15)(p11q23q26) is the internal move, der(5)ins(5;2)(...) the
@@ -998,6 +1006,102 @@
     return [top, bottom];
   }
 
+
+  // der(A;B): a derivative named across TWO chromosomes and built from t sub-ops. ISCN
+  // 5.4.3.1 b, "der refers to the chromosome(s) that has an intact centromere", so
+  // naming two means the derivative carries two: 45,XY,der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13)
+  // is described by the standard as "a dicentric derivative chromosome with centromeres
+  // of chromosomes 5 and 7. An acentric chromosome 3 segment (3q21→3q29) is inserted
+  // between the long arm of chromosome 5 and the short arm of chromosome 7."
+  //
+  // It was reaching translocationSegments, which keeps ONE centromere and grafts an
+  // acentric tip, so the figure was a monocentric der(5) with a piece of 7 hanging off
+  // it: the wrong number of centromeres, the wrong pieces, and the wrong caption.
+  //
+  // The joins form a path rather than a star. Each t names two chromosomes and a band on
+  // each, so the sub-ops chain the named chromosomes together, and the derivative is that
+  // path walked from the first named chromosome to the last. A chromosome in the MIDDLE
+  // of the path is bounded by both of its breaks; one at an END keeps the centric side
+  // when it is one of the chromosomes the der is named for (its centromere is the reason
+  // the name includes it) and the acentric side otherwise, which is how a trailing
+  // fragment like 3q21→3qter arrives.
+  function twoChromDerSegments(inst) {
+    var ab = inst.aberration, named = (ab.chroms || []).map(String);
+    var joins = (ab.subOps || []).filter(function (s) {
+      return s.op === "t" && (s.chroms || []).length === 2 && (s.breakpoints || []).length === 2;
+    });
+    if (named.length !== 2 || !joins.length) return null;
+    // Breaks per chromosome, in the order the joins name them.
+    var breaks = {}, adj = {};
+    var ok = true;
+    joins.forEach(function (j) {
+      var a = String(j.chroms[0]), b = String(j.chroms[1]);
+      var ba = (j.breakpoints[0] || [])[0], bb = (j.breakpoints[1] || [])[0];
+      if (!ba || !bb || !IDEO.data[a] || !IDEO.data[b]) { ok = false; return; }
+      (breaks[a] = breaks[a] || []).push(ba);
+      (breaks[b] = breaks[b] || []).push(bb);
+      (adj[a] = adj[a] || []).push(b);
+      (adj[b] = adj[b] || []).push(a);
+    });
+    if (!ok) return null;
+    // Walk from the first named chromosome. Every step must be a fresh chromosome, so a
+    // cycle or a repeat stops the build rather than looping.
+    var path = [named[0]], seen = {};
+    seen[named[0]] = 1;
+    for (var guard = 0; guard < 8; guard++) {
+      var here = path[path.length - 1], next = (adj[here] || []).filter(function (x) { return !seen[x]; })[0];
+      if (!next) break;
+      seen[next] = 1;
+      path.push(next);
+    }
+    if (path.length < 2 || path.indexOf(named[1]) < 0) return null;
+    var segs = [];
+    for (var i = 0; i < path.length; i++) {
+      var c = path[i], bs = (breaks[c] || []), d = IDEO.data[c];
+      if (!d) return null;
+      if (i > 0 && i < path.length - 1) {
+        // Bounded by both of its breaks.
+        if (bs.length < 2) return null;
+        var m1 = resolveBand(c, bs[0]), m2 = resolveBand(c, bs[1]);
+        if (!m1 || !m2) return null;
+        var lo = Math.min(m1.mid, m2.mid), hi = Math.max(m1.mid, m2.mid);
+        segs.push({ chrom: c, from: lo, to: hi, hasCen: (d.centromere > lo && d.centromere < hi), reversed: false });
+      } else {
+        if (!bs.length) return null;
+        var sp = splitAtBreak(c, bs[0]);
+        var keep = named.indexOf(c) >= 0 ? sp.centric : sp.acentric;
+        segs.push({
+          chrom: c, from: keep[0], to: keep[1],
+          hasCen: (d.centromere > keep[0] && d.centromere < keep[1]), reversed: false
+        });
+      }
+    }
+    // Each junction has to meet broken end to broken end. Orient every piece after the
+    // first so its break with the PREVIOUS chromosome faces upward, which is the same
+    // rule the single join and the chain walk follow.
+    for (var k = 1; k < segs.length; k++) {
+      var cur = segs[k], prevChrom = path[k - 1];
+      var jb = null;
+      joins.forEach(function (j) {
+        var a = String(j.chroms[0]), b = String(j.chroms[1]);
+        if (a === cur.chrom && b === prevChrom) jb = (j.breakpoints[0] || [])[0];
+        else if (b === cur.chrom && a === prevChrom) jb = (j.breakpoints[1] || [])[0];
+      });
+      var r = jb && resolveBand(cur.chrom, jb);
+      if (r) cur.reversed = Math.abs(r.mid - cur.to) < Math.abs(r.mid - cur.from);
+    }
+    // And the first piece hands its own break DOWN to the second.
+    var f = segs[0], fb = null, second = path[1];
+    joins.forEach(function (j) {
+      var a = String(j.chroms[0]), b = String(j.chroms[1]);
+      if (a === f.chrom && b === second) fb = (j.breakpoints[0] || [])[0];
+      else if (b === f.chrom && a === second) fb = (j.breakpoints[1] || [])[0];
+    });
+    var fr = fb && resolveBand(f.chrom, fb);
+    if (fr) f.reversed = Math.abs(fr.mid - f.from) < Math.abs(fr.mid - f.to);
+    return segs;
+  }
+
   // A dicentric of two chromosomes: keep each one's centric piece and orient them
   // so the two broken ends meet in the middle, giving one body with two centromeres.
   function dicentricSegments(inst) {
@@ -1037,15 +1141,27 @@
 
   // Apply the trailing del/dup/inv sub-operations of a der() chain to the pieces
   // that belong to the der's own chromosome, leaving the joined-in material alone.
-  function applyDerSubOps(inst, segs) {
+  function applyDerSubOps(inst, segs, skipJoins) {
     var ab = inst.aberration, primary = String(inst.primary);
     (ab.subOps || []).forEach(function (s) {
       if (["del", "dup", "inv"].indexOf(s.op) < 0) return;   // t/dic joins are handled below
-      if (String((s.chroms || [])[0]) !== primary) return;   // only ops on this der's chromosome
+      // Ops on any chromosome the der is NAMED for, not only its primary. A der(5;7)
+      // carries two named chromosomes and ISCN puts a del on either: 5.5.3 c iii is
+      // der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13)del(7)(q32), where the deletion truncates
+      // the chromosome 7 arm and the standard writes the open end as "7p13→7q32:". The
+      // primary-only test dropped it silently. Unchanged for a der naming ONE
+      // chromosome, where ab.chroms is just the primary anyway.
+      var owned = [primary].concat((ab.chroms || []).map(String));
+      var sc = String((s.chroms || [])[0]);
+      if (owned.indexOf(sc) < 0) return;
+      // Applied to the piece the sub-op NAMES, and resolved against that chromosome's
+      // bands. Both were hard-wired to the primary, which is the same thing for a der
+      // naming one chromosome and wrong for a der(5;7): del(7)(q32) has to reach the
+      // chromosome 7 arm and be measured in chromosome 7 coordinates.
       var bands = (s.breakpoints || [])[0] || [], out = [];
       segs.forEach(function (seg) {
-        if (String(seg.chrom) !== primary) { out.push(seg); return; }
-        out = out.concat(applyOpToSeg(seg, primary, s.op, bands));
+        if (String(seg.chrom) !== sc) { out.push(seg); return; }
+        out = out.concat(applyOpToSeg(seg, sc, s.op, bands));
       });
       segs = out;
     });
@@ -1061,8 +1177,14 @@
     // geometry, not by arm letters: the piece that stays is the one still joined to the
     // rest of the body, so a graft keeps the side facing its existing junction and the
     // derivative's own arm keeps the side carrying the centromere.
-    var joins = (ab.subOps || []).filter(function (x) { return x.op === "t"; });
-    joins.slice(1).forEach(function (s) { segs = applyExtraJoin(segs, s); });
+    // twoChromDerSegments already walks every join for a der(A;B), so re-running the
+    // chain there would try to apply each one twice. It happened to be harmless only
+    // because a second application lands exactly on a segment boundary and is refused;
+    // that is luck, not a guarantee.
+    if (!skipJoins) {
+      var joins = (ab.subOps || []).filter(function (x) { return x.op === "t"; });
+      joins.slice(1).forEach(function (s) { segs = applyExtraJoin(segs, s); });
+    }
     return segs;
   }
 
