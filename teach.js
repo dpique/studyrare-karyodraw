@@ -403,8 +403,27 @@
           listJoin(ab.chroms) + " are fused at the centromere into one derivative chromosome, and the two short arms are lost. " +
           "They are written lowest-number-first by convention, not by which centromere is kept; whole-arm fusions like this are usually dicentric, with one centromere inactivated", tag: "der" };
       }
-      var base = "an abnormal (“derivative”) chromosome that has chromosome " + c + "’s centromere";
       var subs = ab.subOps || [];
+      // A der() NAMED across two chromosomes and built from joins carries both of their
+      // centromeres, which is what the name records (ISCN 5.4.3.1 b) and what the figure
+      // now draws since #226. Saying "has chromosome 5's centromere" beside a body with
+      // two hatched constrictions and a der(5;7) caption is the prose contradicting the
+      // picture, the same way it did for the chain in #224.
+      //
+      // Scoped to the join-built form on purpose. A whole-arm der(13;21)(q10;q10) also
+      // names two chromosomes, but its two centromeres meet AT the fusion point, so the
+      // figure draws a single seam constriction there rather than two waists (the
+      // renderer's cenIsSeam path) and the honest reading is the Robertsonian note's
+      // more careful "usually dicentric, with one centromere inactivated". Note the
+      // model flags both whole arms hasCen (#207), so the count in the segment list is
+      // not the number of constrictions on screen; that is exactly why this is keyed on
+      // the shape of the notation and not on a centromere tally.
+      var namedPair = (ab.chroms || []).length > 1 &&
+        subs.some(function (s) { return s.op === "t" && (s.chroms || []).length >= 2; });
+      var base = namedPair
+        ? "an abnormal (“derivative”) chromosome that carries the centromeres of BOTH chromosome " +
+          ab.chroms[0] + " and chromosome " + ab.chroms[1] + ", which makes it dicentric"
+        : "an abnormal (“derivative”) chromosome that has chromosome " + c + "’s centromere";
       var td = subs.filter(function (s) { return s.op === "t"; })[0];
       // The der can also carry del/dup/inv/ins on its own chromosome (a chain
       // like der(9)del(9)(p12)t(9;22)); the renderer draws them, so name them

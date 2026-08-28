@@ -3,6 +3,29 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the decode agrees with the figure about how many centromeres there are)
+
+- **The prose said one centromere beside a picture of two.** #226 taught the renderer
+  that a `der()` named across two chromosomes and built from joins is dicentric, and it
+  now draws two constrictions under a `der(5;7)` caption. The decode still opened "an
+  abnormal (derivative) chromosome that has chromosome 5's centromere", singular, which
+  is the words contradicting the picture beside them. Exactly the shape of #224: a
+  renderer fix leaving the decode behind, and worth noting that both were found by
+  looking at the change rather than by a test.
+
+  It now reads "carries the centromeres of BOTH chromosome 5 and chromosome 7, which
+  makes it dicentric", which is what the name records (ISCN 5.4.3.1 b: "der refers to
+  the chromosome(s) that has an intact centromere").
+
+- **A whole-arm `der(13;21)(q10;q10)` deliberately keeps the singular reading.** It also
+  names two chromosomes, but its centromeres meet AT the fusion point, so the figure
+  draws one seam constriction rather than two waists, and the honest sentence is the
+  Robertsonian note's more careful "usually dicentric, with one centromere inactivated".
+  The test is keyed on the shape of the notation and not on a centromere tally, because
+  the model flags both whole arms `hasCen` (#207) while the drawing shows one: the two
+  numbers legitimately differ there, and a rule reading the wrong one would be right by
+  accident.
+
 ## 2026-08-28 (a derivative named across two chromosomes is the dicentric it says it is)
 
 - **`der(5;7)` was drawn as a monocentric `der(5)`.** ISCN 5.4.3.1 b: "der refers to the
