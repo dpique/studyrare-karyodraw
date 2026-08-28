@@ -1137,8 +1137,32 @@
     var kar = $("#karyo");
     var has = function (sel) { return !!(kar && kar.querySelector(sel)); };
     if (MODE === "simple") {
-      var html = swatch("#ffffff", "gray = a chromosome not involved in the abnormality") +
-        hatchSwatch("centromere", CEN_SW) + hatchSwatch("variable region / stalk", HET_SW);
+      // The three rows below used to be unconditional while every mark row was gated,
+      // so #213's rule ("the legend lists exactly what the figure draws") held for the
+      // marks and leaked on the stains. In the Involved view of a plain t(9;22) the
+      // figure draws chromosome 9 and chromosome 22 and nothing else, both coloured,
+      // and the legend still explained gray (Dan, 2026-08-28). del(5)(p15.2) leaked the
+      // other way: chromosome 5 carries no gvar or stalk band, and the row appeared
+      // anyway. Same gate as the marks, read off the DOM after render.
+      //
+      // Gray means "drawn, and not one of the involved chromosomes". Checked against
+      // AFFECTED rather than by colour, which also gets the marker right: a mar is
+      // drawn gray and is never an AFFECTED key, so 46,XY,t(9;22)(q34;q11.2),+mar keeps
+      // the row that the plain t(9;22) loses. Ghosts carry no data-chrom, so an absent
+      // homolog's dashed outline does not count as a gray chromosome.
+      var stain = function (s) { return has('.band[data-stain="' + s + '"]'); };
+      var grayDrawn = !!kar && [].slice.call(kar.querySelectorAll(".kchrom[data-chrom]"))
+        .some(function (el) { return !AFFECTED[el.getAttribute("data-chrom")]; });
+      var html = "";
+      // BASELINE.gpos50, the mid tone of the ramp an uninvolved chromosome is drawn in.
+      // The swatch was #ffffff under the word "gray", which is the one thing a colour
+      // key must not do.
+      if (grayDrawn) html += swatch(window.Karyo.BASELINE.gpos50, "gray = a chromosome not involved in the abnormality");
+      if (stain("acen")) html += hatchSwatch("centromere", CEN_SW);
+      // acen_carried is pericentromeric material riding across a junction (#181). It is
+      // drawn with the variable-region texture, not the centromere one, so it belongs
+      // to this row and must not light up the row above.
+      if (stain("gvar") || stain("stalk") || stain("acen_carried")) html += hatchSwatch("variable region / stalk", HET_SW);
       if (has('rect[rx="2.5"][stroke="' + OP.dup + '"]')) html += markSwatch("box", OP.dup, "duplicated segment");
       if (has('rect[rx="2.5"][stroke="' + OP.mov + '"]')) html += markSwatch("box", OP.mov, "moved segment (nothing gained or lost)");
       if (has('path[stroke="' + OP.inv + '"]')) html += markSwatch("hooks", OP.inv, "inversion");
