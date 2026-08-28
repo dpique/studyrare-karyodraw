@@ -1040,7 +1040,7 @@
   function applyDerSubOps(inst, segs) {
     var ab = inst.aberration, primary = String(inst.primary);
     (ab.subOps || []).forEach(function (s) {
-      if (["del", "dup", "inv"].indexOf(s.op) < 0) return;   // t/dic joins are already in segs
+      if (["del", "dup", "inv"].indexOf(s.op) < 0) return;   // t/dic joins are handled below
       if (String((s.chroms || [])[0]) !== primary) return;   // only ops on this der's chromosome
       var bands = (s.breakpoints || [])[0] || [], out = [];
       segs.forEach(function (seg) {
@@ -1049,6 +1049,65 @@
       });
       segs = out;
     });
+    // Every t after the first. translocationSegments consumes one join and only one, so
+    // a der() built from a chain lost every join past it and drew a chromosome that was
+    // missing whole grafted pieces in silence: der(1)t(1;3)(p32;q21)t(1;11)(q25;q13)
+    // came out as 3qter->3q21::1p32->1qter, with chromosome 11 nowhere on it, against
+    // ISCN's 3qter->3q21::1p32->1q25::11q13->11qter (5.5.3 c).
+    //
+    // A chain is walked outward rather than reasoned about: each further join names a
+    // chromosome that is ALREADY on the derivative, cuts that piece at the named band,
+    // and hangs the partner off the cut. Which side of the cut survives is decided by
+    // geometry, not by arm letters: the piece that stays is the one still joined to the
+    // rest of the body, so a graft keeps the side facing its existing junction and the
+    // derivative's own arm keeps the side carrying the centromere.
+    var joins = (ab.subOps || []).filter(function (x) { return x.op === "t"; });
+    joins.slice(1).forEach(function (s) { segs = applyExtraJoin(segs, s); });
+    return segs;
+  }
+
+  // One further join, applied to the segment list built so far. Returns segs unchanged
+  // when the join names nothing already on the derivative, or when the breakpoint does
+  // not fall inside the piece it names: silently drawing a guess is what this whole
+  // family of fixes exists to stop.
+  function applyExtraJoin(segs, s) {
+    var chroms = (s.chroms || []).map(String), bps = s.breakpoints || [];
+    if (chroms.length < 2 || bps.length < 2) return segs;
+    for (var i = 0; i < segs.length; i++) {
+      for (var h = 0; h < 2; h++) {
+        var host = chroms[h], partner = chroms[1 - h];
+        if (String(segs[i].chrom) !== host) continue;
+        var hostBand = (bps[h] || [])[0], partnerBand = (bps[1 - h] || [])[0];
+        if (!hostBand || !partnerBand || !IDEO.data[host] || !IDEO.data[partner]) continue;
+        var r = resolveBand(host, hostBand);
+        var seg = segs[i];
+        if (!r || !(r.mid > seg.from && r.mid < seg.to)) continue;   // not this piece
+        // Which end of this piece is already attached to the rest of the derivative.
+        // A piece at the top of the body hangs by its bottom edge and vice versa; the
+        // one exception is the derivative's own centric arm, which is held by its
+        // centromere and keeps whichever side that sits on.
+        var d = IDEO.data[host];
+        var centric = seg.hasCen && d.centromere > seg.from && d.centromere < seg.to;
+        // "Attached at the bottom" is a fact about the DRAWN body, and which coordinate
+        // that is depends on the piece's orientation: a reversed segment has its low
+        // coordinate at the bottom. Reading the attachment straight off the index put
+        // the cut on the wrong side of a reversed graft, so der(1)t(1;3)t(3;7) kept
+        // 3q28->3qter (the part that had been handed away) instead of 3q21->3q28.
+        var keepLow = centric ? (d.centromere < r.mid)
+          : (i === 0 ? !!seg.reversed : !seg.reversed);
+        var kept = keepLow ? { from: seg.from, to: r.mid } : { from: r.mid, to: seg.to };
+        var below = keepLow !== !!seg.reversed;   // does the graft hang off the bottom?
+        var sd = splitAtBreak(partner, partnerBand);
+        var graft = {
+          chrom: partner, from: sd.acentric[0], to: sd.acentric[1], hasCen: false,
+          // Broken end faces the junction, the same rule the first join follows.
+          reversed: below ? (sd.side === "p") : (sd.side === "q")
+        };
+        var host2 = { chrom: host, from: kept.from, to: kept.to, hasCen: centric, reversed: seg.reversed };
+        var out = segs.slice(0, i).concat(below ? [host2, graft] : [graft, host2], segs.slice(i + 1));
+        return out;
+      }
+    }
     return segs;
   }
 

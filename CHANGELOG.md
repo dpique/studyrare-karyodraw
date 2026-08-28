@@ -3,6 +3,37 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (a derivative built from a chain keeps every join)
+
+- **A `der()` chain dropped every join after the first, so the chromosome was drawn
+  missing whole grafted pieces.** `translocationSegments` consumes one `t` sub-op and
+  only one, and nothing downstream applied the rest, so
+  `46,XX,der(1)t(1;3)(p32;q21)t(1;11)(q25;q13)` came out as `3qter→3q21::1p32→1qter`
+  with chromosome 11 nowhere on it, against ISCN 5.5.3 c's
+  `3qter→3q21::1p32→1q25::11q13→11qter`. Silent, like the rest of this family: the
+  figure looked finished. Five of the standard's own printed examples were affected.
+
+  A chain is now walked outward rather than reasoned about. Each further join names a
+  chromosome already on the derivative, cuts that piece at the named band, and hangs the
+  partner off the cut, with the partner's broken end facing the junction, which is the
+  same rule the first join follows. Which side of the cut survives is decided by
+  geometry rather than by arm letters: a graft keeps the side still facing its existing
+  junction, and the derivative's own arm keeps the side carrying the centromere. That
+  covers both shapes a chain takes, a second join on the derivative's own chromosome
+  (`t(1;3)` then `t(1;11)`) and a second join on the graft (`t(1;3)` then `t(3;7)`), and
+  it composes with an inversion sitting in the middle of the chain.
+
+  The surviving side has to be read off the DRAWN orientation, not the coordinate order.
+  A reversed graft has its low coordinate at the bottom, so taking the attachment from
+  the segment index alone kept the half that had been handed away and produced
+  `3qter→3q28::7q11.2→7qter::1p32→1qter`, a chromosome carrying the piece it gave up.
+
+- **The ISCN ledger moves from 52 to 56 of 110 karyotypes generated**, and it earned its
+  keep on the way: the test that asserts recorded gaps are still gaps failed the moment
+  the fix landed, which is exactly its job. Closing a gap has to be a deliberate edit to
+  the ledger, never a silent drift. No curated figure changes; the one chained
+  derivative on a landing page, Emanuel syndrome, has a single join.
+
 ## 2026-08-28 (the app can state what it drew in ISCN's own notation)
 
 - **`Karyo.detailedForm` renders a built chromosome in ISCN's detailed system**
