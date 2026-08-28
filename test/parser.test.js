@@ -1583,3 +1583,31 @@ test('a der(N) chain join connected to nothing is refused', () => {
     assert.equal(ok.warnings.length, 0, k);
   });
 });
+
+// der(N) keeps its own chromosome's centromere, so each of that chromosome's arms
+// can take ONE junction: a join replaces the arm beyond its breakpoint, and a
+// second join on the same arm names material the first already handed away.
+// 46,XY,der(3)t(3;5)(q21;q22)t(3;11)(q29;q13)... drew the first join, silently
+// dropped the other four, and the decode beside the figure still described all
+// five (the words-against-picture split again, found by Dan typing it). The
+// chain that runs on through the partners is the der(A;B) form, and the message
+// says so.
+test('a der(N) whose own arm is cut twice is refused', () => {
+  const m = ISCN.parse('46,XY,der(3)t(3;5)(q21;q22)t(3;11)(q29;q13)t(11;12)(q23;q13)'
+    + 't(12;17)(q24.1;q11.2)t(7;17)(p13;q21)');
+  assert.equal(m.clones[0].unreadable, true);
+  const w = m.warnings.join(' ');
+  assert.match(w, /long arm of chromosome 3/);
+  assert.match(w, /t\(3;5\)\(q21;q22\)/);
+  assert.match(w, /t\(3;11\)\(q29;q13\)/);
+  assert.match(w, /der\(5;7\)/, 'the der(A;B) alternative is taught');
+  // Order does not rescue it: the proximal cut second is the same conflict.
+  assert.equal(ISCN.parse('46,XY,der(3)t(3;5)(q29;q22)t(3;11)(q21;q13)').clones[0].unreadable, true);
+  // One junction per arm is the printed shape and keeps drawing (ISCN 5.5.3 c).
+  ['46,XY,der(1)t(1;3)(p32;q21)t(1;11)(q25;q13)',
+   '46,XY,der(1)t(1;3)(p32;q21)t(3;7)(q28;q11.2)'].forEach((k) => {
+    const ok = ISCN.parse(k);
+    assert.equal(ok.clones[0].unreadable, false, k);
+    assert.equal(ok.warnings.length, 0, k);
+  });
+});

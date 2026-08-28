@@ -558,6 +558,33 @@
         }
         creach[cca] = 1; creach[ccb] = 1;
       }
+      // Connectivity is necessary but not sufficient: der(N) keeps its own
+      // chromosome's centromere, so each of ITS arms takes ONE junction. A join
+      // replaces the arm beyond its breakpoint, and a second join on the same arm
+      // names material the first already handed away, whichever order they are
+      // written in. der(3)t(3;5)(q21;q22)t(3;11)(q29;q13)... passed the walk above
+      // (chromosome 3 is reachable), drew the first join, silently dropped the
+      // rest, and the decode beside the figure still described all five joins.
+      // The chain that runs on through the partners is the der(A;B) form, named
+      // for the chromosomes whose centromeres it carries (ISCN 5.4.3.1 b).
+      var rootArms = {};
+      for (var ra = 0; ra < tSubs.length; ra++) {
+        var rj = tSubs[ra], rIdx = (rj.chroms || []).map(String).indexOf(String(ab.chroms[0]));
+        if (rIdx < 0) continue;
+        var rArm = armLetter(((rj.breakpoints || [])[rIdx] || [])[0]);
+        if (rootArms[rArm]) {
+          var armName = rArm === "p" ? "short" : "long";
+          return undrawn("“der(" + ab.chroms[0] + ")” keeps chromosome " + ab.chroms[0] + "’s centromere, " +
+            "and each of its own arms can take ONE junction: a join replaces the arm beyond its breakpoint, " +
+            "so a second join on the same arm names material that is already gone. Both “" + rootArms[rArm] +
+            "” and “" + joinText(rj) + "” cut the " + armName + " arm of chromosome " + ab.chroms[0] + ". " +
+            "A chain that runs on through the partner chromosomes is written as a derivative named for the " +
+            "chromosomes whose centromeres it carries (ISCN 5.5.3 c), like " +
+            "der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13), and one derivative replacing two chromosomes also " +
+            "changes the count. KaryoDraw draws nothing rather than a figure missing the joins it cannot place.");
+        }
+        rootArms[rArm] = joinText(rj);
+      }
     }
     // A der(A;B) built from t() joins is assembled by walking those joins as ONE
     // chain from A to B (ISCN 5.5.3 c; the renderer's twoChromDerSegments is that
