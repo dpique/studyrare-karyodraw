@@ -2,7 +2,11 @@
 _build_inputs/*.gz
 .wrangler/
 node_modules
+
+# Local preview pages, built on demand to decide a look before it is wired in
+# (see the viz-iterate-on-artifact-first habit). Regenerated, never reviewed as code.
 karyotype-stress-test.html
+detailed-form-preview.html
 
 # Session handoffs live in Claude memory, never in this public repo (see the
 # session-handoff skill). Ignored so one cannot be re-added by accident.

@@ -338,3 +338,75 @@ test('the gray swatch is actually gray', async (t) => {
     server.close();
   }
 });
+
+// The detailed form under the figure. Placement chosen by Dan from a three-option
+// preview on 2026-08-28: it sits with the picture it describes, which is what the
+// detailed form IS a statement about, and it can drop away without leaving a hole.
+//
+// Per chromosome rather than as one karyotype-wide string, and silent for any chromosome
+// the app cannot serialise, because serialisability is per chromosome. A whole-karyotype
+// line would have to either omit those silently or claim a completeness it does not have.
+test('the detailed form appears under the figure, per chromosome', async (t) => {
+  if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
+  const puppeteer = require('puppeteer-core');
+  const server = await serve();
+  const port = server.address().port;
+  const browser = await puppeteer.launch({
+    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
+  });
+  const block = async (page, k) => {
+    await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent(k)}&style=highlight&bands=550&show=involved`,
+      { waitUntil: 'load' });
+    await page.waitForSelector('#karyo svg');
+    return page.evaluate(() => {
+      const el = document.getElementById('detailed');
+      return {
+        visible: !!el && getComputedStyle(el).display !== 'none',
+        lines: [...(el ? el.querySelectorAll('.dline') : [])].map((x) => ({
+          label: x.querySelector('.dlab').textContent.trim(),
+          detail: x.querySelector('code').textContent.trim(),
+        })),
+      };
+    });
+  };
+  try {
+    const page = await browser.newPage();
+    await page.setCacheEnabled(false);
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+
+    await t.test('one line per abnormal chromosome, matching the notation', async () => {
+      const t9 = await block(page, '46,XY,t(9;22)(q34;q11.2)');
+      assert.equal(t9.visible, true);
+      assert.deepEqual(t9.lines, [
+        { label: 'der(9)', detail: '9pter→9q34::22q11.2→22qter' },
+        { label: 'der(22)', detail: '22pter→22q11.2::9q34→9qter' },
+      ]);
+      const idic = await block(page, '46,XX,idic(15)(q11.2)');
+      assert.deepEqual(idic.lines, [{ label: 'idic(15)', detail: 'pter→q11.2::q11.2→pter' }]);
+    });
+
+    await t.test('the block hides itself with nothing to say', async () => {
+      // A normal karyotype has no abnormal chromosome, and a marker has no band
+      // composition to state. Neither may leave an empty heading behind.
+      assert.equal((await block(page, '46,XX')).visible, false, 'a normal karyotype');
+      assert.equal((await block(page, '47,XY,+mar')).visible, false, 'a marker');
+    });
+
+    await t.test('it never contradicts the caption on the figure', async () => {
+      // The label on each line is the same caption the chromosome carries, since both
+      // come from inst.label; a der(5;7) must not be listed as der(5) here.
+      const der = await block(page, '45,XY,der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13)');
+      assert.deepEqual(der.lines.map((l) => l.label), ['der(5;7)']);
+      const captions = await page.evaluate(() =>
+        [...document.querySelectorAll('#karyo .ksub')].map((x) => x.textContent.trim()));
+      der.lines.forEach((l) => assert.ok(captions.includes(l.label),
+        `${l.label} is a caption on the figure too`));
+    });
+
+    assert.deepEqual(errors, [], 'no page errors');
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
