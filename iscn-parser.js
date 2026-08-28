@@ -1041,6 +1041,9 @@
       if (ab.kind === "hsr") return "hsr(" + c + ")";
       if (ab.kind === "rec") return "rec(" + c + ")";
       if (ab.kind === "fra") return "fra(" + c + ")";
+      // trp fell through to the bare chromosome number, so a triplication was captioned
+      // "1" with nothing to say it was abnormal at all. Same family as the idic caption.
+      if (ab.kind === "trp") return "trp(" + c + ")";
       // dic, idic, rob, and a der() written across two chromosomes: those fuse into
       // ONE body, so the caption carries the symbol as written and every chromosome
       // in it. A der() carrying sub-ops (der(9)t(9;22), der(19)t(X;19)) is not this
