@@ -449,6 +449,116 @@
           "drawing for a derivative carrying “" + subs[i].op + "”, so it draws nothing rather than a wrong figure.");
       }
     }
+    // A three-way translocation inside a der() is printed in the standard
+    // (der(22)t(6;9;22), ISCN 5.5.3) and drawn by an older path, so every gate
+    // below leaves a der carrying one entirely alone rather than judging a shape
+    // it does not model.
+    var tSubs = subs.filter(function (s) { return s.op === "t"; });
+    var exoticT = tSubs.some(function (s) { return (s.chroms || []).length !== 2; });
+    var joinText = function (s) {
+      return "t(" + (s.chroms || []).join(";") + ")(" +
+        (s.breakpoints || []).map(function (g) { return (g || []).join(""); }).join(";") + ")";
+    };
+    // The whole-arm der(A;B)(q10;q10) with trailing sub-ops (ISCN 5.5.3 c iv).
+    // The derivative keeps exactly the arms its centromere letters name, so a
+    // sub-op is checkable here by arm letter alone: a join has to touch the body
+    // (a named chromosome, or one an earlier join grafted on), a break on a NAMED
+    // chromosome has to fall on the kept arm, and a break on a grafted chromosome
+    // has to fall on the arm the graft came from. Each of these used to be dropped
+    // or mis-drawn in silence; the renderer (wholeArmDerSubOps) refuses them too,
+    // and this gate keeps that refusal in front of the page.
+    var isCenB = function (b) { return /^[pq]10$/.test(String(b || "")) || String(b) === "cen"; };
+    var armLetter = function (b) { return /^p/.test(String(b || "")) ? "p" : "q"; };
+    var ownBps = ab.breakpoints || [];
+    var wholeArm = ab.chroms.length === 2 && isCenB((ownBps[0] || [])[0]) && isCenB((ownBps[1] || [])[0]);
+    if (wholeArm && subs.length && !exoticT) {
+      var derName = "der(" + ab.chroms.join(";") + ")(" + ownBps.map(function (g) { return (g || []).join(""); }).join(";") + ")";
+      var kept = {};
+      [0, 1].forEach(function (ix) {
+        var c = String(ab.chroms[ix]);
+        (kept[c] = kept[c] || {})[armLetter((ownBps[ix] || [])[0])] = 1;
+      });
+      var keptNames = [String(ab.chroms[0]) + armLetter((ownBps[0] || [])[0]),
+        String(ab.chroms[1]) + armLetter((ownBps[1] || [])[0])];
+      var reach = {}, graftArm = {};
+      reach[String(ab.chroms[0])] = 1; reach[String(ab.chroms[1])] = 1;
+      var armOk = function (c, band) {
+        if (kept[c]) return !!kept[c][armLetter(band)];
+        if (graftArm[c]) return graftArm[c] === armLetter(band);
+        return true;
+      };
+      for (var wi = 0; wi < subs.length; wi++) {
+        var ws = subs[wi];
+        if (ws.op === "ins") {
+          return undrawn("“" + (ab.note || derName) + "” is correct ISCN: a derivative chromosome may be built " +
+            "by more than one rearrangement (ISCN 5.5.2). KaryoDraw does not yet have a drawing for a whole-arm " +
+            "derivative carrying an insertion, so it draws nothing rather than a wrong figure.");
+        }
+        if (ws.op === "t") {
+          if ((ws.breakpoints || []).length !== 2 ||
+              !(ws.breakpoints[0] || []).length || !(ws.breakpoints[1] || []).length) {
+            return undrawn("A translocation inside a der() names two chromosomes and a band on each, one " +
+              "junction of the derivative (ISCN 5.5.3), so “" + joinText(ws) + "” in “" + (ab.note || derName) +
+              "” is missing part of its junction and the derivative cannot be assembled.");
+          }
+          var wca = String(ws.chroms[0]), wcb = String(ws.chroms[1]);
+          if (!reach[wca] && !reach[wcb]) {
+            return undrawn("Each operation after “" + derName + "” modifies the derivative it names " +
+              "(ISCN 5.5.3), so “" + joinText(ws) + "”, which involves neither chromosome " +
+              ab.chroms[0] + " nor chromosome " + ab.chroms[1] + " nor anything joined to them, has no " +
+              "place on it. KaryoDraw draws nothing rather than a figure with pieces missing.");
+          }
+          for (var hx = 0; hx < 2; hx++) {
+            var hc = String(ws.chroms[hx]), hb = String((ws.breakpoints[hx] || [])[0] || "");
+            if (!armOk(hc, hb)) {
+              return undrawn("“" + derName + "” keeps exactly the arms its centromere letters name, " +
+                keptNames.join(" and ") + ", so the breakpoint at " + hc + hb + " in “" + joinText(ws) +
+                "” falls on material this derivative does not carry, and there is nothing there to modify.");
+            }
+          }
+          // The chromosome a join adds contributes the acentric side of its own
+          // break, so its material is all on that band's arm.
+          [0, 1].forEach(function (gx) {
+            var gc = String(ws.chroms[gx]);
+            if (!reach[gc]) graftArm[gc] = armLetter((ws.breakpoints[gx] || [])[0]);
+            reach[gc] = 1;
+          });
+        }
+        if (ws.op === "del" || ws.op === "dup" || ws.op === "inv") {
+          var dc = String((ws.chroms || [])[0]);
+          var dBands = (ws.breakpoints || [])[0] || [];
+          for (var dbx = 0; dbx < dBands.length; dbx++) {
+            if (!armOk(dc, dBands[dbx])) {
+              return undrawn("“" + derName + "” keeps exactly the arms its centromere letters name, " +
+                keptNames.join(" and ") + ", so the breakpoint at " + dc + dBands[dbx] +
+                " falls on material this derivative does not carry, and there is nothing there to modify.");
+            }
+          }
+        }
+      }
+    }
+    // A der naming ONE chromosome and built from a chain of joins walks that chain
+    // outward: each join has to involve a chromosome already on the derivative
+    // (its own, or one an earlier join grafted on). ISCN 5.5.3 c allows two joins
+    // on the derivative's own two arms, so connectivity is to the growing body,
+    // not to the previous join. A join that touches nothing simply vanished from
+    // the figure before this gate existed.
+    if (ab.chroms.length === 1 && tSubs.length >= 2 && !exoticT && !wholeArm) {
+      var creach = {};
+      creach[String(ab.chroms[0])] = 1;
+      (tSubs[0].chroms || []).forEach(function (c) { creach[String(c)] = 1; });
+      for (var ci = 1; ci < tSubs.length; ci++) {
+        var cs = tSubs[ci];
+        var cca = String(cs.chroms[0]), ccb = String(cs.chroms[1]);
+        if (!creach[cca] && !creach[ccb]) {
+          return undrawn("Each translocation inside a der() describes one junction of that derivative " +
+            "(ISCN 5.5.3), so “" + joinText(cs) + "” has to involve chromosome " + ab.chroms[0] +
+            " or a chromosome already joined to it. It does not, so its material has no place on the " +
+            "derivative, and KaryoDraw draws nothing rather than a figure with pieces missing.");
+        }
+        creach[cca] = 1; creach[ccb] = 1;
+      }
+    }
     // A der(A;B) built from t() joins is assembled by walking those joins as ONE
     // chain from A to B (ISCN 5.5.3 c; the renderer's twoChromDerSegments is that
     // walk). Anything the walk could not consume used to be dropped in silence and

@@ -420,6 +420,42 @@
       });
       var acroPair = (ab.chroms || []).length === 2 &&
         ab.chroms.every(function (x) { return ACRO[String(x)]; });
+      // A whole-arm der(A;B) can carry trailing sub-ops (ISCN 5.5.3 c iv:
+      // der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12)). The body is the two fused
+      // arms; each deletion or join then modifies one arm, and the figure draws
+      // exactly that. The texts below this branch each told a different lie beside
+      // it: the Robertsonian sentence ignored the sub-ops entirely, and the general
+      // der sentence read the first join as if the body were one chromosome "out to"
+      // the join's band, the monocentric misreading the renderer no longer draws.
+      if (wholeArmBands && (ab.chroms || []).length === 2 && (ab.subOps || []).length) {
+        var waArm = function (ix) { return /^p/.test(String(((bp || [])[ix] || [])[0] || "")) ? "short" : "long"; };
+        var waSame = String(ab.chroms[0]) === String(ab.chroms[1]);
+        var waBody = waSame
+          ? "the two " + waArm(0) + " arms of chromosome " + ab.chroms[0] + ", one from each homologue, are fused at the centromere into one derivative chromosome"
+          : "the " + waArm(0) + " arm of chromosome " + ab.chroms[0] + " and the " + waArm(1) + " arm of chromosome " + ab.chroms[1] + " are fused at the centromere into one derivative chromosome";
+        var waOpen = (acroPair ? "a ROBERTSONIAN translocation with more on it: " : "a WHOLE-ARM translocation derivative: ") + waBody +
+          "; fusions like this are usually dicentric, with one centromere inactivated.";
+        var waBodySet = {};
+        waBodySet[String(ab.chroms[0])] = 1; waBodySet[String(ab.chroms[1])] = 1;
+        var waJoins = [], waExtras = [];
+        (ab.subOps || []).forEach(function (s) {
+          if (s.op === "t" && (s.chroms || []).length === 2) {
+            var h = waBodySet[String(s.chroms[0])] ? 0 : 1;
+            var host = String(s.chroms[h]), guest = String(s.chroms[1 - h]);
+            var hostBand = (s.breakpoints[h] || [])[0] || "?", guestBand = (s.breakpoints[1 - h] || [])[0] || "?";
+            waJoins.push((waSame ? "One arm" : "The chromosome " + host + " arm") + " is cut at " + host + hostBand +
+              " and " + endShort(guest, guestBand) + sizeParen(sizeDistal(guest, guestBand)) + " is attached there.");
+            waBodySet[guest] = 1;
+          } else {
+            var wp = subOpPhrase(s, ab.chroms[0]);
+            if (wp) waExtras.push(wp);
+          }
+        });
+        var waExtraText = waExtras.length
+          ? " It also carries " + listJoin(waExtras) + (waSame && waJoins.length ? ", on the other arm." : ".")
+          : "";
+        return { text: waOpen + (waJoins.length ? " " + waJoins.join(" ") : "") + waExtraText, tag: "der" };
+      }
       if (ab.chroms && ab.chroms.length >= 2 &&
         (/robertsonian/i.test(ab.note || "") || (wholeArmBands && acroPair))) {
         return { text: "a ROBERTSONIAN translocation: the long arms of chromosomes " +

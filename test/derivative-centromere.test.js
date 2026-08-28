@@ -161,3 +161,27 @@ test('no drawn instance shows more centromeres than its model carries', async ()
     }
   }
 });
+
+// The seam constriction of a whole-arm body sits where the two centromere-bearing
+// arms MEET. cenIsSeam took the FIRST segment boundary, right for the two-segment
+// Robertsonian it was written for and wrong the day a graft rode above the arms:
+// der(13;14)(q10;q10)t(9;14)(q22;q24) draws [9 graft][14q][13q], and the waist sat
+// on the chromosome 9 junction, a centromere the model does not claim there, while
+// the real seam got a plain fusion line.
+test('a grafted whole-arm der pinches at the arm seam, not at the graft junction', async () => {
+  const { ISCN, Karyo } = await lib();
+  const model = ISCN.parse('45,XX,der(13;14)(q10;q10)t(9;14)(q22;q24)');
+  const html = draw(Karyo, model.clones[0], model.clones, 99);
+  const der = instances(html).find((b) => b.includes('der(13;14)'));
+  assert.ok(der, 'the derivative renders');
+  // The seam-centromere marker is the "2.5 2" dashed midline (with its hatch band).
+  // The body is [9 graft, 44 Mb][14q, 56][13q, 96], so the arm seam sits at about
+  // half height and the graft junction at about a fifth; before the fix the marker
+  // sat at the graft junction.
+  const cenLines = [...der.matchAll(/<line[^>]*y1="([\d.]+)"[^>]*stroke-dasharray="2\.5 2"/g)]
+    .map((m) => Number(m[1]));
+  assert.equal(cenLines.length, 1, 'one seam centromere marker');
+  const height = Number((der.match(/<svg[^>]*height="([\d.]+)"/) || [])[1]);
+  assert.ok(cenLines[0] > height * 0.4,
+    `the constriction sits at the 14;13 arm seam near half height (y=${cenLines[0]} of ${height})`);
+});

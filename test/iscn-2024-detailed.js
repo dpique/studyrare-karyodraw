@@ -173,8 +173,7 @@ module.exports = [
   {
     short: "45,XX,der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12)",
     detailed: "45,XX,der(8;8)(:8q22→8q10::8q10→8q24.1::9q12→9qter)",
-    generated: false,
-    needs: "a der() named across two chromosomes with t sub-ops is modelled as a der of the first one, so the fused body is described under the wrong name",
+    generated: true,
   },
   {
     short: "47,XY,+der(?)t(?;9)(?;q22)",
@@ -624,6 +623,6 @@ module.exports = [
     short: "46,XX,t(9;22)(q34;q11.2)[18]/45,XX,der(7;9)(q10;q10)t(9;22),der(22)t(9;22)[2]",
     detailed: "\u000746,XX,t(9;22)(q34;q11.2)[18]/45,XX,der(7;9)(7qter→7q10::9q10→9q34::22q11.2→22qter),",
     generated: false,
-    needs: "a der() named across two chromosomes with t sub-ops is modelled as a der of the first one, so the fused body is described under the wrong name",
+    needs: "the der(7;9) itself now serialises to exactly the printed string (pinned in detailed-form.test.js); the extracted line breaks at the PDF wrap before the first clone's derivatives, so the whole-karyotype comparison cannot close",
   },
 ];

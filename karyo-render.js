@@ -399,9 +399,10 @@
     body.push('<g clip-path="url(#' + uid + ')">');
     body.push('<rect x="' + pad + '" y="' + pad + '" width="' + W + '" height="' + H + '" fill="#fff"/>');
 
-    var yOff = pad, cenList = [], junctionYs = [], firstBoundaryY = null;
+    var yOff = pad, cenList = [], junctionYs = [], firstBoundaryY = null, boundaryYs = [];
     segments.forEach(function (g, gi) {
       var d = IDEO.data[g.chrom], segTop = yOff, segH = h(g.to - g.from);
+      if (gi >= 1) boundaryYs[gi] = segTop;
       if (gi === 1) firstBoundaryY = segTop;   // the seam between the first two segments
       getBands(g.chrom, ctx.level).forEach(function (b) {
         var bs = Math.max(b[1], g.from), be = Math.min(b[2], g.to);
@@ -444,12 +445,22 @@
     // centromere marker now shows the join.
     var cenIsSeam = false;
     if (!cenList.length && segments.length >= 2 && firstBoundaryY != null) {
+      // The seam is where the two centromere-bearing arms MEET. For a plain
+      // Robertsonian body that is the first boundary, but a whole-arm body carrying
+      // a graft is [graft][arm][arm], and the waist drawn at the first boundary sat
+      // on the graft junction: der(13;14)(q10;q10)t(9;14)(q22;q24) showed a
+      // constriction at the chromosome 9 join, a centromere the model does not
+      // claim there, with a plain fusion line where the real seam is.
+      var seamY = firstBoundaryY;
+      for (var sbi = 1; sbi < segments.length; sbi++) {
+        if (segments[sbi - 1].hasCen && segments[sbi].hasCen) { seamY = boundaryYs[sbi]; break; }
+      }
       // Coloured as the chromosome the derivative is named for, not as whichever arm
       // is drawn on top. A Robertsonian's seam centromere belongs to neither partner
       // in particular (the notation is lowest-number-first and does not record whose
       // centromere is kept, as the decode says), so the label is the honest tiebreak.
-      cenList.push({ y: firstBoundaryY, chrom: idChrom, reversed: false });
-      junctionYs = junctionYs.filter(function (jy) { return Math.abs(jy - firstBoundaryY) > 0.5; });
+      cenList.push({ y: seamY, chrom: idChrom, reversed: false });
+      junctionYs = junctionYs.filter(function (jy) { return Math.abs(jy - seamY) > 0.5; });
       // Flagged, because this y is NOT comparable to a normal homolog's p/q boundary:
       // an acrocentric's centromere sits near its top, a whole-arm fusion's sits
       // between two long arms. Aligning the two would shove the normal homolog down
@@ -790,6 +801,19 @@
       var wsegs = wholeArmSegments(inst);
       if (wsegs) return { segments: wsegs, overlays: [], caption: inst.label, composite: true };
     }
+    // The same whole-arm body WITH trailing sub-ops (ISCN 5.5.3 c iv, and the
+    // 4.2.1 f mosaic's der(7;9)(q10;q10)t(9;22)). It used to fall past the whole-arm
+    // path, which demanded no sub-ops, into the reciprocal single-join builder,
+    // which drew a monocentric derivative of the WRONG chromosome:
+    // der(13;14)(q10;q10)t(9;14)(q22;q24) came out as a der(9) figure with the 13
+    // nowhere on it. A failed build must not fall through for the same reason as
+    // the pure chain below; the parser gate stands in front for the mistakes it can
+    // name.
+    if (kind === "der" && twoChrom && (ab.subOps && ab.subOps.length) && isWholeArmBps(ab.breakpoints)) {
+      var wsub = wholeArmDerSubOps(inst);
+      if (wsub) return { segments: wsub.segments, overlays: wsub.overlays, caption: inst.label, composite: true };
+      return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label, note: "complex" };
+    }
     if (kind === "dic") {
       // A two-chromosome dic fuses into one body with two centromeres; a single-
       // chromosome idic mirrors itself about the breakpoint (also dicentric).
@@ -1013,6 +1037,86 @@
     top.hasCen = true; top.reversed = (top.arm === "q");
     bottom.hasCen = true; bottom.reversed = (bottom.arm === "p");
     return [top, bottom];
+  }
+
+  // applyExtraJoin and applyOpToSeg recompute the kept piece's centromere flag with
+  // a strict containment test, and a whole-arm piece MEETS the centromere at its
+  // seam end rather than containing it, so an arm that took a graft or a deletion
+  // lost its half of the seam and the derivative drew one constriction where the
+  // model says two. Restore the flag on the kept piece when the arm it came from
+  // carried it and the piece still reaches the seam.
+  function restoreSeamCen(before, after) {
+    for (var i = 0; i < before.length; i++) {
+      if (before[i] === after[i]) continue;
+      var old = before[i];
+      if (!old.hasCen) return;
+      var d = IDEO.data[String(old.chrom)];
+      if (!d) return;
+      for (var j = i; j <= i + 1 && j < after.length; j++) {
+        var p = after[j];
+        if (String(p.chrom) === String(old.chrom) && p.from >= old.from && p.to <= old.to &&
+            p.from <= d.centromere && d.centromere <= p.to) { p.hasCen = true; return; }
+      }
+      return;
+    }
+  }
+
+  // The whole-arm body WITH trailing sub-ops. ISCN 5.5.3 c iv:
+  // der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12) is the two long arms of 8 fused
+  // at the centromeres, one truncated at q22, material of 9 on the other at q24.1.
+  // Sub-ops are applied in notation order, each to the FIRST piece whose span holds
+  // its band, which is what lets one chromosome's two arms take one op each: the
+  // deletion shortens the first arm past q24.1's reach, so the join lands on the
+  // second.
+  //
+  // Strict on purpose: a sub-op that lands nowhere is a dropped op, and this family
+  // of fixes (#231) exists because a partial figure under a full caption reads as
+  // authoritative. classifyDerSubOps gates the mistakes it can name (a join touching
+  // nothing on the body, a band on an arm the derivative does not keep); a band that
+  // misses a grafted piece by position alone still reaches the nulls here and falls
+  // to the refusal fallback in buildInstance.
+  function wholeArmDerSubOps(inst) {
+    var ab = inst.aberration;
+    var segs = wholeArmSegments(inst);
+    if (!segs) return null;
+    var overlays = [];
+    for (var i = 0; i < (ab.subOps || []).length; i++) {
+      var s = ab.subOps[i];
+      if (s.op === "t") {
+        var joined = applyExtraJoin(segs, s);
+        if (joined === segs) return null;              // nothing consumed the join
+        restoreSeamCen(segs, joined);
+        segs = joined;
+      } else if (s.op === "del" || s.op === "dup" || s.op === "inv") {
+        var sc = String((s.chroms || [])[0]);
+        var bands = (s.breakpoints || [])[0] || [];
+        var applied = false;
+        for (var k = 0; k < segs.length && !applied; k++) {
+          var seg = segs[k];
+          if (String(seg.chrom) !== sc) continue;
+          var pts = bands.map(function (x) { return resolveBand(sc, x); }).filter(Boolean);
+          if (!pts.length || !pts.every(function (p) { return p.mid > seg.from && p.mid < seg.to; })) continue;
+          var pieces = applyOpToSeg(seg, sc, s.op, bands);
+          var d = IDEO.data[sc];
+          pieces.forEach(function (p) {
+            if (seg.hasCen && p.from <= d.centromere && d.centromere <= p.to) p.hasCen = true;
+          });
+          segs = segs.slice(0, k).concat(pieces, segs.slice(k + 1));
+          applied = true;
+        }
+        if (!applied) return null;
+      } else if (s.op === "add" || s.op === "hsr") {
+        var oc = String((s.chroms || [])[0] || ""), ob = ((s.breakpoints || [])[0] || [])[0];
+        var bnd = ob && resolveBand(oc, ob), od = IDEO.data[oc];
+        if (bnd && od) {
+          if (s.op === "add") overlays.push(bnd.arm === "p" ? { type: "add", chrom: oc, from: 0, to: bnd.mid } : { type: "add", chrom: oc, from: bnd.mid, to: od.length });
+          else overlays.push({ type: "hsr", chrom: oc, from: bnd.start, to: bnd.end });
+        }
+      } else {
+        return null;                                    // ins and anything newer: no geometry here yet
+      }
+    }
+    return { segments: segs, overlays: overlays };
   }
 
 
@@ -1910,6 +2014,21 @@
       }
       merged.push({ chrom: g.chrom, from: g.from, to: g.to, reversed: g.reversed });
     });
+    // 5.4.2.2 e fixes the READING direction of a derivative, and for a whole-arm
+    // der(A;B) the standard's own examples read the first-named chromosome's
+    // material first: der(7;9)(7qter→7q10::9q10→9q34::22q11.2→22qter). Drawing
+    // order is a morphology decision (short arm up; see wholeArmSegments) and may
+    // disagree, so the body is serialised in whichever direction puts chromosome A
+    // first. The same body read the other way is the same chromosome.
+    var wholeArmAB = ab && (ab.op === "der" || ab.op === "rob") && (ab.chroms || []).length === 2 &&
+      ab.breakpoints && isWholeArmBps(ab.breakpoints);
+    if (wholeArmAB && merged.length > 1) {
+      var wa0 = String(ab.chroms[0]);
+      if (String(merged[0].chrom) !== wa0 && String(merged[merged.length - 1].chrom) === wa0) {
+        merged.reverse();
+        merged.forEach(function (g) { g.reversed = !g.reversed; });
+      }
+    }
     var parts = merged.map(function (g) {
       var top = g.reversed ? g.to : g.from, bot = g.reversed ? g.from : g.to;
       return endpointName(g.chrom, top, names, prefix) + "\u2192" + endpointName(g.chrom, bot, names, prefix);

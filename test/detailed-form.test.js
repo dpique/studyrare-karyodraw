@@ -253,3 +253,39 @@ test('a der() naming one chromosome is untouched by any of it', () => {
   assert.equal(Karyo.detailedForm(inst), ':9p12→9q34::22q11.2→22qter');
   assert.equal(Karyo.buildInstance(inst).segments.filter((s) => s.hasCen).length, 1);
 });
+
+// The whole-arm der(A;B) with trailing sub-ops, ISCN 5.5.3 c iv and the 4.2.1 f
+// mosaic. The body is the two whole arms fused at the centromeres; del/dup/inv and
+// t() sub-ops then modify one arm each. It used to bypass the whole-arm path (which
+// demanded no sub-ops) and fall to the single-join builder, which drew a monocentric
+// derivative of the WRONG chromosome: der(13;14)(q10;q10)t(9;14)(q22;q24) came out
+// as a der(9) figure with the 13 nowhere on it. The detailed strings below are
+// transcribed from the standard, so the geometry, the endpoint names, and the
+// 5.4.2.2 e reading direction (the first-named chromosome's material first) are all
+// checked against print rather than against our own reasoning.
+test('a whole-arm der(A;B) carries its deletion and its graft', () => {
+  const built = (k) => {
+    const clone = ISCN.parse(k).clones[0];
+    let inst = null;
+    Object.keys(clone.slots).forEach((ch) =>
+      (clone.slots[ch] || []).forEach((i) => { if (i.kind !== 'normal') inst = i; }));
+    return { label: inst.label, segs: Karyo.buildInstance(inst).segments, detail: Karyo.detailedForm(inst) };
+  };
+
+  // 5.5.3 c iv verbatim: one long arm truncated at q22 (open end), material of 9
+  // translocated onto the other at q24.1.
+  const a = built('45,XX,der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12)');
+  assert.equal(a.detail, ':8q22→8q10::8q10→8q24.1::9q12→9qter');
+  assert.equal(a.label, 'der(8;8)');
+  assert.equal(a.segs.filter((s) => s.hasCen).length, 2, 'the seam still carries both centromere halves');
+
+  // The 4.2.1 f mosaic's second clone, as a single clone: the Philadelphia der(9)
+  // further involved in a whole-arm translocation with 7 (detailed form printed in
+  // the standard).
+  const b = built('45,XX,der(7;9)(q10;q10)t(9;22)(q34;q11.2)');
+  assert.equal(b.detail, '7qter→7q10::9q10→9q34::22q11.2→22qter');
+
+  // A Robertsonian body with a graft, the shape that drew as a der(9) figure.
+  const c = built('45,XX,der(13;14)(q10;q10)t(9;14)(q22;q24)');
+  assert.equal(c.detail, '13qter→13q10::14q10→14q24::9q22→9qter');
+});
