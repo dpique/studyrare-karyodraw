@@ -408,3 +408,19 @@ test('a back-referenced rearrangement draws what the first mention drew', () => 
   const [c1, c2] = spans('47,XX,t(2;13)(q37;q14),der(14;21)(q10;q10)c,+18,+mar[3]/45,XX,der(14;21)c[17]');
   assert.equal(c2['der(14;21)'], c1['der(14;21)'], 'a whole-arm der back-reference too');
 });
+
+// The der(A;B) chain walk had a fixed eight-step guard, so nine joins fell to a
+// build that kept one centromere and the wrong piece of chromosome 7 while the
+// decode kept promising a dicentric. The length is the notation's to choose
+// (ISCN 5.5.3 puts no ceiling on it); a chain that does not hold together is not
+// this derivative's description at all, whatever its length.
+test('a der(A;B) chain draws at any length, and a broken chain is refused', () => {
+  assert.equal(refused('45,XY,der(5;7)t(3;5)(q21;q22)t(3;11)(q29;q13)t(11;12)(q23;q13)t(7;12)(p13;q24.1)'), false);
+  assert.equal(refused('45,XY,der(5;7)t(3;5)(q21;q22)t(3;11)(q29;q13)t(11;12)(q23;q13)'
+    + 't(12;14)(q24;q11.2)t(14;16)(q31;q11.2)t(16;18)(q22;q11.2)t(2;18)(q21;q21)'
+    + 't(2;4)(q31;q21)t(4;7)(q31;p13)'), false, 'nine joins draw');
+  assert.equal(refused('45,XY,der(5;7)t(3;5)(q21;q22)t(3;11)(q29;q13)'), true,
+    'a chain that never reaches chromosome 7');
+  assert.equal(refused('45,XY,der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13)t(9;11)(q22;q13)'), true,
+    'a join connected to nothing');
+});

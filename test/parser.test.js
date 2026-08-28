@@ -1461,3 +1461,57 @@ test('a derivative in the detailed system is explained, not guessed at', () => {
   assert.ok(!/is not a character/.test(w));
   assert.equal(m.suggestion, null, 'and no invented repair is offered');
 });
+
+// A der(A;B) is assembled by walking its translocations as one chain from A to B
+// (ISCN 5.5.3 c). Three inputs used to walk PART of that chain and draw the rest
+// with no warning: joins that never reach the second named chromosome drew a
+// monocentric figure under a caption that names a dicentric; a join connected to
+// nothing simply vanished from the figure; and a t() sub-op missing a breakpoint
+// was dropped the same way. A figure with pieces missing looks exactly as
+// authoritative as a complete one, so all three now refuse and say why.
+test('a der(A;B) whose joins do not chain from A to B is refused', () => {
+  const gate = (k) => {
+    const m = ISCN.parse(k);
+    return { unreadable: m.clones[0].unreadable, w: m.warnings.join(' ') };
+  };
+  const never = gate('45,XY,der(5;7)t(3;5)(q21;q22)t(3;11)(q29;q13)');
+  assert.equal(never.unreadable, true, 'joins that never reach chromosome 7');
+  assert.match(never.w, /never reach chromosome 7/);
+  const stray = gate('45,XY,der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13)t(9;11)(q22;q13)');
+  assert.equal(stray.unreadable, true, 'a join connected to nothing');
+  assert.match(stray.w, /t\(9;11\)\(q22;q13\)/, 'the stray join is named');
+  const short = gate('45,XY,der(5;7)t(3;5)(q21)t(3;7)(q29;p13)');
+  assert.equal(short.unreadable, true, 'a t() sub-op missing a breakpoint');
+
+  // And the chains ISCN prints keep drawing, warning-free.
+  ['45,XY,der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13)',
+   '45,XX,der(5;7)t(5;7)(q22;p13)t(3;7)(q21;q21)',
+   '45,XY,der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13)del(7)(q32)'].forEach((k) => {
+    const m = ISCN.parse(k);
+    assert.equal(m.clones[0].unreadable, false, k);
+    assert.equal(m.warnings.length, 0, k);
+  });
+  // The whole-arm der with a trailing t (5.5.3 c iv) is a different composition and
+  // must not fall into this gate.
+  const wholeArm = ISCN.parse('45,XX,der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12)');
+  assert.equal(wholeArm.clones[0].unreadable, false);
+});
+
+// ISCN 4.2.1 f lets a later mention of the same rearrangement omit its breakpoints,
+// and the first FULL mention can itself be a sub-op: 5.5.3 prints
+// 47,XY,der(9)t(9;22)(q34;q11.2),+22,ider(22)(q10)t(9;22)[20]. The #218 copy reached
+// top-level operations only, so a bare t() inside a der() still handed the renderer
+// no breakpoints, and der(22)t(9;22) in a second clone drew an intact chromosome 22
+// under a derivative caption. The ledger now records and serves sub-ops too.
+test('a bare t() sub-op inherits the breakpoints of its first full mention', () => {
+  const m = ISCN.parse('45,XY,der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13)[10]/45,XY,der(5;7)t(3;5)t(3;7)[10]');
+  assert.equal(m.warnings.length, 0);
+  assert.equal(m.clones.some((c) => c.unreadable), false);
+  const der = m.clones[1].aberrations.filter((a) => a.op === 'der')[0];
+  assert.equal(der.subOps.map((s) => s.breakpoints.map((g) => g.join('')).join(';')).join(' '),
+    'q21;q22 q29;p13', 'both joins carry the breakpoints from the first clone');
+  // The der(9)/der(22) pair of a two-derivative clone, sub-op stated fully first.
+  const cml = ISCN.parse('46,XY,der(9)t(9;22)(q34;q11.2),der(22)t(9;22)');
+  const der22 = cml.clones[0].aberrations.filter((a) => a.chroms[0] === '22')[0];
+  assert.equal(der22.subOps[0].breakpoints.map((g) => g.join('')).join(';'), 'q34;q11.2');
+});
