@@ -104,6 +104,11 @@
   };
   function stainInfo(s) { return STAIN_INFO[s] || { name: s, bio: "" }; }
 
+  // 13, 14, 15, 21 and 22: the chromosomes whose short arms carry only satellites and
+  // ribosomal repeats, which is why a whole-arm fusion between two of them loses nothing
+  // that matters (ISCN 5.5.18.3 a).
+  var ACRO = { "13": 1, "14": 1, "15": 1, "21": 1, "22": 1 };
+
   // ---- describe a single aberration in plain English -----------------------
   function bandsPhrase(chrom, bands) {
     return bands.map(function (b) { return chrom + b; }).join(" and ");
@@ -398,10 +403,31 @@
       // convention, so the notation does NOT tell us whose centromere is retained;
       // these fusions are usually dicentric with one centromere inactivated. Do not
       // claim a single chromosome's centromere here (that rule is only for der(N)).
-      if (/robertsonian/i.test(ab.note || "") && ab.chroms && ab.chroms.length >= 2) {
+      // Gated on the SHAPE, not on which of the two legal spellings was typed. It used
+      // to key on ab.note carrying "Robertsonian", which only rob() sets, so
+      // rob(13;14)(q10;q10) got this explanation and der(13;14)(q10;q10), the identical
+      // biological event, got the one-line "has chromosome 13's centromere" instead.
+      // That is backwards twice over: the same karyotype taught two different amounts,
+      // and it was the spelling ISCN PREFERS that got less. 5.5.18.3 b: "Although either
+      // rob or der can adequately describe these whole-arm translocations, der is the
+      // preferred designation."
+      //
+      // Acrocentrics only, both of them, and both breaks at a centromere. A whole-arm
+      // der between non-acrocentrics (5.5.18.2) loses real short-arm material and is a
+      // different event, so it must not collect this sentence.
+      var wholeArmBands = (bp || []).length >= 2 && (bp || []).every(function (g) {
+        return (g || []).length === 1 && (/^[pq]10$/.test(g[0]) || g[0] === "cen");
+      });
+      var acroPair = (ab.chroms || []).length === 2 &&
+        ab.chroms.every(function (x) { return ACRO[String(x)]; });
+      if (ab.chroms && ab.chroms.length >= 2 &&
+        (/robertsonian/i.test(ab.note || "") || (wholeArmBands && acroPair))) {
         return { text: "a ROBERTSONIAN translocation: the long arms of chromosomes " +
           listJoin(ab.chroms) + " are fused at the centromere into one derivative chromosome, and the two short arms are lost. " +
-          "They are written lowest-number-first by convention, not by which centromere is kept; whole-arm fusions like this are usually dicentric, with one centromere inactivated", tag: "der" };
+          "They are written lowest-number-first by convention, not by which centromere is kept; whole-arm fusions like this are usually dicentric, with one centromere inactivated" +
+          (/robertsonian/i.test(ab.note || "") ? "" :
+            ". ISCN writes this either way, der(" + ab.chroms.join(";") + ")(q10;q10) or rob(" +
+            ab.chroms.join(";") + ")(q10;q10), and prefers the der spelling (5.5.18.3 b)"), tag: "der" };
       }
       var subs = ab.subOps || [];
       // A der() NAMED across two chromosomes and built from joins carries both of their

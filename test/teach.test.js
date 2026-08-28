@@ -724,19 +724,43 @@ test('a der() naming two chromosomes says it carries both centromeres', () => {
   assert.ok(!/has chromosome 5’s centromere/.test(t), 'the singular reading is gone');
 });
 
-test('a whole-arm derivative keeps the singular reading, and the careful note', () => {
+test('a whole-arm acrocentric fusion is explained the same however it is spelled', () => {
   // der(13;21)(q10;q10) also names two chromosomes, but the fusion is AT the
-  // centromeres, so the figure draws one seam constriction rather than two waists.
-  // Claiming a plain dicentric there would contradict the picture in the other
-  // direction. Keyed on the shape of the notation rather than on a centromere tally,
-  // because the model flags both whole arms hasCen (#207) while the drawing shows one.
-  const whole = decodeText('45,XX,der(13;21)(q10;q10)');
-  assert.match(whole, /has chromosome 13’s centromere/);
-  assert.ok(!/carries the centromeres of BOTH/.test(whole));
+  // centromeres, so it is not the join-built dicentric of the test above and must not
+  // collect that wording. What it gets instead is the Robertsonian explanation, which
+  // states the nuance properly: usually dicentric, with one centromere inactivated.
+  //
+  // This used to depend on WHICH SPELLING was typed. The note was gated on the parser
+  // setting ab.note to "Robertsonian", which only rob() does, so rob(13;14)(q10;q10)
+  // was explained and der(13;14)(q10;q10), the identical biological event, got a single
+  // clause. Backwards twice over: the same karyotype taught two different amounts, and
+  // it was the spelling ISCN PREFERS that got less (5.5.18.3 b, "either rob or der can
+  // adequately describe these whole-arm translocations, der is the preferred
+  // designation"). It is keyed on the shape now.
+  ['45,XX,rob(13;14)(q10;q10)', '45,XX,der(13;14)(q10;q10)', '45,XX,der(13;21)(q10;q10)']
+    .forEach((k) => {
+      const t = decodeText(k);
+      assert.match(t, /ROBERTSONIAN translocation/, k);
+      assert.match(t, /usually dicentric, with one centromere inactivated/, k);
+      assert.ok(!/carries the centromeres of BOTH/.test(t), `${k}: not the join-built wording`);
+    });
+  // Written as der, the reader is told both spellings are legal and which ISCN prefers.
+  assert.match(decodeText('45,XX,der(13;14)(q10;q10)'), /prefers the der spelling/);
+  assert.ok(!/prefers the der spelling/.test(decodeText('45,XX,rob(13;14)(q10;q10)')),
+    'and is not told that when they already used it');
+});
 
-  // And a Robertsonian keeps its own sentence, which states the nuance properly.
-  const rob = decodeText('45,XX,rob(13;14)(q10;q10)');
-  assert.match(rob, /usually dicentric, with one centromere inactivated/);
+test('a whole-arm fusion between non-acrocentrics is not called Robertsonian', () => {
+  // ISCN 5.5.18.3 a defines rob as a whole-arm translocation of the ACROCENTRICS. A
+  // der(1;3)(p10;q10) is the 5.5.18.2 whole-arm case, where real short-arm material is
+  // at stake, so it must not collect the "the two short arms are lost" sentence.
+  //
+  // Counted 45, not 46: one derivative stands in for both chromosomes. decodeText goes
+  // straight to the decode and would accept either, but the app gates drawing on the
+  // count, so at 46 this reads as an assertion about a figure the user never sees.
+  const t = decodeText('45,XY,der(1;3)(p10;q10)');
+  assert.ok(!/ROBERTSONIAN/.test(t));
+  assert.match(t, /has chromosome 1’s centromere/);
 });
 
 test('a derivative naming one chromosome is unchanged', () => {
