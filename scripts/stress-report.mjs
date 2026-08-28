@@ -21,6 +21,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
 import { CORPUS, GROUPS } from './stress-corpus.mjs';
+import { appCss, fontLinks } from './lib/page-assets.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHROME = process.env.CHROME_PATH
@@ -465,13 +466,6 @@ ${fontLinks}
 async function main() {
   const items = FILTER ? CORPUS.filter((e) => e.group === FILTER) : CORPUS;
   if (!items.length) { console.error(`No cases for --filter ${FILTER}`); process.exit(1); }
-
-  const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  const appCss = indexHtml.match(/<style>([\s\S]*?)<\/style>/)[1];
-  const fontLinks = [
-    ...(indexHtml.match(/<link rel="preconnect"[^>]*>/g) || []),
-    ...(indexHtml.match(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis[^>]*>/g) || []),
-  ].join('\n');
 
   const server = await serve();
   const port = server.address().port;

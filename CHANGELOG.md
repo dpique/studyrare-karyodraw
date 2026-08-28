@@ -3,6 +3,44 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (a figure rendered in the wrong font now fails the build)
+
+- **Both render scripts pull webfonts from Google over the network, and a hiccup there
+  was silent.** The page simply rendered in the fallback face and the PNG was committed
+  looking subtly wrong, with nothing said. Every committed karyogram and paper figure
+  was exposed to it.
+
+  The obvious guard does not work, which is why this one is written the way it is.
+  Measured by rendering the same markup with and without the stylesheet:
+  `document.fonts.check()` answered **true both times**, because a fallback family
+  satisfies the query, while the PNG bytes differed. `document.fonts.ready` resolves
+  just as happily. The honest signal is the FontFace SET, which the stylesheet populates
+  when it parses and which is empty when it never arrived: five registered faces against
+  zero. Registration rather than load status, since a face is only marked loaded once
+  something paints with it, so a family a particular figure does not happen to use would
+  look missing.
+
+  The check is also asserted to be capable of failing: the expected families are scraped
+  out of `index.html`, so a markup change there could leave the list empty and the guard
+  would pass vacuously while still looking like a check. An empty scrape now throws on
+  its own. Verified end to end by pointing the stylesheet at an unreachable host, which
+  stops the run with the three families named.
+
+- **The guard has one copy, in `scripts/lib/page-assets.mjs`.** Three scripts each
+  scraped the same stylesheet and font links out of `index.html` with their own pair of
+  regexes, so a change to that markup had to be chased through all of them. The scrape,
+  the expected family list and `settleFonts` now live in one module that
+  `render-images.mjs`, `render-paper-figures.mjs` and `stress-report.mjs` import. The
+  stress report takes the styling only, since it writes a review page rather than a
+  committed figure.
+
+- **Known residual, stated rather than implied.** With fonts loading correctly, one
+  figure (`t-11-22-carrier`) still re-renders with about nine pixels differing at a
+  maximum channel delta of one: sub-visual antialiasing, a third source separate from
+  the two closed earlier today (the shuffled example deck in fig1, the sub-pixel zoom in
+  fig2). It is not fixed here. It costs an occasional spurious binary diff and nothing
+  else.
+
 ## 2026-08-28 (a grafted arm is no longer drawn end-for-end)
 
 - **A derivative whose own break is on the short arm drew its grafted piece upside
