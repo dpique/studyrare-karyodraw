@@ -890,3 +890,71 @@ test('the true der graft keeps its acen_carried downgrade (#181 must not regress
   const waists = (svg.match(/stroke-dasharray="2\.5 2"/g) || []).length;
   assert.equal(waists, 1, 'and the derivative stays monocentric');
 });
+
+// ---- a grafted arm must not be drawn end-for-end ----------------------------
+// translocationSegments built both pieces with reversed:false and chose only their
+// ORDER from which arm the derivative broke on. That is right for a q;q translocation
+// and wrong for every other shape, because the graft's broken end has to face the
+// junction and which end of the segment that is depends on the DONOR's arm too.
+//
+// The Philadelphia is q;q, so the one figure everyone checks was correct and the
+// others were not. Nothing in this suite caught it: every translocation test here used
+// q;q breakpoints.
+//
+// ISCN prints the answer, which is what found it. 5.4.2.2 b: the detailed system lists
+// the bands "in the order in which they occur in the rearranged chromosome", so the
+// printed string is a statement about the physical chromosome, not just about notation.
+// The expected values below are ISCN 2024's own detailed forms for these karyotypes,
+// converted from band names to the coordinates this app resolves them to.
+const detailed = (k, label) => {
+  const model = ISCN.parse(k);
+  const clone = model.clones[0];
+  let segs = null;
+  Object.keys(clone.slots).forEach((ch) =>
+    (clone.slots[ch] || []).forEach((inst) => {
+      if (inst.kind !== 'normal' && inst.label === label) segs = Karyo.buildInstance(inst).segments;
+    }));
+  assert.ok(segs, `${k} built ${label}`);
+  // Each segment as the pair of endpoints in DRAWN order, top first.
+  const end = (chrom, v) => {
+    const d = IDEO.data[chrom];
+    if (v <= 0) return `${chrom}pter`;
+    if (v >= d.length) return `${chrom}qter`;
+    return `${chrom}@${(v / 1e6).toFixed(1)}`;
+  };
+  return segs.map((s) => `${end(s.chrom, s.reversed ? s.to : s.from)}→${end(s.chrom, s.reversed ? s.from : s.to)}`).join('::');
+};
+const at = (chrom, band) => `${chrom}@${(Karyo.resolveBand(chrom, band).mid / 1e6).toFixed(1)}`;
+
+test('a derivative that broke on its p arm carries the graft the right way up', () => {
+  // ISCN 5.5.3: 46,XX,der(1)t(1;3)(p22;q13.1) = der(1)(3qter→3q13.1::1p22→1qter).
+  // The chromosome 3 piece runs from its free telomere DOWN to the break, so the break
+  // is what meets 1p22. Drawn the other way it joined 3qter to 1p22, a junction the
+  // notation does not describe.
+  assert.equal(detailed('46,XX,der(1)t(1;3)(p22;q13.1)', 'der(1)'),
+    `3qter→${at('3', 'q13.1')}::${at('1', 'p22')}→1qter`);
+
+  // ISCN 5.5.3: 46,Y,der(X)t(X;8)(p22.3;q24.1) = der(X)(8qter→8q24.1::Xp22.3→Xqter).
+  assert.equal(detailed('46,Y,der(X)t(X;8)(p22.3;q24.1)', 'der(X)'),
+    `8qter→${at('8', 'q24.1')}::${at('X', 'p22.3')}→Xqter`);
+});
+
+test('the q;q case that was already right stays right', () => {
+  // ISCN 5.5.3: der(9)t(9;22)(q34;q11.2) = 9pter→9q34::22q11.2→22qter, and the
+  // reciprocal der(22) = 22pter→22q11.2::9q34→9qter. The regression guard: the fix
+  // must not reach the shape the whole suite was already built on.
+  assert.equal(detailed('46,XY,t(9;22)(q34;q11.2)', 'der(9)'),
+    `9pter→${at('9', 'q34')}::${at('22', 'q11.2')}→22qter`);
+  assert.equal(detailed('46,XY,t(9;22)(q34;q11.2)', 'der(22)'),
+    `22pter→${at('22', 'q11.2')}::${at('9', 'q34')}→9qter`);
+});
+
+test('a donor that broke on its p arm hands over a piece the same way', () => {
+  // The fourth combination, and the one no printed example in the corpus covers, so it
+  // is derived from the same rule rather than quoted: t(1;19)(q23;p13.3) gives a der(1)
+  // that keeps 1pter→1q23 and receives 19's short-arm tip. That tip's broken end is
+  // 19p13.3, so it must sit at the junction with 19pter hanging off the end:
+  // der(1)(1pter→1q23::19p13.3→19pter).
+  assert.equal(detailed('46,XY,der(1)t(1;19)(q23;p13.3)', 'der(1)'),
+    `1pter→${at('1', 'q23')}::${at('19', 'p13.3')}→19pter`);
+});
