@@ -755,8 +755,25 @@
     var opKey = op + "(" + ab.chroms.join(";") + ")";
     if (!ab.badBands.length && !(ab.uncertainChroms || []).length && !(ab.uncertainBands || []).length) {
       var stated = ab.breakpoints.some(function (g) { return g.length; });
-      if (stated) statedFully[opKey] = true;
-      if (!(!stated && statedFully[opKey])) {
+      if (stated) statedFully[opKey] = ab.breakpoints;
+      if (!stated && statedFully[opKey]) {
+        // Recognising the back-reference was only half the job. Excusing it from the
+        // arity check stopped the warning, but the aberration still reached the
+        // renderer with NO breakpoints, so translocationSegments returned null and
+        // buildInstance fell through to its whole-chromosome fallback: the second
+        // clone of the ISCN 2024 example 46,XX,t(9;22)(q34;q11.2)[3]/47,XX,+8,t(9;22)[17]
+        // drew an intact chromosome 9 and an intact chromosome 22 at their normal
+        // lengths, captioned der(9) and der(22), beside a first clone that drew the
+        // Philadelphia correctly. A mosaic renders every clone, so both were on screen
+        // at once, and nothing said a word.
+        //
+        // "The same rearrangement as above" is what the notation MEANS (4.2.1 f), so
+        // the model says it too: copy the breakpoints forward. The copy is a fresh
+        // array per group, since the renderer and the repair paths both index into
+        // these and a shared reference would let one clone's edit reach another's.
+        ab.breakpoints = statedFully[opKey].map(function (g) { return g.slice(); });
+        ab.backReference = opKey;   // for anything that needs to know it was inherited
+      } else {
         var arity = arityProblem(op, ab);
         if (arity) { ab.arity = arity; warnings.push(arity); }
       }

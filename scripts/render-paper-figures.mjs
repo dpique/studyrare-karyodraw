@@ -104,8 +104,14 @@ async function fitGallery(page) {
       if (!fig) return;
       const r = fig.getBoundingClientRect();
       if (!r.width || !r.height) return;
+      // Quantised, so the figure is reproducible. getBoundingClientRect returns
+      // sub-pixel widths that vary in their last decimals between runs, and feeding
+      // those straight into zoom moved about 160 pixels of antialiasing every render:
+      // invisible, but enough to make fig2 a fresh binary in every commit that
+      // happened to run this script. Three decimals is far finer than the eye or the
+      // page needs and coarse enough to absorb the jitter.
       const f = Math.min((box.clientWidth - 8) / r.width, (box.clientHeight - 8) / r.height, 2.4);
-      fig.style.zoom = f;
+      fig.style.zoom = Math.floor(f * 1000) / 1000;
     });
   });
 }
@@ -147,14 +153,42 @@ async function main() {
   try {
     const page = await browser.newPage();
 
+    // A paper figure has to be reproducible: re-running this script on unchanged code
+    // must produce the same bytes, or every unrelated commit carries figure churn and a
+    // real change is impossible to spot in the diff. fig1 was not, and the cause was not
+    // load timing (measured 2026-08-28 by diffing two runs: the pixels that moved were
+    // the example-chip row, nothing else). index.html deals those chips from a shuffled
+    // deck, Math.random() in dealExamples, so a fresh browser context picks a different
+    // three every time. Correct for the app, fatal for a figure.
+    //
+    // Seeding the page's Math.random is the fix rather than reaching into the deck's
+    // sessionStorage: the deck format is internal to index.html and delicate (see the
+    // note in test/examples.test.js), while this couples to nothing and makes the whole
+    // page deterministic instead of only the chips. Any fixed seed will do; this one has
+    // no meaning beyond being fixed.
+    await page.evaluateOnNewDocument(() => {
+      let s = 0x2f6e2b1;
+      Math.random = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+    });
+
     // fig1: the application, from the input box down through the karyogram and decode.
     await page.setViewport({ width: 1380, height: 1500, deviceScaleFactor: SCALE });
     await draw(page, base, FIG1_K);
-    await page.evaluate(() => {
-      // Only the involved chromosomes, so the rearrangement is legible at figure size.
-      const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === 'Affected');
-      if (b) b.click();
+    // Only the involved chromosomes, so the rearrangement is legible at figure size.
+    //
+    // Thrown rather than guarded with `if (b)`. The button was renamed from "Affected"
+    // to "Involved" in #211 and this lookup was not, so for every build since then it
+    // found nothing and clicked nothing, in silence. The figure happened to stay right
+    // because the app already defaults to the involved view when something is involved,
+    // which is exactly the kind of luck that hides a broken step until the default
+    // changes. A figure step that does not do its job must stop the build.
+    const shown = await page.evaluate(() => {
+      const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === 'Involved');
+      if (!b) return null;
+      b.click();
+      return b.getAttribute('aria-pressed') === 'true' || b.classList.contains('on') ? 'involved' : 'clicked';
     });
+    if (!shown) throw new Error('the Show "Involved" button was not found: it was renamed once already (#211), so this figure would silently fall back to whatever view the app defaults to');
     await new Promise((r) => setTimeout(r, 400));
     // End the crop on the band legend's bottom edge rather than a round number, so
     // the figure closes on a finished card instead of slicing one in half.

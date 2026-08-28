@@ -316,3 +316,95 @@ test('the tilde note keeps the rest of the karyotype intact', () => {
   assert.equal(ISCN.parse('47-49,XY,+8,+21[cp10]').note.fix, '47~49,XY,+8,+21[cp10]');
   assert.equal(ISCN.parse('mos 46-49,XY/46,XX').note, null);   // more than one clone: left alone
 });
+
+// ---- the whole-chromosome fallback must be unreachable ----------------------
+// buildInstance ends four of its branches (ins, rec, dic, der/t) with
+//   if (built) return built;
+//   return { segments: [fullSeg(chrom)], ..., note: "complex" };
+// and nothing downstream reads `note`. So a builder that returns null does not fail,
+// it draws a full, untouched, single-centromere chromosome under an abnormal caption.
+// That is the most dangerous thing this app can do: the figure looks answered and is
+// silently false, which is the whole reason for the gate in docs/VALIDATION.md.
+//
+// The house rule from the fra fallback applies here too: never leave a fallback
+// without a test that it cannot be reached. Reached is exactly what it was. The
+// back-reference form ISCN 4.2.1 f allows, 46,XX,t(9;22)(q34;q11.2)[3]/47,XX,+8,t(9;22)[17],
+// omits the breakpoints on the second mention; the parser correctly excused that from
+// the arity check and then handed the renderer an aberration with no breakpoints, so
+// the second clone of a mosaic drew an intact 9 and an intact 22 captioned der(9) and
+// der(22), beside a first clone that drew the Philadelphia correctly. Both on screen
+// at once, no warning.
+const ISCN_2024 = require('./iscn-2024-examples.js');
+
+// Every non-normal instance the app agrees to draw, across a corpus.
+function builtInstances(k) {
+  const out = [];
+  let model;
+  try { model = ISCN.parse(k); } catch { return out; }
+  for (const clone of model.clones || []) {
+    if (clone.unreadable) continue;
+    for (const ch of Object.keys(clone.slots || {})) {
+      for (const inst of clone.slots[ch] || []) {
+        if (inst.kind === 'normal') continue;
+        try { out.push({ inst, built: Karyo.buildInstance(inst) }); } catch { /* covered elsewhere */ }
+      }
+    }
+  }
+  return out;
+}
+
+test('no karyotype the app draws reaches the whole-chromosome fallback', () => {
+  const reached = [];
+  for (const e of ISCN_2024) {
+    if (!e.supported) continue;
+    for (const { inst, built } of builtInstances(e.k)) {
+      if (built.note === 'complex') reached.push(`${e.k} [${inst.label}]`);
+    }
+  }
+  assert.deepEqual(reached, [],
+    'a builder returned null and the renderer drew a normal chromosome under an abnormal caption');
+});
+
+// The same statement over the stress corpus, which carries the app's own cases rather
+// than the standard's. Kept separate so a failure names which corpus found it.
+test('the stress corpus reaches the fallback nowhere either', async () => {
+  const { CORPUS } = await import('../scripts/stress-corpus.mjs');
+  const reached = [];
+  for (const e of CORPUS) {
+    if (e.expect !== 'draw') continue;
+    for (const { inst, built } of builtInstances(e.k)) {
+      if (built.note === 'complex') reached.push(`${e.k} [${inst.label}]`);
+    }
+  }
+  assert.deepEqual(reached, []);
+});
+
+// The fix, stated as the behaviour rather than as the absence of a flag: a clone that
+// back-references a rearrangement draws the SAME chromosome as the clone that spelled
+// its breakpoints out. ISCN 4.2.1 f says the second mention means the first one, so
+// the two figures have to agree.
+test('a back-referenced rearrangement draws what the first mention drew', () => {
+  const spans = (k) => {
+    const model = ISCN.parse(k);
+    return model.clones.map((clone) => {
+      const out = {};
+      Object.keys(clone.slots || {}).forEach((ch) =>
+        (clone.slots[ch] || []).forEach((inst) => {
+          if (inst.kind === 'normal') return;
+          const b = Karyo.buildInstance(inst);
+          out[inst.label] = b.segments.map((s) => `${s.chrom}:${s.from}-${s.to}`).join('|');
+        }));
+      return out;
+    });
+  };
+
+  const [first, second] = spans('46,XX,t(9;22)(q34;q11.2)[3]/47,XX,+8,t(9;22)[17]');
+  assert.equal(second['der(9)'], first['der(9)'], 'the back-referenced der(9) is the same chromosome');
+  assert.equal(second['der(22)'], first['der(22)']);
+  // Not vacuous: the derivative must actually carry material from both partners, which
+  // is precisely what the fallback did not do.
+  assert.match(first['der(9)'], /^9:.*\|22:/, 'der(9) is chromosome 9 plus a piece of 22');
+
+  const [c1, c2] = spans('47,XX,t(2;13)(q37;q14),der(14;21)(q10;q10)c,+18,+mar[3]/45,XX,der(14;21)c[17]');
+  assert.equal(c2['der(14;21)'], c1['der(14;21)'], 'a whole-arm der back-reference too');
+});

@@ -3,6 +3,46 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (a back-referenced rearrangement is drawn, not faked)
+
+- **The second cell line of a mosaic was drawing normal chromosomes under derivative
+  captions.** ISCN 4.2.1 f lets a rearrangement carry its breakpoints on the first
+  mention and omit them afterwards, and the parser already recognised that: the bare
+  `t(9;22)` in `46,XX,t(9;22)(q34;q11.2)[3]/47,XX,+8,t(9;22)[17]` was correctly excused
+  from the breakpoint check. But it still reached the renderer with no breakpoints, so
+  the geometry builder returned null and `buildInstance` fell through to its
+  whole-chromosome fallback. The result, on a verbatim ISCN 2024 example: the first
+  clone drew the Philadelphia correctly and the second drew an intact chromosome 9 and
+  an intact chromosome 22 at their full normal lengths, captioned `der(9)` and
+  `der(22)`, side by side on one screen with no warning. Nine of the standard's own
+  supported examples reached it. The back-reference now copies the breakpoints forward,
+  because "the same rearrangement as above" is what the notation means.
+
+- **That fallback is now pinned as unreachable.** Four branches of `buildInstance`
+  (`ins`, `rec`, `dic`, `der`/`t`) end by returning the untouched chromosome with
+  `note: "complex"`, and nothing downstream reads `note`, so a builder that returns
+  null does not fail: it draws a normal chromosome under an abnormal caption, which is
+  the exact failure the draw gate exists to prevent. Two tests now walk the ISCN 2024
+  corpus and the stress corpus and assert nothing the app agrees to draw reaches it, so
+  the next builder with a gap fails in CI rather than shipping a false figure.
+
+- **`npm run paper-figures` is reproducible.** Re-running it on unchanged code produced
+  a different `fig1-interface.png` every time, so any commit that touched it carried
+  figure churn and a real change could not be spotted in the diff. Two independent
+  causes, both found by diffing two runs pixel by pixel rather than by guessing. fig1:
+  the example-chip row is dealt from a shuffled deck, so a fresh browser context showed
+  three different karyotypes each run; the figure script now seeds the page's
+  `Math.random`. fig2: `fitGallery` fed raw sub-pixel `getBoundingClientRect` widths into
+  `zoom`, moving about 160 pixels of antialiasing per render; the zoom factor is now
+  quantised to three decimals. All three figures are byte-identical across runs.
+
+- **A dead step in the fig1 script now fails loudly.** It looked for the Show button
+  labelled "Affected" to isolate the involved chromosomes, but that button was renamed
+  to "Involved" in #211 and the lookup was not, so for every build since then it found
+  nothing and clicked nothing behind an `if (b)` guard. The figure stayed correct only
+  because the app already defaults to that view, which is the kind of luck that hides a
+  broken step until the default changes. It throws now.
+
 ## 2026-08-28 (the centromere rule is stated, not assumed)
 
 - **The decodes now name the convention they were quietly applying.** A single
