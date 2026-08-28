@@ -3,6 +3,31 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the chain is as long as the notation writes it)
+
+- **A der(A;B) built from translocations now draws at any chain length.** ISCN 5.5.3
+  puts no ceiling on how many rearrangements build one derivative, but the chain walk
+  stopped after a fixed eight steps, and past that the build fell to the
+  single-centromere path: a nine-join `der(5;7)` drew ONE centromere and the acentric
+  piece of chromosome 7 under a caption that names a dicentric, while the decode beside
+  it kept saying "dicentric ... built from nine joins". The walk is now bounded by the
+  join count itself.
+
+- **A chain that does not hold together is refused, with the rule stated.** Joins that
+  never reach the second named chromosome used to draw a monocentric figure under a
+  dicentric caption; a join connected to nothing simply vanished from the figure; and a
+  `t()` sub-op missing a breakpoint was dropped the same way, all warning-free. Each
+  now refuses and explains itself: the translocations of a `der(A;B)` have to form one
+  unbroken chain from A to B, and every join must have a place on it.
+
+- **A bare `t()` sub-op now inherits the breakpoints of its first full mention.**
+  ISCN 4.2.1 f lets a later mention omit its breakpoints, and the first full statement
+  can itself sit inside a `der()`: `47,XY,der(9)t(9;22)(q34;q11.2),+22,ider(22)(q10)t(9;22)`
+  is printed in the standard. The #218 copy reached top-level operations only, so
+  `der(22)t(9;22)` in a later clone drew an intact chromosome 22 under a derivative
+  caption. The ledger now records and serves sub-ops too, which also flips two more
+  ISCN 2024 corpus examples to drawn (328 of 395).
+
 ## 2026-08-28 (the last legend row that was always on)
 
 - **"(translocation pieces take the color of the chromosome they came from)" now appears

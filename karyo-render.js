@@ -804,6 +804,15 @@
         var tcdSegs = applyDerSubOps(inst, tcd, true);
         return { segments: tcdSegs, overlays: [], caption: inst.label, composite: true };
       }
+      // A pure chain the walk refused must not fall through: the single-join path
+      // below would fabricate a DIFFERENT wrong figure out of part of the chain.
+      // The parser gate (classifyDerSubOps) refuses these ahead of the page, so
+      // this return is its backstop, not a path a user reaches. The whole-arm
+      // composition (der carrying its own breakpoints plus a t) keeps the
+      // fall-through it has always had.
+      if (!(ab.breakpoints || []).some(function (g) { return g && g.length; })) {
+        return { segments: [fullSeg(chrom)], overlays: [], caption: inst.label, note: "complex" };
+      }
     }
     if (kind === "t" || kind === "der") {
       // A der can be built by an insertion instead of a translocation join:
@@ -1034,27 +1043,36 @@
     // Breaks per chromosome, in the order the joins name them.
     var breaks = {}, adj = {};
     var ok = true;
-    joins.forEach(function (j) {
+    joins.forEach(function (j, idx) {
       var a = String(j.chroms[0]), b = String(j.chroms[1]);
       var ba = (j.breakpoints[0] || [])[0], bb = (j.breakpoints[1] || [])[0];
       if (!ba || !bb || !IDEO.data[a] || !IDEO.data[b]) { ok = false; return; }
       (breaks[a] = breaks[a] || []).push(ba);
       (breaks[b] = breaks[b] || []).push(bb);
-      (adj[a] = adj[a] || []).push(b);
-      (adj[b] = adj[b] || []).push(a);
+      (adj[a] = adj[a] || []).push({ to: b, idx: idx });
+      (adj[b] = adj[b] || []).push({ to: a, idx: idx });
     });
     if (!ok) return null;
-    // Walk from the first named chromosome. Every step must be a fresh chromosome, so a
-    // cycle or a repeat stops the build rather than looping.
-    var path = [named[0]], seen = {};
+    // Walk from the first named chromosome, consuming one join per step. Every step
+    // must be a fresh chromosome, so a cycle or a repeat stops the build rather than
+    // looping, and the bound is the join count itself: the chain is as long as the
+    // notation writes it. A fixed eight-step guard here once cut a nine-join chain
+    // short, and the failed build fell through to the single-centromere path.
+    var path = [named[0]], seen = {}, used = {};
     seen[named[0]] = 1;
-    for (var guard = 0; guard < 8; guard++) {
-      var here = path[path.length - 1], next = (adj[here] || []).filter(function (x) { return !seen[x]; })[0];
-      if (!next) break;
-      seen[next] = 1;
-      path.push(next);
+    for (var guard = 0; guard < joins.length; guard++) {
+      var here = path[path.length - 1];
+      var step = (adj[here] || []).filter(function (e) { return !seen[e.to]; })[0];
+      if (!step) break;
+      seen[step.to] = 1; used[step.idx] = 1;
+      path.push(step.to);
     }
     if (path.length < 2 || path.indexOf(named[1]) < 0) return null;
+    // A join the walk did not consume names material with no place on the body, and
+    // drawing the rest would be a figure with pieces silently missing. The parser
+    // gates the same condition (classifyDerSubOps), so for accepted input this
+    // return is unreachable.
+    for (var ju = 0; ju < joins.length; ju++) if (!used[ju]) return null;
     var segs = [];
     for (var i = 0; i < path.length; i++) {
       var c = path[i], bs = (breaks[c] || []), d = IDEO.data[c];

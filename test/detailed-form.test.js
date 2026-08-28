@@ -198,6 +198,38 @@ test('a der() named across two chromosomes is built as the dicentric it is', () 
   assert.equal(b.segs.filter((s) => s.hasCen).length, 2);
 });
 
+// The chain is as long as the notation writes it. ISCN 5.5.3 puts no ceiling on how
+// many rearrangements build one derivative, and a real CK case reads like the
+// four-join chain below. The walk used to stop after eight steps (a fixed guard), and
+// past that the build fell to the single-centromere path: a nine-join der(5;7) drew
+// ONE centromere and 7pter→7p13, the acentric piece of chromosome 7, under a caption
+// that names a dicentric. The decode beside it kept saying "dicentric ... built from
+// nine joins", the same words-against-picture split as #227.
+test('a der(5;7) chain keeps both centromeres at any length', () => {
+  const built = (k) => {
+    const clone = ISCN.parse(k).clones[0];
+    let inst = null;
+    Object.keys(clone.slots).forEach((ch) =>
+      (clone.slots[ch] || []).forEach((i) => { if (i.kind !== 'normal') inst = i; }));
+    return { segs: Karyo.buildInstance(inst).segments, detail: Karyo.detailedForm(inst) };
+  };
+
+  // Four joins: 5 to 3 to 11 to 12 to 7. This is the shape a complex-karyotype
+  // report actually prints, and the detailed form is checkable against 5.4.3.2.
+  const four = built('45,XY,der(5;7)t(3;5)(q21;q22)t(3;11)(q29;q13)t(11;12)(q23;q13)t(7;12)(p13;q24.1)');
+  assert.equal(four.detail, '5pter→5q22::3q21→3q29::11q13→11q23::12q13→12q24.1::7p13→7qter');
+  assert.equal(four.segs.filter((s) => s.hasCen).length, 2);
+
+  // Nine joins, past the old eight-step guard.
+  const nine = built('45,XY,der(5;7)t(3;5)(q21;q22)t(3;11)(q29;q13)t(11;12)(q23;q13)'
+    + 't(12;14)(q24;q11.2)t(14;16)(q31;q11.2)t(16;18)(q22;q11.2)t(2;18)(q21;q21)'
+    + 't(2;4)(q31;q21)t(4;7)(q31;p13)');
+  assert.equal(nine.segs.map((s) => String(s.chrom)).join(','), '5,3,11,12,14,16,18,2,4,7');
+  assert.equal(nine.segs.filter((s) => s.hasCen).length, 2, 'both named centromeres survive nine joins');
+  const last = nine.segs[nine.segs.length - 1];
+  assert.ok(last.hasCen, 'the chromosome 7 piece is the centric one, 7p13→7qter');
+});
+
 test('a sub-op on the second named chromosome is applied', () => {
   // ISCN 5.5.3 c iii is the same derivative plus del(7)(q32), and writes the truncated
   // end as an open break: "7p13→7q32:". Both the target segment and the coordinates

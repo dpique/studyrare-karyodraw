@@ -360,7 +360,7 @@
   // this chromosome is made of": der(N) (5.5.2) and rec(N) (5.4.3.2 d, "The
   // aberrations following the abbreviation rec are not separated by a comma").
   // One reader for both, so a fix to how a sub-op is read reaches both.
-  function readSubOps(ab, rest, warnings, raw) {
+  function readSubOps(ab, rest, warnings, raw, statedFully) {
     var sub = [], cursor = 0, unread = "";
     // The leading "?" of 4.2.1 k can sit on a sub-op too: der(1)?t(1;3)(p22;q13)
     // is a derivative 1 whose translocation is the uncertain part. Consumed here
@@ -383,6 +383,23 @@
       });
     }
     unread += rest.slice(cursor);
+    // A rearrangement carries its breakpoints the first time it is listed and may
+    // omit them afterwards (ISCN 4.2.1 f), and that first time can be a sub-op:
+    // 47,XY,der(9)t(9;22)(q34;q11.2),+22,ider(22)(q10)t(9;22)[20] is printed with
+    // the bare t(9;22) referring back to the der(9)'s. The top-level copy (#218)
+    // never reached sub-ops, so a bare sub-op handed the renderer no breakpoints
+    // and der(22)t(9;22) in a later clone drew an intact chromosome 22 under a
+    // derivative caption. Same ledger as the top-level ops, so either form of the
+    // first mention serves either form of the later one.
+    if (statedFully) sub.forEach(function (s) {
+      var key = s.op + "(" + (s.chroms || []).join(";") + ")";
+      var stated = (s.breakpoints || []).some(function (g) { return g.length; });
+      if (stated && !statedFully[key]) statedFully[key] = s.breakpoints;
+      else if (!stated && statedFully[key]) {
+        s.breakpoints = statedFully[key].map(function (g) { return g.slice(); });
+        s.backReference = key;
+      }
+    });
     ab.subOps = sub;
     // Only op(...) groups are sub-ops. Anything else here was dropped, and a
     // dropped "+14" is worse than a rejection: the drawing looks authoritative
@@ -414,6 +431,70 @@
         return undrawn("“" + (ab.note || "der(" + ab.chroms.join(";") + ")") + "” is correct ISCN: a derivative " +
           "chromosome may be built by more than one rearrangement (ISCN 5.5.2). KaryoDraw does not yet have a " +
           "drawing for a derivative carrying “" + subs[i].op + "”, so it draws nothing rather than a wrong figure.");
+      }
+    }
+    // A der(A;B) built from t() joins is assembled by walking those joins as ONE
+    // chain from A to B (ISCN 5.5.3 c; the renderer's twoChromDerSegments is that
+    // walk). Anything the walk could not consume used to be dropped in silence and
+    // the figure drew whatever partial chain remained: joins that never reached B
+    // drew a monocentric figure under a caption that names a dicentric, and a join
+    // connected to nothing simply vanished from the picture. The walk's
+    // preconditions belong here, in the parser, because a builder returning null
+    // must be unreachable rather than fallen back from (the buildInstance
+    // "complex" fallback draws a normal chromosome under an abnormal caption).
+    // The whole-arm form der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12) (5.5.3 c
+    // iv) is a different composition and keeps its own path: this gate reads only
+    // the pure chain form, where the der token itself carries no breakpoints.
+    if (ab.chroms.length === 2 && !(ab.breakpoints || []).some(function (g) { return g && g.length; })) {
+      var tOps = subs.filter(function (s) { return s.op === "t"; });
+      if (tOps.length) {
+        var chainName = ab.note || ("der(" + ab.chroms.join(";") + ")");
+        var joinText = function (s) {
+          return "t(" + (s.chroms || []).join(";") + ")(" +
+            (s.breakpoints || []).map(function (g) { return (g || []).join(""); }).join(";") + ")";
+        };
+        for (var tj = 0; tj < tOps.length; tj++) {
+          var tOp = tOps[tj];
+          if ((tOp.chroms || []).length !== 2 || (tOp.breakpoints || []).length !== 2 ||
+              !(tOp.breakpoints[0] || []).length || !(tOp.breakpoints[1] || []).length) {
+            return undrawn("A translocation inside a der() names two chromosomes and a band on each, one " +
+              "junction of the derivative (ISCN 5.5.3), so “" + joinText(tOp) + "” in “" + chainName +
+              "” is missing part of its junction and the derivative cannot be assembled.");
+          }
+        }
+        // The same walk the renderer performs: from A, each step to a chromosome
+        // not yet visited, consuming one join per step.
+        var adjacent = {}, usedJoin = {};
+        tOps.forEach(function (s, idx) {
+          var ca = String(s.chroms[0]), cb = String(s.chroms[1]);
+          (adjacent[ca] = adjacent[ca] || []).push({ to: cb, idx: idx });
+          (adjacent[cb] = adjacent[cb] || []).push({ to: ca, idx: idx });
+        });
+        var chainFrom = String(ab.chroms[0]), chainTo = String(ab.chroms[1]);
+        var walked = {}, at = chainFrom, reached = (chainFrom === chainTo);
+        walked[chainFrom] = 1;
+        for (var hop = 0; hop < tOps.length; hop++) {
+          var step = (adjacent[at] || []).filter(function (e) { return !walked[e.to]; })[0];
+          if (!step) break;
+          walked[step.to] = 1; usedJoin[step.idx] = 1; at = step.to;
+          if (at === chainTo) reached = true;
+        }
+        if (!reached) {
+          return undrawn("“der(" + ab.chroms.join(";") + ")” names the chromosomes whose centromeres the " +
+            "derivative carries (ISCN 5.5.3), so its translocations have to chain from chromosome " +
+            chainFrom + " to chromosome " + chainTo + ". The joins in “" + chainName + "” never reach " +
+            "chromosome " + chainTo + ", so the dicentric this name promises cannot be assembled, and " +
+            "KaryoDraw draws nothing rather than a wrong figure.");
+        }
+        for (var uj = 0; uj < tOps.length; uj++) {
+          if (!usedJoin[uj]) {
+            return undrawn("Each translocation inside a der() is one junction of that derivative " +
+              "(ISCN 5.5.3), so together they have to form a single chain. “" + joinText(tOps[uj]) +
+              "” does not connect to the chain the other joins of “" + chainName + "” build, so its " +
+              "material has no place on the derivative, and KaryoDraw draws nothing rather than a " +
+              "figure with pieces missing.");
+          }
+        }
       }
     }
     var insOps = subs.filter(function (s) { return s.op === "ins"; });
@@ -667,7 +748,7 @@
       case "der":
         ab.kind = "der";
         // der(N) may be followed by t(...)/del(...) sub-ops describing its make-up.
-        if (rest) { ab.note = "der(" + ab.chroms.join(";") + ")" + rest; readSubOps(ab, rest, warnings, raw); classifyDerSubOps(ab, warnings); }
+        if (rest) { ab.note = "der(" + ab.chroms.join(";") + ")" + rest; readSubOps(ab, rest, warnings, raw, statedFully); classifyDerSubOps(ab, warnings); }
         break;
       // rec(N) is a recombinant chromosome: what an inversion carrier passes on
       // when a crossover falls inside the inversion loop. Its make-up is written

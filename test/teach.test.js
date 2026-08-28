@@ -766,3 +766,17 @@ test('a whole-arm fusion between non-acrocentrics is not called Robertsonian', (
 test('a derivative naming one chromosome is unchanged', () => {
   assert.match(decodeText('46,XX,der(1)t(1;3)(p22;q13.1)'), /has chromosome 1’s centromere/);
 });
+
+// The join count in the der(A;B) prose comes off the notation, so it already said
+// "nine joins" while the guard-capped figure was drawing one centromere (the #227
+// split, at length nine instead of two). The model half of the agreement is pinned
+// in detailed-form.test.js; this half pins that the prose scales with the chain.
+test('a nine-join der(5;7) is still decoded as the dicentric it draws', () => {
+  const t = decodeText('45,XY,der(5;7)t(3;5)(q21;q22)t(3;11)(q29;q13)t(11;12)(q23;q13)'
+    + 't(12;14)(q24;q11.2)t(14;16)(q31;q11.2)t(16;18)(q22;q11.2)t(2;18)(q21;q21)'
+    + 't(2;4)(q31;q21)t(4;7)(q31;p13)');
+  assert.match(t, /centromeres of BOTH chromosome 5 and chromosome 7/);
+  assert.match(t, /dicentric/);
+  assert.match(t, /nine joins/);
+  assert.match(t, /chromosomes 2, 3, 4, 5, 7, 11, 12, 14, 16, and 18/);
+});
