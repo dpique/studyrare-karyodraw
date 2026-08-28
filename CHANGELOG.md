@@ -3,6 +3,36 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (a grafted arm is no longer drawn end-for-end)
+
+- **A derivative whose own break is on the short arm drew its grafted piece upside
+  down.** `translocationSegments` built both pieces unreversed and chose only their
+  ORDER from which arm the derivative broke on. That is correct for a q;q translocation
+  and wrong for every other shape, because the graft's broken end has to face the
+  junction, and which end of the segment that is depends on the DONOR's arm as well.
+  `der(1)` of `t(1;3)(p22;q13.1)` ran the chromosome 3 piece from 3q13.1 down to 3qter,
+  joining 3qter to 1p22 when the break was at 3q13.1. The Philadelphia is q;q, so the
+  one figure that gets checked most was right and the others were not, and every
+  translocation test in the suite used q;q breakpoints, so nothing caught it.
+
+  ISCN prints the answer for that exact karyotype, `der(1)(3qter→3q13.1::1p22→1qter)`,
+  and 5.4.2.2 b makes the printed order a statement about the chromosome rather than
+  about notation: the bands are listed "in the order in which they occur in the
+  rearranged chromosome". The new tests are ISCN's own detailed forms for
+  `der(1)t(1;3)(p22;q13.1)` and `der(X)t(X;8)(p22.3;q24.1)`, plus the q;q pair as a
+  regression guard, plus the fourth combination (a donor that broke on p) derived from
+  the same rule since no printed example covers it.
+
+  One curated page was affected: `t(12;21)(p13;q22)`, the ETV6-RUNX1 translocation of
+  childhood ALL, whose two derivatives were both drawn with the graft inverted. Its
+  figures are regenerated here, as is the paper gallery, which carries a three-way
+  translocation with a break on 7p.
+
+- **`paper/fig1-interface.png` was stale.** It is a screenshot of the running app taken
+  down to the bottom edge of the band legend, so it contains the legend, and the legend
+  changed in #219 without the figure being rebuilt. The committed figure still showed
+  the old unconditional gray row with its white swatch. Regenerated.
+
 ## 2026-08-28 (the stain rows follow the same rule as the mark rows)
 
 - **The Involved view no longer explains gray when nothing on screen is gray.** #213

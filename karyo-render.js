@@ -1097,6 +1097,26 @@
     var sk = splitAtBreak(keepChrom, keepBand), sd = splitAtBreak(addChrom, addBand);
     var keep = { chrom: keepChrom, from: sk.centric[0], to: sk.centric[1], hasCen: true, reversed: false };
     var add = { chrom: addChrom, from: sd.acentric[0], to: sd.acentric[1], hasCen: false, reversed: false };
+    // The graft's BROKEN end has to face the junction, and which end of the segment
+    // that is depends on two independent things: which side of the derivative's own
+    // break the graft sits on, and which arm the DONOR broke on.
+    //
+    // A segment drawn unreversed runs low coordinate at the top. The donor's acentric
+    // piece is [bp, qter] when the donor broke on q, so its broken end is its LOW
+    // coordinate; it is [pter, bp] when the donor broke on p, so its broken end is its
+    // HIGH coordinate. The graft goes BELOW the kept piece when the derivative broke on
+    // q (broken end at the graft's top) and ABOVE it when the derivative broke on p
+    // (broken end at the graft's bottom).
+    //
+    // Both flags were hard-coded false, which is right only for the q;q case. The
+    // Philadelphia is q;q, so the one figure everyone checks was correct and the rest
+    // were not: der(1) of t(1;3)(p22;q13.1) drew the chromosome 3 graft end-for-end,
+    // running 3q13.1 down to 3qter and so joining 3qter to 1p22 when the break was at
+    // 3q13.1. ISCN prints the answer for that exact karyotype,
+    // der(1)(3qter→3q13.1::1p22→1qter), and 5.4.2.2 b makes the printed order the
+    // physical one: the bands are listed "in the order in which they occur in the
+    // rearranged chromosome".
+    add.reversed = (sk.side === "q") ? (sd.side === "p") : (sd.side === "q");
     return (sk.side === "q") ? [keep, add] : [add, keep];
   }
 
