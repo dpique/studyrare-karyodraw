@@ -588,6 +588,11 @@
     }
 
     var op = opM[1].toLowerCase();
+    // The symbol AS WRITTEN, kept because ab.kind is a drawing category and several
+    // symbols share one: idic and dic are both kind "dic", rob and der are both kind
+    // "der". The figure's caption has to name the object the way the writer named it
+    // (see derLabel), and kind cannot tell those apart.
+    ab.op = op;
     var chromGroup = opM[2] || "";
     var bpGroup = opM[3] || "";
     var rest = tok.slice(opM[0].length); // trailing sub-ops (der chains)
@@ -986,6 +991,29 @@
     function mkDer(c, ab) {
       return { chrom: c, kind: ab.kind, label: derLabel(c, ab), aberration: ab, primary: c };
     }
+    // The caption under a drawn abnormal chromosome. It names the object, and ISCN's
+    // own prose is the model for how: "the karyotype contains one normal chromosome
+    // 13, one normal chromosome 15, and the dic(13;15)" (5.5.4 f ii), "there are two
+    // chromosomes 13 plus the idic(13)" (5.5.4 f viii), "the karyotype contains one
+    // normal chromosome 13, one normal chromosome 21, and the der(13;21)" (5.5.18.3
+    // b i). Two rules come out of those sentences:
+    //
+    //   1. the symbol is the one the writer used, and
+    //   2. it names every chromosome the symbol names.
+    //
+    // Every one-body derivative used to come out as der(<lowest chromosome>), which
+    // broke both. idic(15)(q11.2) was captioned der(15) — Dan, 2026-08-28 — and that
+    // is not a der: it throws away the two-centromere mirror the figure is drawn to
+    // show, and idic versus dic is a mechanism distinction ISCN is deliberate about
+    // (5.5.4 f ix: dic(15;15) for recombination between homologues, idic only where
+    // sister-chromatid fusion is proven). dic(13;15) and der(13;21) lost their
+    // partner chromosome the same way, so the caption on a fused body named one of
+    // the two chromosomes in it.
+    //
+    // A translocation is the case that is already right and must stay right: t()
+    // makes TWO chromosomes, each derived from one, and ISCN calls them der(9) and
+    // der(22) (5.5.3, "the der(9)t(9;22)"). Same for the two products of an ins().
+    // So the multi-chromosome spelling is for the kinds that fuse into ONE body.
     function derLabel(c, ab) {
       if (ab.kind === "iso") return "i(" + c + ")";
       if (ab.kind === "ring") return "r(" + c + ")";
@@ -993,11 +1021,18 @@
       if (ab.kind === "dup") return "dup(" + c + ")";
       if (ab.kind === "inv") return "inv(" + c + ")";
       if (ab.kind === "add") return "add(" + c + ")";
-      if (ab.kind === "der") return "der(" + c + ")";
       if (ab.kind === "hsr") return "hsr(" + c + ")";
       if (ab.kind === "rec") return "rec(" + c + ")";
       if (ab.kind === "fra") return "fra(" + c + ")";
-      if (ab.kind === "t" || ab.kind === "dic" || ab.kind === "ins") return "der(" + c + ")";
+      // dic, idic, rob, and a der() written across two chromosomes: those fuse into
+      // ONE body, so the caption carries the symbol as written and every chromosome
+      // in it. A der() carrying sub-ops (der(9)t(9;22), der(19)t(X;19)) is not this
+      // case: its chroms list is the one chromosome it is a derivative OF, and the
+      // join lives in the sub-op.
+      var oneBody = ab.kind === "dic" ||
+        (ab.kind === "der" && (ab.chroms || []).length >= 2 && !(ab.subOps || []).length);
+      if (oneBody) return (ab.op || (ab.kind === "dic" ? "dic" : "der")) + "(" + ab.chroms.join(";") + ")";
+      if (ab.kind === "der" || ab.kind === "t" || ab.kind === "ins") return "der(" + c + ")";
       return c;
     }
     function firstNormal(arr) { return arr.map(function (x) { return x.kind; }).indexOf("normal"); }
