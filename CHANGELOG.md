@@ -3,6 +3,32 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-30 (the net imbalance becomes a table, and the sizes move into it)
+
+- **A NET IMBALANCE table sits under the detailed form** whenever a karyotype
+  gains or loses material. Each row is a maximal run of constant copy number,
+  computed from the very segment lists the figure is drawn from
+  (Karyo.computeDosage), with the typed band names at its edges: for
+  45,XX,der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12) it reads 8pter→8q10
+  nullisomy, 8q10→8q22 balanced, 8q22→8q24.1 monosomy, 8q24.1→8qter nullisomy,
+  9q12→9qter trisomy, each with its approximate size. Balanced runs of an
+  involved chromosome stay as muted context rows; a fully balanced karyotype
+  shows no table at all. Sex chromosomes carry a sex-aware baseline (one X is
+  balanced in a male cell; i(X) reads one Xp and three Xq, the imbalance ISCN
+  itself states at 5.5.11 ii). Marker and dmin material is excluded rather than
+  guessed, and the table says so.
+- **A "cancer genes" checkbox annotates gained and lost rows** with well-known
+  cytogenetics genes that sit inside them (nullisomy 8q24.1→8qter includes MYC;
+  trisomy 9q12→9qter includes ABL1). The curated list lives in teach.js with
+  HGNC band assignments; positions resolve through the app's own band map, so a
+  typo fails a test instead of mapping silently to nowhere. A teaching aid, not
+  a clinical annotation, and off by default.
+- **The "(about N Mb)" parentheticals left the decode prose.** They interrupted
+  the sentences; sizes now live in the table's own column, computed from the
+  same band-midpoint positions. One deliberate loss, worth knowing: a balanced
+  span (an inversion's segment, an insertion's moved piece) no longer carries a
+  size anywhere, because the table only exists when something is imbalanced.
+
 ## 2026-08-30 (the glossary settles on the prose, and the detailed form closes its gap)
 
 - **The glossary hover now lives on the prose terms only.** The symbol chips and

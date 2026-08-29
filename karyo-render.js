@@ -1787,6 +1787,86 @@
     return h2.join("");
   }
 
+  // Per-chromosome copy number, read off the very segment lists the figure is
+  // drawn from (buildInstance), so this and the karyogram cannot disagree.
+  // Returns { chroms: [{chrom, baseline, runs: [{from, to, copies, fromLabel,
+  // toLabel}]}], unknownExcluded }. Runs are maximal intervals of constant copy
+  // number over [0, length]; edges carry the TYPED band names where the clone's
+  // own breakpoints supplied them (a break "at 8q22" resolves to the band
+  // midpoint internally, and the table must speak the notation's language, not
+  // expose the resolution), pter/qter at the telomeres, and the containing band
+  // as the rare fallback. Baseline: the ploidy for autosomes; for the sex
+  // chromosomes X=1 Y=1 when any Y material is present and X=2 otherwise
+  // (diploid only; a polyploid clone leaves the sex baseline null and the
+  // caller states plain counts). Markers and dmin are EXCLUDED, not guessed: a
+  // mar cannot be assigned to a chromosome, and the dmin stand-in body must
+  // never count as chromosome 21 material; unknownExcluded records that the
+  // exclusion happened so the caller can say so.
+  function computeDosage(clone) {
+    var cover = {}, unknownExcluded = false;
+    Object.keys(clone.slots || {}).forEach(function (ch) {
+      (clone.slots[ch] || []).forEach(function (inst) {
+        var d = buildInstance(inst, { theme: "simple", level: 99, affected: {} });
+        if (!d) return;
+        if (d.marker || d.dmin) { unknownExcluded = true; return; }
+        (d.segments || []).forEach(function (s) {
+          if (!IDEO.data[s.chrom] || s.to <= s.from) return;
+          (cover[s.chrom] = cover[s.chrom] || []).push([s.from, s.to]);
+        });
+      });
+    });
+    // Typed band names first, so run edges read as the notation wrote them.
+    var names = {};
+    function nameBand(c, band) {
+      var r = resolveBand(String(c), band);
+      if (r) (names[String(c)] = names[String(c)] || {})[r.mid] = band;
+    }
+    function walkAb(ab) {
+      (ab.chroms || []).forEach(function (c, i) {
+        (((ab.breakpoints || [])[i]) || []).forEach(function (b) {
+          if (typeof b === "string") nameBand(c, b);
+        });
+      });
+      (ab.subOps || []).forEach(walkAb);
+    }
+    (clone.aberrations || []).forEach(walkAb);
+    var yPresent = !!(cover.Y && cover.Y.length);
+    var ploidy = clone.ploidy || 2;
+    var chroms = Object.keys(cover).map(function (c) {
+      var len = IDEO.data[c].length;
+      var edges = [0, len];
+      cover[c].forEach(function (iv) { edges.push(iv[0], iv[1]); });
+      edges = edges.filter(function (e, i, arr) { return e >= 0 && e <= len && arr.indexOf(e) === i; })
+        .sort(function (x, y) { return x - y; });
+      var runs = [];
+      for (var i = 0; i < edges.length - 1; i++) {
+        var a = edges[i], b = edges[i + 1], n = 0;
+        // Edges include every interval endpoint, so an interval covering any of
+        // [a,b) covers all of it; whole-containment is the exact test.
+        cover[c].forEach(function (iv) { if (iv[0] <= a && iv[1] >= b) n++; });
+        if (runs.length && runs[runs.length - 1].copies === n) runs[runs.length - 1].to = b;
+        else runs.push({ from: a, to: b, copies: n });
+      }
+      var label = function (pos) {
+        if (pos === 0) return "pter";
+        if (pos === len) return "qter";
+        var n2 = names[c] && names[c][pos];
+        if (n2) return n2;
+        var bands = getBands(c);
+        for (var bi = 0; bi < bands.length; bi++) {
+          if (pos >= bands[bi][1] && pos < bands[bi][2]) return bands[bi][0];
+        }
+        return "?";
+      };
+      runs.forEach(function (r) { r.fromLabel = label(r.from); r.toLabel = label(r.to); });
+      var baseline = (c === "X" || c === "Y")
+        ? (ploidy === 2 ? (yPresent ? 1 : (c === "X" ? 2 : 0)) : null)
+        : ploidy;
+      return { chrom: c, baseline: baseline, runs: runs };
+    });
+    return { chroms: chroms, unknownExcluded: unknownExcluded };
+  }
+
   function computeAffected(clones) {
     if (!Array.isArray(clones)) clones = [clones];
     var order = [];
@@ -2174,7 +2254,7 @@
 
   window.Karyo = {
     render: render, drawInstance: drawInstance, drawDetail: drawDetail, buildInstance: buildInstance,
-    computeAffected: computeAffected, resolveBand: resolveBand, getBands: getBands, textWidth: textWidth,
+    computeAffected: computeAffected, computeDosage: computeDosage, resolveBand: resolveBand, getBands: getBands, textWidth: textWidth,
     armExtent: armExtent, nearestBand: nearestBand, bandAncestor: bandAncestor, invalidBands: invalidBands, bandSnap: bandSnap, detailedForm: detailedForm,
     STAIN: STAIN, OP_COLORS: OP_COLORS, AFFECTED_PALETTE: AFFECTED_PALETTE, tintRamp: tintRamp, BASELINE: BASELINE, textInk: textInk
   };
