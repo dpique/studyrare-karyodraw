@@ -1140,12 +1140,14 @@
   }
 
   // Build the per-chromosome instance list + copy-number complement.
-  function buildComplement(clone, warnings) {
+  function buildComplement(clone, warnings, forcePloidy) {
     var comp = {};
     // Base ploidy from the modal number: 46 -> 2, 69 -> 3, 92 -> 4. Only accept
     // triploid/tetraploid when the count is close to a clean multiple, so a
     // hyperdiploid cancer karyotype is not mistaken for a polyploid.
     var ploidy = 2;
+    // forcePloidy is the second pass of the arithmetic inference below.
+    if (forcePloidy) ploidy = forcePloidy;
     // A stated ploidy level is not a guess: 58<2n> and 81<3n> say outright which
     // baseline the gains and losses are expressed against (ISCN 6.3.7 e-f), and it is
     // exactly the near-triploid clones where inferring it from the count goes wrong.
@@ -1153,7 +1155,9 @@
     // Case-insensitive to match the count-field validation: 58<2N> is accepted
     // there, so the ploidy it states must be believed here too.
     var stated = /<(\d+)n>/i.exec(clone.modalGiven || "");
-    if (stated && +stated[1] >= 1 && +stated[1] <= 8) {
+    if (forcePloidy) {
+      // second pass: keep the forced value
+    } else if (stated && +stated[1] >= 1 && +stated[1] <= 8) {
       ploidy = +stated[1];
     } else if (clone.modalNumber != null) {
       var p = Math.round(clone.modalNumber / 23);
@@ -1450,6 +1454,35 @@
       actual: actual,
       ok: clone.modalNumber == null || clone.modalNumber === actual || inRange
     };
+    // A heavily rearranged clone can sit far from a bare multiple of 23 while
+    // reconciling exactly against a higher baseline: 76~77,XX,-Y,+1,... sums to 77
+    // only over 3n=69, but the guess above (within 3 of a clean multiple) left it
+    // diploid, so the figure drew a scaffold ~25 chromosomes short of the stated
+    // count and every homolog count was one low. The candidates are TRIED rather
+    // than extrapolated, because the tally is not linear in the baseline: an
+    // unsigned structural op that finds no normal homolog to consume adds a copy
+    // instead, so a diploid pass saturates where a triploid one does not. Each
+    // trial pushes its warnings to a scratch list; the pass that reconciles keeps
+    // its scaffold and its warnings (nothing below this block has warned yet, so
+    // nothing duplicates), and if none does, the original is rebuilt. A stated
+    // <Nn> was already believed above and is never second-guessed, and a clone
+    // with uninterpreted tokens keeps its scaffold, since its tally is the thing
+    // that is short.
+    if (!forcePloidy && !stated && !clone.counts.ok && clone.modalNumber != null &&
+        !clone.aberrations.some(function (ab) { return ab.unread || ab.kind === "unknown"; })) {
+      for (var cp = 2; cp <= 4; cp++) {
+        if (cp === ploidy) continue;
+        var trial = [];
+        buildComplement(clone, trial, cp);
+        if (clone.counts.ok) {
+          clone.inferredPloidy = cp;
+          trial.forEach(function (w) { warnings.push(w); });
+          return;
+        }
+      }
+      buildComplement(clone, warnings, ploidy);
+      return;
+    }
     // Do not argue about the count when part of the designation was not interpreted:
     // the stated number is probably right and our tally is the thing that is short.
     // "Says 46 but describes 45" reads as a claim about the karyotype, and sends

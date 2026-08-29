@@ -1689,3 +1689,25 @@ test('a multiplier on an unsigned structural abnormality makes that many copies'
   assert.equal(t2.clones[0].slots['9'].filter((i) => i.kind === 't').length, 2);
   assert.equal(t2.clones[0].slots['22'].filter((i) => i.kind === 't').length, 2);
 });
+
+// A heavily rearranged clone can sit far from a bare multiple of 23 while
+// reconciling exactly against a higher baseline: the production composite
+// 76~77,XX,-Y,+1,... sums to 77 only against 3n=69, but the old inference
+// (within 3 of a clean multiple) left it diploid, so the figure drew ~51
+// chromosomes against a stated 76~77 and every homolog count was one short.
+// The inference now tries the arithmetic: if the stated count reconciles under
+// exactly one other baseline, the scaffold is rebuilt on it. A stated <Nn>
+// still wins outright, and a plain diploid karyotype is untouched.
+test('a heavily rearranged clone infers its ploidy from the arithmetic', () => {
+  const m = ISCN.parse('46,XY,dup(12)(q13q24.1)[15]/46,idem,del(11)(q13q23)[2]/76~77,XX,-Y,+1,+2,-3,+4,add(4)(q31.3)x2,+5,+6,+7,+8,der(8)t(8;14)(q21.2;q13)t(11;14)(q13;q32)x2,+add(9)(p21),+10,add(10)(q22),der(11)t(11;14)(q13;q32)x2,-12,-13,+16,+17,der(17)t(12;17)(q11;p13)x2,+18,+19,-20,-21,+22[cp3]');
+  const c3 = m.clones[2];
+  assert.equal(c3.ploidy, 3, 'near-triploid inferred');
+  assert.equal(c3.counts.ok, true);
+  const total = Object.keys(c3.complement).reduce((n, ch) => n + c3.complement[ch], 0);
+  assert.ok(total >= 76 && total <= 77, 'the scaffold carries the stated count, drew ' + total);
+  assert.equal(c3.slots['1'].length, 4, 'baseline three plus the stated gain');
+  assert.equal(ISCN.parse('58<2n>,XY,+X,+4,+6,+8,+9,+10,+14,+14,+17,+18,+21,+21').clones[0].ploidy, 2,
+    'a stated ploidy is believed over the arithmetic');
+  assert.equal(ISCN.parse('46,XY').clones[0].ploidy, 2);
+  assert.equal(ISCN.parse('47,XX,+21').clones[0].ploidy, 2);
+});

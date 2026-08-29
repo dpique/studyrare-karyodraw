@@ -220,8 +220,8 @@
     }
     return null;
   }
-  function describeAberration(ab) {
-    var out = describeAberrationBase(ab);
+  function describeAberration(ab, clone) {
+    var out = describeAberrationBase(ab, clone);
     // Appended once, here, rather than threaded through forty return statements.
     if (out && ab && ab.uncertain) out = { text: out.text + uncertainSuffix(ab), tag: out.tag };
     return out;
@@ -309,7 +309,7 @@
       ", and the two broken ends are joined to each other. Everything past the breaks, " + losses + ", is lost";
   }
 
-  function describeAberrationBase(ab) {
+  function describeAberrationBase(ab, clone) {
     var k = ab.kind, c = ab.chroms[0], bp = ab.breakpoints, mult = ab.multiplier || 1;
     if (k === "idem") {
       var refName = ab.ref === "sdl" ? "the sideline (the clone before it)" : "the stemline (the first clone)";
@@ -317,12 +317,38 @@
     }
     if (k === "hsr") return { text: "a HOMOGENEOUSLY STAINING REGION on chromosome " + c + " at " + c + ((bp[0] || [])[0] || "?") + ": a block of amplified DNA (many extra copies of a gene, e.g. an oncogene) built into the chromosome", tag: "add" };
     if (k === "dmin") return { text: "DOUBLE MINUTES: small extra circles of amplified DNA floating outside the chromosomes (acentric, so not counted in the chromosome number). A hallmark of oncogene amplification", tag: "add" };
-    if (k === "gain") return mult > 1
-      ? { text: mult + " EXTRA copies of chromosome " + c + " (so " + (2 + mult) + " copies in all)", tag: "gain" }
-      : { text: "an EXTRA copy of chromosome " + c + " (three copies = trisomy " + c + ")", tag: "gain" };
-    if (k === "loss") return mult > 1
-      ? { text: "LOSS of " + mult + " copies of chromosome " + c, tag: "loss" }
-      : { text: "LOSS of one chromosome " + c + " (one copy = monosomy " + c + ")", tag: "loss" };
+    if (k === "gain" || k === "loss") {
+      // The parenthetical is a copy-number claim, so it states the count the
+      // FIGURE draws, read off the clone's own slots. The canned diploid slogans
+      // said "trisomy 1" beside a triploid figure drawing five copies, "monosomy
+      // Y" for a male whose only Y is gone, and "trisomy X" for an XY cell
+      // gaining a second X. Trisomy and tetrasomy are named only when the drawn
+      // count is exactly that on a diploid autosome; a derivative carrying more
+      // of the chromosome is pointed at rather than silently folded in.
+      var head = k === "gain"
+        ? (mult > 1 ? mult + " EXTRA copies of chromosome " + c : "an EXTRA copy of chromosome " + c)
+        : (mult > 1 ? "LOSS of " + mult + " copies of chromosome " + c : "LOSS of one chromosome " + c);
+      var slotList = clone && clone.slots ? clone.slots[String(c)] : null;
+      if (!slotList) return { text: head, tag: k };
+      var whole = slotList.filter(function (i) { return i.kind === "normal" || i.kind === "gain"; }).length;
+      var riders = slotList.filter(function (i) { return ["normal", "gain", "missing"].indexOf(i.kind) < 0; })
+        .map(function (i) { return i.label; });
+      var basePloidy = clone.ploidy || 2;
+      var SOMY = { 3: "trisomy", 4: "tetrasomy", 5: "pentasomy" };
+      var isSex = c === "X" || c === "Y";
+      var paren;
+      if (whole === 0) paren = "no copy of " + c + " remains in this cell line";
+      else if (basePloidy === 2 && !riders.length && !isSex && k === "gain" && SOMY[whole])
+        paren = numberWord(whole) + " copies = " + SOMY[whole] + " " + c;
+      else if (basePloidy === 2 && !riders.length && !isSex && k === "loss" && whole === 1)
+        paren = "one copy = monosomy " + c;
+      else {
+        paren = numberWord(whole) + (whole === 1 ? " copy" : " copies") + " in this cell line";
+        if (basePloidy > 2) paren += ", against a baseline of " + numberWord(basePloidy);
+        if (riders.length) paren += ", with more " + c + " material on " + listJoin(riders);
+      }
+      return { text: head + " (" + paren + ")", tag: k };
+    }
     if (k === "del") {
       var b0 = (bp[0] || []);
       if (b0.length >= 2) return { text: "an interstitial DELETION in chromosome " + c + ": the segment between " + bandsPhrase(c, b0) + sizeParen(sizeBetween(c, b0[0], b0[1])) + " is missing", tag: "del" };
@@ -454,7 +480,26 @@
         var waExtraText = waExtras.length
           ? " It also carries " + listJoin(waExtras) + (waSame && waJoins.length ? ", on the other arm." : ".")
           : "";
-        return { text: waOpen + (waJoins.length ? " " + waJoins.join(" ") : "") + waExtraText, tag: "der" };
+        // What the fusion costs. The description used to stop at the composition,
+        // stating no imbalance at all; the arms the centromere letters do NOT name
+        // are gone from this derivative, and when exactly one normal homolog of
+        // each partner remains in this clone, that is a partial monosomy worth
+        // stating outright.
+        var waLost = "";
+        if (!waSame) {
+          var waArmNot = function (ix) { return waArm(ix) === "long" ? "p" : "q"; };
+          var waLostNames = String(ab.chroms[0]) + waArmNot(0) + " and " + String(ab.chroms[1]) + waArmNot(1);
+          waLost = " The " + waLostNames + " arms are not part of this derivative.";
+          if (clone && clone.slots && (clone.ploidy || 2) === 2) {
+            var waN0 = (clone.slots[String(ab.chroms[0])] || []).filter(function (i) { return i.kind === "normal"; }).length;
+            var waN1 = (clone.slots[String(ab.chroms[1])] || []).filter(function (i) { return i.kind === "normal"; }).length;
+            if (waN0 === 1 && waN1 === 1) {
+              waLost = " With one normal " + ab.chroms[0] + " and one normal " + ab.chroms[1] +
+                " remaining, the cell is partially monosomic for the lost arms (" + waLostNames + ").";
+            }
+          }
+        }
+        return { text: waOpen + (waJoins.length ? " " + waJoins.join(" ") : "") + waExtraText + waLost, tag: "der" };
       }
       if (ab.chroms && ab.chroms.length >= 2 &&
         (/robertsonian/i.test(ab.note || "") || (wholeArmBands && acroPair))) {
@@ -682,6 +727,22 @@
       return a !== ab && a.kind === "der" && String((a.chroms || [])[0]) === partner;
     });
     if (hasPartnerDer) return "";
+    // Dosage was computed per derivative in isolation: der(11)t(11;14) announced
+    // 14q32->qter "present in three copies" while der(8)t(8;14) in the same clone
+    // carries the same distal 14 material, so the figure draws it four times. When
+    // the partner rides any OTHER rearranged chromosome the numeric claim is
+    // withheld and the reader is pointed at the figure, which carries each piece
+    // where it sits.
+    var partnerElsewhere = (clone.aberrations || []).some(function (a) {
+      if (a === ab) return false;
+      var names = (a.chroms || []).map(String);
+      (a.subOps || []).forEach(function (s) { names = names.concat((s.chroms || []).map(String)); });
+      return names.indexOf(partner) >= 0;
+    });
+    if (partnerElsewhere) {
+      return " Chromosome " + partner + " material rides more than one derivative in this karyotype, so no " +
+        "single line's dosage tells the whole story; the figure carries each piece where it sits.";
+    }
     var pSlot = (clone.slots || {})[partner] || [], cSlot = (clone.slots || {})[c] || [];
     if (pSlot.length !== 2 || !pSlot.every(function (i) { return i.kind === "normal"; })) return "";
     if (cSlot.length !== 2 || cSlot.filter(function (i) { return i.kind === "normal"; }).length !== 1) return "";
@@ -852,6 +913,26 @@
         ? "chromosome count varies from " + clone.modalNumber + " to " + clone.modalHigh +
           " across the cells counted (normal is 46)"
         : "total chromosome count" + (clone.modalNumber === 46 ? " (the normal human number)" : " (normal is 46)");
+      // The baseline the changes are scored against, when it is not the diploid 46:
+      // a stated <3n>, an inferred near-triploid, or a count near a clean multiple.
+      // Without this the token list cannot be reconciled with the count or with the
+      // homolog counts the figure draws.
+      var statedN = /<(\d+)n>/i.exec(clone.modalGiven || "");
+      var PLOIDY_WORD = { 1: "haploid", 3: "triploid", 4: "tetraploid" };
+      if (statedN && +statedN[1] === 2) {
+        txt += "; <2n> says the changes are scored against the normal diploid baseline of 46, even this far from it";
+      } else if (statedN) {
+        txt += "; <" + statedN[1] + "n> sets a " + (PLOIDY_WORD[+statedN[1]] || statedN[1] + "n") +
+          " baseline of " + (+statedN[1] * 23) + " chromosomes (" + numberWord(+statedN[1]) +
+          " copies of each), and every gain and loss is scored against that";
+      } else if (clone.inferredPloidy) {
+        txt += "; a count this size fits a near-" + (PLOIDY_WORD[clone.inferredPloidy] || clone.inferredPloidy + "n") +
+          " clone, so the changes are scored against a baseline of " + (clone.inferredPloidy * 23);
+      } else if (clone.ploidy && clone.ploidy !== 2) {
+        txt += "; a count near " + (clone.ploidy * 23) + " reads as " +
+          (PLOIDY_WORD[clone.ploidy] || clone.ploidy + "n") + ", " + numberWord(clone.ploidy) +
+          " copies of each chromosome";
+      }
       rows.push({ code: code, text: txt, tag: "count" });
     }
     if (clone.sex.label) {
@@ -864,7 +945,7 @@
           "ISCN writes 46,t(X;Y)(q22;q11.23) rather than repeating the X and Y in front of it" });
     }
     clone.aberrations.forEach(function (ab) {
-      var d = describeAberration(ab);
+      var d = describeAberration(ab, clone);
       var q = ab.qualifier && QUALIFIER_PHRASE[ab.qualifier];
       var body = d.text + robNote(ab, clone) + loneDerNote(ab, clone);
       // The der() descriptions already end in a full stop while the t() ones do not, and
@@ -883,7 +964,7 @@
       if (q) rows.push({ code: ab.qualifier, text: q, tag: "qual" });
     });
     if (clone.cellCount != null) {
-      rows.push({ code: "[" + (clone.composite ? "cp" : "") + clone.cellCount + "]", text: (clone.composite ? "composite of " : "seen in ") + clone.cellCount + " cells counted for this clone", tag: "cells" });
+      rows.push({ code: "[" + (clone.composite ? "cp" : "") + clone.cellCount + "]", text: (clone.composite ? "composite of " : "seen in ") + clone.cellCount + " cell" + (clone.cellCount === 1 ? "" : "s") + " counted for this clone", tag: "cells" });
     }
     return rows;
   }

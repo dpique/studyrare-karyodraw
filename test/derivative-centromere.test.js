@@ -185,3 +185,14 @@ test('a grafted whole-arm der pinches at the arm seam, not at the graft junction
   assert.ok(cenLines[0] > height * 0.4,
     `the constriction sits at the 14;13 arm seam near half height (y=${cenLines[0]} of ${height})`);
 });
+
+// The involved view hides unaffected groups, and for a mosaic whose only sex
+// change was -Y that drew an XY clone showing a lone Y in its sex box, no X
+// anywhere. A Y in the affected set now brings the X beside it.
+test('a Y in the affected set brings the X beside it', async () => {
+  const { ISCN, Karyo } = await lib();
+  const withY = Karyo.computeAffected(ISCN.parse('45,X,-Y').clones);
+  assert.ok(withY['X'], 'X joins the affected set beside the lost Y');
+  const noSex = Karyo.computeAffected(ISCN.parse('46,XY,t(9;22)(q34;q11.2)').clones);
+  assert.ok(!noSex['X'] && !noSex['Y'], 'an autosomal karyotype still hides both sex chromosomes');
+});
