@@ -31,6 +31,13 @@ fixes, closed here.
   centromere while the figure sat at the ancestor band. The snap decision moved into
   `Karyo.bandSnap`, shared by the page and the capture, which records `snappedTo`.
 
+- **The capture stamp hashes content, not mtimes.** A merge or fresh checkout touched
+  every file's mtime, so all 55 bundles re-captured three runs in a row and the
+  printed tally could not scope the agent re-review; a snapshot-and-diff had to be
+  improvised. The stamp now hashes the app files themselves (parser included, which
+  the old stamp missed entirely), so "unchanged" means unchanged and the tally is the
+  list of bundles worth re-reading.
+
 ## 2026-08-29 (the input already said what it meant: closing the review pilot ledger)
 
 The last five items from the 2026-08 production-review pilot. The three policy calls
