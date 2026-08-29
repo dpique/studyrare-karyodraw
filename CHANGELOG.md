@@ -3,6 +3,32 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-29 (why der(8;8) and not i(8)(q10): the decode settles the differential)
+
+- **Homologous fusions teach the near-miss they are not.** A student asked why
+  45,XX,der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12) writes two 8s instead of
+  i(8)(q10). The decode now answers, sourced from ISCN 5.5.11: an isochromosome
+  asserts a mirror image, arms identical and genetically homozygous (5.5.11 b);
+  der is the spelling whenever that identity is not proven (5.5.11 d) and for
+  every complex case (5.5.11 e). With sub-abnormalities on the arms the row states
+  that the arms visibly differ, so a single mirrored arm cannot describe them; it
+  deliberately does not claim der proves two parental homologues, because a true
+  isochromosome that later diverged on one arm is also written der. The
+  isochromosome row and the i glossary entry carry the converse, and the
+  homologous Robertsonian (der(21;21)) offers the i(21)(q10) alternative the
+  standard itself footnotes.
+- **The homologous fusion reads "one from each homologue".** The Robertsonian
+  sentence used to say "chromosomes 21 and 21" and cite the lowest-number-first
+  rule, which is meaningless when both partners are the same chromosome.
+- **Adjacent claims made honest.** der(8;8)(p10;q10) fuses one short arm and one
+  long arm, and the decode said "the two short arms"; it now names one of each.
+  The isochromosome dosage is read off the clone instead of the canned "3 copies
+  of one arm and 1 of the other", which was false beside ISCN's own
+  45,XX,-21,i(21)(q10) (two and none); and the -21 row there no longer claims "no
+  copy of 21 remains" beside an i(21) carrying two long arms. The homologous
+  whole-arm fusion also states its cost now (both 8q arms on one derivative, no
+  8p at all), matching what the heterologous case already said.
+
 ## 2026-08-29 (the glossary reaches the figure and the prose, and t() at 45 hears the rule)
 
 - **The fused-count t() note is now an amber correction.** `45,XX,t(14;21)(q10;q10)`

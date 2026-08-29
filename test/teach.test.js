@@ -932,3 +932,77 @@ test('a lone X beside a Y-derived rearrangement is not called monosomy X', () =>
   const turner = decodeRows('45,X').find((r) => r.tag === 'sex').text;
   assert.ok(!/not monosomy X/.test(turner), 'true monosomy X keeps its reading');
 });
+
+// ---- the der(N;N) vs i(N) differential (ISCN 2024 5.5.11) -------------------
+// A student's question, relayed by Dan 2026-08-29: for
+// 45,XX,der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12), why two 8s, and why
+// der(8;8) rather than i(8)(q10)? The decode teaches the differential, sourced
+// from the standard: i asserts a mirror image, arms identical and genetically
+// homozygous (5.5.11 b); der is used whenever that identity is not proven
+// (5.5.11 d), and complex cases are written der regardless (5.5.11 e). It does
+// NOT claim der proves two parental homologues: a true iso that later diverged
+// on one arm is also written der, so the honest statement is that i is
+// unavailable once the arms demonstrably differ.
+
+test('the homologous whole-arm der with sub-ops teaches why it is not i(8)(q10)', () => {
+  const t = decodeText('45,XX,der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12)');
+  assert.match(t, /i\(8\)\(q10\)/, 'names the near-miss spelling');
+  assert.match(t, /mirror/i, 'teaches what i would claim');
+  assert.match(t, /differ/i, 'states that these arms visibly differ');
+});
+
+test('the bare homologous whole-arm der teaches the differential and its cost', () => {
+  const t = decodeText('45,XX,der(8;8)(q10;q10)');
+  assert.match(t, /i\(8\)\(q10\)/);
+  assert.match(t, /proven/i, 'der is the spelling when identity is not proven');
+  assert.match(t, /no copy of 8p/i, 'the fusion cost is stated for the homologous case');
+});
+
+test('the p-arm homologous fusion offers i at p10, not q10', () => {
+  const t = decodeText('45,XX,der(8;8)(p10;p10)');
+  assert.match(t, /i\(8\)\(p10\)/);
+});
+
+test('the homologous Robertsonian names the homologues and the i(21) alternative', () => {
+  const t = decodeText('46,XX,+21,der(21;21)(q10;q10)');
+  assert.match(t, /one from each homologue/);
+  assert.doesNotMatch(t, /chromosomes 21 and 21/, 'never listJoin a chromosome with itself');
+  assert.doesNotMatch(t, /lowest-number-first/, 'the ordering rule is meaningless for homologues');
+  assert.match(t, /i\(21\)\(q10\)/);
+});
+
+test('the reread homologous t() gets the same homologue wording', () => {
+  const t = decodeText('45,XX,t(21;21)(q10;q10)');
+  assert.match(t, /one from each homologue/);
+  assert.doesNotMatch(t, /chromosomes 21 and 21/);
+});
+
+test('the mixed-arm homologous der never claims two arms of the same kind', () => {
+  const t = decodeText('45,XX,der(8;8)(p10;q10)');
+  assert.match(t, /short arm of one chromosome 8/i);
+  assert.match(t, /long arm/);
+  assert.doesNotMatch(t, /the two short arms/);
+  assert.doesNotMatch(t, /i\(8\)/, 'no i() differential when the fused arms are different kinds');
+});
+
+test('the heterologous Robertsonian gains no i() chatter and keeps its ordering rule', () => {
+  const t = decodeText('45,XX,der(13;21)(q10;q10)');
+  assert.doesNotMatch(t, /i\(13\)|i\(21\)/);
+  assert.match(t, /lowest-number-first/);
+});
+
+test('the isochromosome row states the converse rule and reads its own dosage', () => {
+  const t = decodeText('46,XX,i(8)(q10)');
+  assert.match(t, /der\(8;8\)\(q10;q10\)/, 'names the near-miss spelling');
+  assert.match(t, /mirror/i);
+  assert.match(t, /three copies of 8q/i, 'dosage read off the clone, not canned');
+  // ISCN 5.5.11 vi verbatim: the other 21 is lost, so the canned "3 and 1" was false.
+  const v = decodeText('45,XX,-21,i(21)(q10)');
+  assert.match(v, /two copies of 21q/i);
+  assert.doesNotMatch(v, /3 copies of one arm/);
+  assert.doesNotMatch(v, /no copy of 21 remains/, 'the loss row must not deny the i(21) beside it');
+});
+
+test('the i glossary entry carries the differential', () => {
+  assert.match(Teach.GLOSSARY.i, /der\(N;N\)|der is used|writes der/i);
+});
