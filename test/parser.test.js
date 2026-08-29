@@ -1074,7 +1074,10 @@ test('input that cannot be drawn honestly is refused', () => {
   [
     ['46,XY,+0', /is not a human chromosome/, 'there is no chromosome 0'],
     ['46,XY,+99', /is not a human chromosome/, 'nor a 99'],
-    ['46,XY,t(9;9)(q34;q11)', /exchange between two different chromosomes/, 'a t within one chromosome'],
+    // 46,XY,t(9;9)(q34;q11) left this list on 2026-08-29: a translocation
+    // between the two HOMOLOGS is printed ISCN (der(1)t(1;1)(p31;q32),
+    // t(2;7;7)), and the refusal was turning away t(3;3)(q21.3;q26.2), the
+    // MECOM rearrangement. It now draws; failure-tail.test.js owns the pins.
     ['45,XY,rob(1;2)(q10;q10)', /fuses two acrocentric chromosomes/, 'a rob between metacentrics'],
     ['47,idem,+8', /no earlier clone/, 'a subclone with no stemline'],
     ['46,XY,t(9;22)(q34;q11.2)[0]', /seen in none of them/, 'a clone observed in no cells'],

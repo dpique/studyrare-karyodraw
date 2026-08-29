@@ -56,6 +56,7 @@ async function state(page, port, k) {
     warnings: (document.getElementById('warnings')?.textContent || '').replace(/\s+/g, ' ').trim(),
     decode: (document.getElementById('decode')?.textContent || '').replace(/\s+/g, ' ').trim(),
     input: document.getElementById('kinput')?.value || '',
+    chips: [...document.querySelectorAll('#warnings button.dym')].map((b) => b.getAttribute('data-k')),
   }));
 }
 
@@ -94,6 +95,13 @@ test('a sub-band typo below a real band snaps, draws, and teaches the correction
     const ghost = await state(page, port, '46,XX,del(5)(q99.1)');
     assert.equal(ghost.drew, false);
     assert.match(ghost.warnings, /5q99\.1/);
+
+    // The nearest-band advice is CLICKABLE now, not just printed: the computed
+    // corrected karyotype rides a chip like every other repair.
+    const near = await state(page, port, '46,XY,t(9;22)(q34;q9.2)');
+    assert.equal(near.drew, false);
+    assert.ok(near.chips.some((c) => /^46,XY,t\(9;22\)\(q34;q11\.1\)$/.test(c || '')),
+      'the repaired string is a chip: ' + JSON.stringify(near.chips));
   } finally {
     await browser.close();
     server.close();

@@ -3,6 +3,56 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-29 (the failure tail learns to teach)
+
+A message-quality audit rendered all 381 unique production failures through the page,
+deduped the refusals into 204 message templates, and had agents judge every template
+against the teaching rubric. About half passed clean; this batch fixes what did not.
+
+- **Homologous t(N;N) with breakpoints draws.** The refusal said a translocation
+  needs two different chromosomes; ISCN prints homologous exchanges
+  (der(1)t(1;1)(p31;q32), +21,der(21;21)(q10;q10), t(2;7;7)), and the rule was
+  turning away t(3;3)(q21.3;q26.2), the canonical MECOM rearrangement of AML. The
+  decode says homologous; the meiosis panels stay absent on purpose. The fused-count
+  and bandless-acrocentric spellings flow into the Robertsonian teaching, and
+  rob(22) alone is taught the two-partner form with rob(22;22)(q10;q10) offered.
+
+- **Four count bugs.** A t() plus a del() on the same chromosome inflated the tally
+  by one (the replaced-homolog restore now applies only when it reconciles the
+  stated count exactly); a +der(?) was dropped from the tally and the correct count
+  then blamed; an unreconciled high count fell back to diploid arithmetic (96,xxxxxx
+  was told to halve itself; it now lands on the nearest base, 94); and a sign inside
+  parentheses split as a new change, feeding a repair that re-parsed into itself
+  plus one semicolon, forever. -4(pter-p15.1) is now taught as the deletion it
+  means, del(4)(p15.1), chip included.
+
+- **Repairs stopped destroying the correct part.** A colon between chromosomes
+  (t(4:18)) is repaired to the semicolon BEFORE the same-chromosome join could glue
+  the valid breakpoints; a change glued to the sex field (47,XX+mar, 47,XY+21) gets
+  its comma back instead of amputation; ";;" is taught instead of silently accepted;
+  and once a separator lesson names the mistake, the bullets computed from the
+  unrepaired token ("9,22 is not a human chromosome") no longer pile on.
+
+- **Recognized notation is recognized.** ish, nucish, arr, ogm, and seq designations
+  (and raw coordinate spans) get one respectful message naming the platform and the
+  banded equivalent, instead of ten bullets scolding underscores that are valid
+  there. pstk+ heteromorphisms and numbered sidelines (sdl1) are named as correct
+  ISCN the app does not draw. SRY+ is taught its ish placement instead of being
+  "repaired" to 46,XXY, a different diagnosis.
+
+- **A dozen missed repairs now ride chips.** The nearest-band advice is clickable;
+  iso/isdic teach their one-letter symbols; the Emanuel karyotype one "+" or one
+  semicolon away gets both readings offered; XO is taught 45,X; a list label (b.45)
+  is stripped; mos glued to the count gets its space; a multiplier after the cell
+  count is dropped; a bare op name (46,XY,t) gets its own lesson with its full form;
+  bandless del at a one-short count is taught -7; a semicolon between clones is
+  taught the slash; invisible characters are named in words.
+
+- **The audit is now a script.** scripts/review-messages.mjs renders a failures
+  export through the page, dedupes the box copy into templates, and emits agent
+  slices; the agent rubric is written into docs/VALIDATION.md, so the next run
+  starts from the doc.
+
 ## 2026-08-29 (what the second pass saw: four gaps beside the fixes)
 
 The closure re-review of the production evidence bundles confirmed all fourteen pilot

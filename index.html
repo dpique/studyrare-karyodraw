@@ -1670,6 +1670,12 @@
             reModel.clones.some(function (c) { return c.unreadable || c.countWrong; });
           if (!reRefused && !window.Karyo.invalidBands(reModel).length) {
             model.warnings.push("With the nearest real bands in place it reads “" + repairedK + "”.");
+            // Every other computed repair is a click away; this one printed the
+            // full corrected karyotype and then made the reader retype it
+            // (failure-tail audit, 2026-08-29: 21 production inputs).
+            if ((model.fixes || []).indexOf(repairedK) < 0) {
+              model.fixes = (model.fixes || []).concat([repairedK]);
+            }
           }
         }
       }
