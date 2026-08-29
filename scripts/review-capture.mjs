@@ -92,14 +92,26 @@ const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new'
 const page = await browser.newPage();
 await page.setViewport({ width: 1400, height: 1100, deviceScaleFactor: 2 });
 
+// The stamp hashes what the app IS, not when its files were touched. Mtimes
+// made every fresh checkout or merge re-capture all 55 bundles ("captured 55,
+// unchanged 0" three runs in a row on 2026-08-29, when only a handful had
+// really changed), which also meant the count the script prints could not be
+// used to scope the agent re-review; a snapshot-and-diff had to be improvised.
+// Content hashes make "unchanged" mean unchanged, and the printed tally IS the
+// list of bundles worth re-spending analysis on.
+const appHash = crypto.createHash('sha1');
+for (const f of ['karyo-render.js', 'teach.js', 'iscn-parser.js', 'ideogram-data.js', 'index.html']) {
+  appHash.update(fs.readFileSync(path.join(ROOT, f)));
+}
+const APP = appHash.digest('hex');
+
 let captured = 0, skipped = 0;
 for (const entry of manifest) {
   const id = crypto.createHash('sha1').update(entry.k).digest('hex').slice(0, 12);
   const dir = path.join('review', id);
   const model = modelData(entry.k);
   const stamp = crypto.createHash('sha1')
-    .update(JSON.stringify(model) + fs.statSync(path.join(ROOT, 'karyo-render.js')).mtimeMs +
-      fs.statSync(path.join(ROOT, 'teach.js')).mtimeMs + fs.statSync(path.join(ROOT, 'index.html')).mtimeMs)
+    .update(JSON.stringify(model) + APP)
     .digest('hex');
   const stampFile = path.join(dir, 'stamp');
   if (fs.existsSync(stampFile) && fs.readFileSync(stampFile, 'utf8') === stamp) { skipped++; continue; }
