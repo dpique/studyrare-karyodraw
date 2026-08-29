@@ -270,11 +270,22 @@
       "the centromere, since a fragment without one cannot hold onto the spindle at cell division, so the piece " +
       "kept here is " + kept + sizeParen(sizeCentric(c, band)) + ", joined to a second copy of itself. The two " +
       "copies meet at the breakpoint as mirror images rather than one behind the other, so each brings its own centromere. ";
+    // The two near-miss spellings, settled the way the der(N;N)/i(N) rows do.
+    // ISCN 5.5.4 b: an idic is a single break on SISTER CHROMATIDS, reunited,
+    // standing in place of at most one homologue; 5.5.4 a: dic names two
+    // contributing chromosomes and replaces both. 5.5.11 a/c: i is the
+    // monocentric mirror, breaking at the centromere band itself (p10/q10),
+    // while an idic breaks out on the arm so both centromeres ride along.
+    var idicWhy = " Why idic and not dic(" + c + ";" + c + ")? idic asserts ONE chromosome of origin: a single break, " +
+      "sister chromatids reunited into the mirror. dic(" + c + ";" + c + ") would mean the two homologues each broke " +
+      "and fused into it, standing in place of both. And why not i(" + c + ")? An isochromosome mirrors about the " +
+      "centromere itself (breakpoint p10 or q10) and carries one centromere; this mirror breaks out on the arm, " +
+      "so both centromeres ride along, one usually inactivated.";
     return head + body + (ab && ab.sign === "+"
       ? "It is supernumerary, sitting on top of an intact pair, so nothing is lost: " + kept +
-        " simply arrives in two further copies, and " + lost + sizeParen(sizeDistal(c, band)) + " is not on it"
+        " simply arrives in two further copies, and " + lost + sizeParen(sizeDistal(c, band)) + " is not on it."
       : "It replaces one copy of chromosome " + c + ", trading everything past the break, " + lost +
-        sizeParen(sizeDistal(c, band)) + ", for a second copy of " + kept);
+        sizeParen(sizeDistal(c, band)) + ", for a second copy of " + kept + ".") + idicWhy;
   }
 
   // A dicentric of two chromosomes. Same gap as the isodicentric above: naming the two
@@ -298,15 +309,24 @@
         : "the two homologues of chromosome " + chroms[0] + " break (at " + listJoin(breaks) + ")")
       : "chromosomes " + listJoin(chroms) + " break (at " + listJoin(breaks) + ")") +
       " and fuse into a single chromosome that carries two centromeres";
+    // The near-miss, settled either way (differential style, 2026-08-29). For
+    // homologues the mirror is the confusable: ISCN 5.5.4 a names dic as TWO
+    // chromosomes replaced, b names idic as a single sister-chromatid reunion
+    // replacing one homologue. For different chromosomes the confusable is the
+    // der spelling reports sometimes use: 5.5.4 f allows der in place of dic,
+    // never the two together.
+    var dicWhy = homologs
+      ? ". Why dic(" + chroms[0] + ";" + chroms[0] + ") and not idic(" + chroms[0] + ")? dic asserts TWO chromosomes of origin, the two homologues, and it stands in place of both; an isodicentric would be one chromosome mirrored at a single break on its sister chromatids, standing in place of just one. When the evidence shows that mirror, ISCN writes idic"
+      : ". ISCN also allows the same chromosome to be written der in place of dic, never both together";
     // Silent when either break sits at a centromere: both halves are centric there, so
     // there is no distal piece to name. Those are whole-arm fusions, described as such.
-    if (bands.some(function (b) { return !b || atCentromere(b); })) return head;
+    if (bands.some(function (b) { return !b || atCentromere(b); })) return head + dicWhy;
     var keep = function (i) { return centricSeg(chroms[i], bands[i]) + sizeParen(sizeCentric(chroms[i], bands[i])); };
     var loss = function (i) { return distalSeg(chroms[i], bands[i]) + sizeParen(sizeDistal(chroms[i], bands[i])); };
     var keeps = sameBand ? keep(0) : listJoin(chroms.map(function (cc, i) { return keep(i); }));
     var losses = sameBand ? loss(0) : listJoin(chroms.map(function (cc, i) { return loss(i); }));
     return head + ". Each keeps the centromere side of its break, " + keeps +
-      ", and the two broken ends are joined to each other. Everything past the breaks, " + losses + ", is lost";
+      ", and the two broken ends are joined to each other. Everything past the breaks, " + losses + ", is lost" + dicWhy;
   }
 
   function describeAberrationBase(ab, clone) {
@@ -590,10 +610,19 @@
             ". If the two long arms were proven copies of ONE arm, a mirror image and genetically homozygous, the same chromosome would be written i(" +
             ab.chroms[0] + ")(q10); ISCN keeps the der spelling when that is not proven", tag: "der" };
         }
+        // 5.5.18.3 d: the q10 spelling presumes fusion at the centromeres; a
+        // fusion PROVEN dicentric is written dic instead, with the breakpoints
+        // out in the short arms. Pre-answers "then why is it not written dic".
+        // Two-partner fusions only: a longer chrom list cannot take the
+        // two-breakpoint dic example this sentence writes out.
+        var robDic = ab.chroms.length === 2
+          ? " When a fusion is PROVEN dicentric it is written dic, with the breakpoints out in the short arms: dic(" +
+            ab.chroms.join(";") + ")(p11.2;p11.2)."
+          : "";
         return { text: "a ROBERTSONIAN translocation: the long arms of chromosomes " +
           listJoin(ab.chroms) + " are fused at the centromere into one derivative chromosome, and the two short arms are lost. " +
-          "They are written lowest-number-first by convention, not by which centromere is kept; whole-arm fusions like this are usually dicentric, with one centromere inactivated" +
-          robSpell, tag: "der" };
+          "They are written lowest-number-first by convention, not by which centromere is kept; whole-arm fusions like this are usually dicentric, with one centromere inactivated." +
+          robDic + (robSpell ? robSpell.replace(/^\. /, " ") : ""), tag: "der" };
       }
       var subs = ab.subOps || [];
       // A der() NAMED across two chromosomes and built from joins carries both of their
@@ -715,7 +744,13 @@
         "The recombinant IS inherited from the carrier parent, yet no body cell of that parent contains it: " +
         "it first exists in the egg or sperm the crossover made, so ISCN marks it as derived from the parental " +
         "rearrangement rather than simply inherited. The parent, carrying the balanced inversion, is " +
-        "typically unaffected", tag: "rec" };
+        "typically unaffected. " +
+        // The near-miss (5.4.3.2 b): rec is inferred from the parental
+        // karyotype and never used for acquired abnormalities; the same
+        // chromosome without its documented parent is a der.
+        "Written rec, not der, because the notation itself names the parental rearrangement it recombined from; " +
+        "ISCN reserves rec for exactly that and never uses it for acquired changes, so without the documented " +
+        "parental inversion the same chromosome would be described as der", tag: "rec" };
     }
     if (k === "fra") {
       // A fragile site is a gap, not a break: the chromosome stays one piece and the
@@ -1325,7 +1360,7 @@
     rob: "A ROBERTSONIAN translocation (rob): two acrocentric chromosomes (13, 14, 15, 21 or 22) fused at the centromere into one chromosome, with their satellite-bearing short arms lost. A balanced carrier has 45 chromosomes and is healthy; the risk appears in their gametes.",
     t: "A TRANSLOCATION (t): two chromosomes exchange segments. When nothing is lost or gained it is balanced; each product keeps its own centromere and is named for it.",
     dic: "A DICENTRIC chromosome (dic): one chromosome carrying TWO centromeres, formed when two broken chromosomes fuse. One centromere is usually inactivated, which lets it segregate like a normal chromosome.",
-    idic: "An ISODICENTRIC chromosome (idic): a mirror-image chromosome with two centromeres, made of two copies of the same material joined end to end. The commonest is idic(15), a supernumerary made of two 15 short-arm-and-proximal-q pieces.",
+    idic: "An ISODICENTRIC chromosome (idic): a mirror-image chromosome with two centromeres, made of two copies of the same material joined end to end. The commonest is idic(15), a supernumerary made of two 15 short-arm-and-proximal-q pieces. It forms from a single break on one chromosome's sister chromatids; a fusion of both homologues is written dic(N;N) instead.",
     i: "An ISOCHROMOSOME (i): a mirror-image chromosome of two identical arms about one centromere, with the other arm lost. i(X)(q10) is two X long arms; the carrier is trisomic for that arm and monosomic for the lost one. ISCN reserves i for arms proven identical (homozygous) and writes der(N;N) when that is not proven or the arms differ.",
     r: "A RING chromosome (r): both arms break and the broken ends fuse into a circle, usually losing the distal tips. Rings are mitotically unstable, so ring karyotypes are often mosaic.",
     del: "A DELETION (del): a segment is missing. One breakpoint makes it terminal (everything beyond the band is gone); two make it interstitial (the piece between them is gone and the flanks rejoin).",
