@@ -58,6 +58,12 @@
   }
   function isReciprocal(ab) {
     return !!ab && ab.kind === "t" && ab.chroms && ab.chroms.length === 2 &&
+      // Two DIFFERENT chromosomes. A homologous t (t(3;3)(q21.3;q26.2)) draws,
+      // but its meiosis is not the quadrivalent this model computes: the two
+      // derivatives pair with each other and with nothing else, so the
+      // adjacent-1/adjacent-2/3:1 story does not apply. Better no panel than a
+      // wrong one.
+      String(ab.chroms[0]) !== String(ab.chroms[1]) &&
       ab.breakpoints && ab.breakpoints.length === 2 &&
       ab.breakpoints[0].length === 1 && ab.breakpoints[1].length === 1 &&
       !(ab.chroms[0] in { X: 1, Y: 1 }) && !(ab.chroms[1] in { X: 1, Y: 1 });

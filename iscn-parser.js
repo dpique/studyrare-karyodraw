@@ -380,7 +380,8 @@
     ish: { what: "in situ hybridization" },                        // ISCN Chapter 7
     arr: { what: "a microarray result" },                          // ISCN Chapter 8
     seq: { what: "a sequencing result" },                          // ISCN Chapter 11
-    ogm: { what: "an optical genome mapping result" }              // ISCN Chapter 9
+    ogm: { what: "an optical genome mapping result" },             // ISCN Chapter 9
+    amp: { what: "an amplified signal in FISH (ish) results" }     // ISCN 4.5.3, 7.1.1
   };
 
   // A chain of op(...) groups run together with no commas between them. Two ISCN
@@ -903,6 +904,55 @@
         ab.note = "unrecognized token";
         return finish(ab);
       }
+      // A bare op name with nothing after it: the op's OWN lesson, with its full
+      // form as the example, instead of "not a change KaryoDraw recognizes"
+      // said about a word the app itself lists as one it draws. "46,XY,t" was
+      // the single commonest template in the failure-tail audit (16 inputs).
+      var OP_LESSON = {
+        t: ["a translocation", "t(9;22)(q34;q11.2)"], del: ["a deletion", "del(5)(p15.2)"],
+        dup: ["a duplication", "dup(1)(q21q31)"], inv: ["an inversion", "inv(9)(p12q13)"],
+        der: ["a derivative chromosome", "der(9)t(9;22)(q34;q11.2)"], rob: ["a Robertsonian translocation", "rob(14;21)(q10;q10)"],
+        ins: ["an insertion", "ins(5;2)(p14;q22q32)"], dic: ["a dicentric chromosome", "dic(13;15)(q22;q24)"],
+        idic: ["an isodicentric chromosome", "idic(15)(q11.2)"], add: ["additional material of unknown origin", "add(19)(p13.3)"],
+        rec: ["a recombinant chromosome", "rec(6)dup(6p)inv(6)(p22.2q25.2)"], trp: ["a triplication", "trp(15)(q11.2q13)"],
+        hsr: ["a homogeneously staining region", "hsr(21)(q22)"], fra: ["a fragile site", "fra(X)(q27.3)"]
+      };
+      var opLess = OP_LESSON[tok.toLowerCase()];
+      if (opLess) {
+        warnings.push("“" + tok + "” starts " + opLess[0] + " and needs its chromosomes and breakpoints in parentheses: " + opLess[1] + ".");
+        ab.note = "unrecognized token";
+        return finish(ab);
+      }
+      // A heteromorphism suffix (15pstk+, 14cenh+, 22ps+): ISCN's normal-variant
+      // nomenclature for stalk, satellite, and heterochromatin length. Correct
+      // notation this app does not draw, and the writer must hear that.
+      if (/^\d{1,2}(?:p|q)?(?:stk|ps|s|cenh|h|var)\+?\+?$/i.test(tok)) {
+        warnings.push("“" + tok + "” is a heteromorphism, ISCN's normal-variant notation for stalk, satellite, or heterochromatin length. " +
+          "It is correct ISCN, and KaryoDraw does not draw it yet; the rest of the karyotype is fine.");
+        ab.notDrawn = tok;
+        ab.note = "unrecognized token";
+        return finish(ab);
+      }
+      // A signed chromosome with a segment in parentheses: -4(pter-p15.1) means
+      // the loss of that segment, which ISCN writes as a deletion (a bare -4 is
+      // the whole chromosome). The old answer was the generic unknown-change
+      // line, and worse, the sign-splitter chopped the token at the interior
+      // "-" and the repair grew a semicolon per click, forever. Teach the del
+      // (or dup, for +) form and offer it when a band can be read out.
+      var segM = /^([+\-−–])\s*(\d{1,2}|X|Y)\s*\((.+)\)$/.exec(raw);
+      if (segM) {
+        var segOp = segM[1] === "+" ? "dup" : "del";
+        var segBands = String(segM[3]).match(/[pq]\d+(?:\.\d+)?/g) || [];
+        var segBand = segBands.length ? segBands[segBands.length - 1] : "";
+        var segForm = segOp + "(" + segM[2] + ")(" + segBand + ")";
+        warnings.push("A sign with a chromosome, like " + segM[1] + segM[2] + ", gains or loses the WHOLE chromosome, so it takes no segment. " +
+          (segOp === "del"
+            ? "Losing a segment is a deletion: everything beyond the named band is gone, written " + (segBand ? segForm : "del(" + segM[2] + ")(p15.1)") + "."
+            : "Gaining a segment is a duplication, written " + (segBand ? segForm : "dup(" + segM[2] + ")(q21q31)") + "."));
+        if (segBand) ab.segmentFix = segForm;
+        ab.note = "unrecognized token";
+        return finish(ab);
+      }
       warnings.push("“" + raw + "” is not a change KaryoDraw recognizes. Changes look like +21, del(5)(p15.2), or t(9;22)(q34;q11.2).");
       ab.note = "unrecognized token";
       return finish(ab);
@@ -1002,6 +1052,16 @@
         break;
       default:
         ab.kind = "unknown";
+        // iso and isdic are the long spellings of ISCN's one-letter i and idic;
+        // both appear in real reports and in Pallister-Killian attempts
+        // (+iso(12)(p)). Teach the symbol and offer the respelling.
+        if (op === "iso" || op === "isdic") {
+          var aliasOp = op === "iso" ? "i" : "idic";
+          warnings.push("ISCN writes an " + (op === "iso" ? "isochromosome" : "isodicentric chromosome") +
+            " with the symbol " + aliasOp + ", so “" + raw + "” is written " + raw.replace(/^([+\-−–]?)(iso|isdic)/i, "$1" + aliasOp) + ".");
+          ab.aliasFix = raw.replace(/^([+\-−–]?)(iso|isdic)/i, "$1" + aliasOp);
+          break;
+        }
         // "Not drawn here" and "not ISCN" are different things, and saying the first
         // as the second is the worst error this app can make. rec, ider, tas, trc,
         // fis and qdp are all in ISCN's own symbol list (Chapter 3); telling a student
@@ -1098,19 +1158,15 @@
       }
     }
 
-    // A translocation between a chromosome and itself. t() describes an exchange
-    // between two DIFFERENT chromosomes; a rearrangement inside one chromosome is an
-    // inversion, a deletion or a duplication, depending on what happened to the
-    // segment. Nothing in ISCN writes an exchange between the two homologs of one
-    // pair as t(9;9), and the drawing this produced was two derivatives of 9 that no
-    // notation asked for.
-    if (op === "t" && ab.chroms.length === 2 && ab.chroms[0] === ab.chroms[1]) {
-      ab.arity = ab.arity || "same chromosome twice";
-      warnings.push("A translocation is an exchange between two different chromosomes, so “t(" +
-        ab.chroms[0] + ";" + ab.chroms[1] + ")” names one chromosome where it needs two. " +
-        "A rearrangement within a single chromosome is written inv(" + ab.chroms[0] +
-        ")(p13q21) if a segment turned end for end, or del/dup if a segment was lost or doubled.");
-    }
+    // A translocation between the two HOMOLOGS of one pair is real ISCN, not a
+    // mistake: the standard prints der(1)t(1;1)(p31;q32) (5.5.3),
+    // 46,XX,+21,der(21;21)(q10;q10) (5.5.18.3 c) and t(2;7;7) (5.5.16), and
+    // 46,XY,t(3;3)(q21.3;q26.2) is the canonical MECOM rearrangement of AML.
+    // This block used to refuse every t(N;N) with a rule sentence the standard
+    // contradicts; policy decided 2026-08-29 (message-quality audit): with
+    // breakpoints stated it parses like any t, the two homologs exchange, and
+    // the complement math already handles the same chromosome appearing twice.
+    // Bandless t(N;N) still needs its breakpoints, via the ordinary arity rule.
 
     // rob() is the whole-arm fusion of two ACROCENTRIC chromosomes: 13, 14, 15, 21
     // and 22, the five whose short arms carry only ribosomal repeats and satellite
@@ -1126,6 +1182,17 @@
         (nonAcro.length > 1 ? "Chromosomes " + nonAcro.join(" and ") + " are not" : "Chromosome " + nonAcro[0] + " is not") +
         " acrocentric, so a whole-arm exchange involving it loses short-arm material and is written der(" +
         ab.chroms.join(";") + ")(" + (ab.breakpoints.length === 2 ? ab.breakpoints.map(function (g) { return g[0] || "q10"; }).join(";") : "q10;q10") + ").");
+    }
+
+    // rob() with ONE chromosome named: a Robertsonian fuses two acrocentrics,
+    // and between the homologs of one pair it is written with the chromosome
+    // twice (ISCN prints 46,XX,+21,der(21;21)(q10;q10)). rob(22) at a count of
+    // 45 usually means exactly that homologous fusion.
+    if (op === "rob" && ab.chroms.length === 1) {
+      ab.arity = ab.arity || "rob needs two chromosomes";
+      warnings.push("A Robertsonian translocation fuses two acrocentric chromosomes, so rob names both, even when they are the two homologs of one pair: rob(" +
+        ab.chroms[0] + ";" + ab.chroms[0] + ")(q10;q10).");
+      ab.robPairFix = "rob(" + ab.chroms[0] + ";" + ab.chroms[0] + ")(q10;q10)";
     }
 
     // der() or rob() across two chromosomes with its own breakpoint group is
@@ -1368,13 +1435,31 @@
       var running = 0;
       Object.keys(comp).forEach(function (c) { running += comp[c]; });
       var deficit = clone.modalNumber - running;
-      for (var r = 0; r < replacedChroms.length && deficit > 0; r++) {
-        var rc = replacedChroms[r];
-        var normalsLeft = slots[rc].filter(function (x) { return x.kind === "normal"; }).length;
-        if (normalsLeft === 0) {
-          slots[rc].unshift({ chrom: rc, kind: "normal", label: rc, aberration: null, primary: null });
-          comp[rc] += 1;
-          deficit--;
+      // All or nothing. The additional-reading is only believable when it
+      // reconciles the stated count EXACTLY; a partial restore chased a deficit
+      // that explicit losses had caused, and the count lecture then carried a
+      // number wrong in both directions (46,XY,t(1;5)(q31;q23),del(5)(q22q35),
+      // del(12)(p12),-13,-16 tallies 44; the restore said 45 against a stated
+      // 46). Dry-run first; apply only when the restores can close the gap.
+      if (deficit > 0) {
+        var restorable = 0, seenRestore = {};
+        for (var dr = 0; dr < replacedChroms.length; dr++) {
+          var drc = replacedChroms[dr];
+          if (seenRestore[drc]) continue;
+          if (slots[drc].filter(function (x) { return x.kind === "normal"; }).length === 0) {
+            seenRestore[drc] = 1; restorable++;
+          }
+        }
+        if (restorable >= deficit) {
+          for (var r = 0; r < replacedChroms.length && deficit > 0; r++) {
+            var rc = replacedChroms[r];
+            var normalsLeft = slots[rc].filter(function (x) { return x.kind === "normal"; }).length;
+            if (normalsLeft === 0) {
+              slots[rc].unshift({ chrom: rc, kind: "normal", label: rc, aberration: null, primary: null });
+              comp[rc] += 1;
+              deficit--;
+            }
+          }
         }
       }
     }
@@ -1542,7 +1627,7 @@
         clone.counts.actual === clone.modalNumber + 1 &&
         !clone.aberrations.some(function (ab) { return ab.unread || ab.kind === "unknown"; })) {
       var waT = clone.aberrations.filter(function (a) {
-        return a.kind === "t" && a.wholeArmAcro &&
+        return a.kind === "t" && a.wholeArmAcro && !a.arity &&
           a.breakpoints.every(function (g) { return g[0] === "q10"; }) &&
           // Never an aberration inherited through idem/sl/sdl: those are the
           // stemline's objects, and flipping one here would flip it there too.
@@ -1574,6 +1659,13 @@
     }
     if (!forcePloidy && !stated && !clone.counts.ok && clone.modalNumber != null &&
         !clone.aberrations.some(function (ab) { return ab.unread || ab.kind === "unknown"; })) {
+      // When no base reconciles EXACTLY, keep the nearest one instead of
+      // falling back to diploid: 96,xxxxxx is 2 away from the tetraploid
+      // reading (88+6=94) and 46 away from the diploid one (44+6=50), and the
+      // old fallback proposed halving the typed count (message-quality audit,
+      // 2026-08-29). The scaffold, the tally, and the count fix all follow the
+      // base that is closest to what the writer said.
+      var bestCp = ploidy, bestGap = Math.abs(clone.modalNumber - clone.counts.actual);
       for (var cp = 2; cp <= 4; cp++) {
         if (cp === ploidy) continue;
         var trial = [];
@@ -1583,8 +1675,11 @@
           trial.forEach(function (w) { warnings.push(w); });
           return;
         }
+        var gap = Math.abs(clone.modalNumber - clone.counts.actual);
+        if (gap < bestGap) { bestGap = gap; bestCp = cp; }
       }
-      buildComplement(clone, warnings, ploidy);
+      if (bestCp !== ploidy) clone.inferredPloidy = bestCp;
+      buildComplement(clone, warnings, bestCp);
       return;
     }
     // Do not argue about the count when part of the designation was not interpreted:
@@ -1603,7 +1698,13 @@
     // about the one-click count fix. Suppressing the warning while still offering
     // "did you mean 45,XY,rob(14;21)(q10;q10),21" would be worse than saying nothing,
     // since that fix keeps the signless 21 and changes the number that was right.
-    clone.uncounted = clone.aberrations.some(function (ab) { return ab.unread || ab.kind === "unknown"; });
+    // An aberration whose CHROMOSOME is a "?" still describes a body in the
+    // cell; the tally just cannot place it. 46,XY,-5,+der(?)t(?;5)(?;q13) is
+    // self-consistent, and the count warning was blaming the number that was
+    // right (message-quality audit, 2026-08-29).
+    clone.uncounted = clone.aberrations.some(function (ab) {
+      return ab.unread || ab.kind === "unknown" || (ab.uncertainChroms || []).length > 0;
+    });
     // The identical change written twice. ISCN has a notation for a change present on
     // both homologs, and it is not repetition: del(5)(p15.2)x2. Listed twice, the app
     // applied it to one homolog and then to the other, which is what x2 means, so the
@@ -1665,7 +1766,10 @@
     // badCells is the same call as zeroCells for the same field: [-1] and [2.5] are
     // not counts of cells, so the designation is not valid ISCN. The changes may well
     // be right, and the message says the brackets can come off.
-    || !!clone.badChrom || !!clone.danglingIdem || !!clone.zeroCells || !!clone.badCells;
+    || !!clone.badChrom || !!clone.danglingIdem || !!clone.zeroCells || !!clone.badCells
+    // A numbered sideline (sdl1): correct ISCN this app does not resolve, so
+    // there is no honest drawing of that clone.
+    || !!clone.numberedSideline;
     if (clone.outOfOrder) {
       warnings.push("Whole-chromosome gains and losses are listed in chromosome order, so “" +
         clone.outOfOrder.before + "” comes before “" + clone.outOfOrder.after + "”.");
@@ -1883,6 +1987,15 @@
     var firstAb = 2;
     if (fields.length > 1 && /^(idem|sl|sdl)$/i.test(fields[1])) {
       firstAb = 1;
+    } else if (fields.length > 1 && /^(sl|sdl|idem)\d+$/i.test(fields[1])) {
+      // A NUMBERED sideline (sdl1, sdl2) is correct ISCN shorthand for a
+      // specific related clone (6.3.4). This app resolves only the unnumbered
+      // forms, and the old answer read "sdl1" as a sex field and said the sex
+      // chromosomes may have been skipped, accusing correct notation.
+      warnings.push("“" + fields[1] + "” names a numbered sideline, which is correct ISCN shorthand for a specific related clone. " +
+        "KaryoDraw reads sl, sdl and idem without numbers; spell this cell line out in full to draw it.");
+      clone.numberedSideline = true;
+      firstAb = 2;
     } else if (fields.length > 1 && fields[1].indexOf("(") >= 0) {
       // ISCN drops the sex field entirely when the sex chromosomes are themselves in
       // the rearrangement: 46,t(X;Y)(q22;q11.23) and
@@ -2060,7 +2173,12 @@
     "\u201C": "a curly opening quotation mark", "\u201D": "a curly closing quotation mark",
     "\u2018": "a curly opening apostrophe", "\u2019": "a curly closing apostrophe",
     "\"": "a straight quotation mark", "'": "a straight apostrophe", "`": "a backtick",
-    "\u00AB": "a left angle quotation mark", "\u00BB": "a right angle quotation mark"
+    "\u00AB": "a left angle quotation mark", "\u00BB": "a right angle quotation mark",
+    // Invisible characters ride in from PDFs and rich-text copies; quoting them
+    // back produces empty quotes, a lesson the reader cannot see.
+    "\u200B": "an invisible zero-width space (often carried in from a PDF)",
+    "\u200C": "an invisible zero-width character", "\u200D": "an invisible zero-width character",
+    "\uFEFF": "an invisible byte-order mark", "\u00A0": "a non-breaking space"
   };
   function strayName(c) { return STRAY_NAME[c] || "“" + c + "”"; }
   function sentenceCase(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -2120,6 +2238,59 @@
 
   function diagnose(raw, result, warnings) {
     var suggestion = raw;
+
+    // String-level lessons from the failure-tail audit (2026-08-29), each a
+    // one-token repair on the whole designation, applied before the char-level
+    // rules so their tokens are never shredded first.
+    //
+    // A list label ahead of the count: "b.45,XX,..." from a pasted answer key.
+    var labelM = /^[a-z]\.\s*(?=\d{2})/i.exec(suggestion);
+    if (labelM) {
+      warnings.push("A karyotype begins with the chromosome count; a list label like “" + labelM[0].trim() + "” is not part of the designation.");
+      suggestion = suggestion.slice(labelM[0].length);
+    }
+    // mos/chi glued to the count: "mosaic45,X/..." wants "mos 45,X/...".
+    var mosM = /^(mosaic|mos|chimera|chi)(?=\d)/i.exec(suggestion);
+    if (mosM) {
+      var mosTok = /^mos/i.test(mosM[1]) ? "mos" : "chi";
+      warnings.push("A mosaic is marked with “mos” and a space before the first cell line: mos 45,X/46,XX.");
+      suggestion = mosTok + " " + suggestion.slice(mosM[1].length);
+    }
+    // XO: the old shorthand for a missing sex chromosome. ISCN writes the lone
+    // X by itself, and the O reads as a letter the notation does not have.
+    if (/,X[O0]\b/i.test(suggestion) || /,X[O0]\//i.test(suggestion)) {
+      warnings.push("A missing sex chromosome is written by leaving it out: Turner syndrome is 45,X. The O in “XO” is an older shorthand ISCN does not use.");
+      suggestion = suggestion.replace(/,(X)[O0]\b/gi, ",$1");
+    }
+    // SRY status is a molecular finding: it belongs in ish notation, never in
+    // the karyotype line. The old repair offered 46,XXY, a different diagnosis.
+    var sryM = /^(\d{2,3}),(X{1,2}Y{0,2})\s*SRY\+?/i.exec(suggestion);
+    if (sryM) {
+      warnings.push("SRY status is a molecular finding and belongs in ish notation, as in 46,XX.ish(SRY+); the karyotype line itself stays " +
+        sryM[1] + "," + sryM[2].toUpperCase() + ".");
+      suggestion = sryM[1] + "," + sryM[2].toUpperCase() + suggestion.slice(sryM[0].length);
+    }
+    // A multiplier after the cell count: [45]x4 has nothing left to count, the
+    // brackets already say how many cells.
+    var cellMult = /(\[[0-9]+\])\s*[x×]\s*\d+/i.exec(suggestion);
+    if (cellMult) {
+      warnings.push("The number in brackets IS the cell count, so a multiplier after it has nothing to count: " + cellMult[1] + " already says how many cells carried this line.");
+      suggestion = suggestion.replace(cellMult[0], cellMult[1]);
+    }
+    // A semicolon between cell lines: clones are separated by a slash.
+    if (/\]\s*;/.test(suggestion)) {
+      warnings.push("Cell lines are separated by a slash “/”, not a semicolon: 46,XY,-13,+mar[13]/46,XY[7]. The semicolon separates chromosomes inside a rearrangement.");
+      suggestion = suggestion.replace(/\]\s*;/g, "]/");
+    }
+    // One breakpoint group spanning a two-chromosome rearrangement:
+    // t(11;22)(q23.3q11.2) is Emanuel syndrome one semicolon away.
+    var oneGroup = /(\(([0-9]{1,2}|[XY]);([0-9]{1,2}|[XY])\))\(([pq]\d+(?:\.\d+)?)([pq]\d+(?:\.\d+)?)\)/.exec(suggestion);
+    if (oneGroup) {
+      warnings.push("A rearrangement between two chromosomes takes one breakpoint for each, separated like the chromosomes: (" +
+        oneGroup[4] + ";" + oneGroup[5] + ").");
+      suggestion = suggestion.replace(oneGroup[0], oneGroup[1] + "(" + oneGroup[4] + ";" + oneGroup[5] + ")");
+      result.innerSepFix = true;
+    }
 
     // Sentence punctuation at the very end, from prose or a copy-paste. Stripped first so
     // every rule below sees clean text, and because the damage it does is out of all
@@ -2258,7 +2429,18 @@
         // never the problem. The count keeps its own diagnosis in parseClone.
         var cells = /\[[^\[\]]*\]?\s*$/.exec(fields[fi]);
         var body = cells ? fields[fi].slice(0, cells.index) : fields[fi];
-        var fixed = body.replace(/(.)([+\-−–])/g, "$1,$2") + (cells ? cells[0] : "");
+        // Depth-aware: a sign INSIDE parentheses is content, not a new change.
+        // The regex form split "-4(pter-p15.1)" at the interior "-", the parens
+        // lesson then swapped the inserted comma for a semicolon, and the
+        // repair re-parsed into itself plus one semicolon, without end.
+        var fixed = "", sdepth = 0;
+        for (var sc = 0; sc < body.length; sc++) {
+          var sch = body[sc];
+          if (sch === "(") sdepth++; else if (sch === ")") sdepth--;
+          if (sc > 0 && sdepth === 0 && /[+\-−–]/.test(sch) && body[sc - 1] !== "(") fixed += ",";
+          fixed += sch;
+        }
+        fixed += cells ? cells[0] : "";
         if (fixed !== fields[fi]) { splitSigns.push([fields[fi], fixed]); fields[fi] = fixed; }
       }
       return lead + fields.join(",");
@@ -2267,6 +2449,25 @@
       warnings.push("Changes are separated by commas, so “" + pair[0] + "” is two of them: “" +
         pair[1] + "”.");
     });
+
+    // A colon inside parentheses is a semicolon typed one key over
+    // (t(4:18)(q31;q11.2) is one character from valid), and it must be repaired
+    // BEFORE joinSameChrom: with the colon in place that pass read "4:18" as a
+    // single chromosome and glued the CORRECT breakpoints together, repairing
+    // the one part of the karyotype that was right. The detailed system's own
+    // colons never reach here (it is read earlier, and its marks come in pairs
+    // or with arrows).
+    var cDepth = 0, cHit = false, cFixed = "";
+    for (var cxi = 0; cxi < suggestion.length; cxi++) {
+      var cxc = suggestion[cxi];
+      if (cxc === "(") cDepth++; else if (cxc === ")") cDepth--;
+      if (cxc === ":" && cDepth > 0) { cHit = true; cFixed += ";"; } else cFixed += cxc;
+    }
+    if (cHit) {
+      warnings.push("Inside parentheses, separate values with a semicolon “;”, not a colon, e.g. t(9;22)(q34;q11.2).");
+      suggestion = cFixed;
+      result.innerSepFix = true;
+    }
 
     // Breakpoints on one chromosome, separated as though they were on two. Ahead of the
     // comma-inside-parentheses rule below, which would answer del(15)(q11.2,q13) with
@@ -2299,6 +2500,15 @@
       suggestion = collapsed;
     }
 
+    // The same rule one level down: a semicolon separates two chromosomes, one
+    // on each side, so ";;" leaves an empty slot between them. t(7;;21)(q11;q11)
+    // used to parse SILENTLY (the splitter dropped the empty item) and drew.
+    var semiCollapsed = suggestion.replace(/;{2,}/g, ";");
+    if (semiCollapsed !== suggestion) {
+      warnings.push("A semicolon separates two chromosomes, one on each side, so “;;” leaves an empty slot between them. Write one semicolon: t(7;21)(q11;q11).");
+      suggestion = semiCollapsed;
+    }
+
     var depth = 0, inner = false, fixed = "";
     for (var i = 0; i < suggestion.length; i++) {
       var ch = suggestion[i];
@@ -2308,6 +2518,7 @@
     if (inner) {
       warnings.push("Inside parentheses, separate values with a semicolon “;”, not a comma, e.g. t(9;22)(q34;q11.2).");
       suggestion = fixed;
+      result.innerSepFix = true;
     }
     if (suggestion !== raw) {
       // A repair is the karyotype the reader is being asked to accept, so it has to be
@@ -2340,6 +2551,53 @@
     var warnings = [];
     var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [], suggestion: null, countFix: null, orderFix: null, sexFix: null, sexCountFix: null, fixes: [], note: null };
     if (!raw) { warnings.push("Type a karyotype to begin, e.g. 46,XY, 47,XX,+21, or 46,XY,t(9;22)(q34;q11.2)."); return result; }
+
+    // ISCN's other platforms: ish (FISH), nucish, arr (microarray), ogm, seq.
+    // Correct nomenclature this app does not draw, and its coordinates
+    // legitimately use characters the karyotype rules would scold (underscores
+    // in arr/ogm spans, bracketed mosaic fractions), so it must be recognized
+    // BEFORE any repair shreds it into ten bullets. One respectful message;
+    // when a karyotype line precedes a .ish suffix, that line is the chip.
+    // Failure-tail audit, 2026-08-29.
+    var MOD_WHAT = { ish: "FISH (fluorescence in situ hybridization)", nucish: "interphase FISH",
+      arr: "microarray", ogm: "optical genome mapping", rsa: "region-specific assay", seq: "sequencing" };
+    var modLead = /^(arr|nucish|ish|ogm|rsa|seq)\b/i.exec(raw);
+    var modSuffix = /^(.*?)\.\s*(nucish|ish|arr)\b/i.exec(raw);
+    var modGrch = !modLead && !modSuffix && /[\[(]\s*GRCh\d+/i.test(raw);
+    if (modLead || modSuffix || modGrch) {
+      var modName = (modLead ? modLead[1] : modSuffix ? modSuffix[2] : (/\b(arr|ogm|seq)\b/i.exec(raw) || [null, "arr"])[1]).toLowerCase();
+      var modPrefix = modSuffix && modSuffix[1] ? modSuffix[1].trim().replace(/,$/, "") : "";
+      warnings.push("That is ISCN's " + (MOD_WHAT[modName] || modName) + " nomenclature (" + modName +
+        "), correct notation for that platform. KaryoDraw draws banded karyotypes, like 46,XX,del(9)(p24.3p24.3)" +
+        (modPrefix ? "; the karyotype part before ." + modSuffix[2] + " reads " + modPrefix + "." : "."));
+      if (modPrefix) {
+        var modTrial = parse(modPrefix, depth + 1);
+        if (modTrial.ok && !modTrial.warnings.length) result.fixes = [modPrefix];
+      }
+      return result;
+    }
+    // Raw base-pair coordinates in parentheses (72,744,455_74,142,510): report
+    // style from a microarray. When the banded position is in the token, the
+    // message hands back the banded spelling, and a chip when the line already
+    // begins as a karyotype.
+    if (/\(\s*\d[\d,.\s]{3,}_/.test(raw)) {
+      var cmSeg = /(\d{1,2}|X|Y)((?:[pq]\d+(?:\.\d+)?){1,2})/.exec(raw.replace(/\(.*$/, "").replace(/^.*?(?=(?:\d{1,2}|X|Y)[pq])/, ""));
+      var cmForm = null;
+      if (cmSeg) {
+        var cmBands = cmSeg[2].match(/[pq]\d+(?:\.\d+)?/g);
+        var cmOp = /[x×]\s*[3-9]/.test(raw) ? "dup" : "del";
+        cmForm = cmOp + "(" + cmSeg[1] + ")(" + cmBands[0] + (cmBands[1] || cmBands[0]) + ")";
+      }
+      warnings.push("Base-pair coordinates belong to ISCN's microarray (arr) nomenclature. A banded karyotype names the bands instead" +
+        (cmForm ? ": this region is written " + cmForm + "." : ", like del(7)(q11.23q11.23)."));
+      var cmCount = /^(\d{2,3},X[XY]?Y?),/.exec(raw);
+      if (cmForm && cmCount) {
+        var cmK = cmCount[1] + "," + cmForm;
+        var cmTrial = parse(cmK, depth + 1);
+        if (cmTrial.ok && !cmTrial.warnings.length) result.fixes = [cmK];
+      }
+      return result;
+    }
 
     // The DETAILED SYSTEM, read rather than refused. ISCN 5.4.2.2 c: "A single colon (:)
     // is used to indicate a chromosome break and a double colon (::) to indicate break
@@ -2378,6 +2636,7 @@
       return result;
     }
     diagnose(raw, result, warnings);
+    var diagCount = warnings.length;
 
     var s = raw;
     // strip a leading mos/chi qualifier
@@ -2431,6 +2690,16 @@
     cloneStrs.forEach(function (cs) { result.clones.push(parseClone(cs, warnings, statedFully)); });
     // Resolve clonal-evolution references now that all clones are parsed.
     result.clones.forEach(function (cl, ci) { if (cl.pendingIdem) expandIdem(result.clones, ci, warnings); });
+    // Once the separator lesson has named the mistake, downstream bullets that
+    // quote the token with the wrong separator still inside ("9,22" or "4:18"
+    // "is not a human chromosome") answer questions nobody asked. Only bullets
+    // pushed AFTER diagnose are candidates; its own lessons quote repairs on
+    // purpose. Message-quality audit, 2026-08-29.
+    if (result.innerSepFix) {
+      for (var pw = warnings.length - 1; pw >= diagCount; pw--) {
+        if (/“[^”]*[,:][^”]*”/.test(warnings[pw])) warnings.splice(pw, 1);
+      }
+    }
     result.ok = result.clones.length > 0 && result.clones.every(function (c) { return c.modalNumber != null; });
 
     // If a single clone's stated count is off, offer the corrected count as a fix.
@@ -2475,12 +2744,45 @@
       }
     }
 
+    // A change glued straight onto the sex field is a missing comma, not junk:
+    // 47,XX+mar had its marker dropped by the field cleanup and the offer was
+    // plain 47,XX, which chained Down syndrome typed 47,XY+21 down to 46,XY
+    // (message-quality audit, 2026-08-29). A SIGNED tail gets the comma put
+    // back with the content kept; an op-shaped tail (46,XXdel2q) gets its op's
+    // form taught instead, and in both cases the amputating sex fix is
+    // withheld.
+    if (!result.suggestion && result.clones.length === 1) {
+      var gsCl = result.clones[0];
+      var gsM = gsCl.sexGiven && (gsCl.sex.dropped || []).length && gsCl.sex.tokens.length
+        ? /^([XYxy]{1,4})([+\-−–].+|(?:del|dup|inv|ins|der|rob|rec|add|dic|idic|trp|hsr|fra|mar|t|i|r)\(?\S*)$/.exec(gsCl.sexGiven)
+        : null;
+      if (gsM) {
+        gsCl.gluedChange = true;
+        if (/^[+\-−–]/.test(gsM[2])) {
+          var gsParts = [];
+          if (gsCl.modalGiven) gsParts.push(gsCl.modalGiven);
+          gsParts.push(gsM[1].toUpperCase());
+          gsParts.push(gsM[2]);
+          gsCl.aberrations.forEach(function (gab) { gsParts.push(gab.raw); });
+          result.suggestion = gsParts.join(",") + (gsCl.cellGiven || "");
+          warnings.push("The sex chromosomes are their own field, so a change after them needs a comma first: " +
+            gsM[1].toUpperCase() + "," + gsM[2] + ".");
+        } else {
+          var gsOp = (/^[a-z]+/i.exec(gsM[2]) || [""])[0].toLowerCase();
+          var gsChrom = (/\d{1,2}|[XY]/.exec(gsM[2].slice(gsOp.length)) || ["N"])[0];
+          warnings.push("The sex chromosomes are their own field, and a change after them needs a comma first. " +
+            "A " + (gsOp === "del" ? "deletion" : "change") + " is written with its chromosome and bands in parentheses, like " +
+            gsOp + "(" + gsChrom + ")(q21)" + (gsOp === "del" ? "" : " for " + gsOp) + ".");
+        }
+      }
+    }
+
     // The karyotype with the junk taken out of the sex field. Only when something is
     // left to keep: "QQ" has no reading to offer, so that one is refused with the
     // message alone.
     if (!result.suggestion && result.clones.length === 1) {
       var sc = result.clones[0];
-      if (sc.sexGiven && (sc.sex.dropped || []).length && sc.sex.tokens.length) {
+      if (sc.sexGiven && (sc.sex.dropped || []).length && sc.sex.tokens.length && !sc.gluedChange) {
         var sp = [];
         if (sc.modalGiven) sp.push(sc.modalGiven);
         sp.push(sc.sex.tokens.join(""));
@@ -2758,6 +3060,55 @@
     // refuses when pasted is not a repair). Dic first, because it keeps the
     // count that was typed and is therefore the smaller edit.
     var notationFixes = [];
+    // Token-level respellings recorded during the parse (a signed segment's
+    // deletion form, the iso alias, the one-chromosome rob's homolog pair):
+    // each composed into the full string and vetted like every other offer.
+    if (depth === 0 && result.clones.length === 1) {
+      result.clones[0].aberrations.forEach(function (nfAb) {
+        var nfTok = nfAb.segmentFix || nfAb.aliasFix || nfAb.robPairFix;
+        if (!nfTok) return;
+        var nfK = (result.normalized || raw).replace(nfAb.raw, nfTok);
+        var nft = parse(nfK, depth + 1);
+        if (nft.ok && !nft.warnings.length) notationFixes.push(nfK);
+      });
+    }
+    // The supernumerary reading: one short of the typed count with a lone
+    // unsigned derivative present, the missing character is usually the "+"
+    // (47,XX,+der(22)t(11;22)(q23;q11.2) is Emanuel syndrome). Offered BESIDE
+    // the count-lowering chip, because the typed count is evidence.
+    if (depth === 0 && result.clones.length === 1) {
+      var spCl = result.clones[0];
+      if (spCl.countWrong && spCl.counts.actual === spCl.modalNumber - 1) {
+        var spAb = spCl.aberrations.filter(function (a) {
+          return (a.kind === "der" || a.kind === "dic") && !a.sign && !/^[+\-−–]/.test(String(a.raw || ""));
+        })[0];
+        if (spAb) {
+          var spK = (result.normalized || raw).replace(spAb.raw, "+" + spAb.raw);
+          var spt = parse(spK, depth + 1);
+          if (spt.ok && !spt.warnings.length) notationFixes.push(spK);
+        }
+      }
+      // One OVER the tally with a bandless del: a whole-chromosome loss is
+      // usually meant, and that is written with the minus sign.
+      if (spCl.aberrations.length === 1 && spCl.counts.actual === spCl.modalNumber + 1) {
+        var loneAb = spCl.aberrations[0];
+        if (loneAb.kind === "del" && loneAb.arity && (loneAb.chroms || []).length === 1) {
+          warnings.push("A missing WHOLE chromosome takes no del: it is written with a minus sign, -" + loneAb.chroms[0] + ".");
+          var wlK = (result.normalized || raw).replace(loneAb.raw, "-" + loneAb.chroms[0]);
+          var wlt = parse(wlK, depth + 1);
+          if (wlt.ok && !wlt.warnings.length) notationFixes.push(wlK);
+        }
+        // A bandless t of two acrocentrics at the fused count: the whole-arm
+        // derivative reading matches the number that was typed.
+        if (loneAb.kind === "t" && loneAb.arity && (loneAb.chroms || []).length === 2 &&
+            loneAb.chroms.every(function (c) { return ACROCENTRIC[c]; })) {
+          warnings.push("At " + spCl.modalNumber + ", a whole-arm fusion may be meant: der(" + loneAb.chroms.join(";") + ")(q10;q10).");
+          var waK = (result.normalized || raw).replace(loneAb.raw, "der(" + loneAb.chroms.join(";") + ")(q10;q10)");
+          var wat = parse(waK, depth + 1);
+          if (wat.ok && !wat.warnings.length) notationFixes.push(waK);
+        }
+      }
+    }
     if (depth === 0 && result.clones.length === 1) {
       var ncAb = result.clones[0].aberrations.filter(function (a) { return a.derABNonCen; })[0];
       if (ncAb) {

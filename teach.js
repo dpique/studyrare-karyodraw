@@ -411,6 +411,15 @@
       // is deliberate: the two are easy to read as opposites (a t looks like it moves
       // material away, an idic like it keeps material), when in fact the piece with the
       // centromere survives in both and only the fate of the acentric tip differs.
+      // Between the two HOMOLOGS of one pair (t(3;3)(q21.3;q26.2), the MECOM
+      // rearrangement): same mechanics, but "chromosomes 3 and 3" reads like a
+      // stutter and the der names need saying differently.
+      if (chroms.length === 2 && String(chroms[0]) === String(chroms[1])) {
+        return { text: "a TRANSLOCATION between the two HOMOLOGOUS chromosomes " + chroms[0] +
+          ": one breaks at " + chroms[0] + (bp[0] || [])[0] + " and the other at " + chroms[0] + (bp[1] || [])[0] +
+          ", and they swap the pieces beyond those breaks, giving two different derivative chromosomes " + chroms[0] +
+          ". The pieces that move are the tips, which carry no centromere; each derivative keeps its own centromere", tag: "t" };
+      }
       return { text: "a reciprocal TRANSLOCATION: chromosomes " + listJoin(chroms) + " break (at " + listJoin(breaks) +
         ") and swap the pieces beyond those breaks, giving two derivative chromosomes " + listJoin(ders) +
         ". The pieces that move are the tips, which carry no centromere; each derivative keeps the centromere it " +

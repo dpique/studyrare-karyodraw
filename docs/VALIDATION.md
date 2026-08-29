@@ -28,6 +28,24 @@ writer wrote.
   is real; only the subdivision is not. A miss with no real ancestor (`12q32`) would
   make the drawn position this app's guess, and still refuses.
 
+A fourth acceptance landed with the failure-tail audit (2026-08-29): **homologous
+t(N;N) with stated breakpoints draws**. The old refusal said a translocation needs
+two different chromosomes, and the standard disagrees: ISCN prints
+`der(1)t(1;1)(p31;q32)`, `46,XX,+21,der(21;21)(q10;q10)`, and `t(2;7;7)`, and the
+refusal was turning away `46,XY,t(3;3)(q21.3;q26.2)`, the canonical MECOM
+rearrangement of AML. The two homologs exchange; the decode says "homologous"; the
+segregation and pachytene panels stay absent on purpose, because their quadrivalent
+story does not apply to homologs. The fused-count spelling `45,XX,t(21;21)(q10;q10)`
+flows into the same Robertsonian reread as the two-chromosome case.
+
+The **other ISCN platforms are recognized, not parsed**: a designation in ish, nucish,
+arr, ogm, or seq nomenclature (or carrying base-pair coordinate spans) gets one
+message naming the platform and pointing at the banded equivalent, with a chip for
+the karyotype line ahead of a `.ish` suffix, and for the banded del/dup when a CMA
+segment names its band. Their coordinates legitimately use characters the karyotype
+rules would scold (underscores, bracketed mosaic fractions), so this recognition runs
+before every repair.
+
 The other deliberate exception is listing order (see below), which changes how a
 karyotype is written and never what is drawn.
 
@@ -698,9 +716,10 @@ stages, each a script, so a session picks it up instead of rebuilding it:
    the karyogram PNG, the decode, detailed form, legend and warning texts exactly as
    served, and `model.json`, the renderer's own segment data. The model file is the
    point: it is the ground truth an analyst judges the pixels against and a verifier
-   refutes hallucinated findings with. A stamp file hashes the model plus the
-   renderer/teach/page mtimes, so a re-run after a fix re-captures only what moved,
-   and the analysis spend follows the same line.
+   refutes hallucinated findings with. A stamp file hashes the model plus the app
+   file CONTENTS (parser, renderer, teach, ideogram, page), so a re-run after a fix
+   re-captures only what moved, the printed "captured N, unchanged M" is the exact
+   list of bundles worth re-reading, and the analysis spend follows the same line.
 
 3. **Analyze** — agents, batched about ten directories each. Vision agents judge
    drawn entries on three dimensions (figure vs model, words vs figure, teaching);
@@ -713,3 +732,40 @@ stages, each a script, so a session picks it up instead of rebuilding it:
    follows the standing loop: failing test first, then the fix, then a corpus entry,
    so the same finding cannot come back. The score that matters is that ledger:
    confirmed findings per run trending to zero while the pinned corpora grow.
+
+   **The rubric, verbatim, for whoever writes the agent prompts next.** Give each
+   agent its bundle paths, the app philosophy in one line (if it draws, the notation
+   was accepted; refusals teach and hand back pasteable corrected forms; figure,
+   decode, detailed form, legend, and model.json must agree; messages never report
+   parser internals), the list of DECIDED policies so intended behavior is not
+   re-flagged (drawn-with-note for fused-count t() and bare rearrangements, the
+   band-snap, the arr/ish limitation-teach), and per bundle the first-pass claim
+   being verified, when there is one. Demand a verdict per bundle: CLOSED,
+   REGRESSED (quote the surviving defect), or NEW-FINDING (quote the two
+   disagreeing artifacts), and instruct agents to be adversarial about agreement:
+   count the bodies in the PNG, check gloss arithmetic against `model.json` spans,
+   and re-parse offered chips through `scripts/lib/render.mjs` so no chip dead-ends.
+   Four agents over ~7 bundles each is the measured sweet spot; a run over the 26
+   changed bundles of the 2026-08 pilot cost ~390k subagent tokens and returned
+   verdicts precise enough to act on unreviewed.
+
+3a. **The message audit**: `scripts/review-messages.mjs failures.json [--slices=N]`
+   is the failure-TAIL counterpart: it renders every unique production failure
+   through the page, records what the box says (`review/messages/audit.jsonl`),
+   dedupes the refusals into message TEMPLATES (quoted tokens, numbers, and sex
+   letters normalized away), and writes slice files for N review agents. The
+   template is the honest unit of message quality: one lesson worded around ten
+   inputs is one thing to judge. Agents judge each template on five tests: does it
+   teach the rule and hand a corrected form; is the refusal RIGHT (grep the ISCN
+   text before agreeing a form does not exist; the first run found the homologous
+   t(N;N) refusal contradicting printed ISCN); would the learner know what to do
+   next; any parser voice; and do the chips, re-parsed, land somewhere that draws
+   or teaches. Entries that now DRAW are listed with their box text and judged the
+   same way; silent draws are checked against the standard rather than assumed
+   correct.
+
+4. **Close the loop**: fixes ship as batches (failing test first), the capture and
+   the message audit re-run, and a clean pass over the changed bundles is what
+   "closed" means. Record the run in `review/findings.json`: what shipped, the
+   verdicts, and the residual polish deliberately left, so the next session starts
+   from the ledger instead of archaeology.

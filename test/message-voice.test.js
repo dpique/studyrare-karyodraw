@@ -36,7 +36,8 @@ const BAD_INPUTS = [
   // back in, because "needs two breakpoints" is one word away from "could not read the
   // second one".
   '46,XY,inv(9)(p11)', '46,XY,t(9;22)(q34)', '46,XY,t(2;7;5)(q21;p13)', '46,XX,del(5)',
-  '46,XX,t(9;22)', '46,XY,dup(1)', '46,XY,ins(5;2)(p14;q22)', '46,XY,t(9;9)(q34;q11)',
+  '46,XX,t(9;22)', '46,XY,dup(1)', '46,XY,ins(5;2)(p14;q22)', '46,XY,t(3;3)',
+  '46,XY,-4(pter-p15.1)', '46,XX,t(4:18)(q31;q11.2)', '47,XX+mar', '46,XY,t(7;;21)(q11;q11)',
   '45,XY,rob(1;2)(q10;q10)', '46,XY,+0', '46,XY,del(5)(p15.3p15.2)',
   '46,XY,del(5)(p15.2),del(5)(p15.2)', '46<3n>,XY', '46c,XY',
   '46,XY,t(9;22)(q34;q11.2)[0]', '46,YX',
