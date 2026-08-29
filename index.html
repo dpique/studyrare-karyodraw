@@ -413,6 +413,9 @@
   .decode-code { flex: 0 0 auto; max-width: 100%; overflow-x: auto; font: 700 13px var(--font-mono); color: var(--ink); background: #f0f2f7; padding: 2px 7px 4px; border-radius: 6px; white-space: nowrap; scrollbar-width: thin; scrollbar-color: #c3cae4 transparent; }
   .decode-code::-webkit-scrollbar { height: 5px; }
   .decode-code::-webkit-scrollbar-thumb { background: #c3cae4; border-radius: 3px; }
+  /* A chip whose symbol has a glossary entry advertises the hover: the dotted
+     underline is the standard "a definition lives here" affordance. */
+  .decode-code[data-gloss] { cursor: help; border-bottom: 1px dotted #8a93b8; }
   .decode-code::-webkit-scrollbar-track { background: transparent; }
   .decode-code.count { color: #3e4bb0; } .decode-code.sex { color: #37428a; }
   /* rec sits with the losses: it carries a duplication and a deletion, and the
@@ -871,6 +874,18 @@
   "use strict";
   var $ = function (s) { return document.querySelector(s); };
   var input = $("#kinput"), tooltip = $("#tooltip");
+
+  // The decode glossary hover, delegated ONCE on the container so re-rendering
+  // the panel never stacks listeners. The row text explains this karyotype's
+  // change; the hover on the symbol chip answers the prior question, what a
+  // derivative chromosome (or rec, idic, ...) IS.
+  $("#decode").addEventListener("mousemove", function (ev) {
+    var chip = ev.target && ev.target.closest ? ev.target.closest(".decode-code[data-gloss]") : null;
+    if (!chip) { hideTip(); return; }
+    var g = window.Teach.glossFor(chip.textContent);
+    if (g) showTip(ev, "<b>" + escapeHtml(g.term) + "</b>  " + escapeHtml(g.text));
+  });
+  $("#decode").addEventListener("mouseleave", hideTip);
   var currentDetailChrom = "1";
   var detailHotBand = null;   // band currently decoded in the detail panel, or null for the chromosome overview
   var MODE = "simple";     // "simple" | "detailed"
@@ -1364,7 +1379,12 @@
           (clone.cellCount != null ? '<span class="cc">' + clone.cellCount + ' cells</span>' : "") + '</div>';
       }
       window.Teach.decode(clone).forEach(function (r) {
-        html += '<div class="decode-row"><span class="decode-code ' + r.tag + '">' + escapeHtml(r.code) +
+        // A symbol with a glossary entry hovers to its concept: the row explains
+        // THIS karyotype's change, the glossary answers "what IS a derivative
+        // chromosome" without leaving the page.
+        var gloss = window.Teach.glossFor(r.code);
+        html += '<div class="decode-row"><span class="decode-code ' + r.tag + '"' +
+          (gloss ? ' data-gloss="' + escXml(gloss.term) + '"' : '') + '>' + escapeHtml(r.code) +
           '</span><span class="decode-text"><span class="decode-arrow">→</span> ' + r.text + '</span></div>';
       });
     });

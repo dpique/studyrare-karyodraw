@@ -1245,6 +1245,50 @@
       : "";
   }
 
+  // The hover glossary: what each ISCN symbol MEANS, as a concept, one hover
+  // away from wherever the symbol appears in the decode. The decode row already
+  // explains this karyotype's instance ("chromosomes 9 and 22 break at ...");
+  // the glossary answers the prior question, "what IS a derivative chromosome",
+  // so a learner never has to leave the page to look a symbol up. Definitions
+  // teach the concept and the naming rule, in the same voice as every other
+  // string here: no parser talk, and nothing this app cannot stand behind.
+  var GLOSSARY = {
+    der: "A DERIVATIVE chromosome (der): a structurally rearranged chromosome, built from one or more chromosomes. ISCN names it for the centromere it keeps, so der(9) has chromosome 9's centromere whatever else it carries, and it stands in the place of that chromosome.",
+    rec: "A RECOMBINANT chromosome (rec): the rearranged product a crossover creates in the child of a parent who carries an inversion or insertion. The duplicated segment is written out; the deleted one is inferred.",
+    rob: "A ROBERTSONIAN translocation (rob): two acrocentric chromosomes (13, 14, 15, 21 or 22) fused at the centromere into one chromosome, with their satellite-bearing short arms lost. A balanced carrier has 45 chromosomes and is healthy; the risk appears in their gametes.",
+    t: "A TRANSLOCATION (t): two chromosomes exchange segments. When nothing is lost or gained it is balanced; each product keeps its own centromere and is named for it.",
+    dic: "A DICENTRIC chromosome (dic): one chromosome carrying TWO centromeres, formed when two broken chromosomes fuse. One centromere is usually inactivated, which lets it segregate like a normal chromosome.",
+    idic: "An ISODICENTRIC chromosome (idic): a mirror-image chromosome with two centromeres, made of two copies of the same material joined end to end. The commonest is idic(15), a supernumerary made of two 15 short-arm-and-proximal-q pieces.",
+    i: "An ISOCHROMOSOME (i): a mirror-image chromosome of two identical arms about one centromere, with the other arm lost. i(X)(q10) is two X long arms; the carrier is trisomic for that arm and monosomic for the lost one.",
+    r: "A RING chromosome (r): both arms break and the broken ends fuse into a circle, usually losing the distal tips. Rings are mitotically unstable, so ring karyotypes are often mosaic.",
+    del: "A DELETION (del): a segment is missing. One breakpoint makes it terminal (everything beyond the band is gone); two make it interstitial (the piece between them is gone and the flanks rejoin).",
+    dup: "A DUPLICATION (dup): a segment present twice on the same chromosome. The order of the two breakpoints records whether the extra copy is direct or inverted.",
+    inv: "An INVERSION (inv): a segment turned end for end within its chromosome. Pericentric inversions span the centromere; paracentric ones stay on one arm. Balanced in the carrier; the reproductive risk comes from crossovers inside the loop.",
+    ins: "An INSERTION (ins): a segment moved into a new position, within its own chromosome or into another. ISCN writes the receiving site first, then the boundaries of the moved segment.",
+    add: "ADDITIONAL material of unknown origin (add): extra chromosome material attached at the named band. Banding shows that something is there, not where it came from.",
+    hsr: "A HOMOGENEOUSLY STAINING REGION (hsr): an amplified block of DNA riding within a chromosome, staining evenly instead of banding. It is one of the two classic forms of gene amplification, beside double minutes.",
+    fra: "A FRAGILE SITE (fra): a gap or constriction that appears at a specific band under culture stress. fra(X)(q27.3) is FRAXA, the fragile X site.",
+    trp: "A TRIPLICATION (trp): a segment present three times on the same chromosome.",
+    mar: "A MARKER chromosome (mar): an extra chromosome that banding cannot identify. It is counted in the total, and its origin is unknown by definition.",
+    dmin: "DOUBLE MINUTES (dmin): small paired fragments of extrachromosomal DNA, the other classic form of gene amplification. They lack centromeres and are not counted in the modal number."
+  };
+  // The glossary entry for a decode row's code chip, keyed on the symbol the
+  // code STARTS with (past any sign). Longest symbols first, so idic is never
+  // read as i. Null for rows that are not an operation (counts, sex fields,
+  // plain gains and losses), which keeps the hover meaningful where it exists.
+  var GLOSS_OPS = ["idic", "dic", "dmin", "der", "rob", "rec", "del", "dup", "inv", "ins", "add", "hsr", "fra", "trp", "mar", "t", "i", "r"];
+  function glossFor(code) {
+    var s = String(code || "").replace(/^[+\-−–]/, "");
+    for (var gi = 0; gi < GLOSS_OPS.length; gi++) {
+      var op = GLOSS_OPS[gi];
+      var next = s.slice(op.length, op.length + 1);
+      if (s.toLowerCase().indexOf(op) === 0 && (next === "(" || (op === "mar" || op === "dmin") && (next === "" || /\d/.test(next)))) {
+        return { term: op, text: GLOSSARY[op] };
+      }
+    }
+    return null;
+  }
+
   window.Teach = {
     decode: decode,
     sexNote: sexNote,
@@ -1254,6 +1298,8 @@
     describeAberration: describeAberration,
     syndromes: syndromes,
     pronounce: pronounce,
+    GLOSSARY: GLOSSARY,
+    glossFor: glossFor,
     ARM_INFO: ARM_INFO
   };
 })();
