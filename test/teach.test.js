@@ -887,6 +887,41 @@ test('the bare Robertsonian keeps its own sentence, not the with-more-on-it one'
 // was an X. Beside a Y-derived rearrangement (idic(Y), r(Y)) the lone X was
 // still glossed "a single X (monosomy X)" under a figure drawing the abnormal Y
 // in the second sex slot.
+// The hover glossary: every symbol the app draws can explain its CONCEPT on
+// hover, in the decode panel. The decode row explains this karyotype's change;
+// the glossary answers "what IS a derivative chromosome".
+test('every drawable symbol has a glossary entry, matched from a decode code', () => {
+  const codes = {
+    del: 'del(5)(p15.2)', dup: 'dup(1)(q21q31)', inv: 'inv(9)(p12q13)', t: 't(9;22)(q34;q11.2)',
+    i: 'i(X)(q10)', r: 'r(13)(p11q34)', der: 'der(9)t(9;22)(q34;q11.2)', rob: 'rob(14;21)(q10;q10)',
+    rec: 'rec(6)dup(6p)inv(6)(p22.2q25.2)', add: 'add(19)(p13.3)', ins: 'ins(5;2)(p14;q22q32)',
+    dic: 'dic(13;15)(q22;q24)', idic: 'idic(15)(q11.2)', trp: 'trp(15)(q11.2q13)',
+    hsr: 'hsr(21)(q22)', fra: 'fra(X)(q27.3)', mar: '+mar', dmin: 'dmin',
+  };
+  for (const [op, code] of Object.entries(codes)) {
+    const g = Teach.glossFor(code);
+    assert.ok(g, op + ' from ' + code);
+    assert.equal(g.term, op, code);
+    assert.ok(g.text.length > 60, op + ': a definition, not a label');
+  }
+});
+
+test('the glossary never fires where it has nothing to say', () => {
+  for (const code of ['46', 'XX', '+21', '-7', '[10]', 'q34']) {
+    assert.equal(Teach.glossFor(code), null, code);
+  }
+  assert.equal(Teach.glossFor('idic(15)(q11.2)').term, 'idic', 'idic is never read as i');
+  assert.equal(Teach.glossFor('t(3;3)(q21.3;q26.2)').term, 't', 'trp is never matched inside t');
+});
+
+test('glossary definitions keep the house voice', () => {
+  for (const [op, text] of Object.entries(Teach.GLOSSARY)) {
+    assert.doesNotMatch(text, /—/, op + ': no em dash');
+    assert.doesNotMatch(text, /’(t|re|ll|ve)\b|\b(it|that|there|here|what)’s\b/i, op + ': no contraction (possessives are fine)');
+    assert.doesNotMatch(text, /parse|KaryoDraw|recognize/i, op + ': the concept, not the program');
+  }
+});
+
 test('a lone X beside a Y-derived rearrangement is not called monosomy X', () => {
   for (const k of ['46,X,idic(Y)(q11.2)', '46,X,r(Y)(p11.2q12)']) {
     const rows = decodeRows(k);

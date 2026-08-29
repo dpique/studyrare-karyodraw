@@ -3,6 +3,16 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-29 (hover a symbol, learn the concept)
+
+- **The decode panel's symbol chips carry a glossary.** The row text explains this
+  karyotype's change; hovering the chip answers the prior question, what a
+  derivative chromosome (or rec, rob, idic, isochromosome, ring, marker, dmin, and
+  the rest) actually IS, in two or three sentences, without leaving the page. A
+  dotted underline advertises the hover; rows with nothing to define (the count,
+  the sex field, plain gains and losses) stay plain. Requested by Dan for exactly
+  the der and rec cases.
+
 ## 2026-08-29 (the failure tail learns to teach)
 
 A message-quality audit rendered all 381 unique production failures through the page,
