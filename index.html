@@ -970,7 +970,7 @@
   // scattered across four rows. A normal karyotype has nothing to isolate, so it still
   // draws in full: the toggle hides itself when there is no abnormality.
   var SHOW = "affected";
-  var SCALEBAR = true;     // the 50 Mb ruler; on by default, `scale=off` in the URL turns it off
+  var SCALEBAR = false;    // the 50 Mb ruler; off by default (owner call), `scale=on` in the URL turns it on
   var AFFECTED = {};       // chrom -> hex color (Simple mode highlight key)
   var spokenText = "";     // current karyotype rendered for text-to-speech
   var currentModel = null; // last successfully parsed model (for image export)
@@ -2202,7 +2202,7 @@
         "&style=" + STYLE_TO_URL[MODE] + "&bands=" + BANDS_TO_URL[LEVEL] + "&show=" + SHOW_TO_URL[SHOW] +
         // Only the non-default rides in the URL, so every link already shared
         // keeps its meaning and the common case stays clean.
-        (SCALEBAR ? "" : "&scale=off");
+        (SCALEBAR ? "&scale=on" : "");
       history[push ? "pushState" : "replaceState"](null, "", url);
     } catch (e) {}
   }
@@ -2213,7 +2213,7 @@
     var pStyle = getParam("style"); if (pStyle && URL_TO_STYLE[pStyle]) MODE = URL_TO_STYLE[pStyle];
     var pBands = getParam("bands"); if (pBands !== null && pBands in URL_TO_BANDS) LEVEL = URL_TO_BANDS[pBands];
     var pShow = getParam("show"); if (URL_TO_SHOW[pShow]) SHOW = URL_TO_SHOW[pShow];
-    var pScale = getParam("scale"); if (pScale) SCALEBAR = pScale !== "off";
+    var pScale = getParam("scale"); if (pScale) SCALEBAR = pScale === "on";
     syncSeg();
   }
   function getParam(name) {
@@ -2313,9 +2313,9 @@
       if (lvl.indexOf("·") >= 0) lvl = lvl.split("·").pop().trim() + " bands";
       var showOpt = $("#showseg").parentNode;
       var showLbl = showOpt && showOpt.style.display === "none" ? "" : lbl("#showseg");
-      // The scale toggle only earns a mention when it is off: "On" alone would
+      // The scale toggle only earns a mention when it is on: "Off" alone would
       // say nothing, and the default state is not news.
-      vs.textContent = [showLbl, lvl, lbl("#modeseg"), SCALEBAR ? "" : "no scale bar"]
+      vs.textContent = [showLbl, lvl, lbl("#modeseg"), SCALEBAR ? "scale bar" : ""]
         .filter(Boolean).join(" · ");
     }
   }
