@@ -413,9 +413,17 @@
   .decode-code { flex: 0 0 auto; max-width: 100%; overflow-x: auto; font: 700 13px var(--font-mono); color: var(--ink); background: #f0f2f7; padding: 2px 7px 4px; border-radius: 6px; white-space: nowrap; scrollbar-width: thin; scrollbar-color: #c3cae4 transparent; }
   .decode-code::-webkit-scrollbar { height: 5px; }
   .decode-code::-webkit-scrollbar-thumb { background: #c3cae4; border-radius: 3px; }
-  /* A chip whose symbol has a glossary entry advertises the hover: the dotted
-     underline is the standard "a definition lives here" affordance. */
-  .decode-code[data-gloss] { cursor: help; border-bottom: 1px dotted #8a93b8; }
+  /* Anything carrying a glossary entry advertises the hover with the same mark: a
+     dotted periwinkle underline, one affordance for chips, glossed prose, and the
+     figure captions alike. The first cut was a 1px dotted border in #8a93b8 and
+     Dan could not tell it was an affordance at all (2026-08-29), so it stepped up
+     to the accent hue at 2px, held clear of the glyphs. */
+  .decode-code[data-gloss], .decode-text .gterm, .ksub[data-gloss] { cursor: help;
+    text-decoration-line: underline; text-decoration-style: dotted;
+    text-decoration-color: var(--periwinkle); text-decoration-thickness: 2px;
+    text-underline-offset: 3px; }
+  /* The caption is 9.5px; the full-size mark would swallow it. */
+  .ksub[data-gloss] { text-decoration-thickness: 1.5px; text-underline-offset: 2px; }
   .decode-code::-webkit-scrollbar-track { background: transparent; }
   .decode-code.count { color: #3e4bb0; } .decode-code.sex { color: #37428a; }
   /* rec sits with the losses: it carries a duplication and a deletion, and the
@@ -439,7 +447,10 @@
      second reading of the same chromosome, not a second finding, so it must not
      compete with the karyogram above it. */
   #detailed:empty { display: none; }
-  #detailed { margin: 10px 2px 0; border-top: 1px solid var(--line); padding-top: 9px; }
+  /* 16px side margins: the card has no .body wrapper here, so the block sets the
+     shared gutter itself. At 2px it sat flush against the card border, visibly
+     left of every other row in the card (Dan, 2026-08-29). */
+  #detailed { margin: 10px 16px 12px; border-top: 1px solid var(--line); padding-top: 9px; }
   .dtitle { font: 700 10.5px var(--font-sans); letter-spacing: .06em; text-transform: uppercase;
     color: var(--ink-2); margin-bottom: 5px; }
   .dline { display: flex; gap: 10px; align-items: baseline; padding: 2px 0; flex-wrap: wrap; }
@@ -468,6 +479,11 @@
   .warnbox ul { margin: 6px 0 0; padding-left: 18px; }
   .warnbox .dym-row { font-size: 14.5px; color: var(--ink-2); margin-bottom: 6px; }
   .warnbox .warn-title { font-weight: 700; }
+  /* The correction note: drawn, but the spelling is not valid ISCN. The amber frame
+     carries the judgment; the body keeps prose ink so the lesson stays readable. */
+  .warnbox.notecorr { color: var(--ink-2); line-height: 1.65; }
+  .warnbox.notecorr .warn-title { color: var(--amber-800); margin-bottom: 3px; }
+  .warnbox .note-fix { margin-top: 8px; }
   /* Deliberately NOT the amber warnbox: a note fires on input that is correct and
      drawn correctly, so it must not read as an error. Periwinkle = informational. */
   .notebox { margin: 0 0 14px; padding: 12px 15px; border-radius: 10px; background: var(--peri-50); border: 1px solid var(--peri-300); color: var(--ink-2); font-size: 13.5px; line-height: 1.65; }
@@ -877,13 +893,15 @@
 
   // The decode glossary hover, delegated ONCE on the container so re-rendering
   // the panel never stacks listeners. The row text explains this karyotype's
-  // change; the hover on the symbol chip answers the prior question, what a
-  // derivative chromosome (or rec, idic, ...) IS.
+  // change; the hover answers the prior question, what a derivative chromosome
+  // (or rec, idic, ...) IS. [data-gloss] covers both carriers, the symbol chip
+  // and a glossed term in the prose; the attribute holds the GLOSSARY key, so
+  // one lookup serves both.
   $("#decode").addEventListener("mousemove", function (ev) {
-    var chip = ev.target && ev.target.closest ? ev.target.closest(".decode-code[data-gloss]") : null;
-    if (!chip) { hideTip(); return; }
-    var g = window.Teach.glossFor(chip.textContent);
-    if (g) showTip(ev, "<b>" + escapeHtml(g.term) + "</b>  " + escapeHtml(g.text));
+    var el = ev.target && ev.target.closest ? ev.target.closest("[data-gloss]") : null;
+    var text = el && window.Teach.GLOSSARY[el.getAttribute("data-gloss")];
+    if (!text) { hideTip(); return; }
+    showTip(ev, "<b>" + escapeHtml(el.getAttribute("data-gloss")) + "</b>  " + escapeHtml(text));
   });
   $("#decode").addEventListener("mouseleave", hideTip);
   var currentDetailChrom = "1";
@@ -1179,12 +1197,15 @@
   // modelled as an overlay and has no band composition to state yet. A whole-karyotype
   // line would have to either omit those silently or claim a completeness it does not
   // have. The block hides itself when empty (#detailed:empty).
-  // Each segment of the string takes the color its piece wears in the figure (the
-  // same computeAffected palette), junctions and unjoined ends in gray, so the
-  // notation points back at the picture it describes. Colored only in the Highlight
-  // style, because that is when the figure itself is colored; Realistic keeps plain
-  // ink, so the words never claim a color the picture does not show. Picked from a
+  // Each segment of the string takes its color from the piece it describes in the
+  // figure (the computeAffected palette), junctions and unjoined ends in gray, so
+  // the notation points back at the picture. Colored only in the Highlight style,
+  // because that is when the figure itself is colored; Realistic keeps plain ink,
+  // so the words never claim a color the picture does not show. Picked from a
   // four-variant preview on 2026-08-28 (colored ink over chips and underlines).
+  // The ink is Karyo.textInk of the palette hue, not the raw hue: the palette is
+  // tuned for filled shapes, and its light entries were unreadable as 12px text
+  // (Dan, 2026-08-29). Same family, darkened to AA contrast.
   function colorizeDetail(d, instChrom, colors) {
     var openT = d.charAt(0) === ":" ? ":" : "";
     var closeT = d.length > 1 && d.charAt(d.length - 1) === ":" ? ":" : "";
@@ -1195,6 +1216,7 @@
       // form (5.4.2.2 b), where the instance's own chromosome is the source.
       var m = /^([0-9XY]+)[pq]/.exec(t);
       var c = colors[m ? m[1] : String(instChrom)];
+      if (c) c = window.Karyo.textInk(c);
       return c ? '<span style="color:' + c + '">' + escapeHtml(t) + "</span>" : escapeHtml(t);
     });
     return (openT ? '<span class="dj">:</span>' : "") + parts.join(J) +
@@ -1370,6 +1392,23 @@
     card.style.display = "";
   }
 
+  // The decode prose wears the glossary too, not only the symbol chips (Dan,
+  // 2026-08-29): "derivative chromosome" in a sentence hovers exactly like the
+  // der chip beside it. One alternation, one pass over the plain decode text, so
+  // a phrase matched by an earlier, longer entry can never be re-matched inside
+  // its own wrap by a later one ("Robertsonian translocation" is rob, and its
+  // tail never re-glosses as "translocation"). The term data lives in teach.js
+  // beside the GLOSSARY it points into; the wrapping happens only here, because
+  // the same decode text also feeds text-to-speech, the print summary, and the
+  // landing pages, none of which can carry a hover.
+  var PROSE_RE = new RegExp("\\b(?:" + window.Teach.GLOSS_PROSE_TERMS.map(function (p) { return p[0]; }).join("|") + ")\\b", "gi");
+  function glossProse(text) {
+    return String(text).replace(PROSE_RE, function (word) {
+      var g = window.Teach.glossForTerm(word);
+      return g ? '<span class="gterm" data-gloss="' + escXml(g.term) + '">' + word + '</span>' : word;
+    });
+  }
+
   function renderDecode(clones) {
     var html = "";
     clones.forEach(function (clone, i) {
@@ -1381,11 +1420,13 @@
       window.Teach.decode(clone).forEach(function (r) {
         // A symbol with a glossary entry hovers to its concept: the row explains
         // THIS karyotype's change, the glossary answers "what IS a derivative
-        // chromosome" without leaving the page.
+        // chromosome" without leaving the page. The prose gets the same reach
+        // (glossProse): the row about a der() names OTHER concepts in passing
+        // (Robertsonian, dicentric, ...), and each of those hovers too.
         var gloss = window.Teach.glossFor(r.code);
         html += '<div class="decode-row"><span class="decode-code ' + r.tag + '"' +
           (gloss ? ' data-gloss="' + escXml(gloss.term) + '"' : '') + '>' + escapeHtml(r.code) +
-          '</span><span class="decode-text"><span class="decode-arrow">→</span> ' + r.text + '</span></div>';
+          '</span><span class="decode-text"><span class="decode-arrow">→</span> ' + glossProse(r.text) + '</span></div>';
       });
     });
     $("#decode").innerHTML = html;
@@ -1463,6 +1504,14 @@
       kg.setAttribute("aria-label", "Karyogram of " + (clone.raw || model.raw));
       block.appendChild(kg);
       parent.appendChild(block);
+    });
+    // Figure captions join the glossary: der(14;21) under a drawing is exactly
+    // where "what IS a der" gets asked (Dan, 2026-08-29). Stamped here rather
+    // than in karyo-render, which stays free of any dependency on Teach; the
+    // attribute holds the GLOSSARY key and the #karyo hover reads it back.
+    Array.prototype.forEach.call(host.querySelectorAll(".ksub"), function (el) {
+      var g = window.Teach.glossFor(el.textContent);
+      if (g) el.setAttribute("data-gloss", g.term);
     });
     fitKaryograms();
   }
@@ -1582,7 +1631,19 @@
         var c = band.getAttribute("data-chrom"), b = band.getAttribute("data-band"), s = band.getAttribute("data-stain");
         showTip(ev, "<b>" + c + b + "</b>  " + prettyStain(s));
         if (band !== hiBand) { highlight(band); renderDetail(c, b); markSel(c); }
-      } else { hideTip(); if (hiBand) clearHi(); }
+        return;
+      }
+      // A figure caption with a glossary entry (der(14;21) under the drawing)
+      // hovers to the same definition as the decode chip: the figure is where
+      // "what IS a der" actually gets asked (Dan, 2026-08-29).
+      var cap = ev.target.closest ? ev.target.closest(".ksub[data-gloss]") : null;
+      var capText = cap && window.Teach.GLOSSARY[cap.getAttribute("data-gloss")];
+      if (capText) {
+        showTip(ev, "<b>" + escapeHtml(cap.getAttribute("data-gloss")) + "</b>  " + escapeHtml(capText));
+        if (hiBand) clearHi();
+        return;
+      }
+      hideTip(); if (hiBand) clearHi();
     });
     karyo.addEventListener("mouseleave", function () { hideTip(); clearHi(); });
     karyo.addEventListener("click", function (ev) {
@@ -1870,10 +1931,16 @@
     var fix = fixes[0];
     // A note is only ever set on input the parser accepted and the renderer drew
     // correctly, so it never shares the box with a warning (the parser guarantees
-    // this, and a test pins it). It gets the neutral treatment and its own verb:
-    // "draw it instead", not "did you mean", because nothing here is a mistake.
+    // this, and a test pins it). Most notes get the neutral treatment and their
+    // own verb: "draw it instead", not "did you mean", because nothing there is a
+    // mistake. A note the parser marks tone "correction" IS about a mistake (a
+    // spelling the standard disallows, drawn from the reading the input itself
+    // asserted), so it takes the amber frame and says so in the title.
     if (!w.length && !fix && model.note) {
-      box.innerHTML = '<div class="notebox"><div class="note-title">Worth knowing</div>' +
+      var noteCorr = model.note.tone === "correction";
+      box.innerHTML = '<div class="' + (noteCorr ? "warnbox notecorr" : "notebox") +
+        '"><div class="' + (noteCorr ? "warn-title" : "note-title") + '">' +
+        (noteCorr ? "Not valid ISCN as written" : "Worth knowing") + '</div>' +
         escapeHtml(model.note.text) +
         // The label comes with the note. It used to be hardcoded to the Robertsonian
         // wording, which was the only note there was.

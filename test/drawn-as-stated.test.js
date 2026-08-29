@@ -49,6 +49,13 @@ test('the drawn fusion carries the teaching note with the der() respelling', () 
   assert.match(m.note.text, /der\(14;21\)\(q10;q10\)/);
   assert.equal(m.note.fix, '45,XX,der(14;21)(q10;q10)');
   assert.equal(m.countFix, null, 'no count repair on offer; the count was right');
+  // The t() spelling at the fused count is the one drawn-anyway note whose
+  // spelling the standard disallows (5.5.18.3 b sanctions der and rob only),
+  // so the note carries the correction tone and names the rule. Owner call
+  // 2026-08-29, revising the same day's neutral framing: drawing stays, the
+  // box goes amber and says plainly that the spelling is not valid.
+  assert.equal(m.note.tone, 'correction', 'the note declares itself a correction');
+  assert.match(m.note.text, /5\.5\.18\.3/, 'the rule is cited, not just asserted');
 });
 
 test('a non-acrocentric whole-arm t() at the fused count keeps the refusal', () => {
@@ -90,6 +97,7 @@ test('a mosaic clone reinterprets too, and the note still states the reading', (
   assert.equal(m.clones[0].countWrong, false);
   assert.ok(m.note, 'never a silent reinterpretation');
   assert.match(m.note.fix, /der\(14;21\)\(q10;q10\)\[3\]/);
+  assert.equal(m.note.tone, 'correction', 'the mosaic reread is the same correction');
 });
 
 // ---- the bare rearrangement -------------------------------------------------
@@ -107,6 +115,10 @@ test('a bare balanced translocation draws on an assumed 46,XX', () => {
   assert.match(m.note.text, /46,XX/);
   assert.equal(m.note.fix, '46,XX,t(2;5)(q21;q31)');
   assert.equal(m.assumedNormal, '46,XX,t(2;5)(q21;q31)', 'the assumption is recorded');
+  // A bare rearrangement is shorthand, not a spelling the standard disallows,
+  // so this note keeps the neutral tone; only the invalid-as-written t()
+  // fusion above earns the correction framing.
+  assert.ok(!m.note.tone, 'no correction tone on a mere assumption');
 });
 
 test('a bare gain draws at the corrected count', () => {

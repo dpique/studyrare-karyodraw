@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-29 (the glossary reaches the figure and the prose, and t() at 45 hears the rule)
+
+- **The fused-count t() note is now an amber correction.** `45,XX,t(14;21)(q10;q10)`
+  still draws the Robertsonian fusion its count asserts, but the box no longer
+  files the spelling under neutral "Worth knowing": it says plainly that ISCN does
+  not write this fusion with t() (5.5.18.3 b names der as the preferred spelling,
+  rob for constitutional cases), with the der() respelling still one click away.
+  Owner call, revising the same day's neutral framing.
+- **The glossary now covers all three places a symbol appears.** The figure caption
+  under a drawn derivative (der(14;21) below the chromosome) hovers to the same
+  definition as the decode chip, and the English names inside the decode prose
+  ("derivative chromosome", "Robertsonian translocation", "dicentric", and the
+  rest) hover too, each resolving to the symbol it names. One pass, longest phrase
+  first, so "Robertsonian translocation" is rob and never re-glosses as a plain
+  translocation.
+- **The hover affordance is now visible.** The 1px gray dotted border under a
+  glossed chip read as nothing; chips, glossed prose, and captions now share a
+  2px dotted periwinkle underline held clear of the glyphs.
+- **The ISCN detailed form is readable and sits on the card gutter.** Its pieces
+  now wear ink derived from the figure colors (same hue, darkened to WCAG AA
+  contrast for 12px text) instead of the raw shape palette, whose light periwinkle
+  and amber were hard to read, and the block aligns with everything else in the
+  card instead of hugging the left border.
+
 ## 2026-08-29 (hover a symbol, learn the concept)
 
 - **The decode panel's symbol chips carry a glossary.** The row text explains this

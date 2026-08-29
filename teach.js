@@ -1289,6 +1289,47 @@
     return null;
   }
 
+  // The same glossary reached from the PROSE: each entry is [regex source, key],
+  // matching the English name a decode sentence uses for the concept the symbol
+  // names ("derivative chromosome" hovers like the der chip does). Data only, no
+  // markup: the decode text also feeds text-to-speech, the print summary, and
+  // the generated landing pages, none of which can carry a hover, so the
+  // wrapping happens at the one render site that can (the app's decode panel).
+  // Ordered longest-first and consumed as ONE alternation, single pass, so
+  // "Robertsonian translocation" can never be re-matched inside as
+  // "translocation". Only symbol-backed concepts appear: a term without a
+  // GLOSSARY entry would be an underline with nothing behind it.
+  var GLOSS_PROSE_TERMS = [
+    ["Robertsonian(?: translocations?)?", "rob"],
+    ["homogeneously staining regions?", "hsr"],
+    ["isodicentric(?: chromosomes?)?", "idic"],
+    ["recombinant(?: chromosomes?)?", "rec"],
+    ["derivative(?: chromosomes?)?", "der"],
+    ["dicentric(?: chromosomes?)?", "dic"],
+    ["marker chromosomes?", "mar"],
+    ["ring chromosomes?", "r"],
+    ["isochromosomes?", "i"],
+    ["translocations?", "t"],
+    ["triplications?", "trp"],
+    ["duplications?", "dup"],
+    ["fragile sites?", "fra"],
+    ["double minutes", "dmin"],
+    ["deletions?", "del"],
+    ["inversions?", "inv"],
+    ["insertions?", "ins"]
+  ];
+  // Resolve the matched prose back to its entry: the first pattern that covers
+  // the whole match wins, mirroring the order the alternation matched it by.
+  function glossForTerm(word) {
+    for (var ti = 0; ti < GLOSS_PROSE_TERMS.length; ti++) {
+      var p = GLOSS_PROSE_TERMS[ti];
+      if (new RegExp("^(?:" + p[0] + ")$", "i").test(word)) {
+        return { term: p[1], text: GLOSSARY[p[1]] };
+      }
+    }
+    return null;
+  }
+
   window.Teach = {
     decode: decode,
     sexNote: sexNote,
@@ -1300,6 +1341,8 @@
     pronounce: pronounce,
     GLOSSARY: GLOSSARY,
     glossFor: glossFor,
+    GLOSS_PROSE_TERMS: GLOSS_PROSE_TERMS,
+    glossForTerm: glossForTerm,
     ARM_INFO: ARM_INFO
   };
 })();

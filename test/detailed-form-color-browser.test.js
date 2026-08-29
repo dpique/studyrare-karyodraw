@@ -28,6 +28,16 @@ const CHROME = [
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' };
 
+// WCAG contrast against white, computed independently of the app's own color
+// math so the assertion cannot be satisfied by a broken Karyo.textInk.
+function contrastOnWhite(hex) {
+  const [r, g, b] = [0, 2, 4].map((i) => {
+    const v = parseInt(hex.slice(1 + i, 3 + i), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 1.05 / (0.2126 * r + 0.7152 * g + 0.0722 * b + 0.05);
+}
+
 function serve() {
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://localhost');
@@ -59,18 +69,35 @@ test('the detailed form wears the figure colors and the token chip scrolls', asy
     const page = await browser.newPage();
     await page.setCacheEnabled(false);
 
-    await t.test('highlight: each piece takes its chromosome color from the palette', async () => {
+    await t.test('highlight: each piece wears readable ink derived from its figure color', async () => {
       await open(page, '46,XY,t(9;22)(q34;q11.2)', 'highlight');
       const got = await page.evaluate(() => ({
-        palette: window.Karyo.AFFECTED_PALETTE,
+        inks: window.Karyo.AFFECTED_PALETTE.map((p) => window.Karyo.textInk(p)),
         colors: [...document.querySelectorAll('#detailed code span[style]')]
           .map((s) => (s.getAttribute('style').match(/color:\s*([^;]+)/) || [])[1]),
         junctions: document.querySelectorAll('#detailed .dj').length,
       }));
       assert.ok(got.colors.length >= 4, 'both derivatives carry colored pieces');
-      got.colors.forEach((c) => assert.ok(got.palette.includes(c), `${c} is a figure color`));
+      // textInk of the palette, not the palette raw: the raw entries are tuned for
+      // filled shapes and the light ones (periwinkle, amber) were unreadable as
+      // 12px text (Dan, 2026-08-29). The independent contrast check below keeps
+      // this from ever regressing to "matches whatever textInk returns".
+      got.colors.forEach((c) => assert.ok(got.inks.includes(c), `${c} is a figure ink`));
+      got.colors.forEach((c) => assert.ok(contrastOnWhite(c) >= 4.5,
+        `${c} reads as text on white (${contrastOnWhite(c).toFixed(2)}:1)`));
       assert.ok(new Set(got.colors).size >= 2, 'chromosome 9 and 22 pieces differ');
       assert.ok(got.junctions >= 2, 'the :: junctions are marked to recede');
+    });
+
+    await t.test('the block sits on the card gutter, not against the card border', async () => {
+      await open(page, '46,XY,t(9;22)(q34;q11.2)', 'highlight');
+      const gap = await page.evaluate(() => {
+        const d = document.getElementById('detailed').getBoundingClientRect().left;
+        const row = document.querySelector('.kactions');
+        const a = row.getBoundingClientRect().left + parseFloat(getComputedStyle(row).paddingLeft);
+        return Math.abs(d - a);
+      });
+      assert.ok(gap <= 1, `aligned with the actions row above it (off by ${gap}px)`);
     });
 
     await t.test('realistic: plain ink, because the figure is not colored either', async () => {
