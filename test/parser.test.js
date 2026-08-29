@@ -1620,3 +1620,72 @@ test('a der(N) whose own arm is cut twice is refused', () => {
     assert.equal(ok.warnings.length, 0, k);
   });
 });
+
+// Four silent drops found by the 2026-08-28 agent review of production traffic.
+// Each drew a figure missing something the notation states, with zero warnings.
+
+// ISCN 4.2.1 f: after a translocation is listed, +der(N) alone means the
+// derivative of THAT translocation. 46,XX,t(9;22)(q34;q11.2)[10]/47,XX,t(9;22),
+// +der(22)[10] is printed in the standard, and a visitor typed the Emanuel
+// karyotype 47,XX,+der(22),t(11;22)(q23.3;q11.2). Both drew an INTACT chromosome
+// 22 captioned der(22) via the complex-note fallback.
+test('a bare +der(N) resolves against the translocation listed in its clone', () => {
+  const emanuel = ISCN.parse('47,XX,+der(22),t(11;22)(q23.3;q11.2)');
+  assert.equal(emanuel.warnings.length, 0);
+  assert.equal(emanuel.clones[0].unreadable, false);
+  const derAb = emanuel.clones[0].aberrations.find((a) => a.op === 'der');
+  assert.equal((derAb.subOps || []).length, 1, 'the t is attached as the der recipe');
+  assert.equal(derAb.subOps[0].breakpoints.map((g) => g.join('')).join(';'), 'q23.3;q11.2');
+  const mosaic = ISCN.parse('46,XX,t(9;22)(q34;q11.2)[10]/47,XX,t(9;22),+der(22)[10]');
+  assert.equal(mosaic.warnings.length, 0);
+  const der22 = mosaic.clones[1].aberrations.find((a) => a.op === 'der');
+  assert.equal(der22.subOps[0].breakpoints.map((g) => g.join('')).join(';'), 'q34;q11.2',
+    'the back-referenced bands reach the resolved der');
+  // A bare der with NO matching t keeps the pinned lone-der behavior.
+  assert.equal(ISCN.parse('46,X,der(X)').clones[0].unreadable, false);
+});
+
+// A sub-op breakpoint group that yields nothing must not vanish: ins(2;7)(p?21;...)
+// silently dropped the whole insertion (der(2) built from chromosome 2 alone, no
+// warning) while the decode still described the chromosome 7 transfer. The ? is
+// correct ISCN for an undetermined breakpoint, so it routes to the uncertainty
+// refusal, not to a blame message.
+test('an uncertain breakpoint inside a der sub-op refuses instead of vanishing', () => {
+  const m = ISCN.parse('46,XY,der(2)ins(2;7)(p?21;q21.3q22.1)inv(2)(p21q14),der(7)ins(2;7)');
+  assert.equal(m.clones[0].unreadable, true);
+  assert.match(m.warnings.join(' '), /question mark|not determined/i);
+  // The definite spelling keeps drawing clean.
+  const ok = ISCN.parse('46,XY,der(2)ins(2;7)(p21;q21.3q22.1)inv(2)(p21q14),der(7)ins(2;7)');
+  assert.equal(ok.clones[0].unreadable, false);
+  assert.equal(ok.warnings.length, 0);
+});
+
+// der(9)del(p21)t(9;22): the della-style shorthand puts the band where the
+// chromosome goes, and the deletion was dropped in silence while the decode
+// promised it. The reading is mechanical (a chromosome is never p-something), so
+// it draws as del(9)(p21) with the spelling taught, the same pattern as the
+// reversed-band repair.
+test('a der sub-op band in the chromosome slot is read as the primary chromosome', () => {
+  const m = ISCN.parse('46,XX,der(9)del(p21)t(9;22)(q34;q11.2)');
+  assert.equal(m.clones[0].unreadable, false);
+  assert.match(m.warnings.join(' '), /del\(9\)\(p21\)/);
+  const derAb = m.clones[0].aberrations.find((a) => a.op === 'der');
+  const delSub = derAb.subOps.find((s) => s.op === 'del');
+  assert.equal(String(delSub.chroms[0]), '9');
+  assert.equal(delSub.breakpoints[0].join(''), 'p21');
+});
+
+// ×2 on a structural abnormality means two copies of that abnormal chromosome.
+// Signed ops honored it; unsigned ops applied once and dropped the second copy
+// in silence (add(4)(q31.3)x2 drew one add beside a normal 4).
+test('a multiplier on an unsigned structural abnormality makes that many copies', () => {
+  const m = ISCN.parse('46,XY,add(4)(q31.3)x2');
+  assert.equal(m.warnings.length, 0);
+  const kinds = m.clones[0].slots['4'].map((i) => i.kind);
+  assert.equal(kinds.filter((k) => k === 'add').length, 2, 'both homologs carry the add');
+  assert.equal(kinds.filter((k) => k === 'normal').length, 0);
+  const t2 = ISCN.parse('46,XX,t(9;22)(q34;q11.2)x2');
+  assert.equal(t2.clones[0].unreadable, false);
+  assert.equal(t2.clones[0].slots['9'].filter((i) => i.kind === 't').length, 2);
+  assert.equal(t2.clones[0].slots['22'].filter((i) => i.kind === 't').length, 2);
+});

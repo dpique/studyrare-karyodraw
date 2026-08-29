@@ -394,6 +394,18 @@
       // A sub-op goes through the same splitBands, so it drops a range the same
       // way: der(19)t(X;19)(q11.1-11.2;p13.3) was the report that found this.
       collectPartial(ab.partialBands, subGroups, subBands);
+      // A group that yields NOTHING must not vanish either: ins(2;7)(p?21;...)
+      // came through with an empty recipient group, so the whole insertion was
+      // dropped in silence while the decode still described the chromosome 7
+      // transfer. A "?" in the group is correct ISCN for an undetermined
+      // breakpoint and routes to the uncertainty refusal; anything else that
+      // yields no band is unreadable, the same call as a top-level breakpoint.
+      subGroups.forEach(function (g, gi) {
+        var gt = String(g || "").trim();
+        if (!gt || (subBands[gi] || []).length) return;
+        if (/\?/.test(gt)) (ab.uncertainBands = ab.uncertainBands || []).push(gt);
+        else (ab.badBands = ab.badBands || []).push(gt);
+      });
       sub.push({
         op: sm[2].toLowerCase(),
         chroms: splitTop(sm[3], ";").map(function (x) { return x.trim(); }),
@@ -401,6 +413,26 @@
       });
     }
     unread += rest.slice(cursor);
+    // Mitelman-style shorthand puts the band where the chromosome goes:
+    // der(9)del(p21)t(9;22) means del(9)(p21), and the deletion was dropped in
+    // silence (the "chromosome" p21 matched nothing) while the decode promised
+    // it. The reading is mechanical, since a chromosome is never p-something,
+    // so it draws with the spelling taught, the same pattern as the
+    // reversed-band repair.
+    sub.forEach(function (s) {
+      if (["del", "dup", "inv"].indexOf(s.op) < 0) return;
+      if ((s.chroms || []).length !== 1) return;
+      var ct = String(s.chroms[0] || "");
+      if (!/^[pq]\d/i.test(ct)) return;
+      if ((s.breakpoints || []).some(function (g) { return g && g.length; })) return;
+      var primary = String((ab.chroms || [])[0] || "");
+      var bands = splitBands(ct);
+      if (!primary || !bands.length) return;
+      s.chroms = [primary];
+      s.breakpoints = [bands];
+      warnings.push("A change inside a der() names its chromosome and then the band, so “" + s.op + "(" + ct +
+        ")” in “" + raw + "” reads as " + s.op + "(" + primary + ")(" + ct + "), and that is how it is drawn.");
+    });
     // A rearrangement carries its breakpoints the first time it is listed and may
     // omit them afterwards (ISCN 4.2.1 f), and that first time can be a sub-op:
     // 47,XY,der(9)t(9;22)(q34;q11.2),+22,ider(22)(q10)t(9;22)[20] is printed with
@@ -1226,10 +1258,16 @@
         ab.chroms.forEach(function (c, ci) {
           if (comp[c] === undefined) { if (String(c).indexOf("?") < 0) { warnings.push("“" + c + "” is not a human chromosome. They are numbered 1 to 22, plus X and Y."); clone.badChrom = true; } return; }
           if (ab.sign === "+") { for (var sj = 0; sj < mult; sj++) { comp[c] += 1; slots[c].push(mkDer(c, ab)); } return; }
-          var idx = firstNormal(slots[c]);
-          // convention: normal homolog stays on the left, derivative on the right
-          if (idx >= 0) { slots[c].splice(idx, 1); slots[c].push(mkDer(c, ab)); replacedChroms.push(c); }
-          else { slots[c].push(mkDer(c, ab)); comp[c] += 1; }
+          // Unsigned honors the multiplier too: ×2 means two copies of the
+          // abnormal chromosome, each consuming a normal homolog while one
+          // remains (t(9;22)(q34;q11.2)x2 converts both pairs). It used to
+          // apply once and drop the second copy in silence.
+          for (var uj = 0; uj < mult; uj++) {
+            var idx = firstNormal(slots[c]);
+            // convention: normal homolog stays on the left, derivative on the right
+            if (idx >= 0) { slots[c].splice(idx, 1); slots[c].push(mkDer(c, ab)); if (uj === 0) replacedChroms.push(c); }
+            else { slots[c].push(mkDer(c, ab)); comp[c] += 1; }
+          }
         });
       } else if ((ab.kind === "der" || ab.kind === "dic") && ab.chroms.length > 1) {
         // Whole-arm / Robertsonian der, and a two-chromosome dicentric: the two
@@ -1240,13 +1278,15 @@
           var dp = ab.chroms[0];
           if (comp[dp] !== undefined) { for (var wj = 0; wj < mult; wj++) { comp[dp] += 1; slots[dp].push(mkDer(dp, ab)); } }
         } else {
-          ab.chroms.forEach(function (c) {
-            if (comp[c] === undefined) { if (String(c).indexOf("?") < 0) { warnings.push("“" + c + "” is not a human chromosome. They are numbered 1 to 22, plus X and Y."); clone.badChrom = true; } return; }
-            var ridx = firstNormal(slots[c]);
-            if (ridx >= 0) { slots[c].splice(ridx, 1); comp[c] -= 1; }
-          });
-          var dc = ab.chroms[0];
-          if (comp[dc] !== undefined) { slots[dc].push(mkDer(dc, ab)); comp[dc] += 1; }
+          for (var wu = 0; wu < mult; wu++) {
+            ab.chroms.forEach(function (c) {
+              if (comp[c] === undefined) { if (String(c).indexOf("?") < 0 && wu === 0) { warnings.push("“" + c + "” is not a human chromosome. They are numbered 1 to 22, plus X and Y."); clone.badChrom = true; } return; }
+              var ridx = firstNormal(slots[c]);
+              if (ridx >= 0) { slots[c].splice(ridx, 1); comp[c] -= 1; }
+            });
+            var dc = ab.chroms[0];
+            if (comp[dc] !== undefined) { slots[dc].push(mkDer(dc, ab)); comp[dc] += 1; }
+          }
         }
       } else if (["del", "dup", "inv", "add", "ring", "iso", "der", "fra", "trp", "hsr", "rec"].indexOf(ab.kind) >= 0) {
         var c0 = ab.chroms[0];
@@ -1257,9 +1297,11 @@
           var ri = firstNormal(slots[c0]); if (ri >= 0) slots[c0].splice(ri, 1);
           return;
         }
-        var i2 = firstNormal(slots[c0]);
-        if (i2 >= 0) { slots[c0].splice(i2, 1); slots[c0].push(mkDer(c0, ab)); replacedChroms.push(c0); }
-        else { slots[c0].push(mkDer(c0, ab)); comp[c0] += 1; }
+        for (var pu = 0; pu < mult; pu++) {
+          var i2 = firstNormal(slots[c0]);
+          if (i2 >= 0) { slots[c0].splice(i2, 1); slots[c0].push(mkDer(c0, ab)); if (pu === 0) replacedChroms.push(c0); }
+          else { slots[c0].push(mkDer(c0, ab)); comp[c0] += 1; }
+        }
       }
     });
 
@@ -1728,6 +1770,35 @@
     for (var i = firstAb; i < fields.length; i++) {
       clone.aberrations.push(parseAberration(fields[i], warnings, statedFully));
     }
+
+    // ISCN 4.2.1 f: once a rearrangement is listed, der(N) alone means the
+    // derivative OF that rearrangement. 46,XX,t(9;22)(q34;q11.2)[10]/47,XX,
+    // t(9;22),+der(22)[10] is printed in the standard, and the Emanuel karyotype
+    // is typed 47,XX,+der(22),t(11;22)(q23.3;q11.2), der first, so the search is
+    // same-clone and both directions. Before this pass the bare der reached the
+    // renderer with no recipe and drew an INTACT chromosome under a der caption
+    // through the complex-note fallback, with nothing said. A bare der with no
+    // matching t is untouched and keeps the pinned lone-derivative behavior.
+    clone.aberrations.forEach(function (ab) {
+      if (ab.op !== "der" || ab.kind !== "der") return;
+      if ((ab.chroms || []).length !== 1) return;
+      if ((ab.subOps || []).length) return;
+      if ((ab.breakpoints || []).some(function (g) { return g && g.length; })) return;
+      var n = String(ab.chroms[0]);
+      var donor = clone.aberrations.filter(function (t) {
+        return t.op === "t" && t.kind === "t" && (t.chroms || []).map(String).indexOf(n) >= 0 &&
+          (t.breakpoints || []).length === (t.chroms || []).length &&
+          t.breakpoints.every(function (g) { return g && g.length; });
+      })[0];
+      if (!donor) return;
+      ab.subOps = [{
+        op: "t", chroms: donor.chroms.slice(),
+        breakpoints: donor.breakpoints.map(function (g) { return g.slice(); }),
+        backReference: "t(" + donor.chroms.join(";") + ")"
+      }];
+      ab.note = "der(" + n + ")t(" + donor.chroms.join(";") + ")(" +
+        donor.breakpoints.map(function (g) { return g.join(""); }).join(";") + ")";
+    });
 
     // The omission is only legitimate when a sex chromosome really is in one of the
     // rearrangements. A leading operation naming none of them is not ISCN's shorthand,

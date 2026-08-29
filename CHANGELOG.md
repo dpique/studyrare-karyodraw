@@ -3,6 +3,33 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (four silent drops, found by the agent review of production traffic)
+
+- **A bare `+der(N)` resolves against the translocation listed in its clone.**
+  ISCN 4.2.1 f: once a rearrangement is listed, der(N) alone means the derivative
+  of that rearrangement. `46,XX,t(9;22)(q34;q11.2)[10]/47,XX,t(9;22),+der(22)[10]`
+  is printed in the standard, and a visitor typed the Emanuel karyotype
+  `47,XX,+der(22),t(11;22)(q23.3;q11.2)`. Both drew an INTACT chromosome 22 under
+  a der caption with nothing said; both now draw the small derivative. Resolution
+  is same-clone and both directions; a bare der with no matching t is untouched.
+
+- **An undetermined breakpoint inside a der sub-op refuses instead of vanishing.**
+  `ins(2;7)(p?21;q21.3q22.1)` came through with an empty recipient group, so the
+  whole insertion was dropped in silence while the decode still described the
+  chromosome 7 transfer. A `?` group now routes to the uncertainty refusal
+  (correct ISCN, nothing honest to draw); any other group yielding no band is
+  unreadable, the same call as a top-level breakpoint.
+
+- **Mitelman-style `del(p21)` inside a der reads as the primary chromosome.**
+  `der(9)del(p21)t(9;22)` put the band where the chromosome goes and the deletion
+  was dropped in silence. A chromosome is never p-something, so the reading is
+  mechanical: it draws as del(9)(p21) with the spelling taught.
+
+- **A multiplier on an unsigned structural abnormality makes that many copies.**
+  Signed ops honored ×N; unsigned ops applied once, so `add(4)(q31.3)x2` drew one
+  add beside a normal 4. Both homologs now carry it, and `t(9;22)(q34;q11.2)x2`
+  converts both pairs.
+
 ## 2026-08-28 (rules stated, sections shelved, and the fix handed back whole)
 
 - **User-facing copy no longer cites ISCN section numbers.** A learner reading a
