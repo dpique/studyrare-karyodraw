@@ -850,3 +850,14 @@ test('one cell is one cell', () => {
   assert.match(rows.find((r) => r.tag === 'cells').text, /1 cell\b/);
   assert.ok(!/1 cells/.test(rows.find((r) => r.tag === 'cells').text));
 });
+
+// The lone-derivative note ended with "The usual origin is a parent who carries
+// the balanced t", constitutional counseling pasted into acquired clones: a
+// t(9;22) stemline evolving a der(16) is clonal evolution, not inheritance.
+test('the parent-carrier origin stays out of acquired clones', () => {
+  const m = ISCN.parse('46,XX,t(9;22)(q34;q11.2)[7]/46,sl,der(16)t(1;16)(q21;q22)[7]');
+  const sub = Teach.decode(m.clones[1], m.clones).map((r) => r.text).join(' ');
+  assert.ok(!/parent who carries/.test(sub), 'no inheritance story inside a stemline subclone');
+  assert.match(decodeText('46,XX,der(1)t(1;3)(p22;q13.1)'), /parent who carries/,
+    'the constitutional case keeps its counseling');
+});

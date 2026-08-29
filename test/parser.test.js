@@ -469,7 +469,11 @@ test('a trailing +14 after a der is never dropped silently', () => {
 test('a sign after a closing parenthesis is repaired with a comma', () => {
   assert.equal(ISCN.parse('46,XY,der(13;14)(q10;q10)+14').suggestion, '46,XY,der(13;14)(q10;q10),+14');
   assert.equal(ISCN.parse('46,XY,der(13;14)(q10;q10) +14').suggestion, '46,XY,der(13;14)(q10;q10),+14');
-  assert.equal(ISCN.parse('46,XX,t(14;21)(q10;q10)+21').suggestion, '46,XX,t(14;21)(q10;q10),+21');
+  // The t() spelling composes further: the comma alone leaves a 46 that sums to
+  // 47, and the stated 46 is evidence for the rob() reading, which keeps it.
+  // Deliberately changed by the 2026-08-28 repair-composition work; the pure comma
+  // form remains the offer wherever the count already reconciles, as above.
+  assert.equal(ISCN.parse('46,XX,t(14;21)(q10;q10)+21').suggestion, '46,XX,rob(14;21)(q10;q10),+21');
 });
 test('the comma repair leaves a modal-number range alone', () => {
   assert.equal(ISCN.parse('45-48,XY,+8').suggestion, null);
@@ -1710,4 +1714,48 @@ test('a heavily rearranged clone infers its ploidy from the arithmetic', () => {
     'a stated ploidy is believed over the arithmetic');
   assert.equal(ISCN.parse('46,XY').clones[0].ploidy, 2);
   assert.equal(ISCN.parse('47,XX,+21').clones[0].ploidy, 2);
+});
+
+// An offered repair must itself survive being pasted: three production
+// Did-you-mean strings fixed the comma and left the count wrong, earning the
+// paster a second refusal. The suggestion is now vetted by re-parse, and when
+// its only remaining fault is the count, its own count fix is composed in. A
+// clone with no listed changes keeps the stepwise repair, because rewriting the
+// count under the user there would endorse an unlikely complement (69.XX means
+// 69,XXX far more often than 68,XX).
+test('an offered repair survives being pasted', () => {
+  assert.equal(ISCN.parse('46,XX,t(14;21)(q10;q10)+21').suggestion,
+    '46,XX,rob(14;21)(q10;q10),+21',
+    'the rob spelling keeps the stated 46, so it composes into the offer');
+  // A follow-up that would rewrite the stated count stays a second click, one
+  // mistake named at a time; the chain must be walkable, not dead-ended.
+  const step1 = ISCN.parse('46,XY,der(9)t(9;22)(q34;q11.2)+22').suggestion;
+  assert.equal(step1, '46,XY,der(9)t(9;22)(q34;q11.2),+22');
+  assert.equal(ISCN.parse(step1).countFix, '47,XY,der(9)t(9;22)(q34;q11.2),+22',
+    'pasting the first repair immediately offers the count fix');
+  assert.equal(ISCN.parse('69.XX').suggestion, '69,XX',
+    'no changes listed, so the count is not rewritten under the user');
+});
+
+test('the isodicentric example names the chromosome the user typed', () => {
+  const w = ISCN.parse('46,XX,idic(5)').warnings.join(' ');
+  assert.match(w, /idic\(5\)\(q11\.2\)/);
+  assert.ok(!/idic\(15\)/.test(w), 'the example is the user’s chromosome, not a template constant');
+});
+
+test('a trailing multiplier without its count is taught the multiplier', () => {
+  const w = ISCN.parse('46,XY,t(9;22)(q34;q11.2)x').warnings.join(' ');
+  assert.match(w, /needs the number|needs its count/);
+  assert.match(w, /t\(9;22\)\(q34;q11\.2\)x2/);
+  assert.ok(!/not one KaryoDraw can place/.test(w), 'the generic leftover message is replaced');
+});
+
+test('a bare varying count teaches the tilde and the varying changes', () => {
+  assert.match(ISCN.parse('47-49,XY').warnings.join(' '), /47~49/);
+});
+
+test('the drawable-operations list matches what the app draws', () => {
+  const w = ISCN.parse('46,XY,zzz(9)(q34)').warnings.join(' ');
+  assert.match(w, /\brob\b/);
+  assert.match(w, /\bidic\b/);
 });
