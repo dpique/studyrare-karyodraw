@@ -1597,28 +1597,6 @@
     var info = window.Teach.stainInfo(s); return info ? info.name : s;
   }
 
-  // Flag breakpoint bands that do not exist on their chromosome (e.g. 12q32),
-  // which the renderer otherwise silently drops. Uses the renderer's band resolver.
-  function invalidBands(model) {
-    var bad = [], seen = {};
-    function check(chrom, bands) {
-      (bands || []).forEach(function (band) {
-        if (!chrom || !band || window.Karyo.resolveBand(chrom, band)) return;
-        var key = chrom + band;
-        if (!seen[key]) { seen[key] = 1; bad.push({ label: key, chrom: chrom, band: band }); }
-      });
-    }
-    (model.clones || []).forEach(function (clone) {
-      (clone.aberrations || []).forEach(function (ab) {
-        (ab.chroms || []).forEach(function (chrom, i) { check(chrom, (ab.breakpoints || [])[i]); });
-        (ab.subOps || []).forEach(function (s) {
-          (s.chroms || []).forEach(function (chrom, i) { check(chrom, (s.breakpoints || [])[i]); });
-        });
-      });
-    });
-    return bad;
-  }
-
   // An invalid breakpoint holds the whole drawing back (the renderer would drop it
   // and draw a normal-looking chromosome), so the message has to carry enough to
   // repair the karyotype without leaving the page: how far that arm actually runs,
@@ -1649,28 +1627,66 @@
     // landing URL; the first real interaction (type, toggle, pick an example) writes it.
     var push = run.pushNext; run.pushNext = false;
     if (run.skipHashOnce) { run.skipHashOnce = false; } else { setHash(val, push); }
-    var bad = invalidBands(model);
+    var bad = window.Karyo.invalidBands(model);
     // Per-band advice up to a few; past that the list would crowd out everything
     // else in the warning box, so fall back to naming them together.
     if (bad.length && bad.length <= 3) {
-      bad.forEach(function (b) { model.warnings.push(bandAdvice(b)); });
-      // The advice names the closest real band but used to stop there, leaving the
-      // reader to retype. When every bad band appears exactly once as a delimited
-      // token and swapping in the nearest real bands yields a karyotype that parses
-      // and passes this same check, the whole repaired string is handed back.
-      var repairedK = val, unambiguous = true;
-      bad.forEach(function (b) {
-        var re = new RegExp("([(;,])" + String(b.band).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?=[);,])", "g");
-        var near = window.Karyo.nearestBand(b.chrom, b.band);
-        if (!near || (repairedK.match(re) || []).length !== 1) { unambiguous = false; return; }
-        repairedK = repairedK.replace(re, "$1" + near);
-      });
-      if (unambiguous && repairedK !== val) {
-        var reModel = window.ISCN.parse(repairedK);
-        var reRefused = !reModel.clones.length || !!reModel.suggestion ||
-          reModel.clones.some(function (c) { return c.unreadable || c.countWrong; });
-        if (!reRefused && !invalidBands(reModel).length) {
-          model.warnings.push("With the nearest real bands in place it reads “" + repairedK + "”.");
+      // A SUB-band typo below a real band (5q15.3 where the map does not divide
+      // q15; 9p24.4 where p24 stops at .3) draws at the deepest real ancestor,
+      // the correction taught in the repair shape so the box takes the "already
+      // applied" framing over a finished figure. Policy from the production
+      // review pilot, decided 2026-08-29: the writer's coarse position is real,
+      // only the subdivision is not, so drawing at the ancestor asserts nothing
+      // the input did not. A miss with no real ancestor (12q32) would make the
+      // drawn position this app's guess, and keeps the refusal + advice below.
+      var anc = bad.map(function (b) { return window.Karyo.bandAncestor(b.chrom, b.band); });
+      var snapped = null;
+      if (anc.every(Boolean)) {
+        var snapK = val, oneEach = true;
+        bad.forEach(function (b, i) {
+          var re = new RegExp("([(;,])" + String(b.band).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?=[);,])", "g");
+          if ((snapK.match(re) || []).length !== 1) { oneEach = false; return; }
+          snapK = snapK.replace(re, "$1" + anc[i]);
+        });
+        if (oneEach && snapK !== val) {
+          var snapModel = window.ISCN.parse(snapK);
+          var snapRefused = !snapModel.clones.length ||
+            snapModel.clones.every(function (c) { return c.modalNumber == null; }) ||
+            !!snapModel.suggestion ||
+            snapModel.clones.some(function (c) { return c.unreadable || c.countWrong || c.unaccounted; });
+          if (!snapRefused && !window.Karyo.invalidBands(snapModel).length) {
+            bad.forEach(function (b, i) {
+              snapModel.warnings.push("The band map has no “" + b.label + "”; the deepest real band containing it is " +
+                b.chrom + anc[i] + ", so “" + b.label + "” is “" + b.chrom + anc[i] + "”.");
+            });
+            snapModel.warnings.push("With the real bands in place, “" + val + "” is “" + snapK + "”, and that is what is drawn.");
+            snapped = snapModel;
+          }
+        }
+      }
+      if (snapped) {
+        model = snapped;
+        bad = [];
+      } else {
+        bad.forEach(function (b) { model.warnings.push(bandAdvice(b)); });
+        // The advice names the closest real band but used to stop there, leaving the
+        // reader to retype. When every bad band appears exactly once as a delimited
+        // token and swapping in the nearest real bands yields a karyotype that parses
+        // and passes this same check, the whole repaired string is handed back.
+        var repairedK = val, unambiguous = true;
+        bad.forEach(function (b) {
+          var re = new RegExp("([(;,])" + String(b.band).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?=[);,])", "g");
+          var near = window.Karyo.nearestBand(b.chrom, b.band);
+          if (!near || (repairedK.match(re) || []).length !== 1) { unambiguous = false; return; }
+          repairedK = repairedK.replace(re, "$1" + near);
+        });
+        if (unambiguous && repairedK !== val) {
+          var reModel = window.ISCN.parse(repairedK);
+          var reRefused = !reModel.clones.length || !!reModel.suggestion ||
+            reModel.clones.some(function (c) { return c.unreadable || c.countWrong; });
+          if (!reRefused && !window.Karyo.invalidBands(reModel).length) {
+            model.warnings.push("With the nearest real bands in place it reads “" + repairedK + "”.");
+          }
         }
       }
     } else if (bad.length) {

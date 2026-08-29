@@ -27,7 +27,8 @@ const BAD_INPUTS = [
   '46,XY,t(9;99)(q34;q11.2)', '46,XY,del(99)(p15.2)', '46,XY,rob(14;21)(q10;q10)+21',
   '46,XY,der(13;14)(q10;q10)+14', '46,XY,t(9;22)(q34;q11.2)ort(1;2)(p10;q10)',
   '46,XY,t(9,22)(q34;q11.2)', '46,XY,t(9;22)(q34;q11.2', 't(9;22)(q34;q11.2)',
-  '47,idem,+9', '45,XX,t(13;15)(q10;q10)', '46,XY,+21×99', '46,XY,dmin×99',
+  '47,idem,+9', '45,XX,t(9;22)(q34;q11.2)', '45,XX,der(22;11)(q13;p13)',
+  '45,XX,t(1;3)(p10;q10)', '46,XY,+21×99', '46,XY,dmin×99',
   '46,XY,inv(9)(p11q13)zzz', '46XY', '46,XY,del(5)(zz15.2)', '46,XY,t(9;22)(q34;zzz)',
   '46,XY,-2-21', '43,XZY,+8', '46,QQ,+21', '44,XY,-21,-20',
   // The gate added in the 2026-07-29 changelog entry. Every message it can produce goes
@@ -142,11 +143,14 @@ test('the count message attributes the total and names the rule', () => {
 });
 
 test('the count message does not presume which side is wrong', () => {
-  // 45,XX,t(13;15)(q10;q10) is the case that makes this matter: there the count is
-  // arguably right and the OPERATION is what should change (the app offers rob()).
-  // "so it has to match the changes listed after it" pointed the reader at the one
-  // thing that was not the error.
-  const w = ISCN.parse('45,XX,t(13;15)(q10;q10)').warnings.join(' ');
+  // 45,XX,t(1;3)(p10;q10) is the case that makes this matter: the count is
+  // arguably right (a fusion was meant) and the OPERATION is what should change,
+  // but which product survived is ambiguous, so the app refuses rather than
+  // picks. "so it has to match the changes listed after it" pointed the reader
+  // at the one thing that was not necessarily the error. (The acrocentric
+  // q10;q10 spelling no longer reaches this message at all: since 2026-08-29 it
+  // draws as the fusion the count asserts.)
+  const w = ISCN.parse('45,XX,t(1;3)(p10;q10)').warnings.join(' ');
   assert.match(w, /either it or the changes/, 'either side may be the one to fix');
   assert.doesNotMatch(w, /has to match the changes listed/, 'no longer prescribes changing the number');
 });

@@ -51,6 +51,13 @@ function modelData(k) {
   let model;
   try { model = ISCN.parse(k); } catch (e) { out.parseError = String(e); return out; }
   out.warnings = model.warnings || [];
+  // Bands the model cannot place. The PAGE draws sub-band typos at their real
+  // ancestor and says so (index.html); the parser-level instances below still
+  // carry the typed band, so without this a reviewer would read the one-band
+  // difference between figure and model.json as a silent bug.
+  out.invalidBands = Karyo.invalidBands(model).map((b) => ({
+    ...b, ancestor: Karyo.bandAncestor(b.chrom, b.band),
+  }));
   for (const clone of model.clones || []) {
     for (const ch of Object.keys(clone.slots || {})) {
       for (const inst of clone.slots[ch] || []) {

@@ -202,6 +202,54 @@
     });
     return best;
   }
+  // The deepest real band a mistyped SUB-band designation sits inside: q15.32 is
+  // q15.3 where the map divides q15 that far, else q15; 9p24.4 is 9p24. Sub-band
+  // names nest by prefix (a band q15 divides into q15.1..., and q15.3 into
+  // q15.31...), so stripping one trailing character at a time walks the ancestor
+  // chain. Dotted names only: an undotted miss (12q32) names a band, not a
+  // subdivision of one, and has no ancestor to stand on. The existence test is
+  // strict (an exact band, or the named parent of dotted children), NOT
+  // resolveBand's loose prefix fallback, so a garbled "q1.5" cannot be blessed
+  // as the region "q1". Null when the band resolves or no ancestor exists.
+  function bandAncestor(chrom, name) {
+    var d = IDEO.data[chrom];
+    name = String(name || "").trim();
+    if (!d || name.indexOf(".") < 0 || resolveBand(chrom, name)) return null;
+    var band = name;
+    while (band.length > 2) {
+      band = band.slice(0, -1);
+      if (band.charAt(band.length - 1) === ".") band = band.slice(0, -1);
+      var real = d.bands.some(function (b) { return b[0] === band || b[0].indexOf(band + ".") === 0; });
+      if (real) return band;
+    }
+    return null;
+  }
+
+  // Breakpoint bands that do not exist on their chromosome (e.g. 12q32), which
+  // the segment builders would otherwise drop in silence. Walks every aberration
+  // and sub-op of a parsed model. The page gates the drawing on this, and the
+  // review capture records it beside model.json, so a reviewer can see why a
+  // figure and its input may differ by one band (the page draws sub-band typos
+  // at their bandAncestor and says so).
+  function invalidBands(model) {
+    var bad = [], seen = {};
+    function check(chrom, bands) {
+      (bands || []).forEach(function (band) {
+        if (!chrom || !band || resolveBand(chrom, band)) return;
+        var key = chrom + band;
+        if (!seen[key]) { seen[key] = 1; bad.push({ label: key, chrom: chrom, band: band }); }
+      });
+    }
+    (model.clones || []).forEach(function (clone) {
+      (clone.aberrations || []).forEach(function (ab) {
+        (ab.chroms || []).forEach(function (chrom, i) { check(chrom, (ab.breakpoints || [])[i]); });
+        (ab.subOps || []).forEach(function (s) {
+          (s.chroms || []).forEach(function (chrom, i) { check(chrom, (s.breakpoints || [])[i]); });
+        });
+      });
+    });
+    return bad;
+  }
 
   // Split a chromosome at a breakpoint into the piece the derivative keeps and the
   // piece it exchanges away. Away from the centromere the kept piece is the centric
@@ -2079,7 +2127,7 @@
   window.Karyo = {
     render: render, drawInstance: drawInstance, drawDetail: drawDetail, buildInstance: buildInstance,
     computeAffected: computeAffected, resolveBand: resolveBand, getBands: getBands, textWidth: textWidth,
-    armExtent: armExtent, nearestBand: nearestBand, detailedForm: detailedForm,
+    armExtent: armExtent, nearestBand: nearestBand, bandAncestor: bandAncestor, invalidBands: invalidBands, detailedForm: detailedForm,
     STAIN: STAIN, OP_COLORS: OP_COLORS, AFFECTED_PALETTE: AFFECTED_PALETTE, tintRamp: tintRamp, BASELINE: BASELINE
   };
 })();

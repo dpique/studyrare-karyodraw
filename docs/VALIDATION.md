@@ -7,8 +7,29 @@ mistake look answered, and it destroys the app's use as a check, which is what s
 writing an exam question needs from it. So a karyogram appears only for input that is
 valid ISCN.
 
-The one deliberate exception is listing order (see below), which changes how a karyotype
-is written and never what is drawn.
+Three amendments, decided 2026-08-29 from the production review pilot, share one
+principle: **when the input itself already states its reading, draw that reading and
+say so.** None of them is the app guessing; each is the app believing something the
+writer wrote.
+
+- `45,XX,t(14;21)(q10;q10)`: the count 45 asserts the Robertsonian fusion (a t() would
+  make 46), and for the acrocentric q10;q10 exchange the surviving product is not in
+  doubt, so the parser rereads the t() as the der() fusion, draws it, and a note hands
+  over the preferred `der(14;21)(q10;q10)` spelling (ISCN 5.5.18.3 b). The p10
+  spellings stay refused: there either product could be the survivor.
+- A bare rearrangement (`t(2;5)(q21;q31)` with no count or sex field) draws on an
+  assumed normal complement, XY when the rearrangement names a Y, with the assumption
+  STATED in a note and the written-out karyotype one click away. Only when the
+  completed karyotype would draw with nothing else to say; any other message keeps the
+  old click-through repair.
+- A sub-band typo below a real band (`5q15.3` where the map does not divide `q15`)
+  draws at the deepest real ancestor band, with the correction taught in the warning
+  ("5q15.3 is 5q15") and the written-out karyotype in it. The writer's coarse position
+  is real; only the subdivision is not. A miss with no real ancestor (`12q32`) would
+  make the drawn position this app's guess, and still refuses.
+
+The other deliberate exception is listing order (see below), which changes how a
+karyotype is written and never what is drawn.
 
 ## The gate
 
@@ -129,6 +150,20 @@ own segregation model emits for a 3:1 product, checked against ISCN 2024 Table 5
 `segregation.js` had already concluded in writing that "ISCN fixes neither [spelling nor
 order]". `test/segregation.test.js` pins the model's output against the check so the two
 halves of the app cannot take opposite positions again.
+
+It is also scoped to what a clone WROTE. A subclone's `idem`/`sl`/`sdl` splices the
+stemline's changes in ahead of its own, but those are ordered where they were written,
+so `.../46,sl,+1[cp3]` after a stemline carrying `-7` is correct and must not warn. The
+production review (2026-08, rank 11) caught the check accusing it; `expandIdem` now
+records the spliced entries in `clone.inheritedAbs` and the check skips them.
+
+**A sub-band typo with a real ancestor.** `46,XX,del(5)(q15.3)` draws the deletion at
+`5q15` and the warning teaches the correction in the repair shape, so the box takes the
+"already applied" framing over a finished figure. `Karyo.bandAncestor` owns the walk
+(strict existence, never `resolveBand`'s loose prefix fallback), the page swaps the
+band and re-parses, and the drawn string appears in the message. The review capture
+writes `invalidBands` (with ancestors) into `model.json` so a reviewer can see why a
+figure and its input differ by one band.
 
 ## Normalization before the parse
 
@@ -448,6 +483,18 @@ Each reads sensibly with the breakpoints left off, real reports write them that 
 refusing valid ISCN is the worse failure. Adding one of them needs a better reason than
 symmetry, and `test/parser.test.js` pins each of them as drawable so the table cannot grow
 by accident.
+
+**der(A;B) with non-centromeric breakpoints** joined the refusals on 2026-08-29
+(production review, rank 11). The two-chromosome der form is ISCN's whole-arm notation
+and takes p10/q10 only (5.5.18.2 a; a proven dicentric moves to `dic`, 5.5.18.3 d), so
+`der(22;11)(q13;p13)` has no reading in the standard. It used to draw one silently: a
+monocentric 22 carrying the 11p13-to-pter tip, which is the composition ISCN spells
+`der(22)t(11;22)(p13;q13)`, while a writer who meant both centromeres wanted
+`dic(11;22)(p13;q13)`, a different chromosome (it keeps 11p13 to 11qter). Real material
+differs between the readings, so the refusal teaches both, and each spelling is offered
+at the count that parses (the der form replaces one chromosome where der(A;B) replaced
+two, so their counts differ by one). Chains without an own breakpoint group,
+`der(5;7)t(3;5)(...)t(3;7)(...)`, are untouched: their joins live in the sub-ops.
 
 ## Recombinant chromosomes
 
