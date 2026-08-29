@@ -64,6 +64,24 @@
   function parseHex(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(function (c) { return c + c; }).join(""); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
   function toHex(rgb) { return "#" + rgb.map(function (v) { v = Math.max(0, Math.min(255, Math.round(v))); return ("0" + v.toString(16)).slice(-2); }).join(""); }
   function hexMix(a, b, t) { var A = parseHex(a), B = parseHex(b); return toHex([A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t]); }
+  // Ink derived from a figure hue: the same color family, darkened only as far as
+  // WCAG AA for normal text (4.5:1 on white) requires. The detailed form writes
+  // 12px notation in the figure's own palette so the words point back at the
+  // picture, but the raw palette is tuned for filled shapes, and the light entries
+  // (periwinkle, amber) were unreadable as text (Dan, 2026-08-29). Already-dark
+  // hues pass through unchanged, so inks stay recognisably the figure's colors.
+  function relLum(hex) {
+    var c = parseHex(hex).map(function (v) {
+      v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  }
+  function contrastOnWhite(hex) { return 1.05 / (relLum(hex) + 0.05); }
+  function textInk(hue) {
+    var t = 0, c = hue;
+    while (contrastOnWhite(c) < 4.5 && t < 1) { t += 0.05; c = hexMix(hue, "#000000", t); }
+    return c;
+  }
   function tintRamp(hue) {
     return {
       gneg: hexMix(hue, "#ffffff", 0.85), gpos25: hexMix(hue, "#ffffff", 0.58), gpos50: hexMix(hue, "#ffffff", 0.34),
@@ -2158,6 +2176,6 @@
     render: render, drawInstance: drawInstance, drawDetail: drawDetail, buildInstance: buildInstance,
     computeAffected: computeAffected, resolveBand: resolveBand, getBands: getBands, textWidth: textWidth,
     armExtent: armExtent, nearestBand: nearestBand, bandAncestor: bandAncestor, invalidBands: invalidBands, bandSnap: bandSnap, detailedForm: detailedForm,
-    STAIN: STAIN, OP_COLORS: OP_COLORS, AFFECTED_PALETTE: AFFECTED_PALETTE, tintRamp: tintRamp, BASELINE: BASELINE
+    STAIN: STAIN, OP_COLORS: OP_COLORS, AFFECTED_PALETTE: AFFECTED_PALETTE, tintRamp: tintRamp, BASELINE: BASELINE, textInk: textInk
   };
 })();

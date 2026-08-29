@@ -739,7 +739,9 @@ stages, each a script, so a session picks it up instead of rebuilding it:
    decode, detailed form, legend, and model.json must agree; messages never report
    parser internals), the list of DECIDED policies so intended behavior is not
    re-flagged (drawn-with-note for fused-count t() and bare rearrangements, the
-   band-snap, the arr/ish limitation-teach), and per bundle the first-pass claim
+   band-snap, the arr/ish limitation-teach; refined 2026-08-29: the fused-count
+   t() note carries the amber correction tone and says the t() spelling is not
+   valid ISCN, per 5.5.18.3 b, while the drawing stays), and per bundle the first-pass claim
    being verified, when there is one. Demand a verdict per bundle: CLOSED,
    REGRESSED (quote the surviving defect), or NEW-FINDING (quote the two
    disagreeing artifacts), and instruct agents to be adversarial about agreement:

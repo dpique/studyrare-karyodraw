@@ -2834,11 +2834,15 @@
     }
 
     // The t()-spelled fusion whose count already asserted the Robertsonian
-    // (rereadAsDer, set by the direct trial in buildComplement): it is drawn, so
-    // the note explains the reading and hands over the spelling the standard
-    // prefers (5.5.18.3 b: der is the preferred designation; rob names
-    // constitutional cases only). Fires for mosaics too, because a silent
-    // reinterpretation would be worse than a wordy one.
+    // (rereadAsDer, set by the direct trial in buildComplement): it is drawn,
+    // and the note carries the correction tone, because this is the one
+    // drawn-anyway note whose spelling the standard actually disallows.
+    // 5.5.18.3 b sanctions der (preferred) and rob (constitutional cases) for
+    // whole-arm acrocentric fusions; t() is not on that list, so the box says
+    // "not valid as written" in amber rather than "worth knowing" in blue
+    // (owner call 2026-08-29, revising the same day's neutral framing). Fires
+    // for mosaics too, because a silent reinterpretation would be worse than a
+    // wordy one.
     if (!result.suggestion && !result.countFix && !result.note) {
       var rrCl = result.clones.filter(function (c) { return c.rereadAsDer; })[0];
       if (rrCl) {
@@ -2846,10 +2850,11 @@
         var rrPair = rrAb.chroms.join(";");
         var rrTok = "der(" + rrPair + ")(q10;q10)";
         result.note = {
-          text: "A whole-arm exchange written t(…) keeps both derivative products, which would make the count " +
-            (rrCl.modalNumber + 1) + ". The " + rrCl.modalNumber + " you wrote describes the Robertsonian translocation instead: the long arms of " +
-            rrAb.chroms[0] + " and " + rrAb.chroms[1] + " fused into one chromosome, the short arms lost. It is drawn here as that fusion. ISCN prefers the spelling " +
-            rrTok + "; rob(" + rrPair + ")(q10;q10) also names it in constitutional cases.",
+          tone: "correction",
+          text: "An exchange written t(…) keeps both derivative products, which would make the count " +
+            (rrCl.modalNumber + 1) + ". The " + rrCl.modalNumber + " you wrote describes the Robertsonian translocation: the long arms of " +
+            rrAb.chroms[0] + " and " + rrAb.chroms[1] + " fused into one chromosome, the short arms lost. That fusion is what is drawn here, and ISCN does not write it with t(): the rule (5.5.18.3 b) names " +
+            rrTok + " as the preferred spelling, and rob(" + rrPair + ")(q10;q10) also names it in constitutional cases.",
           fixLabel: "Write it as the derivative:",
           fix: (result.normalized || raw).replace(rrAb.raw, rrTok)
         };
