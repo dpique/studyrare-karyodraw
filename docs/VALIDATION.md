@@ -608,3 +608,48 @@ field per case and, at write time, that no two karyograms share an SVG `clipPath
 
 Add a case whenever a student sends in a karyotype that behaved oddly. The corpus is the
 record of what has been looked at.
+
+## The agent review pipeline
+
+The stress sheet is the review a human runs; this is the same review run by agents, at
+the scale a human will not sit through, against what production actually served. Three
+stages, each a script, so a session picks it up instead of rebuilding it:
+
+1. **Harvest** — `scripts/review-harvest.mjs feedback.json failures.json drawn.json`
+   selects the karyotypes worth an agent's eyes and writes `review/manifest.json`.
+   Three tiers: everything a visitor flagged (with their words attached), the top
+   production parse failures by frequency (the artifact under review there is the
+   refusal message), and the top drawn karyotypes by structural complexity, because
+   every figure bug found in 2026-08 lived in derivative chains and whole-arm bodies,
+   never in a plain +21. `REVIEW_FAILURES` / `REVIEW_COMPLEX` size the tiers (default
+   20 each). The inputs are read-only D1 exports:
+
+   ```
+   npx wrangler d1 execute karyodraw-usage --remote --json --command \
+     "SELECT karyotype, category, message, ts FROM feedback WHERE karyotype IS NOT NULL AND karyotype != '' ORDER BY ts DESC" > feedback.json
+   npx wrangler d1 execute karyodraw-usage --remote --json --command \
+     "SELECT karyotype, COUNT(*) AS n FROM usage WHERE type='draw' AND parsed=0 AND karyotype IS NOT NULL GROUP BY karyotype ORDER BY n DESC" > failures.json
+   npx wrangler d1 execute karyodraw-usage --remote --json --command \
+     "SELECT karyotype, COUNT(*) AS n FROM usage WHERE type='draw' AND parsed=1 AND karyotype IS NOT NULL GROUP BY karyotype ORDER BY n DESC" > drawn.json
+   ```
+
+2. **Capture** — `scripts/review-capture.mjs` renders every manifest entry through the
+   real page and writes one directory per karyotype under `review/` (gitignored):
+   the karyogram PNG, the decode, detailed form, legend and warning texts exactly as
+   served, and `model.json`, the renderer's own segment data. The model file is the
+   point: it is the ground truth an analyst judges the pixels against and a verifier
+   refutes hallucinated findings with. A stamp file hashes the model plus the
+   renderer/teach/page mtimes, so a re-run after a fix re-captures only what moved,
+   and the analysis spend follows the same line.
+
+3. **Analyze** — agents, batched about ten directories each. Vision agents judge
+   drawn entries on three dimensions (figure vs model, words vs figure, teaching);
+   text agents judge refusals on whether the refusal is even correct (refusing valid
+   ISCN is the worse direction of error), whether the message teaches, and whether a
+   mechanical repair is offered paste-ready. Findings come back as structured JSON
+   with severity and evidence, are verified against `model.json` (a finding that
+   contradicts the model's own numbers is either a real drawing bug or a
+   hallucination, and the model data decides which), and every confirmed finding
+   follows the standing loop: failing test first, then the fix, then a corpus entry,
+   so the same finding cannot come back. The score that matters is that ledger:
+   confirmed findings per run trending to zero while the pinned corpora grow.
