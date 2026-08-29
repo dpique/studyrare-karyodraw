@@ -3,6 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-30 (the ruler gets a switch and sits on the baseline; the legend moves up)
+
+- **A Scale toggle joins Show, Bands, and Style**: On or Off. Off removes the
+  ruler from the screen and from copied and downloaded images alike, and rides
+  in shared links as scale=off; the default keeps URLs clean, so every link
+  already shared keeps its meaning.
+- **The ruler's 50 Mb tick sits on the chromosome baseline.** It used to hang
+  level with the lettering under the figure; the bar measures the chromosomes,
+  so it now ends exactly on the deepest chromosome's bottom edge (pinned in a
+  browser test to within a pixel and a half at any responsive width).
+- **The band and stain legend moved above the net imbalance table**, which is
+  now its own card below the legend (owner order).
+
 ## 2026-08-30 (balanced rearrangements join the table, a ruler joins the figure)
 
 - **Balanced rearrangements get their rows back.** The runs now also split at

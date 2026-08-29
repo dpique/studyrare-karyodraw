@@ -77,27 +77,34 @@ test('the net-imbalance table appears, toggles genes, and obeys the gate', async
     await t.test('a balanced rearrangement measures without claiming imbalance', async () => {
       // Dan, 2026-08-30: balanced rearrangements join the table so their
       // segments keep a size somewhere after the prose lost its
-      // parentheticals. The title must say "none" and the gene checkbox
+      // parentheticals. The body must open with "none" and the gene checkbox
       // hides, since genes annotate gained and lost rows only.
       await open(page, '46,XY,t(9;22)(q34;q11.2)');
       await page.waitForSelector('#imbalance table');
       const st = await page.evaluate(() => ({
-        title: document.querySelector('#imbalance .dtitle').textContent,
+        none: (document.querySelector('#imbalance .imb-none') || {}).textContent || '',
         rows: document.querySelectorAll('#imbalance tbody tr').length,
         allBalanced: [...document.querySelectorAll('#imbalance td.call')].every((c) => c.textContent === 'balanced'),
         checkbox: !!document.querySelector('#imbgenes'),
+        legendFirst: !!(document.getElementById('legend-card').compareDocumentPosition(
+          document.getElementById('imbalance-card')) & Node.DOCUMENT_POSITION_FOLLOWING),
       }));
-      assert.match(st.title, /none/i, 'the title says no net imbalance');
+      assert.match(st.none, /none/i, 'the body says no net imbalance');
       assert.equal(st.rows, 4, 'both exchange partners split at their breakpoints');
       assert.ok(st.allBalanced, 'every row is balanced');
       assert.ok(!st.checkbox, 'no gene checkbox with nothing to mark');
+      assert.ok(st.legendFirst, 'the legend card sits above the imbalance card (owner order)');
     });
 
     await t.test('a normal karyotype shows no table at all', async () => {
       await open(page, '46,XX');
       await page.waitForFunction(() => document.querySelector('#karyo svg'));
-      const html = await page.evaluate(() => document.getElementById('imbalance').innerHTML);
-      assert.equal(html, '', 'nothing structural, nothing measured');
+      const st = await page.evaluate(() => ({
+        html: document.getElementById('imbalance').innerHTML,
+        card: getComputedStyle(document.getElementById('imbalance-card')).display,
+      }));
+      assert.equal(st.html, '', 'nothing structural, nothing measured');
+      assert.equal(st.card, 'none', 'the whole card is gone, not an empty shell');
     });
 
     await t.test('a refusal sweeps the panel with the rest of the drawing', async () => {
@@ -108,8 +115,7 @@ test('the net-imbalance table appears, toggles genes, and obeys the gate', async
       await page.keyboard.type('46,XX,xyzzy(8)');
       await page.keyboard.press('Enter');
       await page.waitForFunction(() =>
-        getComputedStyle(document.getElementById('imbalance')).display === 'none' ||
-        document.getElementById('imbalance').innerHTML === '');
+        getComputedStyle(document.getElementById('imbalance-card')).display === 'none');
     });
   } finally {
     await browser.close();
