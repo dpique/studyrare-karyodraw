@@ -131,3 +131,19 @@ disagree: a plain t(9;22) teaches only the dashed fusion seam it actually shows,
 never a dup box, hooks or carets it does not. `test/highlight-marks.test.js` pins the
 marks; `test/legend-describes-the-figure-browser.test.js` pins the legend rule in a
 real browser.
+
+## An affordance must be visible enough to read as one (2026-08-29)
+
+The glossary hover shipped in #246 behind a 1px gray dotted border, and Dan could not
+tell it was a thing. An affordance that has to be discovered by accident is not an
+affordance; if the page offers a hover, the mark that advertises it must be legible at
+a glance. Since #247 every glossary carrier shares one mark: a 2px dotted periwinkle
+underline held clear of the glyphs (1.5px on the 9.5px figure captions), plus
+`cursor: help`. One mark, three carriers: the decode symbol chips, the glossed English
+terms in the decode prose, and the figure captions (`.ksub[data-gloss]`).
+
+Adjacent rule from the same review: text that borrows the figure palette must pass
+through `Karyo.textInk` (same hue, darkened to WCAG AA 4.5:1 on white) before it is
+used as ink. The shape palette is tuned for fills; its light periwinkle and amber are
+unreadable at 12px. `test/detailed-form-color-browser.test.js` checks the contrast
+with its own color math, independent of textInk.
