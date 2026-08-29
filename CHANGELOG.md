@@ -3,6 +3,26 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the legend keys every mark, and the colors stay tellable)
+
+- **Ten distinct hues for ten involved chromosomes.** The involved palette recycled
+  near-identical periwinkles and reds, so on a nine-join derivative the color stopped
+  identifying pieces the legend promised it would. The first four entries are stable
+  (common figures and the committed landing PNGs keep their look); past that the
+  palette is teal, purple, magenta, brown, distinct at a glance to twelve.
+
+- **The ring clasp is keyed, and the marker is not called uninvolved.** The seam and
+  arrowheads where a ring closed were drawn on every ring and explained nowhere; the
+  legend now keys them. When the only gray on screen is the +mar, the row reads
+  "origin unknown (the marker)" instead of "not involved in the abnormality", which
+  described the one element it does not apply to.
+
+- **An explicit -Y labels its ghost.** The notation names the lost chromosome, so the
+  gap is not a guess: 45,X,-Y drew its gap unlabeled, and a written XX beside a -Y
+  drew no trace of the loss at all. An unstated gap (plain 45,X) stays unlabeled, by
+  design. The centromere waist is also cut deeper, after a visitor found it too
+  subtle to spot under the heterochromatin hatch on the inv(9) figure.
+
 ## 2026-08-28 (repairs that survive being pasted)
 
 - **A composed repair, where composing keeps the number you typed.** The comma fix

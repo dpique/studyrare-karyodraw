@@ -1143,6 +1143,12 @@
           '<path d="M22.4 5.6 L19 8 L22.4 10.4 Z" fill="' + color + '"/>';
     } else if (kind === "seam") {
       g = '<line x1="9.5" y1="8" x2="20.5" y2="8" stroke="' + color + '" stroke-width="1.6" stroke-dasharray="2 1.5"/>';
+    } else if (kind === "clasp") {
+      // The ring's closure mark: a short seam with the two arrowheads that point at
+      // it from outside and inside the ring, same geometry family as the drawing.
+      g = '<line x1="12" y1="8" x2="18" y2="8" stroke="' + color + '" stroke-width="1.7"/>' +
+          '<path d="M11.2 2.4 L18.8 2.4 L15 6.6 Z" fill="' + color + '" stroke="#ffffff" stroke-width="0.8"/>' +
+          '<path d="M11.2 13.6 L18.8 13.6 L15 9.4 Z" fill="' + color + '" stroke="#ffffff" stroke-width="0.8"/>';
     }
     return '<span class="item"><svg class="sw-mk" viewBox="0 0 30 16" aria-hidden="true">' +
       MK_BODY + g + '</svg>' + label + '</span>';
@@ -1227,13 +1233,20 @@
       // the row that the plain t(9;22) loses. Ghosts carry no data-chrom, so an absent
       // homolog's dashed outline does not count as a gray chromosome.
       var stain = function (s) { return has('.band[data-stain="' + s + '"]'); };
-      var grayDrawn = !!kar && [].slice.call(kar.querySelectorAll(".kchrom[data-chrom]"))
-        .some(function (el) { return !AFFECTED[el.getAttribute("data-chrom")]; });
+      var grayEls = !kar ? [] : [].slice.call(kar.querySelectorAll(".kchrom[data-chrom]"))
+        .filter(function (el) { return !AFFECTED[el.getAttribute("data-chrom")]; });
+      // A marker is drawn gray because its ORIGIN is unknown, not because it is
+      // uninvolved (it is the abnormality). When the only gray on screen is the
+      // mar or dmin, "not involved" described the one thing it does not apply to.
+      var grayNormals = grayEls.some(function (el) {
+        return ["mar", "dmin"].indexOf(el.getAttribute("data-chrom")) < 0;
+      });
       var html = "";
       // BASELINE.gpos50, the mid tone of the ramp an uninvolved chromosome is drawn in.
       // The swatch was #ffffff under the word "gray", which is the one thing a colour
       // key must not do.
-      if (grayDrawn) html += swatch(window.Karyo.BASELINE.gpos50, "gray = a chromosome not involved in the abnormality");
+      if (grayNormals) html += swatch(window.Karyo.BASELINE.gpos50, "gray = a chromosome not involved in the abnormality");
+      else if (grayEls.length) html += swatch(window.Karyo.BASELINE.gpos50, "gray = origin unknown (the marker); banding cannot say which chromosome it came from");
       if (stain("acen")) html += hatchSwatch("centromere", CEN_SW);
       // acen_carried is pericentromeric material riding across a junction (#181). It is
       // drawn with the variable-region texture, not the centromere one, so it belongs
@@ -1247,6 +1260,10 @@
       if (has('path[fill="' + OP.del + '"]')) html += markSwatch("carets", OP.del, "breakpoint");
       else if (has('path[fill="#1e293b"]')) html += markSwatch("carets", "#1e293b", "breakpoint");
       if (has('line[stroke-dasharray="2 1.5"]')) html += markSwatch("seam", "#0f172a", "where two chromosomes fused");
+      // The ring's clasp (a seam with two arrowheads) marks where the broken ends
+      // closed the circle. It was drawn on every ring and keyed nowhere; a
+      // visitor-reviewed r(Y) mosaic had three of them and no explanation.
+      if (has("svg.ideo-ring")) html += markSwatch("clasp", "#ec9b27", "where the ring closed (the two broken ends, fused)");
       var keys = Object.keys(AFFECTED);
       if (keys.length) {
         html += '<span class="item" style="color:#94a3b8">involved:</span>';

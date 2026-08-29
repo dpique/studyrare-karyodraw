@@ -41,3 +41,14 @@ test('the built mosaic page shows both cell lines and captions them honestly', (
   // the second cell line is part of the notation the page promises to decode.
   assert.match(html, /seen in 18 cells/, 'the second clone’s cell count is decoded');
 });
+
+// An explicit sex-chromosome loss labels its ghost: the notation names the lost
+// chromosome, so the gap is not a guess. 45,X,-Y drew its gap unlabeled, and
+// 76~77,XX,-Y (the written XX already filling the row) drew no trace of the -Y.
+test('an explicit -Y gets a ghost slot labeled Y', async () => {
+  const { renderKaryogram } = await import('../scripts/lib/render.mjs');
+  const html = renderKaryogram('45,X,-Y').html;
+  assert.match(html, /<div class="klabel">Y<\/div>/);
+  const xx = renderKaryogram('46,XX,-Y').html;
+  assert.match(xx, /<div class="klabel">Y<\/div>/, 'a -Y beside a written XX still shows');
+});

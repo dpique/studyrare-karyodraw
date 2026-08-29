@@ -49,8 +49,16 @@
 
   // Affected-chromosome hues. Leads with the brand pair — periwinkle "field"
   // then amber "signal" — so a 2-way rearrangement echoes StudyRare's motif.
-  var AFFECTED_PALETTE = ["#5e72e4", AMBER, "#6b8f55", "#e0554f", "#7c8ae9",
-    "#d17f18", "#4a6b3a", "#4a5375", "#c53d38", "#37428a"];
+  // The first four are stable on purpose: the common one- to four-chromosome
+  // figures (and the committed landing-page PNGs) keep their colors. Past that
+  // the entries are chosen for mutual distinctness at a glance, because a
+  // nine-join derivative assigns ten of these and the old list recycled
+  // near-identical periwinkles (#5e72e4 next to #7c8ae9) and reds (#e0554f next
+  // to #c53d38), so color stopped identifying the pieces the legend promised it
+  // would.
+  var AFFECTED_PALETTE = ["#5e72e4", AMBER, "#6b8f55", "#e0554f",
+    "#2e8f83", "#d17f18", "#8d4fa8", "#4a5375", "#c2497f", "#37428a",
+    "#8a6642", "#4a6b3a"];
 
   // color math
   function parseHex(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(function (c) { return c + c; }).join(""); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
@@ -367,7 +375,7 @@
     // seam centromere an isochromosome or a Robertsonian gets). Hence the clip path
     // is pushed into defs down there rather than here; defs is emitted as one block
     // at the end and its internal order does not matter.
-    var CEN_HALF = CEN_H / 2, CEN_DEPTH = 4.2;
+    var CEN_HALF = CEN_H / 2, CEN_DEPTH = 5.4;   // deepened 2026-08-28: a visitor found the waist too subtle to spot under the hatch, and the constriction is the teaching point of a pericentric inversion figure
     var bodyShape = null;
 
     // dynamic diagonal-hatch patterns (heterochromatin texture), de-duped by color
@@ -1771,10 +1779,26 @@
         specs.push({ row: grp.name, chrom: chrom, insts: insts, sexcell: true, opts: {
           sexcell: true, missing: lostCount(clone, chrom) } });
       });
-      // The karyogram shows the karyotype: it does not label the gap "?" or guess
-      // whether an X or a Y was lost.
+      // An explicit sex-chromosome loss is a statement the figure must show, and
+      // its identity is not a guess: the notation names it. 76~77,XX,-Y drew no
+      // trace of the -Y at all (the written XX already filled the row), and
+      // 45,X,-Y drew its gap without a label a reader could attribute. Each
+      // explicitly lost sex chromosome with no free copy left gets a ghost slot
+      // labeled with its own letter.
+      var labeledGhosts = 0;
+      ["X", "Y"].forEach(function (chrom) {
+        var lostExplicit = clone.aberrations.some(function (ab) {
+          return ab.kind === "loss" && String((ab.chroms || [])[0]) === chrom;
+        });
+        if (!lostExplicit || (clone.slots[chrom] || []).length) return;
+        specs.push({ row: grp.name, chrom: chrom, insts: [], sexcell: true, opts: {
+          ghost: true, ghostChrom: chrom, ghostText: "missing", sexcell: true } });
+        labeledGhosts++;
+      });
+      // The karyogram shows the karyotype: when nothing names the lost chromosome
+      // it does not label the gap "?" or guess whether an X or a Y was lost.
       var xN = (clone.slots["X"] || []).length, yN = (clone.slots["Y"] || []).length;
-      for (var i = 0, n = 2 - (xN + yN); i < n; i++) {
+      for (var i = 0, n = 2 - (xN + yN) - labeledGhosts; i < n; i++) {
         specs.push({ row: grp.name, chrom: "", insts: [], sexcell: true, opts: {
           ghost: true, ghostChrom: "X", ghostText: "missing", sexcell: true } });
       }

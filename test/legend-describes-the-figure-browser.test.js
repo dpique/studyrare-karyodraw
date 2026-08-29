@@ -457,3 +457,57 @@ test('the translocation colour note appears only when a piece came from elsewher
     server.close();
   }
 });
+
+// Batch D of the 2026-08-28 review: two legend rows that lied by omission or
+// misdirection. The ring's clasp was drawn on every ring and keyed nowhere, and
+// when the only gray on screen was the +mar, "gray = a chromosome not involved"
+// described the one element it does not apply to.
+test('the ring clasp is keyed, and the marker is not called uninvolved', async (t) => {
+  if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
+  const puppeteer = require('puppeteer-core');
+  const server = await serve();
+  const port = server.address().port;
+  const browser = await puppeteer.launch({
+    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
+  });
+  const open = async (page, k) => {
+    await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent(k)}&style=highlight&show=involved`,
+      { waitUntil: 'load' });
+    await page.waitForSelector('#karyo svg');
+  };
+  try {
+    const page = await browser.newPage();
+    await page.setCacheEnabled(false);
+
+    await t.test('a ring figure keys its clasp', async () => {
+      await open(page, '46,XX,r(13)(p11q34)');
+      const leg = await legendText(page);
+      assert.match(leg, /where the ring closed/);
+    });
+
+    await t.test('a non-ring figure does not', async () => {
+      await open(page, '46,XY,t(9;22)(q34;q11.2)');
+      const leg = await legendText(page);
+      assert.ok(!/ring closed/.test(leg));
+    });
+
+    await t.test('a lone gray marker is keyed as unknown origin, not uninvolved', async () => {
+      await open(page, '47,XY,t(9;22)(q34;q11.2),+mar');
+      const leg = await legendText(page);
+      assert.match(leg, /origin unknown \(the marker\)/);
+      assert.ok(!/not involved in the abnormality/.test(leg));
+    });
+
+    await t.test('a genuinely uninvolved gray chromosome keeps the old row', async () => {
+      await open(page, '47,XY,+21&show=all'.replace('&show=all', ''));
+      await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent('47,XY,+21')}&style=highlight&show=all`,
+        { waitUntil: 'load' });
+      await page.waitForSelector('#karyo svg');
+      const leg = await legendText(page);
+      assert.match(leg, /not involved in the abnormality/);
+    });
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
