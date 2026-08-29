@@ -3,6 +3,27 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-30 (balanced rearrangements join the table, a ruler joins the figure)
+
+- **Balanced rearrangements get their rows back.** The runs now also split at
+  the karyotype's typed breakpoints, so a balanced inversion or insertion
+  partitions into named, sized, all-balanced rows and its segment of interest
+  keeps a size (undoing the previous entry's deliberate loss). When nothing
+  deviates, the title reads "Net imbalance: none" and the gene checkbox hides,
+  so the table measures without claiming. t(9;22)(q34;q11.2) now states the two
+  exchanged pieces at about 5.4 and 29 Mb.
+- **A gain's rider hunt crosses slots.** Beside 46,XY,der(13;14)(q10;q10),+14
+  the +14 row said "two copies in this cell line" and stopped: the der lives in
+  slot 13 (lowest number first) and the scan only looked in slot 14, denying
+  the third copy of 14q the derivative carries. It now scans every slot for
+  instances whose aberration or sub-ops involve the chromosome, so the row ends
+  "with more 14 material on der(13;14)", and the same held for ISCN's own
+  46,XX,der(13;21)(q10;q10),+21 (5.5.18.3 c ii). Reported by Dan.
+- **The karyogram carries a scale bar**, Dan's pick from the preview: a 50 Mb
+  vertical ruler with 10 Mb ticks, lower right, drawn at the renderer's own
+  px-per-bp inside the karyogram so the responsive fit scales bar and
+  chromosomes together and the two cannot disagree. Exported PNGs carry it too.
+
 ## 2026-08-30 (the net imbalance becomes a table, and the sizes move into it)
 
 - **A NET IMBALANCE table sits under the detailed form** whenever a karyotype

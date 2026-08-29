@@ -103,3 +103,33 @@ test('MYC sits in the nullisomic distal 8q run, ABL1 in the trisomic 9q run', ()
   assert.ok(inRun(chromOf(d, '8').runs[3], '8').includes('MYC'));
   assert.ok(inRun(chromOf(d, '9').runs[1], '9').includes('ABL1'));
 });
+
+// ---- balanced rearrangements join the table (Dan, 2026-08-30) ---------------
+// The first cut showed the table only on imbalance, which meant a balanced
+// span (an inversion's segment, an insertion's moved piece) was sized nowhere
+// after the prose lost its parentheticals. Runs now also split at the clone's
+// TYPED breakpoints, so a balanced rearrangement partitions into named,
+// sized, all-balanced rows, and `structural` says which chromosomes carry
+// typed breakpoints so the caller knows to show them.
+
+test('a balanced inversion still gets rows, split at its typed breakpoints', () => {
+  const d = dosage('46,XX,inv(2)(p21q31)');
+  assert.equal(chromOf(d, '2').structural, true);
+  assert.equal(runRows(d, '2').join(' | '), 'pter p21 2 | p21 q31 2 | q31 qter 2');
+});
+
+test('the balanced translocation partitions at the exchange points', () => {
+  const d = dosage('46,XY,t(9;22)(q34;q11.2)');
+  assert.equal(runRows(d, '9').join(' | '), 'pter q34 2 | q34 qter 2');
+  assert.equal(runRows(d, '22').join(' | '), 'pter q11.2 2 | q11.2 qter 2');
+});
+
+test('the between-chromosome insertion sizes its moved piece as a balanced row', () => {
+  const d = dosage('46,XY,ins(5;2)(p14;q22q32)');
+  assert.equal(runRows(d, '2').join(' | '), 'pter q22 2 | q22 q32 2 | q32 qter 2');
+});
+
+test('a numerical-only change is not structural', () => {
+  const d = dosage('47,XX,+21');
+  assert.equal(chromOf(d, '21').structural, false);
+});

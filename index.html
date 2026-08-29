@@ -375,7 +375,13 @@
   /* karyogram — 4 fixed Denver rows; rendered at natural size, then JS scales it to fill the card */
   #karyo { overflow-x: auto; min-width: 0; }   /* scroll an over-wide karyogram inside the card instead of stretching the page */
   #karyo .kwrap { overflow: visible; }
-  .karyogram { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 8px 10px; width: max-content; margin: 0 auto; transform-origin: top center; }
+  .karyogram { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 8px 10px; width: max-content; margin: 0 auto; transform-origin: top center; position: relative; }
+  /* The scale bar (Dan's pick, 2026-08-30: the 50 Mb ruler with 10 Mb ticks)
+     rides INSIDE the karyogram, so the responsive fit transform scales it with
+     the chromosomes and it stays truthful at every width. The padding is its
+     lane; without it the bar would sit on the last chromosome in a full view. */
+  .karyogram.has-scalebar { padding-right: 56px; }
+  .scalebar { position: absolute; right: 4px; bottom: 8px; pointer-events: none; }
   .kgroup { display: flex; flex-wrap: nowrap; gap: 5px; padding: 4px 6px; border-radius: 10px; align-items: flex-end; }
   .kcell { display: flex; flex-direction: column; align-items: center; }
   .kcell.sexcell { background: #eef1fd; border-radius: 8px; }
@@ -1323,13 +1329,16 @@
       var r = window.Karyo.resolveBand(g.c, g.b);
       return r ? { g: g.g, c: g.c, mid: r.mid } : null;
     }).filter(Boolean);
-    var out = [], any = false;
+    var out = [], any = false, anyDev = false;
     (clones || []).forEach(function (clone, ci) {
       var d = window.Karyo.computeDosage(clone);
+      // A chromosome earns rows when it deviates OR when the notation names
+      // breakpoints on it: a balanced inversion's segment still gets a named,
+      // sized row (Dan, 2026-08-30, restoring the sizes the prose gave up).
       var chroms = d.chroms.filter(function (c) {
-        return c.baseline != null
+        return c.structural || (c.baseline != null
           ? c.runs.some(function (r) { return r.copies !== c.baseline; })
-          : c.runs.length > 1;
+          : c.runs.length > 1);
       });
       if (!chroms.length) return;
       any = true;
@@ -1337,6 +1346,7 @@
       chroms.forEach(function (c) {
         c.runs.forEach(function (r) {
           var call = imbCall(r.copies, c.baseline);
+          if (call.cls === "gain" || call.cls === "loss") anyDev = true;
           var genes = "";
           if (geneAt && call.cls !== "even") {
             var hit = geneAt.filter(function (g) { return g.c === c.chrom && g.mid >= r.from && g.mid < r.to; })
@@ -1354,11 +1364,17 @@
         rows.join("") + "</tbody></table>" +
         (d.unknownExcluded ? '<div class="imb-note">A marker or dmin is present; material banding cannot assign to a chromosome is not counted in these rows.</div>' : ""));
     });
+    // "Net imbalance: none" when every run is balanced (a balanced inversion,
+    // a reciprocal exchange): the table then only measures, and the title must
+    // not read as claiming an imbalance the rows deny. The gene checkbox hides
+    // with nothing to mark, since genes annotate gained and lost rows only.
     box.innerHTML = any
-      ? '<div class="imb-head"><div class="dtitle" style="margin:0">Net imbalance</div>' +
-        '<label class="imb-genes" title="Mark well-known cancer genes that sit inside a gained or lost segment. A teaching aid for cytogenetics, not a clinical annotation.">' +
-        '<input type="checkbox" id="imbgenes"' + (SHOW_GENES ? " checked" : "") + "> cancer genes</label></div>" +
-        out.join("")
+      ? '<div class="imb-head"><div class="dtitle" style="margin:0">Net imbalance' + (anyDev ? "" : ": none") + '</div>' +
+        (anyDev
+          ? '<label class="imb-genes" title="Mark well-known cancer genes that sit inside a gained or lost segment. A teaching aid for cytogenetics, not a clinical annotation.">' +
+            '<input type="checkbox" id="imbgenes"' + (SHOW_GENES ? " checked" : "") + "> cancer genes</label>"
+          : '<span class="imb-genes" style="cursor:default">every segment keeps its expected copies</span>') +
+        "</div>" + out.join("")
       : "";
     var cb = $("#imbgenes");
     if (cb) cb.addEventListener("change", function () { SHOW_GENES = cb.checked; renderImbalance(LAST_CLONES); });
@@ -1624,7 +1640,39 @@
       block.appendChild(kg);
       parent.appendChild(block);
     });
+    // One scale bar per figure, on the last (bottom or rightmost) karyogram:
+    // every clone renders at the same px-per-Mb, so one ruler serves them all.
+    var kgs = host.querySelectorAll(".karyogram");
+    if (kgs.length) addScaleBar(kgs[kgs.length - 1]);
     fitKaryograms();
+  }
+
+  // The scale bar, Dan's pick from the 2026-08-30 preview (variant C): a 50 Mb
+  // vertical ruler with 10 Mb ticks. Vertical because the chromosomes are: it
+  // measures the axis they are drawn on, at the renderer's own px-per-bp, so
+  // the bar and the figure cannot disagree. Pure SVG with no styling
+  // dependencies, so buildExportSVG can lift it into the exported PNG as-is.
+  function addScaleBar(kg) {
+    if (!kg || kg.querySelector(".scalebar")) return;
+    var PX = window.Karyo.PX_PER_BP;
+    var MB = 50, TICK = 10, top = 4;
+    var h = MB * 1e6 * PX;
+    var parts = ['<line x1="8" y1="' + top + '" x2="8" y2="' + (top + h).toFixed(1) + '" stroke="#5f698a" stroke-width="1.2"/>'];
+    for (var m = 0; m <= MB; m += TICK) {
+      var y = (top + m * 1e6 * PX).toFixed(1);
+      parts.push('<line x1="' + (m % 50 === 0 ? 3 : 5.5) + '" y1="' + y + '" x2="8" y2="' + y + '" stroke="#5f698a" stroke-width="1.2"/>');
+    }
+    var font = 'font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" fill="#5f698a"';
+    parts.push('<text x="12" y="' + (top + 3) + '" ' + font + '>0</text>');
+    parts.push('<text x="12" y="' + (top + h + 3).toFixed(1) + '" ' + font + '>' + MB + ' Mb</text>');
+    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "scalebar");
+    svg.setAttribute("width", "48");
+    svg.setAttribute("height", Math.ceil(top + h + 8));
+    svg.setAttribute("aria-hidden", "true");
+    svg.innerHTML = parts.join("");
+    kg.classList.add("has-scalebar");
+    kg.appendChild(svg);
   }
 
   // A side-by-side clone row gets ONE scale for every cell line: two populations
@@ -2262,9 +2310,12 @@
     document.body.appendChild(stage);
     window.Karyo.render(stage, clone, { theme: MODE, level: LEVEL, affected: AFFECTED, only: only });
     var kg = stage.querySelector(".karyogram");
+    // The exported figure carries the same scale bar the screen shows; it is
+    // pure SVG, so it lifts like the chromosome pieces do.
+    addScaleBar(kg);
     var base = kg.getBoundingClientRect();
     var pieces = [];
-    Array.prototype.forEach.call(kg.querySelectorAll("svg.ideo"), function (svg) {
+    Array.prototype.forEach.call(kg.querySelectorAll("svg.ideo, svg.scalebar"), function (svg) {
       var r = svg.getBoundingClientRect();
       var s = svg.cloneNode(true);
       s.setAttribute("x", (r.left - base.left).toFixed(1));

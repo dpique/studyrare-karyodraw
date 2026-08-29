@@ -74,11 +74,30 @@ test('the net-imbalance table appears, toggles genes, and obeys the gate', async
       assert.ok(!withGenes.balancedRowHasGene, 'balanced context rows stay unannotated');
     });
 
-    await t.test('a balanced karyotype shows no table at all', async () => {
+    await t.test('a balanced rearrangement measures without claiming imbalance', async () => {
+      // Dan, 2026-08-30: balanced rearrangements join the table so their
+      // segments keep a size somewhere after the prose lost its
+      // parentheticals. The title must say "none" and the gene checkbox
+      // hides, since genes annotate gained and lost rows only.
       await open(page, '46,XY,t(9;22)(q34;q11.2)');
+      await page.waitForSelector('#imbalance table');
+      const st = await page.evaluate(() => ({
+        title: document.querySelector('#imbalance .dtitle').textContent,
+        rows: document.querySelectorAll('#imbalance tbody tr').length,
+        allBalanced: [...document.querySelectorAll('#imbalance td.call')].every((c) => c.textContent === 'balanced'),
+        checkbox: !!document.querySelector('#imbgenes'),
+      }));
+      assert.match(st.title, /none/i, 'the title says no net imbalance');
+      assert.equal(st.rows, 4, 'both exchange partners split at their breakpoints');
+      assert.ok(st.allBalanced, 'every row is balanced');
+      assert.ok(!st.checkbox, 'no gene checkbox with nothing to mark');
+    });
+
+    await t.test('a normal karyotype shows no table at all', async () => {
+      await open(page, '46,XX');
       await page.waitForFunction(() => document.querySelector('#karyo svg'));
       const html = await page.evaluate(() => document.getElementById('imbalance').innerHTML);
-      assert.equal(html, '', 'nothing imbalanced, nothing claimed');
+      assert.equal(html, '', 'nothing structural, nothing measured');
     });
 
     await t.test('a refusal sweeps the panel with the rest of the drawing', async () => {

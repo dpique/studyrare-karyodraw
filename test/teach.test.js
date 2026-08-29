@@ -1059,3 +1059,18 @@ test('the idic glossary entry carries its origin rule', () => {
   assert.match(Teach.GLOSSARY.idic, /sister chromatids/i);
   assert.match(Teach.GLOSSARY.idic, /dic\(N;N\)/);
 });
+
+// ---- a gain's rider hunt crosses slots (Dan, 2026-08-30) --------------------
+
+test('a gain names the derivative carrying more of the chromosome, across slots', () => {
+  // 46,XX,der(13;21)(q10;q10),+21 is ISCN 5.5.18.3 c ii: two normal 21s AND
+  // the der's 21q, three copies of the long arm in all. The der lives in slot
+  // 13 (lowest number first), and the rider scan used to look only in slot 21,
+  // so the row said "two copies" and stopped, denying the third 21q. Found by
+  // Dan on the +14 twin.
+  const t = decodeText('46,XX,der(13;21)(q10;q10),+21');
+  assert.match(t, /more 21 material on der\(13;21\)/);
+  const t2 = decodeText('46,XY,der(13;14)(q10;q10),+14');
+  assert.match(t2, /more 14 material on der\(13;14\)/);
+  assert.doesNotMatch(t, /trisomy 21/, 'the somy label stays suppressed when a rider exists');
+});
