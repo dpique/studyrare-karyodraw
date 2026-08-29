@@ -337,8 +337,27 @@
       var slotList = clone && clone.slots ? clone.slots[String(c)] : null;
       if (!slotList) return { text: head, tag: k };
       var whole = slotList.filter(function (i) { return i.kind === "normal" || i.kind === "gain"; }).length;
-      var riders = slotList.filter(function (i) { return ["normal", "gain", "missing"].indexOf(i.kind) < 0; })
-        .map(function (i) { return i.label; });
+      // The rider hunt crosses slots: der(13;21) lives in slot 13 (lowest
+      // number first) and still carries 21q, so scanning only chromosome c's
+      // own slot said "two copies" beside +21 and denied the third 21q (ISCN
+      // 5.5.18.3 c ii; found by Dan on the +14 twin, 2026-08-30). An instance
+      // carries c when c is its home, one of its aberration's chromosomes, or
+      // a chromosome a sub-op brought in.
+      var riders = [];
+      Object.keys(clone.slots).forEach(function (sk) {
+        (clone.slots[sk] || []).forEach(function (inst) {
+          if (["normal", "gain", "missing"].indexOf(inst.kind) >= 0) return;
+          var carries = [String(inst.chrom)];
+          var abx = inst.aberration;
+          if (abx) {
+            (abx.chroms || []).forEach(function (x) { carries.push(String(x)); });
+            (abx.subOps || []).forEach(function (s) {
+              (s.chroms || []).forEach(function (x) { carries.push(String(x)); });
+            });
+          }
+          if (carries.indexOf(String(c)) >= 0) riders.push(inst.label);
+        });
+      });
       var basePloidy = clone.ploidy || 2;
       var SOMY = { 3: "trisomy", 4: "tetrasomy", 5: "pentasomy" };
       var isSex = c === "X" || c === "Y";

@@ -1836,6 +1836,13 @@
       var len = IDEO.data[c].length;
       var edges = [0, len];
       cover[c].forEach(function (iv) { edges.push(iv[0], iv[1]); });
+      // The TYPED breakpoints force edges too, and equal-copy neighbours do
+      // not merge across them: a balanced rearrangement (an inversion, an
+      // insertion's moved piece) creates no copy-number step, and without the
+      // forced split its segment of interest would dissolve into one
+      // pter→qter row with no size to state (Dan, 2026-08-30).
+      var named = names[c] || {};
+      Object.keys(named).forEach(function (p) { edges.push(Number(p)); });
       edges = edges.filter(function (e, i, arr) { return e >= 0 && e <= len && arr.indexOf(e) === i; })
         .sort(function (x, y) { return x - y; });
       var runs = [];
@@ -1844,7 +1851,7 @@
         // Edges include every interval endpoint, so an interval covering any of
         // [a,b) covers all of it; whole-containment is the exact test.
         cover[c].forEach(function (iv) { if (iv[0] <= a && iv[1] >= b) n++; });
-        if (runs.length && runs[runs.length - 1].copies === n) runs[runs.length - 1].to = b;
+        if (runs.length && runs[runs.length - 1].copies === n && !(a in named)) runs[runs.length - 1].to = b;
         else runs.push({ from: a, to: b, copies: n });
       }
       var label = function (pos) {
@@ -1862,7 +1869,7 @@
       var baseline = (c === "X" || c === "Y")
         ? (ploidy === 2 ? (yPresent ? 1 : (c === "X" ? 2 : 0)) : null)
         : ploidy;
-      return { chrom: c, baseline: baseline, runs: runs };
+      return { chrom: c, baseline: baseline, runs: runs, structural: !!names[c] };
     });
     return { chroms: chroms, unknownExcluded: unknownExcluded };
   }
@@ -2256,6 +2263,6 @@
     render: render, drawInstance: drawInstance, drawDetail: drawDetail, buildInstance: buildInstance,
     computeAffected: computeAffected, computeDosage: computeDosage, resolveBand: resolveBand, getBands: getBands, textWidth: textWidth,
     armExtent: armExtent, nearestBand: nearestBand, bandAncestor: bandAncestor, invalidBands: invalidBands, bandSnap: bandSnap, detailedForm: detailedForm,
-    STAIN: STAIN, OP_COLORS: OP_COLORS, AFFECTED_PALETTE: AFFECTED_PALETTE, tintRamp: tintRamp, BASELINE: BASELINE, textInk: textInk
+    STAIN: STAIN, OP_COLORS: OP_COLORS, AFFECTED_PALETTE: AFFECTED_PALETTE, tintRamp: tintRamp, BASELINE: BASELINE, textInk: textInk, PX_PER_BP: PX
   };
 })();
