@@ -2005,10 +2005,15 @@
   function cssEsc(s) { return String(s).replace(/["\\]/g, "\\$&"); }
   // Keep punctuation that is legal in a query value readable (46,XY,t(9;22)…)
   // instead of a wall of %2C/%3B, so the shared URL mirrors the input box.
+  // The plus stays literal too (Dan, 2026-08-30): "+" is legal in a query per
+  // RFC 3986, and getKaryotypeParam below has read it as the ISCN sign, never a
+  // form-encoded space, since #143. A real space still encodes as %20, so the
+  // two can never collide. scripts/build-pages.mjs prettyK is this function's
+  // twin for the generated landing pages; change them together.
   function prettyEncode(s) {
     return encodeURIComponent(s)
       .replace(/%2C/g, ",").replace(/%3B/g, ";").replace(/%2F/g, "/")
-      .replace(/%5B/g, "[").replace(/%5D/g, "]");
+      .replace(/%5B/g, "[").replace(/%5D/g, "]").replace(/%2B/g, "+");
   }
   // push=true gives this view its own history entry, so Back returns to the previous
   // karyotype. Reserved for discrete jumps (see loadKaryotype); typing and the
@@ -2040,8 +2045,9 @@
   // The generic decode above turns "+" into a space, which is right for a form and wrong
   // here: karyodraw.com/?k=46,XY,der(13;14)(q10;q10),+14, typed by hand or pasted out of
   // a message, arrived as ",_14" and the app answered "“14” needs a sign" about a sign
-  // the reader had written. Every link this app makes encodes the plus as %2B and a space
-  // as %20 (encodeURIComponent), so nothing it hands out changes.
+  // the reader had written. Since 2026-08-30 the app's own links write the plus
+  // literally too (prettyEncode above), so the URL bar reads as the karyotype; the %2B
+  // spelling every link before that handed out decodes to the same plus and keeps working.
   //
   // ISCN writes exactly one space, after a mos/chi prefix (4.4.1 m), so that is the one
   // case where a "+" there could have meant a space, and it is put back.
