@@ -51,13 +51,18 @@ function modelData(k) {
   let model;
   try { model = ISCN.parse(k); } catch (e) { out.parseError = String(e); return out; }
   out.warnings = model.warnings || [];
-  // Bands the model cannot place. The PAGE draws sub-band typos at their real
-  // ancestor and says so (index.html); the parser-level instances below still
-  // carry the typed band, so without this a reviewer would read the one-band
-  // difference between figure and model.json as a silent bug.
+  // Bands the model cannot place, and the page's snap decision applied to the
+  // model itself. The page draws sub-band typos at their real ancestor
+  // (index.html, via the same Karyo.bandSnap); building the instances below
+  // from the unsnapped parse exported segments defaulted to the centromere
+  // while the figure sat at the ancestor band, which the second-pass review
+  // read as the oracle contradicting the figure. snappedTo records that the
+  // instances describe the snapped karyotype.
   out.invalidBands = Karyo.invalidBands(model).map((b) => ({
     ...b, ancestor: Karyo.bandAncestor(b.chrom, b.band),
   }));
+  const snapped = Karyo.bandSnap(model.normalized || k, model, ISCN.parse);
+  if (snapped) { out.snappedTo = snapped.k; model = snapped.model; }
   for (const clone of model.clones || []) {
     for (const ch of Object.keys(clone.slots || {})) {
       for (const inst of clone.slots[ch] || []) {

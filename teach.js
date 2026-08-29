@@ -453,13 +453,22 @@
       // it: the Robertsonian sentence ignored the sub-ops entirely, and the general
       // der sentence read the first join as if the body were one chromosome "out to"
       // the join's band, the monocentric misreading the renderer no longer draws.
-      if (wholeArmBands && (ab.chroms || []).length === 2 && (ab.subOps || []).length) {
+      // Also fires with NO sub-ops when the pair is not the pure q10;q10
+      // acrocentric fusion (that one keeps its own Robertsonian sentence
+      // below): the second-pass review (2026-08-29) found the bare
+      // der(1;7)(q10;p10) falling through to the generic one-liner, which
+      // never mentioned the chromosome 7 material the figure paints, the
+      // fusion, or the cost.
+      var waPureRob = acroPair && (bp || []).every(function (g) {
+        return (g[0] || "") === "q10" || g[0] === "cen";
+      });
+      if (wholeArmBands && (ab.chroms || []).length === 2 && ((ab.subOps || []).length || !waPureRob)) {
         var waArm = function (ix) { return /^p/.test(String(((bp || [])[ix] || [])[0] || "")) ? "short" : "long"; };
         var waSame = String(ab.chroms[0]) === String(ab.chroms[1]);
         var waBody = waSame
           ? "the two " + waArm(0) + " arms of chromosome " + ab.chroms[0] + ", one from each homologue, are fused at the centromere into one derivative chromosome"
           : "the " + waArm(0) + " arm of chromosome " + ab.chroms[0] + " and the " + waArm(1) + " arm of chromosome " + ab.chroms[1] + " are fused at the centromere into one derivative chromosome";
-        var waOpen = (acroPair ? "a ROBERTSONIAN translocation with more on it: " : "a WHOLE-ARM translocation derivative: ") + waBody +
+        var waOpen = (acroPair && (ab.subOps || []).length ? "a ROBERTSONIAN translocation with more on it: " : "a WHOLE-ARM translocation derivative: ") + waBody +
           "; fusions like this are usually dicentric, with one centromere inactivated.";
         var waBodySet = {};
         waBodySet[String(ab.chroms[0])] = 1; waBodySet[String(ab.chroms[1])] = 1;
@@ -893,8 +902,16 @@
   // it correctly called a female. The sheet is the copy that travels.
   function sexNote(clone) {
     var xDrawn = (clone.complement && clone.complement.X) || 0;
+    var yDrawn = (clone.complement && clone.complement.Y) || 0;
     if (clone.sex.label === "X" && xDrawn >= 2) {
       return "one X, listed alone because the other X is named in the rearrangement below. This is not monosomy X";
+    }
+    // The same rule with a Y-derived rearrangement (idic(Y), r(Y)): the second
+    // sex slot is drawn, so a lone X in the field is not monosomy X here
+    // either. The second-pass review caught the hedge firing only for X-derived
+    // elements.
+    if (clone.sex.label === "X" && yDrawn >= 1) {
+      return "one X, listed alone because the Y is named in the rearrangement below. This is not monosomy X";
     }
     if (clone.sex.label === "Y" && xDrawn >= 1) {
       return "one Y, listed alone because the X is named in the rearrangement below";

@@ -251,6 +251,36 @@
     return bad;
   }
 
+  // The band-snap decision, shared between the page and the review capture so
+  // the model the capture exports is built from the SAME karyotype the page
+  // draws. The second-pass review caught the split: for t(5;19)(q15.3;q13.3)
+  // the page drew the chr5 junction at 5q15 while model.json, built from the
+  // unsnapped parse, defaulted the emptied band to the centromere. parse comes
+  // in as an argument because Karyo does not depend on the parser. Returns
+  // null unless every invalid band is a sub-band typo with a real ancestor,
+  // each appears exactly once as a delimited token, and the snapped string
+  // parses back with nothing left to refuse; the caller then owns the message.
+  function bandSnap(k, model, parse) {
+    var bad = invalidBands(model);
+    if (!bad.length || bad.length > 3) return null;
+    var ancestors = bad.map(function (b) { return bandAncestor(b.chrom, b.band); });
+    if (!ancestors.every(Boolean)) return null;
+    var snapK = String(k);
+    for (var i = 0; i < bad.length; i++) {
+      var re = new RegExp("([(;,])" + String(bad[i].band).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?=[);,])", "g");
+      if ((snapK.match(re) || []).length !== 1) return null;
+      snapK = snapK.replace(re, "$1" + ancestors[i]);
+    }
+    if (snapK === String(k)) return null;
+    var snapModel = parse(snapK);
+    var refused = !snapModel.clones.length ||
+      snapModel.clones.every(function (c) { return c.modalNumber == null; }) ||
+      !!snapModel.suggestion ||
+      snapModel.clones.some(function (c) { return c.unreadable || c.countWrong || c.unaccounted; });
+    if (refused || invalidBands(snapModel).length) return null;
+    return { k: snapK, model: snapModel, bad: bad, ancestors: ancestors };
+  }
+
   // Split a chromosome at a breakpoint into the piece the derivative keeps and the
   // piece it exchanges away. Away from the centromere the kept piece is the centric
   // one, which is what the position test finds.
@@ -2127,7 +2157,7 @@
   window.Karyo = {
     render: render, drawInstance: drawInstance, drawDetail: drawDetail, buildInstance: buildInstance,
     computeAffected: computeAffected, resolveBand: resolveBand, getBands: getBands, textWidth: textWidth,
-    armExtent: armExtent, nearestBand: nearestBand, bandAncestor: bandAncestor, invalidBands: invalidBands, detailedForm: detailedForm,
+    armExtent: armExtent, nearestBand: nearestBand, bandAncestor: bandAncestor, invalidBands: invalidBands, bandSnap: bandSnap, detailedForm: detailedForm,
     STAIN: STAIN, OP_COLORS: OP_COLORS, AFFECTED_PALETTE: AFFECTED_PALETTE, tintRamp: tintRamp, BASELINE: BASELINE
   };
 })();

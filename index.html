@@ -1639,33 +1639,17 @@
       // only the subdivision is not, so drawing at the ancestor asserts nothing
       // the input did not. A miss with no real ancestor (12q32) would make the
       // drawn position this app's guess, and keeps the refusal + advice below.
-      var anc = bad.map(function (b) { return window.Karyo.bandAncestor(b.chrom, b.band); });
-      var snapped = null;
-      if (anc.every(Boolean)) {
-        var snapK = val, oneEach = true;
-        bad.forEach(function (b, i) {
-          var re = new RegExp("([(;,])" + String(b.band).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?=[);,])", "g");
-          if ((snapK.match(re) || []).length !== 1) { oneEach = false; return; }
-          snapK = snapK.replace(re, "$1" + anc[i]);
-        });
-        if (oneEach && snapK !== val) {
-          var snapModel = window.ISCN.parse(snapK);
-          var snapRefused = !snapModel.clones.length ||
-            snapModel.clones.every(function (c) { return c.modalNumber == null; }) ||
-            !!snapModel.suggestion ||
-            snapModel.clones.some(function (c) { return c.unreadable || c.countWrong || c.unaccounted; });
-          if (!snapRefused && !window.Karyo.invalidBands(snapModel).length) {
-            bad.forEach(function (b, i) {
-              snapModel.warnings.push("The band map has no “" + b.label + "”; the deepest real band containing it is " +
-                b.chrom + anc[i] + ", so “" + b.label + "” is “" + b.chrom + anc[i] + "”.");
-            });
-            snapModel.warnings.push("With the real bands in place, “" + val + "” is “" + snapK + "”, and that is what is drawn.");
-            snapped = snapModel;
-          }
-        }
-      }
+      // The decision itself lives in Karyo.bandSnap, shared with the review
+      // capture so model.json is built from the same snapped karyotype this
+      // page draws; only the message copy is composed here.
+      var snapped = window.Karyo.bandSnap(val, model, window.ISCN.parse);
       if (snapped) {
-        model = snapped;
+        snapped.bad.forEach(function (b, i) {
+          snapped.model.warnings.push("The band map has no “" + b.label + "”; the deepest real band containing it is " +
+            b.chrom + snapped.ancestors[i] + ", so “" + b.label + "” is “" + b.chrom + snapped.ancestors[i] + "”.");
+        });
+        snapped.model.warnings.push("With the real bands in place, “" + val + "” is “" + snapped.k + "”, and that is what is drawn.");
+        model = snapped.model;
         bad = [];
       } else {
         bad.forEach(function (b) { model.warnings.push(bandAdvice(b)); });

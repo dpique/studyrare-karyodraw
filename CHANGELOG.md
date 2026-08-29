@@ -3,6 +3,34 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-29 (what the second pass saw: four gaps beside the fixes)
+
+The closure re-review of the production evidence bundles confirmed all fourteen pilot
+findings fixed (22 of 26 changed bundles clean) and surfaced four gaps adjacent to the
+fixes, closed here.
+
+- **The comma-spliced derivative is taught, not silently tripled.**
+  `46,X,der(X),t(X;5)(...)` meant one change, `der(X)t(X;5)(...)`; read as two it drew
+  a balanced t plus a separate der(X), three abnormal bodies with no normal X, zero
+  warnings, and the band advice handed the string back. Refused now, with the joined
+  spelling on a chip. The signed Emanuel pattern `+der(22),t(11;22)` keeps drawing its
+  three bodies: the sign is what makes that reading correct.
+
+- **The bare whole-arm derivative decodes its second chromosome.** The whole-arm
+  decode fired only with trailing sub-ops, so `der(1;7)(q10;p10)` alone read as "has
+  chromosome 1's centromere" beside a figure painting chromosome 7 material. It now
+  states the composition and the cost (partially monosomic for 1p and 7q).
+
+- **A lone X beside an abnormal Y is not monosomy X.** The sex-field hedge fired only
+  when the rearranged element was an X; beside idic(Y) or r(Y) the gloss still said
+  "a single X (monosomy X)" under a figure drawing the Y derivative. The hedge now
+  covers Y-derived rearrangements.
+
+- **The review capture's model.json is built from the karyotype the page draws.**
+  For a snapped sub-band typo the exported segments defaulted the emptied band to the
+  centromere while the figure sat at the ancestor band. The snap decision moved into
+  `Karyo.bandSnap`, shared by the page and the capture, which records `snappedTo`.
+
 ## 2026-08-29 (the input already said what it meant: closing the review pilot ledger)
 
 The last five items from the 2026-08 production-review pilot. The three policy calls
