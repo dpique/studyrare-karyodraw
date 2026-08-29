@@ -34,7 +34,11 @@ function serve() {
   return new Promise((res) => server.listen(0, '127.0.0.1', () => res(server)));
 }
 
-test('hovering a decode symbol chip shows its glossary definition', async (t) => {
+// The glossary hover lives on the PROSE terms alone. The symbol chips carried
+// it for a day (#247) and Dan had it removed on sight (2026-08-30): a dotted
+// underline below a long ISCN token read as clutter, and the concept is one
+// word away in the sentence beside the chip.
+test('the glossary hovers on the prose, and the symbol chips stay plain', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
   const puppeteer = require('puppeteer-core');
   const server = await serve();
@@ -47,15 +51,18 @@ test('hovering a decode symbol chip shows its glossary definition', async (t) =>
     await page.waitForSelector('#karyo svg', { timeout: 20000 });
 
     const chips = await page.evaluate(() => ({
-      glossed: [...document.querySelectorAll('.decode-code[data-gloss]')].map((c) => c.getAttribute('data-gloss')),
-      unglossed: [...document.querySelectorAll('.decode-code:not([data-gloss])')].map((c) => c.textContent.trim()),
+      glossed: document.querySelectorAll('.decode-code[data-gloss]').length,
+      proseTerms: document.querySelectorAll('#decode .gterm[data-gloss]').length,
+      chipDeco: getComputedStyle(document.querySelector('.decode-code')).textDecorationLine,
     }));
-    assert.ok(chips.glossed.indexOf('t') >= 0, 'the t chip carries the glossary: ' + JSON.stringify(chips.glossed));
-    assert.ok(chips.unglossed.indexOf('46') >= 0, 'the count row does not: ' + JSON.stringify(chips.unglossed));
+    assert.equal(chips.glossed, 0, 'no chip carries the hover');
+    assert.ok(chips.proseTerms > 0, 'the prose does');
+    assert.ok(!/underline/.test(chips.chipDeco), 'and no chip wears the underline mark');
 
-    const chip = await page.$('.decode-code[data-gloss="t"]');
-    await chip.scrollIntoView();
-    const box = await chip.boundingBox();
+    const term = await page.$('#decode .gterm[data-gloss="t"]');
+    assert.ok(term, 'the row prose names the translocation and glosses it');
+    await term.scrollIntoView();
+    const box = await term.boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.waitForFunction(() => {
       const tip = document.getElementById('tooltip');
@@ -64,17 +71,17 @@ test('hovering a decode symbol chip shows its glossary definition', async (t) =>
     const tip = await page.evaluate(() => document.getElementById('tooltip').textContent);
     assert.match(tip, /exchange segments/, 'the definition, not this karyotype: ' + tip.slice(0, 80));
 
-    // Moving off the chip hides it.
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height + 60);
+    // Moving off the term hides it.
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height + 80);
     await page.waitForFunction(() => document.getElementById('tooltip').style.display !== 'block', { timeout: 5000 });
 
     // The affordance must be visible enough to read as one: the first cut was a
     // 1px dotted border and Dan could not tell it was there (2026-08-29).
     const deco = await page.evaluate(() => {
-      const cs = getComputedStyle(document.querySelector('.decode-code[data-gloss]'));
+      const cs = getComputedStyle(document.querySelector('#decode .gterm[data-gloss]'));
       return { line: cs.textDecorationLine, style: cs.textDecorationStyle };
     });
-    assert.match(deco.line, /underline/, 'the chip is underlined');
+    assert.match(deco.line, /underline/, 'the glossed term is underlined');
     assert.equal(deco.style, 'dotted', 'in the dotted definition-lives-here idiom');
   } finally {
     await browser.close();
@@ -82,10 +89,10 @@ test('hovering a decode symbol chip shows its glossary definition', async (t) =>
   }
 });
 
-// The glossary's other two carriers (Dan, 2026-08-29): the figure caption under
-// the drawn derivative, and the English terms inside the decode prose. Driven in
-// a browser for the same reason as the chip: the hover appearing is the feature.
-test('figure captions and decode prose hover to the glossary too', async (t) => {
+// The prose glossing in detail, plus the figure caption staying plain: the
+// caption carried the hover for a day (#247) and Dan had it removed on sight
+// alongside the chips (2026-08-30).
+test('decode prose glosses whole phrases; the figure caption stays plain', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
   const puppeteer = require('puppeteer-core');
   const server = await serve();
@@ -97,20 +104,26 @@ test('figure captions and decode prose hover to the glossary too', async (t) => 
       { waitUntil: 'load' });
     await page.waitForSelector('#karyo svg', { timeout: 20000 });
 
-    // The caption under the fused chromosome carries the der entry.
-    const cap = await page.$('#karyo .ksub[data-gloss="der"]');
-    assert.ok(cap, 'the der(14;21) caption is glossed');
+    // The caption under the fused chromosome is plain: no attribute, no
+    // underline, and hovering it raises no tooltip.
+    const cap = await page.$('#karyo .ksub');
+    assert.ok(cap, 'the der(14;21) caption is drawn');
+    const capState = await page.evaluate(() => {
+      const el = document.querySelector('#karyo .ksub');
+      return { gloss: el.hasAttribute('data-gloss'), deco: getComputedStyle(el).textDecorationLine };
+    });
+    assert.equal(capState.gloss, false, 'no glossary attribute on the caption');
+    assert.ok(!/underline/.test(capState.deco), 'no underline mark on the caption');
     await cap.scrollIntoView();   // below the fold, mouse.move would miss it (#246)
     const cbox = await cap.boundingBox();
     await page.mouse.move(cbox.x + cbox.width / 2, cbox.y + cbox.height / 2);
-    await page.waitForFunction(() => {
-      const tip = document.getElementById('tooltip');
-      return tip && tip.style.display === 'block' && /DERIVATIVE/.test(tip.textContent);
-    }, { timeout: 5000 });
+    await new Promise((r) => setTimeout(r, 400));
+    const capTip = await page.evaluate(() => document.getElementById('tooltip').style.display);
+    assert.notEqual(capTip, 'block', 'hovering the caption raises no tooltip');
 
-    // The prose names other concepts in passing, and each hovers: the row about
-    // this der() says "ROBERTSONIAN translocation", glossed as rob, the WHOLE
-    // phrase in one wrap (never re-matched inside as "translocation"), and says
+    // The prose names concepts in passing, and each hovers: the row about this
+    // der() says "ROBERTSONIAN translocation", glossed as rob, the WHOLE phrase
+    // in one wrap (never re-matched inside as "translocation"), and says
     // "dicentric", glossed as dic.
     const terms = await page.evaluate(() => ({
       rob: (document.querySelector('#decode .gterm[data-gloss="rob"]') || {}).textContent || null,

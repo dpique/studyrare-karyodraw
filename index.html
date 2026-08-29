@@ -413,17 +413,16 @@
   .decode-code { flex: 0 0 auto; max-width: 100%; overflow-x: auto; font: 700 13px var(--font-mono); color: var(--ink); background: #f0f2f7; padding: 2px 7px 4px; border-radius: 6px; white-space: nowrap; scrollbar-width: thin; scrollbar-color: #c3cae4 transparent; }
   .decode-code::-webkit-scrollbar { height: 5px; }
   .decode-code::-webkit-scrollbar-thumb { background: #c3cae4; border-radius: 3px; }
-  /* Anything carrying a glossary entry advertises the hover with the same mark: a
-     dotted periwinkle underline, one affordance for chips, glossed prose, and the
-     figure captions alike. The first cut was a 1px dotted border in #8a93b8 and
-     Dan could not tell it was an affordance at all (2026-08-29), so it stepped up
-     to the accent hue at 2px, held clear of the glyphs. */
-  .decode-code[data-gloss], .decode-text .gterm, .ksub[data-gloss] { cursor: help;
+  /* The glossary hover lives on the PROSE terms only (owner call 2026-08-30,
+     reversing the chip and figure-caption carriers of #247): underlining a whole
+     ISCN token chip or the red caption under the figure read as clutter, and the
+     row prose names every concept the chip's symbol stands for. The mark is a
+     dotted periwinkle underline at 2px, held clear of the glyphs; the first cut
+     was 1px gray and read as nothing (2026-08-29). */
+  .decode-text .gterm { cursor: help;
     text-decoration-line: underline; text-decoration-style: dotted;
     text-decoration-color: var(--periwinkle); text-decoration-thickness: 2px;
     text-underline-offset: 3px; }
-  /* The caption is 9.5px; the full-size mark would swallow it. */
-  .ksub[data-gloss] { text-decoration-thickness: 1.5px; text-underline-offset: 2px; }
   .decode-code::-webkit-scrollbar-track { background: transparent; }
   .decode-code.count { color: #3e4bb0; } .decode-code.sex { color: #37428a; }
   /* rec sits with the losses: it carries a duplication and a deletion, and the
@@ -450,14 +449,20 @@
   /* 16px side margins: the card has no .body wrapper here, so the block sets the
      shared gutter itself. At 2px it sat flush against the card border, visibly
      left of every other row in the card (Dan, 2026-08-29). */
-  #detailed { margin: 10px 16px 12px; border-top: 1px solid var(--line); padding-top: 9px; }
-  .dtitle { font: 700 10.5px var(--font-sans); letter-spacing: .06em; text-transform: uppercase;
+  /* A two-column grid sized by the longest label: labels align across rows AND
+     the gap after a lone short label stays 10px. The old fixed min-width (76px)
+     put a hand-tuned gulf between der(8;8) and its string (Dan, 2026-08-30). */
+  #detailed { margin: 10px 16px 12px; border-top: 1px solid var(--line); padding-top: 9px;
+    display: grid; grid-template-columns: max-content 1fr; column-gap: 10px; align-items: baseline; }
+  .dtitle { grid-column: 1 / -1; font: 700 10.5px var(--font-sans); letter-spacing: .06em; text-transform: uppercase;
     color: var(--ink-2); margin-bottom: 5px; }
-  .dline { display: flex; gap: 10px; align-items: baseline; padding: 2px 0; flex-wrap: wrap; }
-  .dline .dlab { font: 600 11px var(--font-mono); color: #a2302c; min-width: 76px; }
-  .dline code { font: 12px var(--font-mono); color: var(--ink); word-break: break-word; }
-  /* The "::" junctions and unjoined ":" ends recede so the pieces read as pieces. */
+  .dline { display: contents; }
+  .dline .dlab { font: 600 11px var(--font-mono); color: #a2302c; padding: 2px 0; }
+  .dline code { font: 12px var(--font-mono); color: var(--ink); word-break: break-word; padding: 2px 0; min-width: 0; }
+  /* The "::" junctions and unjoined ":" ends recede so the pieces read as pieces;
+     each carries its ISCN 4.4.4 meaning as a title, one hover away. */
   .dline .dj { color: #9aa3bd; }
+  .dline .dj[title] { cursor: help; }
   .bandlabel { font: 9px var(--font-mono); fill: var(--ink-2); cursor: pointer; }
   .bandlabel:hover, .bandlabel.hot { fill: var(--periwinkle); font-weight: 700; }
   .ideo-detail .band { cursor: crosshair; }
@@ -894,9 +899,9 @@
   // The decode glossary hover, delegated ONCE on the container so re-rendering
   // the panel never stacks listeners. The row text explains this karyotype's
   // change; the hover answers the prior question, what a derivative chromosome
-  // (or rec, idic, ...) IS. [data-gloss] covers both carriers, the symbol chip
-  // and a glossed term in the prose; the attribute holds the GLOSSARY key, so
-  // one lookup serves both.
+  // (or rec, idic, ...) IS. Only the glossed PROSE terms carry [data-gloss]
+  // (the attribute holds the GLOSSARY key); the symbol chips and the figure
+  // captions stay plain by owner call, 2026-08-30.
   $("#decode").addEventListener("mousemove", function (ev) {
     var el = ev.target && ev.target.closest ? ev.target.closest("[data-gloss]") : null;
     var text = el && window.Teach.GLOSSARY[el.getAttribute("data-gloss")];
@@ -1210,7 +1215,14 @@
     var openT = d.charAt(0) === ":" ? ":" : "";
     var closeT = d.length > 1 && d.charAt(d.length - 1) === ":" ? ":" : "";
     var core = d.slice(openT.length, d.length - closeT.length);
-    var J = '<span class="dj">::</span>';
+    // The punctuation teaches itself on hover (ISCN 4.4.4: a single colon is a
+    // break, a double colon break and reunion). Dan asked whether the leading
+    // colon before a deleted arm belonged there; it does (del(4)(:p15.2→qter)
+    // is printed ISCN), and now the string says so instead of leaving the
+    // question open.
+    var endTitle = "a single colon marks a break without reunion: this end is broken, not a telomere (ISCN 4.4.4)";
+    var endColon = '<span class="dj" title="' + endTitle + '">:</span>';
+    var J = '<span class="dj" title="a double colon marks break and reunion: two pieces joined here (ISCN 4.4.4)">::</span>';
     var parts = core.split("::").map(function (t) {
       // The leading chromosome of the piece; bare bands are the one-chromosome
       // form (5.4.2.2 b), where the instance's own chromosome is the source.
@@ -1219,8 +1231,8 @@
       if (c) c = window.Karyo.textInk(c);
       return c ? '<span style="color:' + c + '">' + escapeHtml(t) + "</span>" : escapeHtml(t);
     });
-    return (openT ? '<span class="dj">:</span>' : "") + parts.join(J) +
-      (closeT ? '<span class="dj">:</span>' : "");
+    return (openT ? endColon : "") + parts.join(J) +
+      (closeT ? endColon : "");
   }
 
   function renderDetailedForms(clones) {
@@ -1418,14 +1430,14 @@
           (clone.cellCount != null ? '<span class="cc">' + clone.cellCount + ' cells</span>' : "") + '</div>';
       }
       window.Teach.decode(clone).forEach(function (r) {
-        // A symbol with a glossary entry hovers to its concept: the row explains
-        // THIS karyotype's change, the glossary answers "what IS a derivative
-        // chromosome" without leaving the page. The prose gets the same reach
-        // (glossProse): the row about a der() names OTHER concepts in passing
-        // (Robertsonian, dicentric, ...), and each of those hovers too.
-        var gloss = window.Teach.glossFor(r.code);
-        html += '<div class="decode-row"><span class="decode-code ' + r.tag + '"' +
-          (gloss ? ' data-gloss="' + escXml(gloss.term) + '"' : '') + '>' + escapeHtml(r.code) +
+        // The glossary hovers on the PROSE (glossProse): the row about a der()
+        // names the concepts in passing (derivative, Robertsonian, dicentric,
+        // ...), and each of those hovers to its definition. The symbol chip
+        // itself stays plain: it carried the hover for a day (#247) and Dan had
+        // it removed on sight, because a dotted underline below a long ISCN
+        // token read as clutter and the same concept is one word away in the
+        // sentence beside it.
+        html += '<div class="decode-row"><span class="decode-code ' + r.tag + '">' + escapeHtml(r.code) +
           '</span><span class="decode-text"><span class="decode-arrow">→</span> ' + glossProse(r.text) + '</span></div>';
       });
     });
@@ -1504,14 +1516,6 @@
       kg.setAttribute("aria-label", "Karyogram of " + (clone.raw || model.raw));
       block.appendChild(kg);
       parent.appendChild(block);
-    });
-    // Figure captions join the glossary: der(14;21) under a drawing is exactly
-    // where "what IS a der" gets asked (Dan, 2026-08-29). Stamped here rather
-    // than in karyo-render, which stays free of any dependency on Teach; the
-    // attribute holds the GLOSSARY key and the #karyo hover reads it back.
-    Array.prototype.forEach.call(host.querySelectorAll(".ksub"), function (el) {
-      var g = window.Teach.glossFor(el.textContent);
-      if (g) el.setAttribute("data-gloss", g.term);
     });
     fitKaryograms();
   }
@@ -1631,16 +1635,6 @@
         var c = band.getAttribute("data-chrom"), b = band.getAttribute("data-band"), s = band.getAttribute("data-stain");
         showTip(ev, "<b>" + c + b + "</b>  " + prettyStain(s));
         if (band !== hiBand) { highlight(band); renderDetail(c, b); markSel(c); }
-        return;
-      }
-      // A figure caption with a glossary entry (der(14;21) under the drawing)
-      // hovers to the same definition as the decode chip: the figure is where
-      // "what IS a der" actually gets asked (Dan, 2026-08-29).
-      var cap = ev.target.closest ? ev.target.closest(".ksub[data-gloss]") : null;
-      var capText = cap && window.Teach.GLOSSARY[cap.getAttribute("data-gloss")];
-      if (capText) {
-        showTip(ev, "<b>" + escapeHtml(cap.getAttribute("data-gloss")) + "</b>  " + escapeHtml(capText));
-        if (hiBand) clearHi();
         return;
       }
       hideTip(); if (hiBand) clearHi();

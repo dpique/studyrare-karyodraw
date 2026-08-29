@@ -89,6 +89,29 @@ test('the detailed form wears the figure colors and the token chip scrolls', asy
       assert.ok(got.junctions >= 2, 'the :: junctions are marked to recede');
     });
 
+    await t.test('the label column hugs its content, no hand-tuned gulf', async () => {
+      // Dan, 2026-08-30: der(8;8) sat a fixed 76px min-width away from its
+      // string. The grid sizes the column by the longest label instead.
+      await open(page, '45,XX,der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12)', 'highlight');
+      const gap = await page.evaluate(() => {
+        const lab = document.querySelector('#detailed .dlab');
+        const code = document.querySelector('#detailed code');
+        return code.getBoundingClientRect().left - lab.getBoundingClientRect().right;
+      });
+      assert.ok(gap <= 14, `label-to-string gap is the grid gap, not a min-width (${gap}px)`);
+    });
+
+    await t.test('the colons explain themselves on hover (ISCN 4.4.4)', async () => {
+      // The same der(8;8) string opens with a lone ":" (a break without
+      // reunion, from the terminal del) and joins pieces with "::".
+      const titles = await page.evaluate(() =>
+        [...document.querySelectorAll('#detailed .dj[title]')].map((d) => [d.textContent, d.title]));
+      const single = titles.find(([t2]) => t2 === ':');
+      const dbl = titles.find(([t2]) => t2 === '::');
+      assert.ok(single && /break without reunion/.test(single[1]), 'the broken end says what it is');
+      assert.ok(dbl && /break and reunion/.test(dbl[1]), 'the junction does too');
+    });
+
     await t.test('the block sits on the card gutter, not against the card border', async () => {
       await open(page, '46,XY,t(9;22)(q34;q11.2)', 'highlight');
       const gap = await page.evaluate(() => {

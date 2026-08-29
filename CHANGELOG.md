@@ -3,6 +3,25 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-30 (the glossary settles on the prose, and the detailed form closes its gap)
+
+- **The glossary hover now lives on the prose terms only.** The symbol chips and
+  the figure captions carried it for a day and lost it on sight (owner call): a
+  dotted underline under a long ISCN token or under the red caption read as
+  clutter, and every concept a chip stands for is named, glossed, one word away
+  in the sentence beside it.
+- **The ISCN detailed form closes its gap.** The label column is now sized by its
+  longest label (a grid, not a hand-tuned 76px minimum), so der(8;8) sits ten
+  pixels from its string while multi-row forms keep their aligned column.
+- **The detailed form's punctuation teaches itself.** Hovering a lone ":" says it
+  marks a break without reunion (the broken end a terminal deletion leaves, as in
+  the printed del(4)(:p15.2→qter)); hovering "::" says break and reunion
+  (ISCN 4.4.4).
+- **The der glossary entry lost its numbered placeholder.** "so der(9) has
+  chromosome 9's centromere" read as a statement about the karyotype on screen
+  whenever that karyotype really involved a 9; the rule is now stated without
+  borrowing a chromosome number.
+
 ## 2026-08-30 (the URL writes the plus it reads)
 
 - **Shared URLs keep the ISCN plus literal.** ?k=46,XY,der(13;14)(q10;q10),+14
