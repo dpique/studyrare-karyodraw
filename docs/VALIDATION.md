@@ -736,7 +736,7 @@ stages, each a script, so a session picks it up instead of rebuilding it:
    **The rubric, verbatim, for whoever writes the agent prompts next.** Give each
    agent its bundle paths, the app philosophy in one line (if it draws, the notation
    was accepted; refusals teach and hand back pasteable corrected forms; figure,
-   decode, detailed form, legend, and model.json must agree; messages never report
+   decode, detailed form, net-imbalance table, legend, and model.json must agree; messages never report
    parser internals), the list of DECIDED policies so intended behavior is not
    re-flagged (drawn-with-note for fused-count t() and bare rearrangements, the
    band-snap, the arr/ish limitation-teach; refined 2026-08-29: the fused-count

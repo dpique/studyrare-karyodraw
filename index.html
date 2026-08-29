@@ -463,6 +463,31 @@
      each carries its ISCN 4.4.4 meaning as a title, one hover away. */
   .dline .dj { color: #9aa3bd; }
   .dline .dj[title] { cursor: help; }
+  /* The net-imbalance table, under the detailed form it quantifies. Same quiet
+     register: a second reading of the figure, not a second finding. Call colors
+     follow the decode chips (amber ink for gain, red for loss, color for
+     meaning); balanced context rows recede. */
+  #imbalance:empty { display: none; }
+  #imbalance { margin: 4px 16px 12px; border-top: 1px solid var(--line); padding-top: 9px; }
+  #imbalance .imb-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 5px; }
+  #imbalance .imb-genes { margin-left: auto; font: 500 11.5px var(--font-sans); color: var(--muted);
+    display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  #imbalance table { border-collapse: collapse; font-size: 12.5px; min-width: 60%; }
+  #imbalance th { font: 700 10px var(--font-sans); letter-spacing: .05em; text-transform: uppercase;
+    color: var(--muted); text-align: left; padding: 2px 18px 4px 0; }
+  #imbalance td { padding: 3px 18px 3px 0; border-top: 1px dashed var(--line); color: var(--ink-2); }
+  /* imbseg, not "seg": .seg is the segmented view-toggle control and its pill
+     border rode onto these cells when the table first borrowed the name. */
+  #imbalance td.imbseg { font: 600 12px var(--font-mono); }
+  #imbalance td.n { font: 600 12px var(--font-mono); }
+  #imbalance td.size { color: var(--muted); }
+  #imbalance tr.gain td.call { color: #894f18; font-weight: 600; }
+  #imbalance tr.loss td.call { color: #a2302c; font-weight: 600; }
+  #imbalance tr.even td { color: var(--muted); }
+  #imbalance .imb-genes i { font-style: italic; }
+  #imbalance td.call i { font-style: italic; }
+  #imbalance .imb-note { margin-top: 6px; font-size: 12px; color: var(--muted); }
+  #imbalance .imb-clone { font: 600 11.5px var(--font-mono); color: var(--ink-2); margin: 8px 0 3px; }
   .bandlabel { font: 9px var(--font-mono); fill: var(--ink-2); cursor: pointer; }
   .bandlabel:hover, .bandlabel.hot { fill: var(--periwinkle); font-weight: 700; }
   .ideo-detail .band { cursor: crosshair; }
@@ -782,6 +807,12 @@
           <!-- ISCN's detailed system for the chromosomes drawn above. data-drawing so the
                gate sweeps it with everything else that describes the current figure. -->
           <div id="detailed" data-drawing></div>
+          <!-- The net imbalance of the karyotype above, as a per-segment copy-number
+               table (Karyo.computeDosage reads the same segment lists the figure is
+               drawn from). Hidden when everything is balanced. data-drawing: the gate
+               must sweep it, or a refusal would leave the previous karyotype's
+               imbalance on screen. -->
+          <div id="imbalance" data-drawing></div>
         </div>
         <div class="card" id="legend-card" data-drawing>
           <h2>Band &amp; stain legend</h2>
@@ -1255,6 +1286,82 @@
     box.innerHTML = lines.length
       ? '<div class="dtitle">ISCN detailed form</div>' + lines.join("")
       : "";
+  }
+
+  // The net imbalance as a table (Dan, 2026-08-30): Karyo.computeDosage reads
+  // the same segment lists the figure is drawn from, so this and the karyogram
+  // cannot disagree. Shown only when some run deviates from its baseline;
+  // balanced runs of an involved chromosome stay as muted context rows, so the
+  // reader sees where the imbalance starts and stops. The decode prose no
+  // longer carries the megabase parentheticals; sizes live in this column.
+  // The gene layer is opt-in (a checkbox): well-known cancer genes inside a
+  // gained or lost segment, resolved through the app's own band map.
+  var SHOW_GENES = false;
+  var LAST_CLONES = null;
+  function imbCall(copies, baseline) {
+    if (baseline == null) return { cls: "", text: copies + (copies === 1 ? " copy" : " copies") };
+    if (copies === baseline) return { cls: "even", text: "balanced" };
+    // The somy words only against the two-copy baseline: against a one-copy
+    // baseline (a male sex chromosome) "disomy" would read as normal.
+    var SOMY = { 0: "nullisomy", 1: "monosomy", 3: "trisomy", 4: "tetrasomy", 5: "pentasomy" };
+    if (baseline === 2 && SOMY[copies]) {
+      return { cls: copies > baseline ? "gain" : "loss", text: SOMY[copies] };
+    }
+    return copies > baseline
+      ? { cls: "gain", text: "gain (" + copies + " copies)" }
+      : { cls: "loss", text: "loss (" + copies + (copies === 1 ? " copy)" : " copies)") };
+  }
+  function imbSize(r) {
+    var mb = (r.to - r.from) / 1e6;
+    return "~" + (mb >= 10 ? Math.round(mb) : mb.toFixed(1)) + " Mb";
+  }
+  function renderImbalance(clones) {
+    var box = $("#imbalance");
+    if (!box) return;
+    LAST_CLONES = clones;
+    var geneAt = !SHOW_GENES ? null : window.Teach.CANCER_GENES.map(function (g) {
+      var r = window.Karyo.resolveBand(g.c, g.b);
+      return r ? { g: g.g, c: g.c, mid: r.mid } : null;
+    }).filter(Boolean);
+    var out = [], any = false;
+    (clones || []).forEach(function (clone, ci) {
+      var d = window.Karyo.computeDosage(clone);
+      var chroms = d.chroms.filter(function (c) {
+        return c.baseline != null
+          ? c.runs.some(function (r) { return r.copies !== c.baseline; })
+          : c.runs.length > 1;
+      });
+      if (!chroms.length) return;
+      any = true;
+      var rows = [];
+      chroms.forEach(function (c) {
+        c.runs.forEach(function (r) {
+          var call = imbCall(r.copies, c.baseline);
+          var genes = "";
+          if (geneAt && call.cls !== "even") {
+            var hit = geneAt.filter(function (g) { return g.c === c.chrom && g.mid >= r.from && g.mid < r.to; })
+              .map(function (g) { return "<i>" + escapeHtml(g.g) + "</i>"; });
+            if (hit.length) genes = " (includes " + hit.join(", ") + ")";
+          }
+          rows.push('<tr class="' + call.cls + '"><td class="imbseg">' +
+            escapeHtml(c.chrom + r.fromLabel + "→" + c.chrom + r.toLabel) +
+            '</td><td class="n">' + r.copies + '</td><td class="call">' + call.text + genes +
+            '</td><td class="size">' + imbSize(r) + "</td></tr>");
+        });
+      });
+      out.push((clones.length > 1 ? '<div class="imb-clone">' + escapeHtml(clone.raw || ("clone " + (ci + 1))) + "</div>" : "") +
+        "<table><thead><tr><th>Segment</th><th>Copies</th><th>Call</th><th>≈ size</th></tr></thead><tbody>" +
+        rows.join("") + "</tbody></table>" +
+        (d.unknownExcluded ? '<div class="imb-note">A marker or dmin is present; material banding cannot assign to a chromosome is not counted in these rows.</div>' : ""));
+    });
+    box.innerHTML = any
+      ? '<div class="imb-head"><div class="dtitle" style="margin:0">Net imbalance</div>' +
+        '<label class="imb-genes" title="Mark well-known cancer genes that sit inside a gained or lost segment. A teaching aid for cytogenetics, not a clinical annotation.">' +
+        '<input type="checkbox" id="imbgenes"' + (SHOW_GENES ? " checked" : "") + "> cancer genes</label></div>" +
+        out.join("")
+      : "";
+    var cb = $("#imbgenes");
+    if (cb) cb.addEventListener("change", function () { SHOW_GENES = cb.checked; renderImbalance(LAST_CLONES); });
   }
 
   function buildLegend() {
@@ -1818,6 +1925,7 @@
     renderKaryogram(model);
     $("#karyo").setAttribute("aria-label", "Karyogram of " + (model.normalized || model.raw || val));
     renderDetailedForms(model.clones);
+    renderImbalance(model.clones);
     renderDecode(model.clones);
     renderClinical(model.clones);
     renderSegregation(model.clones);
