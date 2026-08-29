@@ -420,29 +420,39 @@ test('result.normalized gives the canonical, whitespace-free designation', () =>
   assert.equal(ISCN.parse('mos 45,X[12]/46,XX[18]').normalized, 'mos 45,X[12]/46,XX[18]', 'the mos space stays');
 });
 
-// A bare rearrangement (no leading count + sex) gets a "did you mean" fix that
-// prepends a normal constitution, with the correct count for the aberration.
-test('a bare balanced translocation suggests the 46,XX, prefix', () => {
-  assert.equal(ISCN.parse('t(2;5)(q21;q31)').suggestion, '46,XX,t(2;5)(q21;q31)');
+// A bare rearrangement (no leading count + sex) draws on an assumed normal
+// constitution when the completed karyotype has nothing else to say, with the
+// assumption stated in a note and the written-out form one click away (policy
+// 2026-08-29, from the production review pilot: six visitors typed a bare t()).
+// The click-through suggestion remains for any input whose completed form still
+// warns or notes. Full contract in drawn-as-stated.test.js; these pin the
+// composed counts and the sex guess.
+test('a bare balanced translocation draws on the assumed 46,XX', () => {
+  const m = ISCN.parse('t(2;5)(q21;q31)');
+  assert.equal(m.suggestion, null, 'drawn, not suggested');
+  assert.equal(m.ok, true);
+  assert.equal(m.note.fix, '46,XX,t(2;5)(q21;q31)');
 });
 test('a bare deletion keeps the 46 count', () => {
-  assert.equal(ISCN.parse('del(5)(p15.2)').suggestion, '46,XX,del(5)(p15.2)');
+  assert.equal(ISCN.parse('del(5)(p15.2)').note.fix, '46,XX,del(5)(p15.2)');
 });
 test('a bare gain corrects the count to 47', () => {
-  assert.equal(ISCN.parse('+21').suggestion, '47,XX,+21');
+  assert.equal(ISCN.parse('+21').note.fix, '47,XX,+21');
 });
 test('a bare loss corrects the count to 45', () => {
-  assert.equal(ISCN.parse('-7').suggestion, '45,XX,-7');
+  assert.equal(ISCN.parse('-7').note.fix, '45,XX,-7');
 });
 test('a bare Robertsonian corrects the count to 45', () => {
-  assert.equal(ISCN.parse('rob(13;14)(q10;q10)').suggestion, '45,XX,rob(13;14)(q10;q10)');
+  assert.equal(ISCN.parse('rob(13;14)(q10;q10)').note.fix, '45,XX,rob(13;14)(q10;q10)');
 });
 test('a bare Y-involving rearrangement guesses XY, not XX', () => {
-  assert.equal(ISCN.parse('idic(Y)(q11.2)').suggestion, '46,XY,idic(Y)(q11.2)');
+  assert.equal(ISCN.parse('idic(Y)(q11.2)').note.fix, '46,XY,idic(Y)(q11.2)');
 });
-test('the "starts with a number" note is replaced by a clearer one when a fix is offered', () => {
-  const m = ISCN.parse('t(9;22)(q34;q11.2)');
-  assert.equal(m.suggestion, '46,XX,t(9;22)(q34;q11.2)');
+test('a bare input whose completed form has more to say keeps the click-through', () => {
+  // 46,XX,t(13;15)(q10;q10) carries its own rob() note, and two notes cannot
+  // share the box, so this one is not adopted.
+  const m = ISCN.parse('t(13;15)(q10;q10)');
+  assert.equal(m.suggestion, '46,XX,t(13;15)(q10;q10)');
   assert.ok(m.warnings.some((w) => /typed only the rearrangement/.test(w)), 'friendly note present');
   assert.ok(!m.warnings.some((w) => /isn’t a number/.test(w)), 'raw "isn\'t a number" note removed');
 });
@@ -469,11 +479,12 @@ test('a trailing +14 after a der is never dropped silently', () => {
 test('a sign after a closing parenthesis is repaired with a comma', () => {
   assert.equal(ISCN.parse('46,XY,der(13;14)(q10;q10)+14').suggestion, '46,XY,der(13;14)(q10;q10),+14');
   assert.equal(ISCN.parse('46,XY,der(13;14)(q10;q10) +14').suggestion, '46,XY,der(13;14)(q10;q10),+14');
-  // The t() spelling composes further: the comma alone leaves a 46 that sums to
-  // 47, and the stated 46 is evidence for the rob() reading, which keeps it.
-  // Deliberately changed by the 2026-08-28 repair-composition work; the pure comma
-  // form remains the offer wherever the count already reconciles, as above.
-  assert.equal(ISCN.parse('46,XX,t(14;21)(q10;q10)+21').suggestion, '46,XX,rob(14;21)(q10;q10),+21');
+  // The t() spelling once composed further, into the rob() respelling, because
+  // the comma repair alone left a refused count. Since the 2026-08-29 policy the
+  // comma repair parses into a karyotype the app DRAWS (the stated 46 asserts
+  // the fusion, and the parser rereads the t() so), so one comma is the whole
+  // repair and no second step is composed.
+  assert.equal(ISCN.parse('46,XX,t(14;21)(q10;q10)+21').suggestion, '46,XX,t(14;21)(q10;q10),+21');
 });
 test('the comma repair leaves a modal-number range alone', () => {
   assert.equal(ISCN.parse('45-48,XY,+8').suggestion, null);
@@ -529,12 +540,25 @@ test('a legitimate der sub-op chain warns about nothing', () => {
 // ---- a whole-arm acrocentric fusion written as t(...) -----------------------
 // The classic teaching error, and the one in the student's practice exam:
 // "45,XX,t(13;15)(q10;q10)". A t keeps both derivatives, so the count stays 46;
-// the 45 count means a Robertsonian was intended. Offering the rob form teaches
-// the distinction, where bumping the stated count to 46 would bury it.
-test('t(13;15)(q10;q10) at a 45 count suggests the rob form', () => {
+// the 45 count means a Robertsonian was intended. Refusing with the rob()
+// respelling one click away was the old answer; since 2026-08-29 (production
+// review pilot: six visitors typed exactly this) the parser believes the count,
+// draws the fusion, and teaches the preferred der() spelling in a note. Full
+// contract in drawn-as-stated.test.js.
+test('t(13;15)(q10;q10) at a 45 count draws as the fusion, and the note teaches der()', () => {
   const m = ISCN.parse('45,XX,t(13;15)(q10;q10)');
-  assert.equal(m.countFix, '45,XX,rob(13;15)(q10;q10)');
-  assert.ok(m.warnings.some((w) => /Robertsonian/.test(w)), 'explains why');
+  assert.equal(m.countFix, null, 'nothing to repair; the count was right');
+  assert.equal(m.clones[0].countWrong, false);
+  assert.equal(m.warnings.length, 0);
+  assert.match(m.note.text, /Robertsonian/);
+  assert.equal(m.note.fix, '45,XX,der(13;15)(q10;q10)');
+});
+test('the q10 arms are the only unambiguous survivors, so p10 spellings keep the refusal', () => {
+  // t(13;15)(p10;q10) at 45 could have kept 13p+15q or 15p+13q; the app must
+  // not pick. The old respelling repair still owns this case.
+  const m = ISCN.parse('45,XX,t(13;15)(p10;q10)');
+  assert.equal(m.clones[0].countWrong, true);
+  assert.equal(m.countFix, '45,XX,rob(13;15)(p10;q10)');
 });
 test('a whole-arm t at a consistent count is left alone', () => {
   const m = ISCN.parse('46,XX,t(13;15)(q10;q10)');
@@ -571,9 +595,9 @@ test('the note is identical for every whole-arm spelling of the same fusion', ()
   assert.deepEqual(fixes, Array(4).fill('45,XX,rob(13;15)(q10;q10)'));
 });
 test('the note and the warning box never both fire', () => {
-  // 45,XX,t(13;15)(q10;q10) is the count-mismatch case: the warning box and its
-  // countFix own it, so a note here would say the same thing twice.
-  const m = ISCN.parse('45,XX,t(13;15)(q10;q10)');
+  // 45,XX,t(9;22)(q34;q11.2) is a count mismatch the warning box and its
+  // countFix own; a note there would say the same thing twice.
+  const m = ISCN.parse('45,XX,t(9;22)(q34;q11.2)');
   assert.ok(m.warnings.length && m.countFix, 'still the warning path');
   assert.equal(m.note, null);
 });
@@ -636,7 +660,7 @@ test('the offered fix is the karyotype the writer meant', () => {
 test('a genuine count mismatch is still reported', () => {
   // The guard is about unread text, not about counts in general.
   // Numbers and order, not prose; message-voice.test.js owns the wording.
-  assert.match(warnOf('45,XX,t(13;15)(q10;q10)'), /number at the start says 45\b[\s\S]*\b46 chromosomes\b/);
+  assert.match(warnOf('45,XX,t(9;22)(q34;q11.2)'), /number at the start says 45\b[\s\S]*\b46 chromosomes\b/);
   assert.match(warnOf('47,XY,rob(14;21)(q10;q10),+21'), /number at the start says 47\b[\s\S]*\b46 chromosomes\b/);
 });
 
@@ -678,7 +702,7 @@ test('an uncounted token blocks the count FIX, not just the count warning', () =
 test('legitimate count fixes are untouched', () => {
   assert.equal(ISCN.parse('46,XY,rob(14;21)(q10;q10),-21').countFix, '44,XY,rob(14;21)(q10;q10),-21');
   assert.equal(ISCN.parse('40,XY,rob(14;21)(q10;q10),-21').countFix, '44,XY,rob(14;21)(q10;q10),-21');
-  assert.equal(ISCN.parse('45,XX,t(13;15)(q10;q10)').countFix, '45,XX,rob(13;15)(q10;q10)');
+  assert.equal(ISCN.parse('45,XX,t(13;15)(p10;q10)').countFix, '45,XX,rob(13;15)(p10;q10)');
 });
 
 test('clone.uncounted is the single flag every count claim reads', () => {
@@ -933,6 +957,22 @@ test('listing order does not block the drawing', () => {
   assert.equal(c.unreadable, false);
   assert.equal(c.countWrong, false);
   assert.equal(c.unaccounted, false, 'none of the refusing flags are set');
+});
+
+test('the order check never crosses a clone boundary', () => {
+  // sl/idem splice the stemline's changes into the subclone's list, but those
+  // changes are WRITTEN in the stemline; the subclone's own text is just "+1",
+  // which is in order by itself. The 2026-08 production review (rank 11) caught
+  // the warning accusing exactly this correct notation.
+  const m = ISCN.parse('45,XX,del(5)(q22q33),-7[cp8]/46,sl,+1[cp3]');
+  assert.equal(m.clones[1].outOfOrder, null);
+  assert.doesNotMatch(m.warnings.join(' '), /comes before/);
+});
+
+test('gains and losses written in a subclone are still checked among themselves', () => {
+  const m = ISCN.parse('45,XX,del(5)(q22q33),-7[cp8]/47,sl,+9,+1[cp3]');
+  assert.ok(m.clones[1].outOfOrder, 'the subclone wrote +9 before +1');
+  assert.match(m.warnings.join(' '), /“\+1” comes before “\+9”/);
 });
 
 // ---- a sex field the app had to edit to use --------------------------------
@@ -1725,8 +1765,10 @@ test('a heavily rearranged clone infers its ploidy from the arithmetic', () => {
 // 69,XXX far more often than 68,XX).
 test('an offered repair survives being pasted', () => {
   assert.equal(ISCN.parse('46,XX,t(14;21)(q10;q10)+21').suggestion,
-    '46,XX,rob(14;21)(q10;q10),+21',
-    'the rob spelling keeps the stated 46, so it composes into the offer');
+    '46,XX,t(14;21)(q10;q10),+21',
+    'the comma repair now parses into a DRAWN karyotype (the 46 asserts the fusion), so nothing more composes');
+  assert.equal(ISCN.parse('46,XX,t(14;21)(q10;q10),+21').clones[0].countWrong, false,
+    'and pasting it draws instead of refusing');
   // A follow-up that would rewrite the stated count stays a second click, one
   // mistake named at a time; the chain must be walkable, not dead-ended.
   const step1 = ISCN.parse('46,XY,der(9)t(9;22)(q34;q11.2)+22').suggestion;

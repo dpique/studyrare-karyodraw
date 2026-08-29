@@ -1128,6 +1128,47 @@
         ab.chroms.join(";") + ")(" + (ab.breakpoints.length === 2 ? ab.breakpoints.map(function (g) { return g[0] || "q10"; }).join(";") : "q10;q10") + ").");
     }
 
+    // der() or rob() across two chromosomes with its own breakpoint group is
+    // ISCN's whole-arm form, and the standard assigns those breakpoints to the
+    // centromeric bands p10 or q10 only (5.5.18.2 a; a proven dicentric moves to
+    // the dic symbol instead, 5.5.18.3 d). Any other bands have no reading, and
+    // the figure this used to build in silence (for der(22;11)(q13;p13), 22pter
+    // to 22q13 joined to the 11p13-to-pter tip) is the composition ISCN spells
+    // der(22)t(11;22)(p13;q13). A writer who meant both centromeres wanted
+    // dic(11;22)(p13;q13), which keeps 11p13 to 11qter instead: real material
+    // differs between the readings, so neither may be picked in silence. Refuse
+    // and spell out both; parse() re-validates each at its own count (the der
+    // replaces one chromosome where der(A;B) replaced two) and offers the ones
+    // that paste back clean. Production review 2026-08, rank 11.
+    if ((op === "der" || op === "rob") && ab.chroms.length === 2 &&
+        ab.breakpoints.length === 2 &&
+        ab.breakpoints.every(function (g) { return g.length === 1; }) &&
+        !ab.breakpoints.every(function (g) { return /^[pq]10$/.test(g[0]); }) &&
+        !ab.badBands.length && !(ab.uncertainBands || []).length && !(ab.uncertainChroms || []).length) {
+      ab.arity = ab.arity || "two-chromosome der needs centromeric breakpoints";
+      var ruleMsg = "Written across two chromosomes, " + op + "(" + ab.chroms.join(";") +
+        ") is the whole-arm form, so its breakpoints are the centromeric bands p10 or q10, as in der(1;3)(p10;q10).";
+      if (ab.chroms[0] !== ab.chroms[1]) {
+        // t() and dic() list a sex chromosome first, otherwise ascending.
+        var ncRank = function (c) { return c === "X" ? -2 : c === "Y" ? -1 : parseInt(c, 10); };
+        var keepCh = ab.chroms[0], tipCh = ab.chroms[1];
+        var keepBp = ab.breakpoints[0][0], tipBp = ab.breakpoints[1][0];
+        var ncFlip = ncRank(tipCh) < ncRank(keepCh);
+        var ncPair = ncFlip ? tipCh + ";" + keepCh : keepCh + ";" + tipCh;
+        var ncBands = ncFlip ? tipBp + ";" + keepBp : keepBp + ";" + tipBp;
+        ab.derABNonCen = {
+          mono: "der(" + keepCh + ")t(" + ncPair + ")(" + ncBands + ")",
+          dic: "dic(" + ncPair + ")(" + ncBands + ")"
+        };
+        warnings.push(ruleMsg + " Breaks at " + keepCh + keepBp + " and " + tipCh + tipBp +
+          " describe a different rearrangement, and it has two spellings: with one centromere it is " +
+          ab.derABNonCen.mono + ", a derivative " + keepCh + " carrying the piece of " + tipCh +
+          " beyond " + tipCh + tipBp + "; with both centromeres kept it is " + ab.derABNonCen.dic + ".");
+      } else {
+        warnings.push(ruleMsg);
+      }
+    }
+
     // Interstitial breakpoints written from the telomere inward. ISCN orders the two
     // bands of an interstitial segment from the centromere outward, so del(5)(p15.3p15.2)
     // is del(5)(p15.2p15.3). This one changes how the karyotype is written and NOT
@@ -1408,9 +1449,14 @@
     // 2. A broader rule flagged that as an error. Since a false accusation here is
     // worse than a missed one, only +N / -N against each other is checked, which is
     // the piece that is not in dispute. Everything else is left alone.
+    // Only what this clone WROTE. A subclone's idem/sl/sdl splices the stemline's
+    // gains and losses in ahead of its own, but those are ordered where they were
+    // written; 46,sl,+1 after a stemline carrying -7 is correct notation, and the
+    // production review (2026-08, rank 11) caught this check accusing it.
     var numeric = clone.aberrations.filter(function (ab) {
       return (ab.kind === "gain" || ab.kind === "loss") &&
-        ab.chroms.length === 1 && /^\d+$/.test(ab.chroms[0]);
+        ab.chroms.length === 1 && /^\d+$/.test(ab.chroms[0]) &&
+        (clone.inheritedAbs || []).indexOf(ab) < 0;
     });
     clone.outOfOrder = null;
     for (var oi = 1; oi < numeric.length; oi++) {
@@ -1478,6 +1524,54 @@
     // <Nn> was already believed above and is never second-guessed, and a clone
     // with uninterpreted tokens keeps its scaffold, since its tally is the thing
     // that is short.
+    // A whole-arm acrocentric exchange written t(…) keeps both products, so its
+    // tally runs one above a stated count that meant the fusion:
+    // 45,XX,t(14;21)(q10;q10) says 45 because the writer is describing the
+    // Robertsonian, one derivative replacing both chromosomes (ISCN 5.5.18.2 c,
+    // 5.5.18.3 a). Six production visitors typed exactly that and were refused
+    // with the respelling one click away; policy since 2026-08-29 is to believe
+    // the count, reread the t() as the der() fusion, and draw it, with parse()
+    // adding the note that says so. Same direct-trial shape as the ploidy pass
+    // below: mutate, rebuild into a scratch list, keep only if the tally now
+    // reconciles. Acrocentric q10;q10 only: there the lost p arms carry only
+    // satellite material, so which product survived is not in doubt, while
+    // 45,XX,t(1;3)(p10;q10) could equally have kept 1p+3q or 3p+1q and stays a
+    // refusal. The kind/op flip reuses the rob() path wholesale, caption,
+    // decode, geometry and detailed form included.
+    if (!forcePloidy && !clone.counts.ok && clone.modalNumber != null &&
+        clone.counts.actual === clone.modalNumber + 1 &&
+        !clone.aberrations.some(function (ab) { return ab.unread || ab.kind === "unknown"; })) {
+      var waT = clone.aberrations.filter(function (a) {
+        return a.kind === "t" && a.wholeArmAcro &&
+          a.breakpoints.every(function (g) { return g[0] === "q10"; }) &&
+          // Never an aberration inherited through idem/sl/sdl: those are the
+          // stemline's objects, and flipping one here would flip it there too.
+          (clone.inheritedAbs || []).indexOf(a) < 0;
+      });
+      if (waT.length === 1) {
+        var wa = waT[0];
+        // The flip is total: kind, op, AND the whole-arm-t flags, so every
+        // downstream reader (teach.js robNote keys on wholeArmAcro) sees exactly
+        // the aberration a typed rob()/der() fusion produces. rereadAsDer is the
+        // record that it arrived spelled t(). Leaving wholeArmAcro set here made
+        // the decode append the t()-reading paragraph, numbers computed off the
+        // wrong baseline, beside a figure drawing the fusion.
+        wa.kind = "der"; wa.op = "der"; wa.note = "Robertsonian translocation";
+        wa.rereadAsDer = true;
+        delete wa.wholeArm; delete wa.wholeArmAcro;
+        var wtrial = [];
+        buildComplement(clone, wtrial, ploidy);
+        if (clone.counts.ok) {
+          clone.rereadAsDer = wa;
+          wtrial.forEach(function (w) { warnings.push(w); });
+          return;
+        }
+        wa.kind = "t"; wa.op = "t"; delete wa.note; delete wa.rereadAsDer;
+        wa.wholeArm = true; wa.wholeArmAcro = true;
+        buildComplement(clone, warnings, ploidy);
+        return;
+      }
+    }
     if (!forcePloidy && !stated && !clone.counts.ok && clone.modalNumber != null &&
         !clone.aberrations.some(function (ab) { return ab.unread || ab.kind === "unknown"; })) {
       for (var cp = 2; cp <= 4; cp++) {
@@ -1897,7 +1991,18 @@
           warnings.push("“" + a.ref + "” means “the same changes as the previous clone”, but there is no earlier clone here. Write the full stemline before the “/” subclone, e.g. 46,XX,+8/47,idem,+9.");
           cl.danglingIdem = true;
         } else {
-          ref.aberrations.forEach(function (ra) { if (ra.kind !== "idem") out.push(ra); });
+          // Spliced entries are the STEMLINE's text, not this clone's. They are
+          // the same objects, not copies (the renderer only reads them, and a
+          // copy would fork the two clones' view of one aberration), so they are
+          // remembered here: per-clone checks on how things are WRITTEN (listing
+          // order) must skip them, and nothing may MUTATE an aberration it
+          // reached through this list, or the edit walks back into the stemline.
+          cl.inheritedAbs = cl.inheritedAbs || [];
+          ref.aberrations.forEach(function (ra) {
+            if (ra.kind === "idem") return;
+            out.push(ra);
+            cl.inheritedAbs.push(ra);
+          });
         }
       }
     });
@@ -2380,6 +2485,29 @@
       }
     }
 
+    // The t()-spelled fusion whose count already asserted the Robertsonian
+    // (rereadAsDer, set by the direct trial in buildComplement): it is drawn, so
+    // the note explains the reading and hands over the spelling the standard
+    // prefers (5.5.18.3 b: der is the preferred designation; rob names
+    // constitutional cases only). Fires for mosaics too, because a silent
+    // reinterpretation would be worse than a wordy one.
+    if (!result.suggestion && !result.countFix && !result.note) {
+      var rrCl = result.clones.filter(function (c) { return c.rereadAsDer; })[0];
+      if (rrCl) {
+        var rrAb = rrCl.rereadAsDer;
+        var rrPair = rrAb.chroms.join(";");
+        var rrTok = "der(" + rrPair + ")(q10;q10)";
+        result.note = {
+          text: "A whole-arm exchange written t(…) keeps both derivative products, which would make the count " +
+            (rrCl.modalNumber + 1) + ". The " + rrCl.modalNumber + " you wrote describes the Robertsonian translocation instead: the long arms of " +
+            rrAb.chroms[0] + " and " + rrAb.chroms[1] + " fused into one chromosome, the short arms lost. It is drawn here as that fusion. ISCN prefers the spelling " +
+            rrTok + "; rob(" + rrPair + ")(q10;q10) also names it in constitutional cases.",
+          fixLabel: "Write it as the derivative:",
+          fix: (result.normalized || raw).replace(rrAb.raw, rrTok)
+        };
+      }
+    }
+
     // A modal-number range written with a dash: 46-49,XY. Mitelman writes it that way and
     // KaryoDraw accepts it, but the ISCN symbol for a range is a tilde. Not a warning,
     // because the karyotype is correct and draws, and warning on correct input is how a
@@ -2454,22 +2582,53 @@
     }
 
     // The user may have typed only the rearrangement, dropping the leading count and
-    // sex ("t(9;22)(q34;q11.2)" instead of "46,XY,t(9;22)(q34;q11.2)"). If prefixing a
-    // normal constitution parses as a real karyotype, offer that as a one-click fix,
-    // with the correct count for a gain, loss, or Robertsonian. Sex is guessed from
-    // whether a Y is mentioned; the fix is editable if the guess is wrong.
+    // sex ("t(9;22)(q34;q11.2)" instead of "46,XY,t(9;22)(q34;q11.2)"). Sex is
+    // guessed from whether a Y is mentioned, and the count is composed for a
+    // gain, loss, or Robertsonian.
+    //
+    // Policy since 2026-08-29 (production review: six visitors typed a bare
+    // t()): when the completed karyotype is one the app would draw with nothing
+    // else to say, draw it NOW, with the assumption stated in a note and the
+    // written-out form one click away. Anything the completed form still warns,
+    // notes, or offers repairs about keeps the old click-through suggestion:
+    // two messages cannot share the box, and the assumption must never sit on
+    // top of a real problem. Likewise a bare input that earned any warning of
+    // its own beyond the missing-count one.
     if (!result.suggestion && result.clones.length === 1 &&
         result.clones[0].modalNumber == null && s && !/^\d/.test(s)) {
       var sexGuess = /y/i.test(s) ? "XY" : "XX";
-      var trial = parse("46," + sexGuess + "," + s);
+      var trial = parse("46," + sexGuess + "," + s, depth + 1);
       var tc = trial.clones[0];
       if (tc && tc.modalNumber != null && tc.aberrations.length &&
           tc.aberrations.every(function (a) { return a.kind && a.kind !== "unknown"; })) {
-        result.suggestion = trial.countFix || ("46," + sexGuess + "," + s);
-        for (var wi = 0; wi < warnings.length; wi++) {
-          if (/^A karyotype starts with the chromosome count/.test(warnings[wi])) {
-            warnings[wi] = "It looks like you typed only the rearrangement. A karyotype begins with the chromosome count and sex chromosomes, for example 46,XX. The fix below adds them.";
-            break;
+        var full = trial.countFix || ("46," + sexGuess + "," + s);
+        var cand = trial.countFix ? parse(full, depth + 1) : trial;
+        var candCl = cand.clones.length === 1 ? cand.clones[0] : null;
+        var candClean = cand.ok && !cand.warnings.length && !cand.suggestion &&
+          !cand.countFix && !cand.note && candCl && !candCl.unreadable &&
+          !candCl.countWrong && !candCl.unaccounted;
+        var otherWarnings = warnings.filter(function (w) {
+          return !/^A karyotype starts with the chromosome count/.test(w);
+        });
+        if (candClean && !otherWarnings.length) {
+          warnings.length = 0;
+          result.clones = cand.clones;
+          result.ok = true;
+          result.assumedNormal = full;
+          result.note = {
+            text: "Only the rearrangement was typed. A karyotype begins with the chromosome count and the sex chromosomes, and the figure here assumes " +
+              (sexGuess === "XY" ? "a male complement, since the rearrangement names a Y" : "a female complement") +
+              ": written out, it is " + full + ".",
+            fixLabel: "Use the written-out form:",
+            fix: full
+          };
+        } else {
+          result.suggestion = full;
+          for (var wi = 0; wi < warnings.length; wi++) {
+            if (/^A karyotype starts with the chromosome count/.test(warnings[wi])) {
+              warnings[wi] = "It looks like you typed only the rearrangement. A karyotype begins with the chromosome count and sex chromosomes, for example 46,XX. The fix below adds them.";
+              break;
+            }
           }
         }
       }
@@ -2546,7 +2705,30 @@
         if (composedOk) result.suggestion = vet.countFix;
       }
     }
+    // The two readings of a non-centromeric der(A;B), each at the count that
+    // makes it paste back clean: the derivative-of-one form replaces ONE
+    // chromosome where der(A;B) replaced two, so the spellings sit at different
+    // counts and each is re-validated at its own (batch C's rule: a repair that
+    // refuses when pasted is not a repair). Dic first, because it keeps the
+    // count that was typed and is therefore the smaller edit.
+    var notationFixes = [];
+    if (depth === 0 && result.clones.length === 1) {
+      var ncAb = result.clones[0].aberrations.filter(function (a) { return a.derABNonCen; })[0];
+      if (ncAb) {
+        [ncAb.derABNonCen.dic, ncAb.derABNonCen.mono].forEach(function (tok) {
+          var candK = (result.normalized || raw).replace(ncAb.raw, tok);
+          var nct = parse(candK, depth + 1);
+          if (nct.countFix) { candK = nct.countFix; nct = parse(candK, depth + 1); }
+          var ncc = nct.clones.length === 1 ? nct.clones[0] : null;
+          if (nct.ok && !nct.warnings.length && !nct.suggestion && ncc &&
+              !ncc.unreadable && !ncc.countWrong && !ncc.unaccounted) {
+            notationFixes.push(candK);
+          }
+        });
+      }
+    }
     var candidates = [result.suggestion, result.countFix, result.sexCountFix, result.sexFix, result.orderFix]
+      .concat(notationFixes)
       .filter(function (f) { return f && f !== raw; })
       .filter(function (f, i, a) { return a.indexOf(f) === i; });
     result.fixes = depth > 0 ? candidates : candidates.filter(function (f) {

@@ -92,9 +92,9 @@ export const CORPUS = [
   {
     k: '45,XX,t(13;15)(q10;q10)',
     group: 'email',
-    expect: 'refuse',
-    why: 'Q2 answer B as the question printed it. t() keeps both derivatives, so the count is 46, not 45.',
-    watch: 'The student saw only "says 45, but describes 46". Both readings need offering: change the number to 46, or change t() to rob()/der() and keep 45. She worked this out herself in her second email, which the app should not have made her do.',
+    expect: 'draw',
+    why: 'Q2 answer B as the question printed it. t() keeps both derivatives (46), but the 45 asserts the fusion, and since 2026-08-29 the app believes the count and draws the Robertsonian.',
+    watch: 'One fused chromosome, not two derivatives. The note must explain the reading and hand over der(13;15)(q10;q10); the decode must describe a Robertsonian with no leftover t() sentences. The student worked this respelling out herself in her second email, which the app should not have made her do.',
   },
   {
     k: '46,XX,t(13;15)(q10;q10)',
@@ -148,9 +148,9 @@ export const CORPUS = [
   {
     k: '46,XX,t(14;21)(q10;q10),+21',
     group: 'email',
-    expect: 'refuse',
-    why: 'Q2 answer D with the comma added. Still wrong: t() keeps both derivatives so the count is 47, and the intended karyotype is a Robertsonian.',
-    watch: 'The important case. Adding the comma fixes the syntax and exposes the real error, so the second message has to be as clear as the first.',
+    expect: 'draw',
+    why: 'Q2 answer D with the comma added. The stated 46 only adds up over the fusion reading (45 plus the extra 21), so since 2026-08-29 the app draws translocation Down syndrome directly.',
+    watch: 'Three copies of 21q and ONE fused 14;21 body. The note must explain the t()-to-der() reading; clicking through from the no-comma card above must land here and draw.',
   },
   {
     k: '46,XX,rob(14;21)(q10;q10),+21',
@@ -387,6 +387,13 @@ export const CORPUS = [
   { k: '46,XX,t(9,22)(q34;q11.2)', group: 'typo', expect: 'refuse', why: 'A comma instead of a semicolon between the two chromosomes.', watch: 'The message should name the semicolon and offer the repair, because this looks correct at a glance.' },
   { k: '46,XX,t(9;22)(q34,q11.2)', group: 'typo', expect: 'refuse', why: 'The same mistake in the breakpoint group.', watch: 'Same expectation.' },
   { k: '46,XX,del(5)(p99)', group: 'typo', expect: 'refuse', why: 'A band that does not exist on chromosome 5.', watch: 'The band message should say which bands are real near there, not just that this one is not.' },
+  // The 2026-08 production-review pilot's three policy calls and two oddities,
+  // decided 2026-08-29. Each is a permanent card so the sheet keeps measuring them.
+  { k: '45,XX,t(14;21)(q10;q10)', group: 'rob', expect: 'draw', why: 'The commonest production shape of the fused-count t(): six visitors typed exactly this. The 45 asserts the Robertsonian, and the app now draws it.', watch: 'One fused body, decode says Robertsonian, note hands over der(14;21)(q10;q10). Nothing amber: the count was right.' },
+  { k: 't(2;5)(q21;q31)', group: 'typo', expect: 'draw', why: 'Only the rearrangement, no count or sex field: six visitors typed a bare t(). Drawn on an assumed 46,XX since 2026-08-29.', watch: 'The note must STATE the assumption and hand over 46,XX,t(2;5)(q21;q31); the input box keeps what was typed.' },
+  { k: '46,XX,del(5)(q15.3)', group: 'typo', expect: 'draw', why: 'A sub-band below where the map divides: 5q15 has no sub-bands, so q15.3 is a typo the page can place at its real parent.', watch: 'Draws at 5q15 with the correction taught repair-shaped ("5q15.3 is 5q15") and the written-out karyotype in the message. An undotted miss like 12q32 must still refuse.' },
+  { k: '45,XX,der(22;11)(q13;p13)', group: 'typo', expect: 'refuse', why: 'der(A;B) is the whole-arm form and takes p10/q10 only (ISCN 5.5.18.2 a). With q13;p13 it has no reading, and it used to draw one silently.', watch: 'Refused, teaching BOTH corrected spellings: der(22)t(11;22)(p13;q13) for one centromere, dic(11;22)(p13;q13) for two, each offered at the count that parses.' },
+  { k: '45,XX,del(5)(q22q33),-7[cp8]/46,sl,+1[cp3]', group: 'mosaic', expect: 'draw', why: 'A subclone adding +1 on top of an sl stemline that carries -7. Correct notation; the ordering check used to accuse it across the clone boundary.', watch: 'No "listed in chromosome order" warning: the -7 was written in the stemline, and the subclone wrote only +1.' },
   { k: '46,XY,del(5)(zzqewdf2315.2)', group: 'typo', expect: 'refuse', why: 'Gibberish where a breakpoint goes.', watch: 'Refused without the app inventing a nearest band.' },
   { k: '46,XY,zzz(9)(q34)', group: 'typo', expect: 'refuse', why: 'An operation that does not exist.', watch: 'The message should list what the app does understand.' },
   { k: '46,XY,inv(9)(p11q13)zzz', group: 'typo', expect: 'refuse', why: 'Trailing junk after a valid change.', watch: 'The valid part must not be drawn as if the junk were absent.' },

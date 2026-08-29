@@ -3,6 +3,51 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-29 (the input already said what it meant: closing the review pilot ledger)
+
+The last five items from the 2026-08 production-review pilot. The three policy calls
+share one principle, now recorded in docs/VALIDATION.md: when the input itself states
+its reading, draw that reading and say so.
+
+- **`45,XX,t(14;21)(q10;q10)` draws the Robertsonian the count asserts.** A t() keeps
+  both products (46); the stated 45 says one fused chromosome, and for the acrocentric
+  q10;q10 exchange the surviving product is not in doubt. Six visitors typed exactly
+  this and were refused with the respelling one click away; the parser now rereads the
+  t() as the der() fusion, draws it, and the note hands over the preferred
+  `der(14;21)(q10;q10)` (ISCN 5.5.18.3 b). The p10 spellings keep the refusal, since
+  there either product could be the survivor. A consequence that fell out for free:
+  `46,XX,t(14;21)(q10;q10),+21` now draws translocation Down syndrome directly, so the
+  comma repair for the no-comma form no longer needs its second composed step.
+
+- **A bare rearrangement draws on the assumed complement it was offering to add.**
+  `t(2;5)(q21;q31)` alone (six visitors) drew nothing and asked for a click on
+  `46,XX,...`. It now draws on the assumed normal complement, XY when the
+  rearrangement names a Y, with the assumption stated in a note and the written-out
+  karyotype one click away. Only when the completed karyotype would draw with nothing
+  else to say; any other message keeps the click-through, so the assumption can never
+  sit on top of a real problem.
+
+- **A sub-band typo below a real band draws at the band it names.** `del(5)(q15.3)`
+  points below the map's subdivision of 5q15, so the page now draws at `5q15` and the
+  message teaches the correction repair-shaped, written-out karyotype included. The
+  walk is ancestors only (`9p24.4` lands on `9p24`, never sideways on `p24.3`), and a
+  miss with no real ancestor (`12q32`) still refuses: there the position would be this
+  app's guess. The review capture records unresolved bands beside `model.json` so the
+  one-band difference between figure and input reads as the policy, not a bug.
+
+- **`der(22;11)(q13;p13)` no longer draws one of its two readings in silence.** The
+  two-chromosome der form is whole-arm notation and takes p10/q10 only (ISCN
+  5.5.18.2 a). With other bands it has no reading, and the silent figure was the
+  monocentric one, `der(22)t(11;22)(p13;q13)`, while a writer who meant both
+  centromeres wanted `dic(11;22)(p13;q13)`, a different chromosome. Refused, teaching
+  both spellings, each offered at the count that parses (they differ by one).
+
+- **The listing-order warning stops at the clone boundary.** `.../46,sl,+1[cp3]` after
+  a stemline carrying `-7` warned "+1 comes before -7", accusing correct notation: the
+  -7 is written in the stemline, and the subclone wrote only +1. The check now skips
+  aberrations spliced in by `idem`/`sl`/`sdl` and still orders what the subclone
+  itself wrote.
+
 ## 2026-08-28 (the legend keys every mark, and the colors stay tellable)
 
 - **Ten distinct hues for ten involved chromosomes.** The involved palette recycled

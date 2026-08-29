@@ -86,7 +86,10 @@ test('breakpoints on one chromosome separated as though on two are refused', () 
 });
 
 test('a count the app is willing to call wrong is refused', () => {
-  ['46,XY,rob(14;21)(q10;q10),-21', '40,XY,rob(14;21)(q10;q10),-21', '45,XX,t(13;15)(q10;q10)',
+  // 45,XX,t(13;15)(q10;q10) left this list on 2026-08-29: its count asserts the
+  // fusion and the parser now draws that reading. The p10 spelling stays, since
+  // there which product survived is ambiguous.
+  ['46,XY,rob(14;21)(q10;q10),-21', '40,XY,rob(14;21)(q10;q10),-21', '45,XX,t(13;15)(p10;q10)',
    '47,XY,rob(14;21)(q10;q10),+21'].forEach((k) => assert.equal(refused(k), true, k));
 });
 
@@ -204,13 +207,17 @@ test('no offered repair is a dead end', () => {
   // triploidy that was probably meant. What must never be offered is a repair that is
   // refused with nothing further to click, which is a wasted click and no information.
   const deadEnd = (f) => refused(f) && ISCN.parse(f).fixes.length === 0;
-  ['50,XXXXXXX', '70,XXX', '69.XX', '46 XY', '46,,', '46,,XY,,', 't(9;22)(q34;q11.2)',
+  // A bare t(9;22) is no longer here: since 2026-08-29 it draws on the assumed
+  // 46,XX instead of offering a fix. A bare t(13;15)(q10;q10) still offers one,
+  // because its completed form carries the rob() note.
+  ['50,XXXXXXX', '70,XXX', '69.XX', '46 XY', '46,,', '46,,XY,,', 't(13;15)(q10;q10)',
+   '45,XX,der(22;11)(q13;p13)',
    '46,XY,rob(14;21)(q10;q10),-2-21', '47~49,XY,+8,,', '50,XXXXXXY'].forEach((k) => {
     ISCN.parse(k).fixes.forEach((f) => assert.equal(deadEnd(f), false, `${k} -> ${f}`));
   });
   // And the feature has to exist: reading `fixes` off a parse that never sets it would
   // let every assertion above pass over an empty list.
-  ['50,XXXXXXX', '69.XX', '46 XY', 't(9;22)(q34;q11.2)'].forEach((k) =>
+  ['50,XXXXXXX', '69.XX', '46 XY', 't(13;15)(q10;q10)', '45,XX,der(22;11)(q13;p13)'].forEach((k) =>
     assert.ok(ISCN.parse(k).fixes.length > 0, `${k} should offer at least one fix`));
   // "46,," is the case the vetting exists for: its repair "46" states no sex
   // chromosomes, so it is refused with nothing onward, and the message carries it alone.
@@ -235,14 +242,19 @@ test('every clicked repair eventually reaches something drawable', () => {
   });
 });
 
-test('typing only the rearrangement gives one message, not two', () => {
-  // #122 added a "starts with the chromosome count" message that fired here as well as
-  // the more specific one this path already had, because the repair is decided after it.
+test('typing only the rearrangement draws, with the assumption in a note and no warning', () => {
+  // Policy 2026-08-29: the completed karyotype has nothing else to say for these,
+  // so they draw on the stated assumption instead of asking for a click.
   ['t(9;22)(q34;q11.2)', 'del(5)(p15.2)', '+21'].forEach((k) => {
-    const w = ISCN.parse(k).warnings;
-    assert.equal(w.length, 1, `${k}: ${JSON.stringify(w)}`);
-    assert.match(w[0], /only the rearrangement/, w[0]);
+    const m = ISCN.parse(k);
+    assert.equal(m.warnings.length, 0, `${k}: ${JSON.stringify(m.warnings)}`);
+    assert.equal(refused(k), false, k);
+    assert.ok(m.note && m.note.fix, `${k}: the assumption travels in the note`);
   });
+  // The click-through path still gives one message, not two (#122's rule).
+  const w = ISCN.parse('t(13;15)(q10;q10)').warnings;
+  assert.equal(w.length, 1, JSON.stringify(w));
+  assert.match(w[0], /only the rearrangement/, w[0]);
 });
 
 test('the count message names what disagrees with the number', () => {

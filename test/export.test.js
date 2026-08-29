@@ -40,11 +40,14 @@ test('the note names both numbers for a count that does not add up', () => {
   // Pinned on the two numbers and their order, not the prose around them, so
   // rewording the copy does not churn this file. The wording itself is owned by
   // test/message-voice.test.js.
-  assert.match(noteFor('45,XX,t(13;15)(q10;q10)'), /\b45\b[\s\S]*\b46 chromosomes\b/);
+  assert.match(noteFor('45,XX,t(9;22)(q34;q11.2)'), /\b45\b[\s\S]*\b46 chromosomes\b/);
 });
 
 test('no note when the karyotype agrees with itself', () => {
-  ['46,XX,t(13;15)(q10;q10)', '45,XY,rob(14;21)(q10;q10)', '46,XY', '47,XX,+21', 'mos 45,X[12]/46,XX[18]']
+  // 45,XX,t(13;15)(q10;q10) belongs here since 2026-08-29: the 45 asserts the
+  // fusion and the parser rereads the t() so, which means the count AGREES.
+  ['46,XX,t(13;15)(q10;q10)', '45,XX,t(13;15)(q10;q10)', '45,XY,rob(14;21)(q10;q10)',
+   '46,XY', '47,XX,+21', 'mos 45,X[12]/46,XX[18]']
     .forEach((k) => assert.equal(noteFor(k), '', k));
 });
 
@@ -52,7 +55,7 @@ test('a mosaic names which clone is off', () => {
   // Clone 2 says 45 and describes 46. countFix is single-clone only, so a mosaic
   // never gets the "did you mean" button and this note is the only thing that
   // travels with the image.
-  const n = noteFor('mos 45,X[12]/45,XX,t(13;15)(q10;q10)[18]');
+  const n = noteFor('mos 45,X[12]/45,XX,t(9;22)(q34;q11.2)[18]');
   assert.match(n, /clone 2/, 'says which clone, since the drawing shows both');
   assert.match(n, /\b45\b[\s\S]*\b46 chromosomes\b/);
   assert.doesNotMatch(n, /clone 1/, 'the clone that agrees with itself is not named');
@@ -76,7 +79,7 @@ test('the export canvas grows to fit the note instead of clipping it', () => {
 
 test('the plain-language summary does not assert the wrong count as fact', () => {
   // It sits inches from a drawing of the other number in the same print sheet.
-  const off = Teach.plainSummary(ISCN.parse('45,XX,t(13;15)(q10;q10)').clones[0]).join(' ');
+  const off = Teach.plainSummary(ISCN.parse('45,XX,t(9;22)(q34;q11.2)').clones[0]).join(' ');
   assert.match(off, /45 chromosomes/, 'still reports the count as written');
   assert.match(off, /count as written/, 'and says that is what it is');
   assert.match(off, /add up to 46 chromosomes/, 'and names what the changes actually describe');
