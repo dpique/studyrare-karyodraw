@@ -469,13 +469,13 @@
      each carries its ISCN 4.4.4 meaning as a title, one hover away. */
   .dline .dj { color: #9aa3bd; }
   .dline .dj[title] { cursor: help; }
-  /* The net-imbalance table, under the detailed form it quantifies. Same quiet
-     register: a second reading of the figure, not a second finding. Call colors
-     follow the decode chips (amber ink for gain, red for loss, color for
-     meaning); balanced context rows recede. */
-  #imbalance:empty { display: none; }
-  #imbalance { margin: 4px 16px 12px; border-top: 1px solid var(--line); padding-top: 9px; }
+  /* The net-imbalance table, its own card below the legend (owner order,
+     2026-08-30). Same quiet register as the detailed form: a second reading of
+     the figure, not a second finding. Call colors follow the decode chips
+     (amber ink for gain, red for loss, color for meaning); balanced context
+     rows recede. */
   #imbalance .imb-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 5px; }
+  #imbalance .imb-none { font-size: 12.5px; color: var(--muted); margin-bottom: 5px; }
   #imbalance .imb-genes { margin-left: auto; font: 500 11.5px var(--font-sans); color: var(--muted);
     display: flex; align-items: center; gap: 5px; cursor: pointer; }
   #imbalance table { border-collapse: collapse; font-size: 12.5px; min-width: 60%; }
@@ -761,6 +761,13 @@
             <button data-mode="detailed" title="True-to-life Giemsa banding on every chromosome, nothing highlighted. Spot the abnormality yourself.">Realistic</button>
           </div>
         </div>
+        <div class="viewopt">
+          <span class="vlabel" id="scale-lbl">Scale</span>
+          <div class="seg" id="scaleseg" role="group" aria-labelledby="scale-lbl">
+            <button data-scale="on" title="A 50 Mb ruler beside the karyogram, drawn at the same scale as the chromosomes. It rides into copied and downloaded images too.">On</button>
+            <button data-scale="off" title="No scale bar, on screen or in exported images.">Off</button>
+          </div>
+        </div>
       </div>
       <div class="viewhint" id="viewhint"></div>
       </div>
@@ -804,7 +811,7 @@
           <div class="kactions" id="kactions" data-drawing>
             <button class="pbtn" id="copyimg" title="Copy the karyogram as an image, ready to paste into slides, notes, or a message">⧉ Copy image</button>
             <button class="pbtn" id="dlimg" title="Download the karyogram as a PNG file">↓ PNG</button>
-            <button class="pbtn" id="copyhint" type="button" title="The link includes your Show, Bands, and Style settings.">🔗 Copy link to this view</button>
+            <button class="pbtn" id="copyhint" type="button" title="The link includes your Show, Bands, Style, and Scale settings.">🔗 Copy link to this view</button>
             <button class="pbtn" id="printbtn" type="button" title="Print, or save as a 1-page PDF summary for a genetic counselor">🖨 Print summary</button>
             <span class="spacer"></span>
             <button class="pbtn flagbtn" id="flagbtn" type="button" title="Something in this karyogram or explanation looks wrong? One click flags it; then add detail if you like.">⚠ Not right?</button>
@@ -813,16 +820,20 @@
           <!-- ISCN's detailed system for the chromosomes drawn above. data-drawing so the
                gate sweeps it with everything else that describes the current figure. -->
           <div id="detailed" data-drawing></div>
-          <!-- The net imbalance of the karyotype above, as a per-segment copy-number
-               table (Karyo.computeDosage reads the same segment lists the figure is
-               drawn from). Hidden when everything is balanced. data-drawing: the gate
-               must sweep it, or a refusal would leave the previous karyotype's
-               imbalance on screen. -->
-          <div id="imbalance" data-drawing></div>
         </div>
         <div class="card" id="legend-card" data-drawing>
           <h2>Band &amp; stain legend</h2>
           <div class="body"><div class="legend" id="legend"></div></div>
+        </div>
+        <!-- The net imbalance of the karyotype above, as a per-segment copy-number
+             table (Karyo.computeDosage reads the same segment lists the figure is
+             drawn from). Its own card BELOW the legend (owner order, 2026-08-30);
+             hidden entirely when there is nothing structural or imbalanced.
+             data-drawing: the gate must sweep it, or a refusal would leave the
+             previous karyotype's imbalance on screen. -->
+        <div class="card" id="imbalance-card" data-drawing style="display:none">
+          <h2>Net imbalance</h2>
+          <div class="body"><div id="imbalance"></div></div>
         </div>
       </section>
 
@@ -959,6 +970,7 @@
   // scattered across four rows. A normal karyotype has nothing to isolate, so it still
   // draws in full: the toggle hides itself when there is no abnormality.
   var SHOW = "affected";
+  var SCALEBAR = true;     // the 50 Mb ruler; on by default, `scale=off` in the URL turns it off
   var AFFECTED = {};       // chrom -> hex color (Simple mode highlight key)
   var spokenText = "";     // current karyotype rendered for text-to-speech
   var currentModel = null; // last successfully parsed model (for image export)
@@ -1364,18 +1376,20 @@
         rows.join("") + "</tbody></table>" +
         (d.unknownExcluded ? '<div class="imb-note">A marker or dmin is present; material banding cannot assign to a chromosome is not counted in these rows.</div>' : ""));
     });
-    // "Net imbalance: none" when every run is balanced (a balanced inversion,
-    // a reciprocal exchange): the table then only measures, and the title must
-    // not read as claiming an imbalance the rows deny. The gene checkbox hides
-    // with nothing to mark, since genes annotate gained and lost rows only.
+    // The card carries the title; the body opens with either the gene checkbox
+    // or, when every run is balanced (a balanced inversion, a reciprocal
+    // exchange), a "none" line, so the table measures without claiming an
+    // imbalance the rows deny. The checkbox hides with nothing to mark, since
+    // genes annotate gained and lost rows only.
     box.innerHTML = any
-      ? '<div class="imb-head"><div class="dtitle" style="margin:0">Net imbalance' + (anyDev ? "" : ": none") + '</div>' +
-        (anyDev
-          ? '<label class="imb-genes" title="Mark well-known cancer genes that sit inside a gained or lost segment. A teaching aid for cytogenetics, not a clinical annotation.">' +
-            '<input type="checkbox" id="imbgenes"' + (SHOW_GENES ? " checked" : "") + "> cancer genes</label>"
-          : '<span class="imb-genes" style="cursor:default">every segment keeps its expected copies</span>') +
-        "</div>" + out.join("")
+      ? (anyDev
+        ? '<div class="imb-head"><label class="imb-genes" title="Mark well-known cancer genes that sit inside a gained or lost segment. A teaching aid for cytogenetics, not a clinical annotation.">' +
+          '<input type="checkbox" id="imbgenes"' + (SHOW_GENES ? " checked" : "") + "> cancer genes</label></div>"
+        : '<div class="imb-none">None: every segment below keeps its expected copies.</div>') +
+        out.join("")
       : "";
+    var card = $("#imbalance-card");
+    if (card) card.style.display = any ? "" : "none";
     var cb = $("#imbgenes");
     if (cb) cb.addEventListener("change", function () { SHOW_GENES = cb.checked; renderImbalance(LAST_CLONES); });
   }
@@ -1642,8 +1656,9 @@
     });
     // One scale bar per figure, on the last (bottom or rightmost) karyogram:
     // every clone renders at the same px-per-Mb, so one ruler serves them all.
+    // The Scale toggle governs it (and the exported image follows suit).
     var kgs = host.querySelectorAll(".karyogram");
-    if (kgs.length) addScaleBar(kgs[kgs.length - 1]);
+    if (kgs.length && SCALEBAR) addScaleBar(kgs[kgs.length - 1]);
     fitKaryograms();
   }
 
@@ -1673,6 +1688,17 @@
     svg.innerHTML = parts.join("");
     kg.classList.add("has-scalebar");
     kg.appendChild(svg);
+    // The ruler's 50 Mb tick sits on the same line as the deepest chromosome's
+    // bottom edge, not the lettering under it (Dan, 2026-08-30): the bar
+    // measures the chromosomes, so it aligns with the chromosomes. Positioned
+    // before fitKaryograms runs, so the rects are untransformed; the clamp
+    // covers a figure of tiny bodies shorter than the ruler itself.
+    var kgTop = kg.getBoundingClientRect().top, maxBottom = 0;
+    Array.prototype.forEach.call(kg.querySelectorAll("svg.ideo"), function (el) {
+      var r = el.getBoundingClientRect();
+      if (r.bottom - kgTop > maxBottom) maxBottom = r.bottom - kgTop;
+    });
+    if (maxBottom) svg.style.top = Math.max(0, maxBottom - (top + h)).toFixed(1) + "px";
   }
 
   // A side-by-side clone row gets ONE scale for every cell line: two populations
@@ -2173,7 +2199,10 @@
     try {
       var k = (val != null ? String(val) : input.value).trim();
       var url = "?k=" + prettyEncode(k) +
-        "&style=" + STYLE_TO_URL[MODE] + "&bands=" + BANDS_TO_URL[LEVEL] + "&show=" + SHOW_TO_URL[SHOW];
+        "&style=" + STYLE_TO_URL[MODE] + "&bands=" + BANDS_TO_URL[LEVEL] + "&show=" + SHOW_TO_URL[SHOW] +
+        // Only the non-default rides in the URL, so every link already shared
+        // keeps its meaning and the common case stays clean.
+        (SCALEBAR ? "" : "&scale=off");
       history[push ? "pushState" : "replaceState"](null, "", url);
     } catch (e) {}
   }
@@ -2184,6 +2213,7 @@
     var pStyle = getParam("style"); if (pStyle && URL_TO_STYLE[pStyle]) MODE = URL_TO_STYLE[pStyle];
     var pBands = getParam("bands"); if (pBands !== null && pBands in URL_TO_BANDS) LEVEL = URL_TO_BANDS[pBands];
     var pShow = getParam("show"); if (URL_TO_SHOW[pShow]) SHOW = URL_TO_SHOW[pShow];
+    var pScale = getParam("scale"); if (pScale) SCALEBAR = pScale !== "off";
     syncSeg();
   }
   function getParam(name) {
@@ -2266,6 +2296,7 @@
     segState("#modeseg button", "data-mode", MODE);
     segState("#levelseg button", "data-level", LEVEL);
     segState("#showseg button", "data-show", SHOW);
+    segState("#scaleseg button", "data-scale", SCALEBAR ? "on" : "off");
     var vh = $("#viewhint");
     if (vh) vh.innerHTML = MODE === "simple"
       ? "<b>Highlight</b>: the chromosomes involved in the abnormality are colored."
@@ -2282,7 +2313,10 @@
       if (lvl.indexOf("·") >= 0) lvl = lvl.split("·").pop().trim() + " bands";
       var showOpt = $("#showseg").parentNode;
       var showLbl = showOpt && showOpt.style.display === "none" ? "" : lbl("#showseg");
-      vs.textContent = [showLbl, lvl, lbl("#modeseg")].filter(Boolean).join(" · ");
+      // The scale toggle only earns a mention when it is off: "On" alone would
+      // say nothing, and the default state is not news.
+      vs.textContent = [showLbl, lvl, lbl("#modeseg"), SCALEBAR ? "" : "no scale bar"]
+        .filter(Boolean).join(" · ");
     }
   }
 
@@ -2310,9 +2344,10 @@
     document.body.appendChild(stage);
     window.Karyo.render(stage, clone, { theme: MODE, level: LEVEL, affected: AFFECTED, only: only });
     var kg = stage.querySelector(".karyogram");
-    // The exported figure carries the same scale bar the screen shows; it is
-    // pure SVG, so it lifts like the chromosome pieces do.
-    addScaleBar(kg);
+    // The exported figure carries the same scale bar the screen shows (and
+    // none when the Scale toggle is off); pure SVG, so it lifts like the
+    // chromosome pieces do.
+    if (SCALEBAR) addScaleBar(kg);
     var base = kg.getBoundingClientRect();
     var pieces = [];
     Array.prototype.forEach.call(kg.querySelectorAll("svg.ideo, svg.scalebar"), function (svg) {
@@ -2492,6 +2527,9 @@
   });
   wireSeg("#showseg", function (b) {
     var v = b.getAttribute("data-show"); if (v === SHOW) return false; SHOW = v; return true;
+  });
+  wireSeg("#scaleseg", function (b) {
+    var v = b.getAttribute("data-scale") === "on"; if (v === SCALEBAR) return false; SCALEBAR = v; return true;
   });
   $("#printbtn").addEventListener("click", function () { window.print(); });
   $("#copyhint").addEventListener("click", function () { copyLink($("#copyhint")); });
