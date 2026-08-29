@@ -28,7 +28,7 @@ const BAD_INPUTS = [
   '46,XY,der(13;14)(q10;q10)+14', '46,XY,t(9;22)(q34;q11.2)ort(1;2)(p10;q10)',
   '46,XY,t(9,22)(q34;q11.2)', '46,XY,t(9;22)(q34;q11.2', 't(9;22)(q34;q11.2)',
   '47,idem,+9', '45,XX,t(9;22)(q34;q11.2)', '45,XX,der(22;11)(q13;p13)',
-  '45,XX,t(1;3)(p10;q10)', '46,XY,+21×99', '46,XY,dmin×99',
+  '45,XX,t(1;3)(p10;q10)', '46,X,der(X),t(X;5)(p22.1;p15.2)', '46,XY,+21×99', '46,XY,dmin×99',
   '46,XY,inv(9)(p11q13)zzz', '46XY', '46,XY,del(5)(zz15.2)', '46,XY,t(9;22)(q34;zzz)',
   '46,XY,-2-21', '43,XZY,+8', '46,QQ,+21', '44,XY,-21,-20',
   // The gate added in the 2026-07-29 changelog entry. Every message it can produce goes

@@ -161,9 +161,12 @@ records the spliced entries in `clone.inheritedAbs` and the check skips them.
 `5q15` and the warning teaches the correction in the repair shape, so the box takes the
 "already applied" framing over a finished figure. `Karyo.bandAncestor` owns the walk
 (strict existence, never `resolveBand`'s loose prefix fallback), the page swaps the
-band and re-parses, and the drawn string appears in the message. The review capture
-writes `invalidBands` (with ancestors) into `model.json` so a reviewer can see why a
-figure and its input differ by one band.
+band and re-parses, and the drawn string appears in the message. The decision itself
+is `Karyo.bandSnap`, shared with the review capture, which builds `model.json` from
+the SAME snapped karyotype (recorded as `snappedTo`) and writes `invalidBands` (with
+ancestors) beside it; before that the exported segments defaulted the emptied band to
+the centromere while the figure sat at the ancestor, which the second-pass review
+correctly read as the oracle contradicting the figure.
 
 ## Normalization before the parse
 
@@ -495,6 +498,16 @@ differs between the readings, so the refusal teaches both, and each spelling is 
 at the count that parses (the der form replaces one chromosome where der(A;B) replaced
 two, so their counts differ by one). Chains without an own breakpoint group,
 `der(5;7)t(3;5)(...)t(3;7)(...)`, are untouched: their joins live in the sub-ops.
+
+**An unsigned bare der(N) comma-spliced before its own t()** joined the refusals on
+2026-08-29 (second-pass review). `46,X,der(X),t(X;5)(p22.1;p15.2)` is the production
+shape of `der(X)t(X;5)(...)` typed as two changes; read as written it meant a balanced
+t plus a separate derivative, three abnormal bodies and no normal X, and it drew that
+silently. The message teaches that a derivative and the rearrangement that produced it
+are ONE change, and the suggestion drops the comma. The SIGNED form stays accepted:
+`47,XX,+der(22),t(11;22)(q23.3;q11.2)` is the Emanuel karyotype, where the
+supernumerary beside the balanced pair is exactly what the notation means, and a bare
+t() back-reference (4.2.1 f) is exempt too.
 
 ## Recombinant chromosomes
 

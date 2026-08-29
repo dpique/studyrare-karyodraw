@@ -1965,6 +1965,39 @@
       }
     }
 
+    // A bare der(N) comma-spliced immediately before a fully stated t() naming N
+    // is the production shape of der(N)t(...) typed as two changes:
+    // 46,X,der(X),t(X;5)(p22.1;p15.2). Read separately it meant THREE abnormal
+    // bodies (two identical der(X) and a der(5), with no normal X left), drew
+    // them with zero warnings, and the page's band advice handed the string
+    // back. Found by the 2026-08-29 second-pass review. Exempt on purpose: a
+    // SIGNED +der(N) is a gain that resolves against the clone's t() (#238),
+    // and a bare t() may be a back-reference (ISCN 4.2.1 f), so only the
+    // unsigned bare der before a t with its own breakpoints is caught. arity
+    // refuses the drawing; parse() offers the joined spelling.
+    // Keyed on the RAW token being bare, not on subOps: the same-clone
+    // resolution above this point may already have attached the t() as the
+    // der's recipe (it must, for the SIGNED Emanuel pattern +der(22),t(11;22),
+    // where three abnormal bodies is the correct reading). What separates the
+    // della from Emanuel is the sign: unsigned, the der consumes the last
+    // normal homolog instead of adding a body, and the "balanced t plus a
+    // separate derivative" reading is one nobody has ever meant.
+    for (var dtI = 0; dtI + 1 < clone.aberrations.length; dtI++) {
+      var dtDer = clone.aberrations[dtI], dtT = clone.aberrations[dtI + 1];
+      if (dtDer.kind === "der" && (dtDer.chroms || []).length === 1 && !dtDer.sign &&
+          /^der\([^()]+\)$/.test(String(dtDer.raw || "")) &&
+          dtT.kind === "t" && !dtT.sign && !dtT.backReference &&
+          (dtT.breakpoints || []).some(function (g) { return g.length; }) &&
+          (dtT.chroms || []).map(String).indexOf(String(dtDer.chroms[0])) >= 0) {
+        dtDer.arity = dtDer.arity || "der and its rearrangement written apart";
+        clone.derCommaT = { der: dtDer, t: dtT };
+        warnings.push("A derivative and the rearrangement that produced it are written as ONE change, with no comma between them: der(" +
+          dtDer.chroms[0] + ")" + dtT.raw + ". Written apart, der(" + dtDer.chroms[0] +
+          ") reads as a second, separate abnormal " + dtDer.chroms[0] + ".");
+        break;
+      }
+    }
+
     // A clone that references another (idem/sl/sdl) is completed in parse() after
     // every clone is known; defer its complement until the reference is resolved.
     clone.pendingIdem = clone.aberrations.some(function (a) { return a.kind === "idem"; });
@@ -2426,6 +2459,19 @@
         } else {
           result.countFix = raw.replace(/\d+/, String(cl0.counts.actual));
         }
+      }
+    }
+
+    // The joined spelling for a der and its t() written apart (derCommaT, set in
+    // parseClone): the two tokens are adjacent in the text, so dropping the
+    // comma between them IS the repair, and the result is re-vetted by the
+    // fixes filter like every other offer.
+    if (!result.suggestion && result.clones.length === 1 && result.clones[0].derCommaT) {
+      var dct = result.clones[0].derCommaT;
+      var dctSrc = result.normalized || raw;
+      var dctFrom = dct.der.raw + "," + dct.t.raw;
+      if (dctSrc.indexOf(dctFrom) >= 0) {
+        result.suggestion = dctSrc.replace(dctFrom, dct.der.raw + dct.t.raw);
       }
     }
 

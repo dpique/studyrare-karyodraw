@@ -491,6 +491,32 @@ test('the comma repair leaves a modal-number range alone', () => {
   assert.equal(ISCN.parse('45~48,XY,+8').suggestion, null);
   assert.equal(ISCN.parse('46,XX,1~3mar').suggestion, null);
 });
+// ---- a derivative and its rearrangement written apart -----------------------
+// 46,X,der(X),t(X;5)(...) is the production shape of der(X)t(X;5)(...) typed
+// with a comma: the della reading gave THREE abnormal bodies (two identical
+// der(X) and a der(5), no normal X) from a designation that meant one change,
+// drew it with zero warnings, and the page's band advice handed the string
+// back. Found by the 2026-08-29 second-pass review. The +der(N) gain resolves
+// against the clone's t() (#238) and a bare t() can be a back-reference
+// (ISCN 4.2.1 f), so both stay silent.
+test('a bare der comma-spliced before its own t() is refused and taught the joined form', () => {
+  const m = ISCN.parse('46,X,der(X),t(X;5)(p22.1;p15.2)');
+  assert.ok(m.clones[0].unreadable, 'refused, never drawn as three bodies');
+  assert.match(m.warnings.join(' '), /ONE change/i);
+  assert.match(m.warnings.join(' '), /der\(X\)t\(X;5\)\(p22\.1;p15\.2\)/, 'the joined spelling, pasteable');
+  assert.equal(m.suggestion, '46,X,der(X)t(X;5)(p22.1;p15.2)');
+  const joined = ISCN.parse(m.suggestion);
+  assert.equal(joined.warnings.length, 0, 'and the joined spelling parses clean');
+});
+test('the della check leaves the printed ISCN patterns alone', () => {
+  assert.equal(ISCN.parse('47,XX,+der(22),t(11;22)(q23.3;q11.2)').warnings.length, 0,
+    'the Emanuel supernumerary: +der resolves against the t');
+  assert.equal(ISCN.parse('46,XX,t(9;22)(q34;q11.2)[3]/47,XX,+8,t(9;22)[17]').warnings.length, 0,
+    'ISCN 4.2.1 f: the bare t() is a back-reference');
+  assert.equal(ISCN.parse('46,XX,der(X)').warnings.length, 0, 'a lone bare der stays drawable');
+  assert.equal(ISCN.parse('46,XY,der(9)t(9;22)(q34;q11.2)').warnings.length, 0, 'the joined form itself');
+});
+
 test('a missing-comma sign gets a comma hint, not the "or"/uncertainty note', () => {
   const w = ISCN.parse('46,XX,t(14;21)(q10;q10)+21').warnings.join(' ');
   assert.match(w, /comma/, 'says what is actually wrong');

@@ -122,7 +122,7 @@ export const CORPUS = [
     group: 'email',
     expect: 'refuse',
     why: 'Q2 answer C exactly as printed. Xp31 and 5p21 do not exist, and der(X) and t(X;5) are written as two changes when they are one.',
-    watch: 'The band message is right and the student understood it. Does anything mention that a derivative and the rearrangement that produced it are written together, der(X)t(X;5)(...), with no comma?',
+    watch: 'Both mistakes taught, one repair each: the band advice names the real geography, and since 2026-08-29 the comma splice gets its own message with the joined der(X)t(X;5)(...) spelling on a chip. The old "with the nearest real bands in place it reads..." line must NOT hand back a string that still carries the splice.',
   },
   {
     k: '46,X,der(X)t(X;5)(p31;p21)',
@@ -394,6 +394,10 @@ export const CORPUS = [
   { k: '46,XX,del(5)(q15.3)', group: 'typo', expect: 'draw', why: 'A sub-band below where the map divides: 5q15 has no sub-bands, so q15.3 is a typo the page can place at its real parent.', watch: 'Draws at 5q15 with the correction taught repair-shaped ("5q15.3 is 5q15") and the written-out karyotype in the message. An undotted miss like 12q32 must still refuse.' },
   { k: '45,XX,der(22;11)(q13;p13)', group: 'typo', expect: 'refuse', why: 'der(A;B) is the whole-arm form and takes p10/q10 only (ISCN 5.5.18.2 a). With q13;p13 it has no reading, and it used to draw one silently.', watch: 'Refused, teaching BOTH corrected spellings: der(22)t(11;22)(p13;q13) for one centromere, dic(11;22)(p13;q13) for two, each offered at the count that parses.' },
   { k: '45,XX,del(5)(q22q33),-7[cp8]/46,sl,+1[cp3]', group: 'mosaic', expect: 'draw', why: 'A subclone adding +1 on top of an sl stemline that carries -7. Correct notation; the ordering check used to accuse it across the clone boundary.', watch: 'No "listed in chromosome order" warning: the -7 was written in the stemline, and the subclone wrote only +1.' },
+  // The second-pass review's findings (2026-08-29), pinned as permanent cards.
+  { k: '46,X,der(X),t(X;5)(p22.1;p15.2)', group: 'typo', expect: 'refuse', why: 'The comma splice alone, with real bands: an unsigned bare der beside its own stated t() meant ONE change. Read as two it drew three abnormal bodies and no normal X, silently.', watch: 'Refused, teaching that der and its rearrangement are one change; the chip offers 46,X,der(X)t(X;5)(p22.1;p15.2), which pastes clean and draws. The SIGNED Emanuel pattern 47,XX,+der(22),t(11;22) must keep drawing its three bodies: there the sign makes that reading correct.' },
+  { k: '45,XX,der(1;7)(q10;p10)', group: 'rob', expect: 'draw', why: 'A bare non-acrocentric whole-arm derivative, the 5.5.18.2 case with no sub-ops. The decode used to say only "has chromosome 1’s centromere", never mentioning chromosome 7.', watch: 'The decode names the composition (1q fused to 7p) and the cost (partially monosomic for 1p and 7q). Not called Robertsonian: 1 and 7 are not acrocentric.' },
+  { k: '46,X,idic(Y)(q11.2)', group: 'struct', expect: 'draw', why: 'A lone X in the sex field beside a Y-derived rearrangement. The X gloss used to read "a single X (monosomy X)" under a figure drawing the abnormal Y beside it.', watch: 'The sex row says the X is listed alone because the Y is named in the rearrangement, and that this is not monosomy X.' },
   { k: '46,XY,del(5)(zzqewdf2315.2)', group: 'typo', expect: 'refuse', why: 'Gibberish where a breakpoint goes.', watch: 'Refused without the app inventing a nearest band.' },
   { k: '46,XY,zzz(9)(q34)', group: 'typo', expect: 'refuse', why: 'An operation that does not exist.', watch: 'The message should list what the app does understand.' },
   { k: '46,XY,inv(9)(p11q13)zzz', group: 'typo', expect: 'refuse', why: 'Trailing junk after a valid change.', watch: 'The valid part must not be drawn as if the junk were absent.' },

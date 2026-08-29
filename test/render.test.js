@@ -328,6 +328,38 @@ test('nearestBand returns null for a band that is already real', () => {
   assert.equal(Karyo.nearestBand('9', 'q34'), null);
 });
 
+// ---- the shared band-snap decision ------------------------------------------
+// The page draws sub-band typos at their real ancestor; the review capture must
+// build model.json from the SAME snapped karyotype, or the oracle contradicts
+// the figure. The second-pass review caught exactly that: for
+// 46,XY,t(5;19)(q15.3;q13.3) the page drew the chr5 junction at 5q15 (~96 Mb)
+// while model.json, built from the unsnapped parse, defaulted the emptied band
+// to the centromere at 48.8 Mb. bandSnap is that decision, shared.
+test('bandSnap resolves a sub-band typo to the ancestor and reparses', () => {
+  const ISCN = win.ISCN;
+  const k = '46,XY,t(5;19)(q15.3;q13.3)';
+  const s = Karyo.bandSnap(k, ISCN.parse(k), ISCN.parse);
+  assert.ok(s, 'the snap applies');
+  assert.equal(s.k, '46,XY,t(5;19)(q15;q13.3)');
+  assert.equal(s.bad[0].label, '5q15.3');
+  assert.equal(s.ancestors[0], 'q15');
+  // The model built from the snapped string splits chr5 at q15, not at the
+  // centromere the unsnapped builder defaults to.
+  const c = s.model.clones[0];
+  const der5 = (c.slots['5'] || []).filter((i) => i.kind !== 'normal')[0];
+  const b = Karyo.buildInstance(der5);
+  const chr5 = b.segments.filter((x) => String(x.chrom) === '5')[0];
+  assert.ok(chr5.to / 1e6 > 60 && chr5.to / 1e6 < 120,
+    'the chr5 piece ends at 5q15 (~96 Mb), not the 48.8 Mb centromere; got ' + chr5.to / 1e6);
+});
+test('bandSnap declines when nothing is wrong or nothing has an ancestor', () => {
+  const ISCN = win.ISCN;
+  const ok = '46,XY,t(9;22)(q34;q11.2)';
+  assert.equal(Karyo.bandSnap(ok, ISCN.parse(ok), ISCN.parse), null, 'real bands: nothing to snap');
+  const miss = '46,XX,del(12)(q32)';
+  assert.equal(Karyo.bandSnap(miss, ISCN.parse(miss), ISCN.parse), null, 'undotted miss has no ancestor');
+});
+
 // ---- how copies inside one cell are aligned ---------------------------------
 // A whole-arm fusion (Robertsonian der, isochromosome) has its centromere at the
 // seam between two whole arms. That y is not comparable to a normal homolog's p/q

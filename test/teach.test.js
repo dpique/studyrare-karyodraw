@@ -754,13 +754,16 @@ test('a whole-arm fusion between non-acrocentrics is not called Robertsonian', (
   // ISCN 5.5.18.3 a defines rob as a whole-arm translocation of the ACROCENTRICS. A
   // der(1;3)(p10;q10) is the 5.5.18.2 whole-arm case, where real short-arm material is
   // at stake, so it must not collect the "the two short arms are lost" sentence.
+  // Since 2026-08-29 it gets the full whole-arm text (composition and cost) rather
+  // than the old one-liner that never mentioned chromosome 3 at all.
   //
   // Counted 45, not 46: one derivative stands in for both chromosomes. decodeText goes
   // straight to the decode and would accept either, but the app gates drawing on the
   // count, so at 46 this reads as an assertion about a figure the user never sees.
   const t = decodeText('45,XY,der(1;3)(p10;q10)');
   assert.ok(!/ROBERTSONIAN/.test(t));
-  assert.match(t, /has chromosome 1’s centromere/);
+  assert.match(t, /WHOLE-ARM/);
+  assert.match(t, /short arm of chromosome 1 and the long arm of chromosome 3/);
 });
 
 test('a derivative naming one chromosome is unchanged', () => {
@@ -860,4 +863,37 @@ test('the parent-carrier origin stays out of acquired clones', () => {
   assert.ok(!/parent who carries/.test(sub), 'no inheritance story inside a stemline subclone');
   assert.match(decodeText('46,XX,der(1)t(1;3)(p22;q13.1)'), /parent who carries/,
     'the constitutional case keeps its counseling');
+});
+
+// The second-pass review (2026-08-29) found the whole-arm decode branch gated
+// on sub-ops being present, so the BARE non-acrocentric whole-arm der fell to a
+// generic one-liner that never mentioned the second chromosome the figure
+// paints: 45,X,-Y,+1,der(1;7)(q10;p10) read as "has chromosome 1's centromere"
+// with nothing about chromosome 7, the fusion, or the cost.
+test('a bare non-acrocentric whole-arm der decodes its composition and its cost', () => {
+  const t = decodeText('45,XX,der(1;7)(q10;p10)');
+  assert.match(t, /WHOLE-ARM/i);
+  assert.match(t, /chromosome 7/, 'the second chromosome the figure paints');
+  assert.match(t, /fused at the centromere/);
+  assert.match(t, /partially monosomic .*\(1p and 7q\)/, 'the lost arms, stated outright');
+});
+test('the bare Robertsonian keeps its own sentence, not the with-more-on-it one', () => {
+  const t = decodeText('45,XX,der(13;21)(q10;q10)');
+  assert.match(t, /ROBERTSONIAN/i);
+  assert.ok(!/more on it/.test(t), 'nothing more is on it');
+});
+
+// Same review pass: the sex-field hedge fired only when the rearranged element
+// was an X. Beside a Y-derived rearrangement (idic(Y), r(Y)) the lone X was
+// still glossed "a single X (monosomy X)" under a figure drawing the abnormal Y
+// in the second sex slot.
+test('a lone X beside a Y-derived rearrangement is not called monosomy X', () => {
+  for (const k of ['46,X,idic(Y)(q11.2)', '46,X,r(Y)(p11.2q12)']) {
+    const rows = decodeRows(k);
+    const sex = rows.find((r) => r.tag === 'sex').text;
+    assert.match(sex, /not monosomy X/, k + ': ' + sex);
+    assert.ok(!/single X \(monosomy X\)/.test(sex), k);
+  }
+  const turner = decodeRows('45,X').find((r) => r.tag === 'sex').text;
+  assert.ok(!/not monosomy X/.test(turner), 'true monosomy X keeps its reading');
 });
