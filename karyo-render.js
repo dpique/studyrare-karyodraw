@@ -1706,6 +1706,14 @@
         if (clone.sex.label.indexOf("Y") >= 0) add("Y");
       }
     });
+    // A Y flagged as affected reads against the X beside it. The involved view
+    // hides unaffected groups, and for a mosaic whose only sex change was -Y that
+    // drew an XY clone showing a lone Y in its sex box, no X anywhere. When the Y
+    // is in the set and any clone's complement carries an X, the X joins it.
+    if (order.indexOf("Y") >= 0 && order.indexOf("X") < 0 &&
+        clones.some(function (c) { return c.sex && (c.sex.label || "").indexOf("X") >= 0; })) {
+      add("X");
+    }
     var map = {};
     order.forEach(function (c, i) { map[c] = AFFECTED_PALETTE[i % AFFECTED_PALETTE.length]; });
     return map;

@@ -191,7 +191,7 @@ explanations can be reused in course material. Each release is archived on Zenod
 the concept DOI 10.5281/zenodo.22119721, which resolves to the current version.
 Chromosome band data are
 derived from the UCSC Genome Browser `cytoBandIdeo` table (hg38). The application
-is validated by a dependency-free suite of nearly 500 behavioral tests (Node's
+is validated by a dependency-free suite of more than 600 behavioral tests (Node's
 built-in runner, gating every pull request and every deploy) covering
 designations from aneuploidy through three-way translocations and mosaicism,
 Robertsonian derivatives, isodicentrics, polyploidy, segregation-mode
@@ -200,7 +200,7 @@ interface tests. Conformance is checked against a corpus of 395 karyotype-format
 examples transcribed verbatim from ISCN 2024, of which 328 are currently drawn;
 the remainder are marked with the feature they need, so notation the tool does not
 model reads as a recorded coverage gap rather than as bad input. A separate stress
-corpus of 185 designations, built from what students actually type, is rendered
+corpus of 187 designations, built from what students actually type, is rendered
 through the real page and checked against the expected draw-or-refuse outcome.
 
 # References

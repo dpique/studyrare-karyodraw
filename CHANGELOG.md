@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (the words count what the figure draws)
+
+- **Copy-number glosses state the drawn count, not a diploid slogan.** The gain and
+  loss parentheticals were canned per token: "three copies = trisomy 1" beside a
+  triploid figure drawing five, "one copy = monosomy Y" for a male whose only Y is
+  gone, "trisomy X" for an XY cell gaining a second X. The gloss now reads the count
+  off the clone's own slots, names trisomy and tetrasomy only when that is what the
+  figure draws on a diploid autosome, points at derivatives carrying more material of
+  the chromosome, and says plainly when no copy remains.
+
+- **Ploidy is inferred when the arithmetic demands it, and always explained.** A
+  heavily rearranged clone can sit far from a bare multiple of 23 while reconciling
+  only against a higher baseline: a production 76~77 composite drew on a diploid
+  scaffold roughly 25 chromosomes short of its own count. Candidate baselines are now
+  tried directly, and the count row explains the baseline whenever it is not the
+  diploid 46, stated (<2n>, <3n>) or inferred.
+
+- **Dosage claims are withheld when they cannot be whole.** The lone-derivative note
+  claimed "present in three copies" for material that also rides another derivative
+  in the same clone; the whole-arm derivative decode now states what the fusion costs
+  (the lost arms, and the partial monosomy when one normal homolog of each partner
+  remains); a Y in the affected set brings the X beside it so an involved view never
+  draws a lone Y as a cell's whole sex box; and one cell is "1 cell".
+
 ## 2026-08-28 (four silent drops, found by the agent review of production traffic)
 
 - **A bare `+der(N)` resolves against the translocation listed in its clone.**

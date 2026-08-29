@@ -801,3 +801,52 @@ test('a whole-arm der(A;B) with sub-ops decodes the body and each arm change', (
   // The bare Robertsonian keeps its own fuller text, spelling note included.
   assert.match(decodeText('45,XX,der(13;14)(q10;q10)'), /written lowest-number-first/);
 });
+
+// The copy-number parentheticals were canned diploid slogans computed per token:
+// "three copies = trisomy 1" beside a triploid figure drawing five, "one copy =
+// monosomy Y" for a male losing his only Y, "trisomy X" for an XY cell gaining a
+// second X. The gloss now states the count the FIGURE draws (from the clone's own
+// slots), names trisomy/tetrasomy only when that is what the drawn count is, and
+// points at derivatives carrying more material of the chromosome. Found by the
+// 2026-08-28 agent review; the words and the picture must move together.
+test('copy-number glosses state the drawn count, not a diploid slogan', () => {
+  const t81 = decodeText('81<3n>,XXX,+X,+X,+X,+X,+X,+1,+1,+3,+3,+14,+14,+14,-15,+21');
+  assert.ok(!/three copies = trisomy 1/.test(t81), 'no diploid slogan on a triploid clone');
+  assert.match(t81, /baseline of three/);
+  const rows81 = decodeRows('81<3n>,XXX,+X,+X,+X,+X,+X,+1,+1,+3,+3,+14,+14,+14,-15,+21');
+  assert.match(rows81.find((r) => r.tag === 'count').text, /69/, 'the count row explains the triploid baseline');
+  const y = decodeText('45,X,-Y,+1,der(1;7)(q10;p10),t(5;10)(p15;q24)');
+  assert.ok(!/one copy = monosomy Y/.test(y));
+  assert.match(y, /no copy of Y remains/);
+  assert.match(y, /der\(1;7\)/, 'the +1 gloss points at the derivative carrying 1 material');
+  assert.ok(!/three copies = trisomy 1/.test(y));
+  const hyper = decodeText('58<2n>,XY,+X,+4,+6,+8,+9,+10,+14,+14,+17,+18,+21,+21');
+  assert.ok(!/trisomy X/.test(hyper), 'an XY cell gaining an X is not trisomy X');
+  assert.match(hyper, /four copies = tetrasomy 14/);
+  // The classic diploid readings are untouched.
+  assert.match(decodeText('47,XX,+21'), /three copies = trisomy 21/);
+  assert.match(decodeText('45,XX,-7'), /one copy = monosomy 7/);
+});
+
+test('the whole-arm derivative decode states what the fusion costs', () => {
+  const wa = decodeText('45,XX,der(7;9)(q10;q10)t(9;22)(q34;q11.2)');
+  assert.match(wa, /7p and 9p/, 'the lost arms are named');
+});
+
+// Dosage was computed per derivative in isolation: der(11)t(11;14) claimed
+// 14q32->qter "present in three copies" while der(8)t(8;14) carries the same
+// distal 14 material, so the figure draws it four times. When the partner rides
+// more than one rearranged chromosome the numeric claim is withheld.
+test('dosage claims are withheld when the partner rides more than one derivative', () => {
+  const dd = decodeText('46,XY,der(8)t(8;14)(q21.2;q13),der(11)t(11;14)(q13;q32)');
+  assert.ok(!/is present in three copies/.test(dd));
+  assert.match(dd, /more than one derivative/);
+  // A single-derivative karyotype keeps its numeric dosage teaching.
+  assert.match(decodeText('46,XX,der(1)t(1;3)(p22;q13.1)'), /partial trisomy/);
+});
+
+test('one cell is one cell', () => {
+  const rows = decodeRows('46,XX,t(9;22)(q34;q11.2)[1]');
+  assert.match(rows.find((r) => r.tag === 'cells').text, /1 cell\b/);
+  assert.ok(!/1 cells/.test(rows.find((r) => r.tag === 'cells').text));
+});
