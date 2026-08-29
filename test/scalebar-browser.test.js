@@ -40,8 +40,9 @@ test('the karyogram carries one honest 50 Mb ruler', async (t) => {
   const server = await serve();
   const port = server.address().port;
   const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  // The ruler is OFF by default (owner call, 2026-08-30), so the helper opts in.
   const open = async (page, k, style) => {
-    await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent(k)}&style=${style}&show=involved`,
+    await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent(k)}&style=${style}&show=involved&scale=on`,
       { waitUntil: 'load' });
     await page.waitForSelector('#karyo .scalebar');
   };
@@ -86,27 +87,30 @@ test('the karyogram carries one honest 50 Mb ruler', async (t) => {
       assert.ok(gap < 1.5, `ruler end sits ${gap}px off the chromosome bottom line`);
     });
 
-    await t.test('the Scale toggle turns it off, and the URL carries the choice', async () => {
+    await t.test('the Scale toggle flips it, and only On rides in the URL', async () => {
       await page.click('#scaleseg button[data-scale="off"]');
       await page.waitForFunction(() => !document.querySelector('#karyo .scalebar'));
       const search = await page.evaluate(() => location.search);
-      assert.ok(search.includes('scale=off'), 'the off state rides in the URL: ' + search);
+      assert.ok(!search.includes('scale='), 'the default (off) keeps the URL clean: ' + search);
       await page.click('#scaleseg button[data-scale="on"]');
       await page.waitForSelector('#karyo .scalebar');
       const search2 = await page.evaluate(() => location.search);
-      assert.ok(!search2.includes('scale='), 'the default state keeps the URL clean: ' + search2);
+      assert.ok(search2.includes('scale=on'), 'the on state rides in the URL: ' + search2);
     });
 
-    await t.test('a scale=off deep link opens without the ruler', async () => {
-      await page.goto(`http://127.0.0.1:${port}/index.html?k=46,XX&style=highlight&scale=off`,
+    await t.test('a plain deep link opens without the ruler; scale=on opens with it', async () => {
+      await page.goto(`http://127.0.0.1:${port}/index.html?k=46,XX&style=highlight`,
         { waitUntil: 'load' });
       await page.waitForFunction(() => document.querySelector('#karyo svg'));
       const st = await page.evaluate(() => ({
         bar: !!document.querySelector('#karyo .scalebar'),
         segOff: document.querySelector('#scaleseg button[data-scale="off"]').classList.contains('on'),
       }));
-      assert.ok(!st.bar, 'no ruler');
+      assert.ok(!st.bar, 'no ruler by default');
       assert.ok(st.segOff, 'and the toggle shows Off');
+      await page.goto(`http://127.0.0.1:${port}/index.html?k=46,XX&style=highlight&scale=on`,
+        { waitUntil: 'load' });
+      await page.waitForSelector('#karyo .scalebar');
     });
 
     await t.test('realistic style keeps the ruler, and a mosaic still gets one', async () => {

@@ -3,6 +3,12 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-30 (the ruler defaults to off)
+
+- **The Scale toggle now defaults to Off** (owner call, same day it shipped).
+  Turning it on rides in shared links as scale=on; the plain URL means no
+  ruler, on screen and in exported images alike.
+
 ## 2026-08-30 (the ruler gets a switch and sits on the baseline; the legend moves up)
 
 - **A Scale toggle joins Show, Bands, and Style**: On or Off. Off removes the
