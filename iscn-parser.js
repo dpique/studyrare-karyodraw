@@ -226,7 +226,7 @@
     if (/^(?:t\([^()]*\)\([^()]*\))+$/.test(leftover)) {
       return "Operations run together with no commas describe the make-up of ONE derivative chromosome, " +
         "so a chain like “" + raw + "” needs a der() in front naming the chromosome(s) whose centromere " +
-        "it carries, the way ISCN 5.5.3 writes der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13); one derivative " +
+        "it carries, the way ISCN writes der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13); one derivative " +
         "replacing two chromosomes is how a count of 45 arises. Independent translocations are separated " +
         "by commas instead, “" + raw.replace(/\)t\(/g, "),t(") + "”, and balanced translocations keep " +
         "the count at 46.";
@@ -357,18 +357,20 @@
   // apart from the drawn operations so the message can say which of the two it is,
   // because "KaryoDraw does not draw this" and "this is not ISCN" are different
   // sentences and only one of them is true here.
+  // Section references stay here as comments for the maintainer; user-facing copy
+  // stopped citing section numbers on 2026-08-28 (Dan's call).
   var NOT_DRAWN = {
-    ider: { what: "an isoderivative chromosome", sec: "ISCN 5.5.3" },
-    tas: { what: "a telomeric association", sec: "ISCN 5.5.17" },
-    trc: { what: "a tricentric chromosome", sec: "ISCN 5.5.19" },
-    fis: { what: "a fission at the centromere", sec: "ISCN 5.5.6" },
-    qdp: { what: "a quadruplication", sec: "ISCN 5.5.14" },
-    psu: { what: "a pseudo-dicentric or pseudo-isodicentric", sec: "ISCN 5.5.4" },
-    neo: { what: "a neocentromere", sec: "ISCN 5.5.13" },
-    ish: { what: "in situ hybridization", sec: "ISCN Chapter 7" },
-    arr: { what: "a microarray result", sec: "ISCN Chapter 8" },
-    seq: { what: "a sequencing result", sec: "ISCN Chapter 11" },
-    ogm: { what: "an optical genome mapping result", sec: "ISCN Chapter 9" }
+    ider: { what: "an isoderivative chromosome" },                 // ISCN 5.5.3
+    tas: { what: "a telomeric association" },                      // ISCN 5.5.17
+    trc: { what: "a tricentric chromosome" },                      // ISCN 5.5.19
+    fis: { what: "a fission at the centromere" },                  // ISCN 5.5.6
+    qdp: { what: "a quadruplication" },                            // ISCN 5.5.14
+    psu: { what: "a pseudo-dicentric or pseudo-isodicentric" },    // ISCN 5.5.4
+    neo: { what: "a neocentromere" },                              // ISCN 5.5.13
+    ish: { what: "in situ hybridization" },                        // ISCN Chapter 7
+    arr: { what: "a microarray result" },                          // ISCN Chapter 8
+    seq: { what: "a sequencing result" },                          // ISCN Chapter 11
+    ogm: { what: "an optical genome mapping result" }              // ISCN Chapter 9
   };
 
   // A chain of op(...) groups run together with no commas between them. Two ISCN
@@ -439,13 +441,13 @@
     for (var i = 0; i < subs.length; i++) {
       if (subs[i].op === "r") {
         return undrawn("“" + (ab.note || "der(" + ab.chroms.join(";") + ")") + "” is correct ISCN: a monocentric " +
-          "ring is written as a derivative, with the chromosome that provides the centromere first (ISCN 5.5.16 b). " +
+          "ring is written as a derivative, with the chromosome that provides the centromere first. " +
           "KaryoDraw does not yet have a drawing for a ring built from named segments, so it draws nothing rather " +
           "than a wrong figure.");
       }
       if (!DRAWABLE[subs[i].op]) {
         return undrawn("“" + (ab.note || "der(" + ab.chroms.join(";") + ")") + "” is correct ISCN: a derivative " +
-          "chromosome may be built by more than one rearrangement (ISCN 5.5.2). KaryoDraw does not yet have a " +
+          "chromosome may be built by more than one rearrangement. KaryoDraw does not yet have a " +
           "drawing for a derivative carrying “" + subs[i].op + "”, so it draws nothing rather than a wrong figure.");
       }
     }
@@ -491,20 +493,19 @@
         var ws = subs[wi];
         if (ws.op === "ins") {
           return undrawn("“" + (ab.note || derName) + "” is correct ISCN: a derivative chromosome may be built " +
-            "by more than one rearrangement (ISCN 5.5.2). KaryoDraw does not yet have a drawing for a whole-arm " +
+            "by more than one rearrangement. KaryoDraw does not yet have a drawing for a whole-arm " +
             "derivative carrying an insertion, so it draws nothing rather than a wrong figure.");
         }
         if (ws.op === "t") {
           if ((ws.breakpoints || []).length !== 2 ||
               !(ws.breakpoints[0] || []).length || !(ws.breakpoints[1] || []).length) {
             return undrawn("A translocation inside a der() names two chromosomes and a band on each, one " +
-              "junction of the derivative (ISCN 5.5.3), so “" + joinText(ws) + "” in “" + (ab.note || derName) +
+              "junction of the derivative, so “" + joinText(ws) + "” in “" + (ab.note || derName) +
               "” is missing part of its junction and the derivative cannot be assembled.");
           }
           var wca = String(ws.chroms[0]), wcb = String(ws.chroms[1]);
           if (!reach[wca] && !reach[wcb]) {
-            return undrawn("Each operation after “" + derName + "” modifies the derivative it names " +
-              "(ISCN 5.5.3), so “" + joinText(ws) + "”, which involves neither chromosome " +
+            return undrawn("Each operation after “" + derName + "” modifies the derivative it names, so “" + joinText(ws) + "”, which involves neither chromosome " +
               ab.chroms[0] + " nor chromosome " + ab.chroms[1] + " nor anything joined to them, has no " +
               "place on it. KaryoDraw draws nothing rather than a figure with pieces missing.");
           }
@@ -551,8 +552,7 @@
         var cs = tSubs[ci];
         var cca = String(cs.chroms[0]), ccb = String(cs.chroms[1]);
         if (!creach[cca] && !creach[ccb]) {
-          return undrawn("Each translocation inside a der() describes one junction of that derivative " +
-            "(ISCN 5.5.3), so “" + joinText(cs) + "” has to involve chromosome " + ab.chroms[0] +
+          return undrawn("Each translocation inside a der() describes one junction of that derivative, so “" + joinText(cs) + "” has to involve chromosome " + ab.chroms[0] +
             " or a chromosome already joined to it. It does not, so its material has no place on the " +
             "derivative, and KaryoDraw draws nothing rather than a figure with pieces missing.");
         }
@@ -574,14 +574,59 @@
         var rArm = armLetter(((rj.breakpoints || [])[rIdx] || [])[0]);
         if (rootArms[rArm]) {
           var armName = rArm === "p" ? "short" : "long";
+          // The fix is usually mechanical, so hand it back whole: the chain's two
+          // ends (the chromosomes each named in one join) are the centromere
+          // carriers of the der(A;B) reading, IF the joins walk as one chain
+          // under that head. Verified with the same greedy walk the der(A;B) gate
+          // and the renderer use, so the offered token is one that draws; when the
+          // joins do not form a single path (a cycle, a branch), no candidate is
+          // offered and the message stays with the rule alone.
+          var deg = {};
+          tSubs.forEach(function (s) { s.chroms.forEach(function (c) { deg[String(c)] = (deg[String(c)] || 0) + 1; }); });
+          var chainEnds = Object.keys(deg).filter(function (c) { return deg[c] === 1; });
+          var offer = "";
+          if (chainEnds.length === 2) {
+            chainEnds.sort(function (x, y) {
+              var nx = +x, ny = +y;
+              if (isNaN(nx) && isNaN(ny)) return x < y ? -1 : 1;
+              if (isNaN(nx)) return 1;
+              if (isNaN(ny)) return -1;
+              return nx - ny;
+            });
+            var wAdj = {}, wUsed = 0, wSeen = {};
+            tSubs.forEach(function (s, si) {
+              var a2 = String(s.chroms[0]), b2 = String(s.chroms[1]);
+              (wAdj[a2] = wAdj[a2] || []).push({ to: b2, idx: si });
+              (wAdj[b2] = wAdj[b2] || []).push({ to: a2, idx: si });
+            });
+            var at2 = chainEnds[0], reached2 = false;
+            wSeen[at2] = 1;
+            for (var wh = 0; wh < tSubs.length; wh++) {
+              var st2 = (wAdj[at2] || []).filter(function (e) { return !wSeen[e.to]; })[0];
+              if (!st2) break;
+              wSeen[st2.to] = 1; wUsed++; at2 = st2.to;
+              if (at2 === chainEnds[1]) reached2 = true;
+            }
+            if (reached2 && wUsed === tSubs.length) {
+              var headLen = ("der(" + ab.chroms.join(";") + ")").length;
+              var restTok = (ab.note || "").slice(headLen);
+              if (restTok) {
+                offer = " This chain runs from chromosome " + chainEnds[0] + " to chromosome " +
+                  chainEnds[1] + ", so written as the derivative carrying both of their centromeres it " +
+                  "is “der(" + chainEnds.join(";") + ")" + restTok + "”, with the count one lower than " +
+                  "the der(" + ab.chroms[0] + ") reading, since one derivative replaces two chromosomes.";
+              }
+            }
+          }
           return undrawn("“der(" + ab.chroms[0] + ")” keeps chromosome " + ab.chroms[0] + "’s centromere, " +
             "and each of its own arms can take ONE junction: a join replaces the arm beyond its breakpoint, " +
             "so a second join on the same arm names material that is already gone. Both “" + rootArms[rArm] +
-            "” and “" + joinText(rj) + "” cut the " + armName + " arm of chromosome " + ab.chroms[0] + ". " +
-            "A chain that runs on through the partner chromosomes is written as a derivative named for the " +
-            "chromosomes whose centromeres it carries (ISCN 5.5.3 c), like " +
-            "der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13), and one derivative replacing two chromosomes also " +
-            "changes the count. KaryoDraw draws nothing rather than a figure missing the joins it cannot place.");
+            "” and “" + joinText(rj) + "” cut the " + armName + " arm of chromosome " + ab.chroms[0] + "." +
+            (offer || " A chain that runs on through the partner chromosomes is written as a derivative " +
+              "named for the chromosomes whose centromeres it carries, like " +
+              "der(5;7)t(3;5)(q21;q22)t(3;7)(q29;p13), and one derivative replacing two chromosomes also " +
+              "changes the count.") +
+            " KaryoDraw draws nothing rather than a figure missing the joins it cannot place.");
         }
         rootArms[rArm] = joinText(rj);
       }
@@ -611,7 +656,7 @@
           if ((tOp.chroms || []).length !== 2 || (tOp.breakpoints || []).length !== 2 ||
               !(tOp.breakpoints[0] || []).length || !(tOp.breakpoints[1] || []).length) {
             return undrawn("A translocation inside a der() names two chromosomes and a band on each, one " +
-              "junction of the derivative (ISCN 5.5.3), so “" + joinText(tOp) + "” in “" + chainName +
+              "junction of the derivative, so “" + joinText(tOp) + "” in “" + chainName +
               "” is missing part of its junction and the derivative cannot be assembled.");
           }
         }
@@ -634,15 +679,15 @@
         }
         if (!reached) {
           return undrawn("“der(" + ab.chroms.join(";") + ")” names the chromosomes whose centromeres the " +
-            "derivative carries (ISCN 5.5.3), so its translocations have to chain from chromosome " +
+            "derivative carries, so its translocations have to chain from chromosome " +
             chainFrom + " to chromosome " + chainTo + ". The joins in “" + chainName + "” never reach " +
             "chromosome " + chainTo + ", so the dicentric this name promises cannot be assembled, and " +
             "KaryoDraw draws nothing rather than a wrong figure.");
         }
         for (var uj = 0; uj < tOps.length; uj++) {
           if (!usedJoin[uj]) {
-            return undrawn("Each translocation inside a der() is one junction of that derivative " +
-              "(ISCN 5.5.3), so together they have to form a single chain. “" + joinText(tOps[uj]) +
+            return undrawn("Each translocation inside a der() is one junction of that derivative, " +
+              "so together they have to form a single chain. “" + joinText(tOps[uj]) +
               "” does not connect to the chain the other joins of “" + chainName + "” build, so its " +
               "material has no place on the derivative, and KaryoDraw draws nothing rather than a " +
               "figure with pieces missing.");
@@ -659,7 +704,7 @@
       if (s.chroms.length === 1 && s.breakpoints.length === 2) {
         var joined = s.breakpoints[0].concat(s.breakpoints[1]);
         warnings.push("An insertion within one chromosome is written as one run, the insertion site first and then " +
-          "the segment’s own breakpoints (ISCN 5.5.9.1), so “ins(" +
+          "the segment’s own breakpoints, so “ins(" +
           s.chroms[0] + ")(" + s.breakpoints.map(function (g) { return g.join(""); }).join(";") + ")” is “ins(" +
           s.chroms[0] + ")(" + joined.join("") + ")”.");
         s.breakpoints = [joined];
@@ -670,12 +715,12 @@
     var insBands = ins0.breakpoints.reduce(function (a, g) { return a.concat(g); }, []);
     if (ins0.chroms.some(function (x) { return /\?/.test(x); }) || insBands.some(function (b) { return /\?/.test(String(b)); })) {
       return undrawn("“ins(" + ins0.chroms.join(";") + ")…” is correct ISCN: the ? is a placeholder for a chromosome " +
-        "or breakpoint that was not determined (ISCN 4.2.1 k). With the inserted material undetermined there is " +
+        "or breakpoint that was not determined. With the inserted material undetermined there is " +
         "nothing to draw, so the karyotype stays undrawn.");
     }
     if (insOps.length > 1 || subs.some(function (s) { return s.op === "t"; })) {
       return undrawn("“" + (ab.note || "der") + "” is correct ISCN: a derivative chromosome may be built by more " +
-        "than one rearrangement (ISCN 5.5.2). KaryoDraw does not yet have a drawing for a derivative that combines " +
+        "than one rearrangement. KaryoDraw does not yet have a drawing for a derivative that combines " +
         "an insertion with a translocation or a second insertion, so it draws nothing rather than a wrong figure.");
     }
     if (ins0.chroms.map(String).indexOf(primary) < 0) {
@@ -705,7 +750,7 @@
     function undrawn(msg) { ab.kind = "unknown"; ab.notDrawn = "rec"; warnings.push(msg); }
 
     if (origin && origin.op === "ins") {
-      return undrawn("“rec” is correct ISCN, a recombinant chromosome (ISCN 5.5.15). KaryoDraw draws the " +
+      return undrawn("“rec” is correct ISCN, a recombinant chromosome. KaryoDraw draws the " +
         "ones a parental inversion produces, like rec(2)dup(2p)inv(2)(p21q31)dmat. The ones a parental " +
         "insertion produces are not drawn yet, and nothing is wrong with what you typed.");
     }
@@ -727,9 +772,9 @@
       if (am && am[1] === c) arm = am[2];
     }
     if (!arm || !pBand || !qBand) {
-      return undrawn("“rec” is correct ISCN, a recombinant chromosome (ISCN 5.5.15). It is written as the " +
+      return undrawn("“rec” is correct ISCN, a recombinant chromosome. It is written as the " +
         "chromosome whose centromere it carries, then the duplicated arm, then the parental inversion it " +
-        "came from, with no commas between them (ISCN 5.4.3.2 d), like rec(2)dup(2p)inv(2)(p21q31)dmat.");
+        "came from, with no commas between them, like rec(2)dup(2p)inv(2)(p21q31)dmat.");
     }
     ab.recDupArm = arm;
     ab.recDelArm = (arm === "p") ? "q" : "p";
@@ -921,12 +966,10 @@
         // they are "not an ISCN abbreviation" asserts something false about the
         // standard, in the one place they came to check themselves against it.
         //
-        // Section numbers are carried so the reader can go and look, which is the
-        // whole of what the app can usefully offer for notation it cannot draw.
         if (NOT_DRAWN[op]) {
           ab.notDrawn = op;
           warnings.push("“" + op + "” is correct ISCN, " + NOT_DRAWN[op].what +
-            " (" + NOT_DRAWN[op].sec + "), and KaryoDraw does not draw it yet. " +
+            ", and KaryoDraw does not draw it yet. " +
             "The rest of the karyotype is fine; nothing is wrong with what you typed.");
         } else {
           warnings.push("“" + op + "” in “" + raw + "” is not an ISCN abbreviation. The ones KaryoDraw draws: del, dup, inv, t, i, r, der, rec, add, ins, dic, fra, mar.");
@@ -1979,7 +2022,7 @@
       // run. Everything else gets the general rule (4.2.1 h).
       if (/^[+\-−–]?ins\(/i.test(pair[0])) {
         warnings.push("An insertion within one chromosome is written as one run, the insertion site first and then " +
-          "the segment’s own breakpoints (ISCN 5.5.9.1), so “" + pair[0] + "” is “" + pair[1] + "”.");
+          "the segment’s own breakpoints, so “" + pair[0] + "” is “" + pair[1] + "”.");
       } else {
         warnings.push("Breakpoints on the same chromosome are written one after the other, so “" +
           pair[0] + "” is “" + pair[1] + "”. The semicolon separates different chromosomes, " +
@@ -2065,12 +2108,12 @@
         var reparsed = parse(asShort, (depth || 0) + 1);
         reparsed.raw = raw;
         reparsed.detailedInput = asShort;
-        reparsed.warnings.unshift("That is the DETAILED system (ISCN 5.4.2.2), which spells out the band " +
+        reparsed.warnings.unshift("That is ISCN’s DETAILED system, which spells out the band " +
           "composition of the rearranged chromosome: “::” is a break and reunion, and the arrow means " +
           "“from ... to”. Drawn here from the short form of the same karyotype, “" + asShort + "”.");
         return reparsed;
       }
-      warnings.push("That is the DETAILED system (ISCN 5.4.2.2), which spells out the band composition " +
+      warnings.push("That is ISCN’s DETAILED system, which spells out the band composition " +
         "of the rearranged chromosome: “::” is a break and reunion, and the arrow means “from ... to”. " +
         "It is correct ISCN. KaryoDraw reads the short system, the one that names the breakpoints, and " +
         "cannot work back to it from a derivative's band composition alone.");
@@ -2254,7 +2297,7 @@
       })[0];
       if (fraClone) {
         result.note = {
-          text: "A slash separates two cell lines derived from the same zygote (ISCN 4.5.2), but a fragile site is present in every cell: what varies is whether it is EXPRESSED in a given metaphase, which depends on the culture conditions. So these counts score how often the site was seen, not how many cells carry it. The notation is accepted and drawn as written; the five fragile-site examples ISCN prints are all written without a slash."
+          text: "A slash separates two cell lines derived from the same zygote, but a fragile site is present in every cell: what varies is whether it is EXPRESSED in a given metaphase, which depends on the culture conditions. So these counts score how often the site was seen, not how many cells carry it. The notation is accepted and drawn as written; the five fragile-site examples ISCN prints are all written without a slash."
         };
       }
     }
@@ -2281,7 +2324,7 @@
         var plainAb = String(loneDer.raw).slice(("der(" + loneDer.chroms[0] + ")").length);
         result.note = {
           text: "A derivative chromosome (der) is one rebuilt either by a rearrangement involving two or more " +
-            "chromosomes, or by more than one change within a single chromosome (ISCN 5.5.3). This chromosome " +
+            "chromosomes, or by more than one change within a single chromosome. This chromosome " +
             loneDer.chroms[0] + " carries a single change, so the der() wrapper adds nothing: ISCN writes it " +
             plainAb + ".",
           fixLabel: "Write it without the wrapper:",

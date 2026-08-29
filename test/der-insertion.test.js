@@ -45,7 +45,7 @@ const decodeText = (k) => Teach.decode(clone0(k)).map((r) => r.text).join(' ');
 
 test('a same-chromosome ins sub-op with a semicolon is repaired with the same lesson as the standalone form', () => {
   const w = warns('46,XY,der(15)ins(15)(p11;q23q26)').join(' ');
-  assert.match(w, /5\.5\.9\.1/, 'the insertion cites its own rule, not the generic two-breakpoint one');
+  assert.match(w, /written as one run/, 'the insertion is taught its own rule, not the generic two-breakpoint one');
   assert.match(w, /insertion site first/, 'and teaches why p11 leads');
   const sub = clone0('46,XY,der(15)ins(15)(p11;q23q26)').aberrations[0].subOps[0];
   assert.equal(sub.breakpoints.length, 1, 'the two groups merge into one');
@@ -106,7 +106,7 @@ test('a der carrying a sub-op the renderer cannot apply refuses, and says why', 
   assert.equal(refused(k), true, 'refused rather than drawn as an untouched chromosome 1');
   const w = warns(k).join(' ');
   assert.match(w, /correct ISCN/, 'the notation is never blamed');
-  assert.match(w, /5\.5\.16/, 'the ring-derivative rule is cited');
+  assert.match(w, /ring is written as a derivative/, 'the ring-derivative rule is stated');
 });
 
 test('an ins plus a t on one derivative refuses rather than drawing half', () => {
@@ -119,7 +119,7 @@ test('an ins from an undetermined donor refuses with the ? lesson', () => {
   const k = '46,XY,der(5)ins(5;?)(q32;?)';
   assert.equal(refused(k), true);
   const w = warns(k).join(' ');
-  assert.match(w, /4\.2\.1 k/, 'the ? rule is cited');
+  assert.match(w, /was not determined/, 'the ? rule is stated');
   assert.match(w, /nothing to draw/, 'and the reason there is no figure is stated');
 });
 
@@ -150,7 +150,7 @@ test('a der wrapping a single one-chromosome change is offered the plain spellin
   const m = ISCN.parse('46,XY,der(15)ins(15)(p11q23q26)');
   assert.equal(m.warnings.join(' '), '', 'nothing to warn about');
   assert.ok(m.note, 'a note beside the drawing, never a warning');
-  assert.match(m.note.text, /5\.5\.3/, 'the derivative definition is cited');
+  assert.match(m.note.text, /more than one change within a single chromosome/, 'the derivative definition is stated');
   assert.equal(m.note.fix, '46,XY,ins(15)(p11q23q26)');
   const md = ISCN.parse('46,XY,der(9)del(9)(p12)');
   assert.ok(md.note && md.note.fix === '46,XY,del(9)(p12)', 'a lone del in the wrapper is the same redundancy');

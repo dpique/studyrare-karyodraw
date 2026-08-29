@@ -3,6 +3,23 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (rules stated, sections shelved, and the fix handed back whole)
+
+- **User-facing copy no longer cites ISCN section numbers.** A learner reading a
+  warning is not holding the book, so "(ISCN 5.5.3 c)" was clutter where the stated
+  rule already teaches. Every warning, decode sentence, note, and the detailed-form
+  title now state the rule without the citation; the sections live on in code
+  comments and tests, where the next maintainer needs them, and a corpus-wide
+  message-voice test keeps citations from creeping back in.
+
+- **The misnamed-chain refusal hands back the corrected karyotype.** When a der(N)
+  chain cuts its own arm twice and the joins nevertheless walk as one path, the two
+  chromosomes named in a single join each are the centromere carriers of the
+  der(A;B) reading, so the message now offers the user's own token re-headed,
+  verbatim and paste-ready, verified against the same walk the der(A;B) gate and
+  the renderer use before it is offered. When the joins do not form one path, no
+  candidate is invented and the rule stands alone.
+
 ## 2026-08-28 (the notation wears the figure's colors)
 
 - **Each piece of the detailed form takes the color its piece wears in the figure.**

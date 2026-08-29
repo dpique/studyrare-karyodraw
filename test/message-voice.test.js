@@ -185,3 +185,34 @@ test('the page copy a student reads uses no contractions either', () => {
   [/\bisn[’']t\b/, /\baren[’']t\b/, /\bdoesn[’']t add up/, /Let[’']s sort/, /Doesn[’']t look right/]
     .forEach((re) => assert.ok(!re.test(page), `contraction ${re} is still in index.html`));
 });
+
+// Section numbers stay out of user-facing copy (Dan's call, 2026-08-28): a learner
+// is not holding the book, so "(ISCN 5.5.3 c)" is clutter where a stated rule
+// teaches. The sections live on in code comments and tests, where the next
+// maintainer needs them. This walks every warning the bad-input corpus can produce
+// AND every decode the stress corpus draws, so a citation cannot creep back in
+// through either voice.
+test('user-facing copy states rules without citing section numbers', async () => {
+  const CITE = [/ISCN [0-9]+\.[0-9]/, /ISCN Chapter/, /\(\d+\.\d+\.\d+/];
+  const offenders = [];
+  const check = (source, text) => {
+    CITE.forEach((re) => { if (re.test(text)) offenders.push(`${source}: ${text.slice(0, 90)}`); });
+  };
+  allWarnings().forEach((x) => check(x.k, String(x.w)));
+  // Decode prose over everything the stress corpus draws.
+  ['karyo-render.js', 'teach.js'].forEach((f) =>
+    vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), context));
+  const { CORPUS } = await import('../scripts/stress-corpus.mjs');
+  for (const entry of CORPUS) {
+    if (entry.expect !== 'draw') continue;
+    let model;
+    try { model = ISCN.parse(entry.k); } catch { continue; }
+    if (!model.clones || !model.clones.length) continue;
+    for (const clone of model.clones) {
+      let rows;
+      try { rows = win.Teach.decode(clone, model.clones); } catch { continue; }
+      (rows || []).forEach((r) => check(entry.k, String(r.text || '')));
+    }
+  }
+  assert.deepEqual(offenders, [], `\n${offenders.join('\n')}\n`);
+});
