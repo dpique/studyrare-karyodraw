@@ -28,3 +28,7 @@ NEXT_SESSION_HANDOFF.md
 # is built by openjournals/inara, not from this tree, so neither is committed.
 /paper/paper-preview.pdf
 /paper/paper.pdf
+
+# Agent review pipeline output (scripts/review-*.mjs). Rebuilt from D1 exports
+# and the current page; the manifest and captures are working artifacts, not code.
+review/
