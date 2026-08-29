@@ -3,6 +3,29 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-28 (repairs that survive being pasted)
+
+- **A composed repair, where composing keeps the number you typed.** The comma fix
+  for `46,XX,t(14;21)(q10;q10)+21` left a 46 that sums to 47, and the click-through
+  then bumped the count, silently endorsing the t() spelling over the rob() the
+  stated 46 was evidence for. The suggestion is now re-vetted by parse, and when its
+  follow-up fix keeps the stated count (the rob respelling) it composes into one
+  offer: `46,XX,rob(14;21)(q10;q10),+21`, the classic translocation Down carrier.
+  Follow-ups that rewrite the count remain a second click, one mistake at a time.
+
+- **Messages that used to point at nothing now hand the fix back.** The isodicentric
+  example names the chromosome you typed instead of a hardcoded idic(15); a trailing
+  `x` is taught the multiplier (`t(9;22)(q34;q11.2)x2`) instead of "not one KaryoDraw
+  can place"; a bare varying count (`47-49,XY`) is taught the tilde with the varying
+  changes listed; a wrong band's advice now ends with the whole karyotype rewritten
+  onto the nearest real bands, paste-ready, when the substitution is unambiguous and
+  verified to draw; and the drawable-operations list finally admits to rob, idic,
+  trp, and hsr.
+
+- **Constitutional counseling stays out of acquired clones.** "The usual origin is a
+  parent who carries the balanced t" no longer appears inside sl/idem or composite
+  clones, where a derivative is clonal evolution, not inheritance.
+
 ## 2026-08-28 (the words count what the figure draws)
 
 - **Copy-number glosses state the drawn count, not a diploid slogan.** The gain and

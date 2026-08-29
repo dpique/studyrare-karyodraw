@@ -1637,6 +1637,25 @@
     // else in the warning box, so fall back to naming them together.
     if (bad.length && bad.length <= 3) {
       bad.forEach(function (b) { model.warnings.push(bandAdvice(b)); });
+      // The advice names the closest real band but used to stop there, leaving the
+      // reader to retype. When every bad band appears exactly once as a delimited
+      // token and swapping in the nearest real bands yields a karyotype that parses
+      // and passes this same check, the whole repaired string is handed back.
+      var repairedK = val, unambiguous = true;
+      bad.forEach(function (b) {
+        var re = new RegExp("([(;,])" + String(b.band).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?=[);,])", "g");
+        var near = window.Karyo.nearestBand(b.chrom, b.band);
+        if (!near || (repairedK.match(re) || []).length !== 1) { unambiguous = false; return; }
+        repairedK = repairedK.replace(re, "$1" + near);
+      });
+      if (unambiguous && repairedK !== val) {
+        var reModel = window.ISCN.parse(repairedK);
+        var reRefused = !reModel.clones.length || !!reModel.suggestion ||
+          reModel.clones.some(function (c) { return c.unreadable || c.countWrong; });
+        if (!reRefused && !invalidBands(reModel).length) {
+          model.warnings.push("With the nearest real bands in place it reads “" + repairedK + "”.");
+        }
+      }
     } else if (bad.length) {
       model.warnings.push("These are not real bands: " +
         bad.map(function (b) { return b.label; }).join(", ") + ". Check them against the band map.");

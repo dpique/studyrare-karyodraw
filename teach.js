@@ -746,7 +746,13 @@
     var pSlot = (clone.slots || {})[partner] || [], cSlot = (clone.slots || {})[c] || [];
     if (pSlot.length !== 2 || !pSlot.every(function (i) { return i.kind === "normal"; })) return "";
     if (cSlot.length !== 2 || cSlot.filter(function (i) { return i.kind === "normal"; }).length !== 1) return "";
-    var origin = ab.qualifier === "dn" ? "" :
+    // Constitutional counseling stays out of acquired clones: a t(9;22) stemline
+    // evolving a der(16) is clonal evolution, not inheritance, and "the usual
+    // origin is a parent who carries the balanced t" beside it was wrong twice
+    // over. Acquired context is read off the clone the way ISCN writes it: an
+    // sl/idem lineage or a composite.
+    var acquired = clone.composite || (clone.aberrations || []).some(function (a) { return a.kind === "idem"; });
+    var origin = (ab.qualifier === "dn" || acquired) ? "" :
       " The usual origin is a parent who carries the balanced t(" + td.chroms.join(";") + "), with only this product passed on.";
     return " Only this derivative is present: the reciprocal der(" + partner + ") with the swapped pieces is not in " +
       "this karyotype, and both chromosome " + partner + "s are intact. So the result is unbalanced: " +

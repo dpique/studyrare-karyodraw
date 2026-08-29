@@ -215,6 +215,14 @@
       return "ISCN writes two possible readings of the same result with “or”, and KaryoDraw draws one " +
         "karyotype at a time, so “" + leftover.replace(/^or/i, "") + "” has to be entered on its own to see it.";
     }
+    // A multiplier that never got its count. "x" glued to a change is the start
+    // of x2, not a change of its own, so the generic list-of-changes message named
+    // the wrong rule entirely.
+    if (/^[x\u00d7]$/i.test(leftover)) {
+      var bare = raw.replace(/[x\u00d7]\s*$/i, "");
+      return "A multiplier needs the number of copies, so \u201c" + raw + "\u201d needs the number: \u201c" +
+        raw + "2\u201d means the change is present twice. Without a count, leave it off: \u201c" + bare + "\u201d.";
+    }
     // A run of t() groups after an operation is a diagnosable miss, not generic
     // leftover: operations run together with NO commas are how ISCN 5.5.3 writes the
     // make-up of ONE derivative chromosome, so either the der(...) head was dropped
@@ -281,7 +289,7 @@
     // (reported from the live site, 2026-08-28). dic(9;20) was worse again: the
     // second chromosome vanished from the drawing entirely.
     dic: { perChrom: true, what: "A dicentric chromosome", eg: "dic(13;15)(q22;q24)" },
-    idic: { bands: [1, 1], msg: "An isodicentric chromosome is broken at one point and rejoined to a mirror image of itself, so it needs the band where it broke: idic(15)(q11.2)." }
+    idic: { bands: [1, 1], msg: "An isodicentric chromosome is broken at one point and rejoined to a mirror image of itself, so it needs the band where it broke: idic({c})(q11.2)." }
   };
 
   // Are these two breakpoints written in the wrong order along the chromosome?
@@ -349,7 +357,9 @@
     }
     var bands = groups.length ? groups[0].length : 0;
     if (bands >= rule.bands[0] && bands <= rule.bands[1]) return "";
-    return rule.msg;
+    // {c} is the reader's own chromosome: the idic example was a template constant,
+    // so a user who typed idic(5) was told the fix is idic(15)(q11.2).
+    return rule.msg.replace(/\{c\}/g, String((ab.chroms || [])[0] || "15"));
   }
 
   // ISCN abbreviations this app does not model. Each is in the symbol list in Chapter
@@ -1004,7 +1014,7 @@
             ", and KaryoDraw does not draw it yet. " +
             "The rest of the karyotype is fine; nothing is wrong with what you typed.");
         } else {
-          warnings.push("“" + op + "” in “" + raw + "” is not an ISCN abbreviation. The ones KaryoDraw draws: del, dup, inv, t, i, r, der, rec, add, ins, dic, fra, mar.");
+          warnings.push("“" + op + "” in “" + raw + "” is not an ISCN abbreviation. The ones KaryoDraw draws: del, dup, inv, t, i, r, der, rob, rec, add, ins, dic, idic, trp, hsr, fra, mar.");
         }
     }
     // Every op except der() and rec() should consume its whole token; leftover text
@@ -1607,7 +1617,13 @@
           " sex chromosomes listed after it";
       warnings.push("The number at the start says " + want + ", but " + disagrees + " add up to " +
         actual + " chromosomes. That first number is the cell's total chromosome count, so either it or the " +
-        (clone.aberrations.length ? "changes" : "sex chromosomes") + " needs fixing.");
+        (clone.aberrations.length ? "changes" : "sex chromosomes") + " needs fixing." +
+        // A varying count with nothing listed to vary cannot be reconciled at any
+        // number, so the teaching is the range notation itself.
+        (clone.modalHigh != null && !clone.aberrations.length
+          ? " A varying count is written with a tilde, " + clone.modalNumber + "~" + clone.modalHigh +
+            ", with the changes that vary listed after it (like +8, or +mar for extra unidentified chromosomes)."
+          : ""));
     }
   }
 
@@ -2511,6 +2527,25 @@
     //
     // The gate's band check lives in the page and is not repeated here. A fix inherits its
     // input's bands, and a bad band already stops every fix above from being offered.
+    // A repaired suggestion is re-vetted, and composed with its own follow-up fix
+    // in exactly one case: when that follow-up KEEPS the count the user typed. The
+    // comma fix for ...t(14;21)(q10;q10)+21 left a 46 that sums to 47, and the
+    // stepwise click-through then bumped the number, silently endorsing the t()
+    // spelling over the rob() the stated 46 was evidence for. The rob respelling
+    // preserves the 46, so it composes. A follow-up that rewrites the stated
+    // count (47,XY,...) stays a second click, one mistake named at a time, which
+    // is the standing design of fixes[].
+    if (depth === 0 && result.suggestion) {
+      var vet = parse(result.suggestion, depth + 1);
+      var vetClone = vet.clones.length === 1 ? vet.clones[0] : null;
+      if (vetClone && vetClone.countWrong && vetClone.aberrations.length && vet.countFix &&
+          vet.countFix.indexOf((vetClone.modalGiven || "") + ",") === 0) {
+        var vet2 = parse(vet.countFix, depth + 1);
+        var composedOk = vet2.clones.length === 1 && !vet2.suggestion &&
+          !vet2.clones[0].unreadable && !vet2.clones[0].countWrong && !vet2.clones[0].unaccounted;
+        if (composedOk) result.suggestion = vet.countFix;
+      }
+    }
     var candidates = [result.suggestion, result.countFix, result.sexCountFix, result.sexFix, result.orderFix]
       .filter(function (f) { return f && f !== raw; })
       .filter(function (f, i, a) { return a.indexOf(f) === i; });
