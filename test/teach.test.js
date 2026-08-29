@@ -1006,3 +1006,56 @@ test('the isochromosome row states the converse rule and reads its own dosage', 
 test('the i glossary entry carries the differential', () => {
   assert.match(Teach.GLOSSARY.i, /der\(N;N\)|der is used|writes der/i);
 });
+
+// ---- differential batch 2: idic vs dic(N;N) vs i, and rec vs der ------------
+// Same style as the der(N;N)/i(N) block above (Dan, 2026-08-29): a row names its
+// near-miss spelling and the rule that decides. Sources: ISCN 2024 5.5.4 a (dic
+// replaces two chromosomes), b (idic is a single break on sister chromatids,
+// replacing one homologue), f (der may be used instead of dic, never both);
+// 5.5.11 a/c (i is the monocentric mirror at p10/q10); 5.5.18.3 d (a whole-arm
+// fusion proven dicentric is written dic with p11.2/q11.2 breakpoints);
+// 5.4.3.2 b (rec is inferred from the parental karyotype, never acquired).
+
+test('the isodicentric row settles idic vs dic(N;N) vs i', () => {
+  const t = decodeText('46,XX,idic(15)(q12)');
+  assert.match(t, /dic\(15;15\)/, 'names the two-homologue near miss');
+  assert.match(t, /sister chromatids/i, 'and the single-chromosome origin idic asserts');
+  assert.match(t, /i\(15\)/, 'names the monocentric near miss');
+  assert.match(t, /centromere itself|p10 or q10/i, 'and where i would have to break');
+});
+
+test('the supernumerary idic carries the same differential', () => {
+  const t = decodeText('47,XX,+idic(15)(q12)');
+  assert.match(t, /dic\(15;15\)/);
+  assert.match(t, /i\(15\)/);
+});
+
+test('the homologous dicentric states the idic converse', () => {
+  const t = decodeText('45,XX,dic(13;13)(q14;q32)');
+  assert.match(t, /idic\(13\)/, 'names the mirror near miss');
+  assert.match(t, /one chromosome|single break|sister chromatids/i);
+});
+
+test('the heterologous dicentric gets the der spelling note, never idic chatter', () => {
+  const t = decodeText('45,XX,dic(13;15)(q22;q24)');
+  assert.doesNotMatch(t, /idic/);
+  assert.match(t, /der in place of dic/i, 'ISCN 5.5.4 f');
+  assert.match(t, /never both/i);
+});
+
+test('the heterologous Robertsonian points at dic for the proven-dicentric case', () => {
+  const t = decodeText('45,XX,der(13;21)(q10;q10)');
+  assert.match(t, /written dic/i, '5.5.18.3 d');
+  assert.match(t, /p11\.2/, 'with the short-arm breakpoints that spelling requires');
+});
+
+test('the rec row states why rec and not der', () => {
+  const t = decodeText('46,XX,rec(2)dup(2p)inv(2)(p21q31)dmat');
+  assert.match(t, /rec, not der/i, 'names the near-miss spelling');
+  assert.match(t, /acquired/i, 'rec is never used for acquired changes');
+});
+
+test('the idic glossary entry carries its origin rule', () => {
+  assert.match(Teach.GLOSSARY.idic, /sister chromatids/i);
+  assert.match(Teach.GLOSSARY.idic, /dic\(N;N\)/);
+});

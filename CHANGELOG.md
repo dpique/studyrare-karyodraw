@@ -3,6 +3,27 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-29 (differential batch 2: idic against dic against i, and rec against der)
+
+- **The isodicentric row settles its two near misses.** idic asserts ONE
+  chromosome of origin, a single break on sister chromatids reunited into the
+  mirror (ISCN 5.5.4 b); dic(15;15) would mean the two homologues each broke and
+  fused, standing in place of both (5.5.4 a); and i would have to mirror about
+  the centromere itself at p10 or q10 with one centromere, while an idic breaks
+  out on the arm and carries two. The homologous dicentric row states the
+  converse, and the idic glossary entry carries the origin rule.
+- **The heterologous dicentric notes the der spelling.** ISCN 5.5.4 f allows der
+  in place of dic, never both together, which is why reports sometimes write
+  der(13;15) for a chromosome the lab calls dicentric.
+- **The Robertsonian row pre-answers "then why not dic".** The q10 spelling
+  presumes fusion at the centromeres; a fusion proven dicentric is written dic
+  with the breakpoints out in the short arms, dic(13;21)(p11.2;p11.2) style
+  (5.5.18.3 d).
+- **The recombinant row states why rec and not der.** rec is inferred from the
+  parental karyotype the notation itself names, and is never used for acquired
+  changes (5.4.3.2 b); without the documented parental inversion the same
+  chromosome would be described as der.
+
 ## 2026-08-29 (why der(8;8) and not i(8)(q10): the decode settles the differential)
 
 - **Homologous fusions teach the near-miss they are not.** A student asked why
