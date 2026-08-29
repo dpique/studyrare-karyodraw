@@ -1355,7 +1355,10 @@
   // teach the concept and the naming rule, in the same voice as every other
   // string here: no parser talk, and nothing this app cannot stand behind.
   var GLOSSARY = {
-    der: "A DERIVATIVE chromosome (der): a structurally rearranged chromosome, built from one or more chromosomes. ISCN names it for the centromere it keeps, so der(9) has chromosome 9's centromere whatever else it carries, and it stands in the place of that chromosome.",
+    // No numbered example here: beside a karyotype that really involves that
+    // chromosome, "so der(9) has chromosome 9's centromere" read as a statement
+    // about the case on screen rather than as a placeholder (Dan, 2026-08-30).
+    der: "A DERIVATIVE chromosome (der): a structurally rearranged chromosome, built from one or more chromosomes. ISCN names it for the centromere it keeps: the number inside der(…) says whose centromere survives, whatever else the derivative carries, and the der stands in the place of that chromosome.",
     rec: "A RECOMBINANT chromosome (rec): the rearranged product a crossover creates in the child of a parent who carries an inversion or insertion. The duplicated segment is written out; the deleted one is inferred.",
     rob: "A ROBERTSONIAN translocation (rob): two acrocentric chromosomes (13, 14, 15, 21 or 22) fused at the centromere into one chromosome, with their satellite-bearing short arms lost. A balanced carrier has 45 chromosomes and is healthy; the risk appears in their gametes.",
     t: "A TRANSLOCATION (t): two chromosomes exchange segments. When nothing is lost or gained it is balanced; each product keeps its own centromere and is named for it.",
