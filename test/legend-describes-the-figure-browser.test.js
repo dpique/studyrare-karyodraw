@@ -220,7 +220,7 @@ test('a repaired insertion reads as a note, and the figure shows the move', asyn
     await page.waitForSelector('#karyo svg');
     const warn = await page.evaluate(() => document.getElementById('warnings').textContent);
     assert.match(warn, /already applied/, 'the repair presents as a done deed');
-    assert.match(warn, /5\.5\.9\.1/, 'and cites the insertion rule');
+    assert.match(warn, /written as one run/, 'and states the insertion rule');
     assert.ok(!/sort this out/i.test(warn), 'no alarm over a drawing that succeeded');
     const noteStyled = await page.evaluate(() => !!document.querySelector('#warnings .notebox'));
     assert.ok(noteStyled, 'neutral note styling, not the amber warnbox');

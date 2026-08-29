@@ -100,7 +100,7 @@
     acen_carried: { name: "Pericentromeric heterochromatin", bio: "Centromere-region α-satellite carried across a rearrangement junction, because the breakpoint fell inside the centromere band. This derivative's working centromere is the one from the chromosome it is named for, so this block is not drawn as a centromere. A chromosome that truly keeps two is a dicentric, written dic()." },
     // Not a Giemsa stain: the pseudo-stain the fra gap rect carries so the hover
     // tooltip can say what the constriction is instead of going silent on it.
-    fra: { name: "Fragile site (unstained gap)", bio: "An achromatic gap: under replication stress the chromatin at the site decondenses and fails to take up Giemsa, so it is drawn unstained even inside a dark band. The fragment beyond the gap stays attached; this is not a deletion (ISCN 5.5.7)." }
+    fra: { name: "Fragile site (unstained gap)", bio: "An achromatic gap: under replication stress the chromatin at the site decondenses and fails to take up Giemsa, so it is drawn unstained even inside a dark band. The fragment beyond the gap stays attached; this is not a deletion." }
   };
   function stainInfo(s) { return STAIN_INFO[s] || { name: s, bio: "" }; }
 
@@ -388,7 +388,7 @@
       return { text: "a reciprocal TRANSLOCATION: chromosomes " + listJoin(chroms) + " break (at " + listJoin(breaks) +
         ") and swap the pieces beyond those breaks, giving two derivative chromosomes " + listJoin(ders) +
         ". The pieces that move are the tips, which carry no centromere; each derivative keeps the centromere it " +
-        "started with, and that is the chromosome it is named for (ISCN 5.5.3 a)", tag: "t" };
+        "started with, and that is the chromosome it is named for", tag: "t" };
     }
     if (k === "iso") {
       var arm = (bp[0] || [])[0] || "q10";
@@ -463,7 +463,7 @@
           "They are written lowest-number-first by convention, not by which centromere is kept; whole-arm fusions like this are usually dicentric, with one centromere inactivated" +
           (/robertsonian/i.test(ab.note || "") ? "" :
             ". ISCN writes this either way, der(" + ab.chroms.join(";") + ")(q10;q10) or rob(" +
-            ab.chroms.join(";") + ")(q10;q10), and prefers the der spelling (5.5.18.3 b)"), tag: "der" };
+            ab.chroms.join(";") + ")(q10;q10), and prefers the der spelling"), tag: "der" };
       }
       var subs = ab.subOps || [];
       // A der() NAMED across two chromosomes and built from joins carries both of their
@@ -581,10 +581,10 @@
         "It carries " + distalSeg(c, ab.recDupBand) + sizeParen(sizeDistal(c, ab.recDupBand)) + " twice and is missing " + distalSeg(c, ab.recDelBand) + sizeParen(sizeDistal(c, ab.recDelBand)) +
         ", so it is unbalanced: a duplication of the segment beyond one breakpoint and a deletion of the segment beyond the other. " +
         "The notation states only the duplication, dup(" + c + ab.recDupArm +
-        "); the deletion is inferred from the inversion rather than written (ISCN 5.4.3.2 c). " +
+        "); the deletion is inferred from the inversion rather than written. " +
         "The recombinant IS inherited from the carrier parent, yet no body cell of that parent contains it: " +
         "it first exists in the egg or sperm the crossover made, so ISCN marks it as derived from the parental " +
-        "rearrangement rather than simply inherited (4.2.1 g). The parent, carrying the balanced inversion, is " +
+        "rearrangement rather than simply inherited. The parent, carrying the balanced inversion, is " +
         "typically unaffected", tag: "rec" };
     }
     if (k === "fra") {
@@ -598,9 +598,9 @@
         " (fra): a gap that appears at this band when the cells are cultured under stress. " +
         "It is not a deletion, and the piece beyond the gap stays attached";
       if (fband === "Xq27.3") {
-        return { text: fbase + ". Xq27.3 is FRAXA, the site that gave fragile X syndrome its name (ISCN 5.5.7 a)", tag: "fra" };
+        return { text: fbase + ". Xq27.3 is FRAXA, the site that gave fragile X syndrome its name", tag: "fra" };
       }
-      return { text: fbase + ". Most fragile sites are harmless normal variants (ISCN 2.6.2)", tag: "fra" };
+      return { text: fbase + ". Most fragile sites are harmless normal variants", tag: "fra" };
     }
     return { text: "an aberration (" + (ab.raw || k) + ") that KaryoDraw drew as best it could", tag: "unknown" };
   }
@@ -1006,7 +1006,7 @@
   var ARM_INFO = {
     p: "The SHORT arm. 'p' is for petit (French for small). Always drawn on TOP. Bands are numbered starting from the centromere (p1…) outward to the telomere.",
     q: "The LONG arm. 'q' simply follows 'p' in the alphabet. Always drawn on the BOTTOM. Bands numbered from the centromere (q1…) out to the telomere.",
-    centromere: "The primary constriction that joins the two arms. The kinetochore assembles here and spindle fibers attach during cell division. Its position (metacentric / submetacentric / acrocentric) helps identify a chromosome. It also decides what survives a rearrangement: a fragment with no centromere has nothing to hold onto the spindle and is lost, so a rearranged chromosome is built around the piece that carries one, and is named for it (ISCN 5.5.3). That is why a single breakpoint is enough to describe an isodicentric, and why the pieces a translocation swaps are the centromere-free tips.",
+    centromere: "The primary constriction that joins the two arms. The kinetochore assembles here and spindle fibers attach during cell division. Its position (metacentric / submetacentric / acrocentric) helps identify a chromosome. It also decides what survives a rearrangement: a fragment with no centromere has nothing to hold onto the spindle and is lost, so a rearranged chromosome is built around the piece that carries one, and is named for it. That is why a single breakpoint is enough to describe an isodicentric, and why the pieces a translocation swaps are the centromere-free tips.",
     telomere: "The very tip of each arm ('ter' = pter / qter). Repetitive TTAGGG caps that protect chromosome ends and shorten with each division.",
     band: "A stretch of chromosome that stains light or dark with Giemsa (G-banding). The reproducible pattern of bands is a chromosome's 'barcode', it is how each one is identified and how breakpoints are pinpointed.",
     sizes: "Segment sizes in the decode are estimates. A breakpoint written at a band can sit anywhere within that band, so sizes are measured from band midpoints on the GRCh38 assembly, the same coordinates every figure is drawn to."

@@ -203,7 +203,7 @@ test('notation the app cannot draw is not called a mistake', () => {
     const w = ISCN.parse(k).warnings.join(' ');
     assert.match(w, /is correct ISCN/, `${k}: says so plainly`);
     assert.match(w, re, `${k}: names what it is`);
-    assert.match(w, /ISCN 5\.5\./, `${k}: cites the section so it can be looked up`);
+    assert.doesNotMatch(w, /5\.5\./, `${k}: section numbers stay out of user-facing copy`);
     assert.doesNotMatch(w, /is not an ISCN abbreviation/, `${k}: and never the opposite`);
   });
   // Something that really is not ISCN still gets told so.

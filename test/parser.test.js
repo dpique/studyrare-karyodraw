@@ -1186,7 +1186,7 @@ test('a semicolon between breakpoints on one chromosome is named and repaired', 
   // leads, and Dan flagged it as dubious on exactly this shape.
   const mi = ISCN.parse('46,XY,ins(2)(q13;p23;p13)');
   assert.equal(mi.suggestion, '46,XY,ins(2)(q13p23p13)');
-  assert.match(mi.warnings.join(' '), /5\.5\.9\.1/);
+  assert.match(mi.warnings.join(' '), /written as one run/);
   assert.match(mi.warnings.join(' '), /insertion site first/);
 });
 
@@ -1600,7 +1600,16 @@ test('a der(N) whose own arm is cut twice is refused', () => {
   assert.match(w, /long arm of chromosome 3/);
   assert.match(w, /t\(3;5\)\(q21;q22\)/);
   assert.match(w, /t\(3;11\)\(q29;q13\)/);
-  assert.match(w, /der\(5;7\)/, 'the der(A;B) alternative is taught');
+  // The fix is mechanical when the joins walk as one chain, so it is handed back
+  // whole: the user's own token re-headed with the chain's two ends, verified by
+  // the same walk the der(A;B) gate uses, paste-ready.
+  assert.ok(w.includes('“der(5;7)t(3;5)(q21;q22)t(3;11)(q29;q13)t(11;12)(q23;q13)'
+    + 't(12;17)(q24.1;q11.2)t(7;17)(p13;q21)”'), 'the rewritten token is offered verbatim');
+  // When the joins do not form one path (a cycle), no candidate is invented and
+  // the message keeps the rule with the printed example instead.
+  const cyc = ISCN.parse('46,XY,der(3)t(3;5)(q21;q22)t(3;11)(q29;q13)t(5;11)(q31;q23)');
+  assert.equal(cyc.clones[0].unreadable, true);
+  assert.match(cyc.warnings.join(' '), /like der\(5;7\)t\(3;5\)\(q21;q22\)t\(3;7\)\(q29;p13\)/);
   // Order does not rescue it: the proximal cut second is the same conflict.
   assert.equal(ISCN.parse('46,XY,der(3)t(3;5)(q29;q22)t(3;11)(q21;q13)').clones[0].unreadable, true);
   // One junction per arm is the printed shape and keeps drawing (ISCN 5.5.3 c).
