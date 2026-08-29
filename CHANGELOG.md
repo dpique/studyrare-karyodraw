@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-30 (the URL writes the plus it reads)
+
+- **Shared URLs keep the ISCN plus literal.** ?k=46,XY,der(13;14)(q10;q10),+14
+  now reads as the karyotype it is instead of showing %2B14. The reader half has
+  been true since the k parameter stopped form-decoding + as a space; the writer
+  (the URL bar, Copy link, and the generated landing-page links) now matches. A
+  real space still encodes as %20, so the mos/chi prefix cannot collide, and
+  every %2B link already in the wild decodes to the same plus and keeps working.
+
 ## 2026-08-29 (differential batch 2: idic against dic against i, and rec against der)
 
 - **The isodicentric row settles its two near misses.** idic asserts ONE

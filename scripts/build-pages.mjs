@@ -426,8 +426,17 @@ function resolutionNote(e) {
     `The drawing above shows where the missing segment lies, not what would be visible down a microscope.</p>`;
 }
 
+// index.html prettyEncode's twin for the generated pages: the ?k= value stays
+// readable as the karyotype it is, plus sign included (the app has read a
+// literal + as the ISCN sign since #143). Change the two together.
+function prettyK(s) {
+  return encodeURIComponent(s)
+    .replace(/%2C/g, ',').replace(/%3B/g, ';').replace(/%2F/g, '/')
+    .replace(/%5B/g, '[').replace(/%5D/g, ']').replace(/%2B/g, '+');
+}
+
 function pageHtml(e) {
-  const toolLink = `/?k=${encodeURIComponent(e.k)}&style=highlight&bands=550&show=all`;
+  const toolLink = `/?k=${prettyK(e.k)}&style=highlight&bands=550&show=all`;
   const desc = pageDesc(e);
   const aka = (e.aka && e.aka.length) ? `<p class="lp-aka">Also known as: ${esc(e.aka.join(', '))}</p>` : '';
   const model = ISCN.parse(e.k);
