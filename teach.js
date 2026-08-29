@@ -337,7 +337,11 @@
       var SOMY = { 3: "trisomy", 4: "tetrasomy", 5: "pentasomy" };
       var isSex = c === "X" || c === "Y";
       var paren;
-      if (whole === 0) paren = "no copy of " + c + " remains in this cell line";
+      // "No copy remains" must not deny a derivative sitting beside the loss:
+      // 45,XX,-21,i(21)(q10) (ISCN 5.5.11 vi) keeps its 21 material on the i.
+      if (whole === 0) paren = riders.length
+        ? "no intact " + c + " remains; this cell line's " + c + " material is on " + listJoin(riders)
+        : "no copy of " + c + " remains in this cell line";
       else if (basePloidy === 2 && !riders.length && !isSex && k === "gain" && SOMY[whole])
         paren = numberWord(whole) + " copies = " + SOMY[whole] + " " + c;
       else if (basePloidy === 2 && !riders.length && !isSex && k === "loss" && whole === 1)
@@ -429,7 +433,24 @@
       var arm = (bp[0] || [])[0] || "q10";
       var whicharm = /^q/.test(arm) ? "long (q)" : "short (p)";
       var lostarm = /^q/.test(arm) ? "short (p)" : "long (q)";
-      return { text: "an ISOCHROMOSOME i(" + c + "): a mirror-image chromosome made of two " + whicharm + " arms, so the " + lostarm + " arm is lost; you end up with 3 copies of one arm and 1 of the other", tag: "iso" };
+      var isoQ = /^q/.test(arm) ? "q" : "p", isoP = /^q/.test(arm) ? "p" : "q";
+      // The copy-number claim reads the clone's own slots. The canned "3 copies
+      // of one arm and 1 of the other" was false beside ISCN 5.5.11 vi
+      // (45,XX,-21,i(21)(q10): two and none) and beside any non-diploid clone.
+      var isoSlots = clone && clone.slots ? clone.slots[String(c)] : null;
+      var isoTally = "";
+      if (isoSlots) {
+        var isoN = isoSlots.filter(function (i) { return i.kind === "normal"; }).length;
+        var isoI = isoSlots.filter(function (i) { return i.kind === "iso"; }).length;
+        var isoHi = isoN + 2 * isoI;
+        isoTally = "; this cell line ends up with " + numberWord(isoHi) + (isoHi === 1 ? " copy" : " copies") + " of " + c + isoQ +
+          " and " + (isoN ? numberWord(isoN) + (isoN === 1 ? " copy" : " copies") : "none") + " of " + c + isoP;
+      }
+      // The near-miss differential, the converse of the der(N;N) row (ISCN
+      // 5.5.11 b/d): i asserts the mirror; der is the spelling without proof.
+      return { text: "an ISOCHROMOSOME i(" + c + "): a mirror-image chromosome made of two " + whicharm + " arms, so the " + lostarm + " arm is lost" + isoTally +
+        ". Written i because both arms are copies of the SAME arm, a true mirror and genetically homozygous; when that identity is not proven, ISCN writes der(" +
+        c + ";" + c + ")(" + arm + ";" + arm + ") instead", tag: "iso" };
     }
     if (k === "ring") return { text: "a RING chromosome r(" + c + "): the chromosome's arms break and the broken ends fuse into a circle (usually loses the distal tips)", tag: "ring" };
     if (k === "der") {
@@ -474,8 +495,13 @@
       if (wholeArmBands && (ab.chroms || []).length === 2 && ((ab.subOps || []).length || !waPureRob)) {
         var waArm = function (ix) { return /^p/.test(String(((bp || [])[ix] || [])[0] || "")) ? "short" : "long"; };
         var waSame = String(ab.chroms[0]) === String(ab.chroms[1]);
+        // Homologues can fuse p-to-q as well as like-to-like; "the two short
+        // arms" was a lie beside der(8;8)(p10;q10), which fuses one of each.
+        var waMixed = waSame && waArm(0) !== waArm(1);
         var waBody = waSame
-          ? "the two " + waArm(0) + " arms of chromosome " + ab.chroms[0] + ", one from each homologue, are fused at the centromere into one derivative chromosome"
+          ? (waMixed
+            ? "the " + waArm(0) + " arm of one chromosome " + ab.chroms[0] + " and the " + waArm(1) + " arm of its homologue are fused at the centromere into one derivative chromosome"
+            : "the two " + waArm(0) + " arms of chromosome " + ab.chroms[0] + ", one from each homologue, are fused at the centromere into one derivative chromosome")
           : "the " + waArm(0) + " arm of chromosome " + ab.chroms[0] + " and the " + waArm(1) + " arm of chromosome " + ab.chroms[1] + " are fused at the centromere into one derivative chromosome";
         var waOpen = (acroPair && (ab.subOps || []).length ? "a ROBERTSONIAN translocation with more on it: " : "a WHOLE-ARM translocation derivative: ") + waBody +
           "; fusions like this are usually dicentric, with one centromere inactivated.";
@@ -504,6 +530,34 @@
         // each partner remains in this clone, that is a partial monosomy worth
         // stating outright.
         var waLost = "";
+        if (waSame && !waMixed && clone && clone.slots && (clone.ploidy || 2) === 2) {
+          // The homologous fusion's cost went unstated while the heterologous
+          // one below named its partial monosomies. When no normal homologue
+          // remains, the fused arm is all this cell has of the chromosome.
+          var waKeptArm = waArm(0) === "long" ? "q" : "p";
+          var waLostArm = waArm(0) === "long" ? "p" : "q";
+          var waNn = (clone.slots[String(ab.chroms[0])] || []).filter(function (i) { return i.kind === "normal"; }).length;
+          if (waNn === 0) {
+            waLost = " With no normal " + ab.chroms[0] + " remaining, both " + ab.chroms[0] + waKeptArm +
+              " arms sit on this one derivative and no copy of " + ab.chroms[0] + waLostArm + " remains.";
+          }
+        }
+        // The near-miss a student reaches for here is the isochromosome, so the
+        // row settles the differential (ISCN 5.5.11): i asserts a mirror image,
+        // arms identical and genetically homozygous (5.5.11 b); der is the
+        // spelling when that identity is not proven (5.5.11 d), and complex
+        // cases are written der regardless (5.5.11 e). Deliberately NOT claimed:
+        // that der proves two parental homologues. A true iso that later
+        // diverged on one arm is also written der, so the honest statement is
+        // that i became unavailable once the arms demonstrably differ.
+        var waWhy = "";
+        if (waSame && !waMixed) {
+          var waIso = "i(" + ab.chroms[0] + ")(" + (waArm(0) === "long" ? "q10" : "p10") + ")";
+          var waDerName = "der(" + ab.chroms[0] + ";" + ab.chroms[0] + ")";
+          waWhy = (ab.subOps || []).length
+            ? " Why " + waDerName + " and not " + waIso + "? An isochromosome is a mirror image, two copies of the same arm out of one centromere misdivision, so its arms are identical by definition. These two arms visibly differ, each carrying its own change, so a single mirrored arm cannot describe them; ISCN reserves i for arms proven identical and writes der for every other case."
+            : " Why not " + waIso + "? i would assert a mirror image, both arms copies of the same arm and genetically homozygous; " + waDerName + " makes no such claim. ISCN reserves i for arms proven identical and writes der when that is not proven.";
+        }
         if (!waSame) {
           var waArmNot = function (ix) { return waArm(ix) === "long" ? "p" : "q"; };
           var waLostNames = String(ab.chroms[0]) + waArmNot(0) + " and " + String(ab.chroms[1]) + waArmNot(1);
@@ -517,16 +571,29 @@
             }
           }
         }
-        return { text: waOpen + (waJoins.length ? " " + waJoins.join(" ") : "") + waExtraText + waLost, tag: "der" };
+        return { text: waOpen + (waJoins.length ? " " + waJoins.join(" ") : "") + waExtraText + waLost + waWhy, tag: "der" };
       }
       if (ab.chroms && ab.chroms.length >= 2 &&
         (/robertsonian/i.test(ab.note || "") || (wholeArmBands && acroPair))) {
+        var robSame = ab.chroms.length === 2 && String(ab.chroms[0]) === String(ab.chroms[1]);
+        var robSpell = /robertsonian/i.test(ab.note || "") ? "" :
+          ". ISCN writes this either way, der(" + ab.chroms.join(";") + ")(q10;q10) or rob(" +
+          ab.chroms.join(";") + ")(q10;q10), and prefers the der spelling";
+        // The homologous fusion reads "one from each homologue" (never
+        // "chromosomes 21 and 21", and the lowest-number-first rule is
+        // meaningless there), and it settles the i(21)(q10) differential the
+        // same way the whole-arm branch above does (ISCN 5.5.11 b/d).
+        if (robSame) {
+          return { text: "a ROBERTSONIAN translocation: the two long arms of chromosome " + ab.chroms[0] +
+            ", one from each homologue, are fused at the centromere into one derivative chromosome, and the two short arms are lost. " +
+            "Whole-arm fusions like this are usually dicentric, with one centromere inactivated" + robSpell +
+            ". If the two long arms were proven copies of ONE arm, a mirror image and genetically homozygous, the same chromosome would be written i(" +
+            ab.chroms[0] + ")(q10); ISCN keeps the der spelling when that is not proven", tag: "der" };
+        }
         return { text: "a ROBERTSONIAN translocation: the long arms of chromosomes " +
           listJoin(ab.chroms) + " are fused at the centromere into one derivative chromosome, and the two short arms are lost. " +
           "They are written lowest-number-first by convention, not by which centromere is kept; whole-arm fusions like this are usually dicentric, with one centromere inactivated" +
-          (/robertsonian/i.test(ab.note || "") ? "" :
-            ". ISCN writes this either way, der(" + ab.chroms.join(";") + ")(q10;q10) or rob(" +
-            ab.chroms.join(";") + ")(q10;q10), and prefers the der spelling"), tag: "der" };
+          robSpell, tag: "der" };
       }
       var subs = ab.subOps || [];
       // A der() NAMED across two chromosomes and built from joins carries both of their
@@ -1259,7 +1326,7 @@
     t: "A TRANSLOCATION (t): two chromosomes exchange segments. When nothing is lost or gained it is balanced; each product keeps its own centromere and is named for it.",
     dic: "A DICENTRIC chromosome (dic): one chromosome carrying TWO centromeres, formed when two broken chromosomes fuse. One centromere is usually inactivated, which lets it segregate like a normal chromosome.",
     idic: "An ISODICENTRIC chromosome (idic): a mirror-image chromosome with two centromeres, made of two copies of the same material joined end to end. The commonest is idic(15), a supernumerary made of two 15 short-arm-and-proximal-q pieces.",
-    i: "An ISOCHROMOSOME (i): a mirror-image chromosome of two identical arms about one centromere, with the other arm lost. i(X)(q10) is two X long arms; the carrier is trisomic for that arm and monosomic for the lost one.",
+    i: "An ISOCHROMOSOME (i): a mirror-image chromosome of two identical arms about one centromere, with the other arm lost. i(X)(q10) is two X long arms; the carrier is trisomic for that arm and monosomic for the lost one. ISCN reserves i for arms proven identical (homozygous) and writes der(N;N) when that is not proven or the arms differ.",
     r: "A RING chromosome (r): both arms break and the broken ends fuse into a circle, usually losing the distal tips. Rings are mitotically unstable, so ring karyotypes are often mosaic.",
     del: "A DELETION (del): a segment is missing. One breakpoint makes it terminal (everything beyond the band is gone); two make it interstitial (the piece between them is gone and the flanks rejoin).",
     dup: "A DUPLICATION (dup): a segment present twice on the same chromosome. The order of the two breakpoints records whether the extra copy is direct or inverted.",
