@@ -3,6 +3,26 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-08-30 (adjacent outcomes pair up, and clicking a pair redraws its plane)
+
+- **The Robertsonian adjacent card groups its four outcomes into two boxed
+  pairs, one per division plane.** One 2:1 division reads out twice, so the
+  trisomy and the monosomy of the same chromosome are complements from the same
+  plane; the box now says so. The pair holding the typed karyotype leads and is
+  preselected; clicking the other pair redraws the division above it (hidden
+  radios and CSS, no script), swaps the caption sentence with it, and hands the
+  pole tints to the pair the figure actually shows. Requested by Dan.
+- **The adjacent caption no longer contradicts the figure.** It said "the
+  fusion goes with 13" while the to-scale trivalent drew the fusion travelling
+  with 14: the sentence had been written for the schematic fallback, which
+  folded the other way. Caption, scene, and highlighted pair now share one
+  selection and cannot disagree; the two figure systems also name their folds
+  identically (the suffix is the homologue that travels alone), and the scene
+  labels say that in words.
+- **The closing note ends at what the figure teaches**: real risks depend on
+  the specific chromosomes and segment sizes. The ascertainment-and-counselor
+  clause is gone (owner call).
+
 ## 2026-08-30 (the ruler defaults to off)
 
 - **The Scale toggle now defaults to Off** (owner call, same day it shipped).
