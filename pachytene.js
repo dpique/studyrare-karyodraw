@@ -372,21 +372,26 @@
       var p = key.split(","); return aster(+p[0], +p[1], poleSet[key].stroke);
     }).join("");
 
+    // The label says which homologue travels alone, not the internal fold suffix.
+    var modeLabel = modeName === "Adjacent-A" ? "adjacent segregation (" + A + " alone)"
+      : modeName === "Adjacent-B" ? "adjacent segregation (" + B + " alone)"
+      : modeName.toLowerCase() + " segregation";
     return svg('<g class="seg-fibers">' + fibers + "</g>" + planeSvg + '<g class="stage">' + rib + units + "</g>" + poles + badges,
-      w, h, "trivalent dividing by " + modeName.toLowerCase() + " segregation");
+      w, h, "trivalent dividing by " + modeLabel);
   }
 
   // ---- public entry points --------------------------------------------------
   // segregation.js names reciprocal modes Alternate / Adjacent-1 / Adjacent-2 / 3:1 / 4:0 and
-  // Robertsonian modes Alternate / Adjacent. The single Robertsonian "Adjacent" mode is drawn
-  // as one representative fold (fusion with A); segregation.js's caption already says so, and its
-  // four gametes below enumerate both directions.
+  // Robertsonian modes Alternate plus the two adjacent folds, Adjacent-A / Adjacent-B (the
+  // suffix names the homologue that travels ALONE). The panel draws both folds and lets the
+  // reader select one; bare "Adjacent" stays the A-alone default for older callers.
   function pairing(model) {
     return model.type === "robertsonian" ? triFigure(model, null) : crossFigure(model, null);
   }
   function scene(model, modeName) {
     if (model.type === "robertsonian") {
-      return triFigure(model, modeName === "Alternate" ? "Alternate" : "Adjacent-A");
+      if (modeName === "Alternate") return triFigure(model, "Alternate");
+      return triFigure(model, modeName === "Adjacent-B" ? "Adjacent-B" : "Adjacent-A");
     }
     return crossFigure(model, modeName);
   }

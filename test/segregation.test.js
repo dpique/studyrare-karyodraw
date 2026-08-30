@@ -375,6 +375,85 @@ test('a Robertsonian carrier of 14 or 15 names the UPD risk, without a figure', 
   assert.doesNotMatch(noUpd, /uniparental disomy|UPD/i, 'not relevant to a 2;5 reciprocal');
 });
 
+// ---- adjacent divisions: complementary pairs, selectable planes -------------
+// One 2:1 adjacent division sends the fusion with one homologue while the other
+// homologue travels alone, so its two gametes are complements: the trisomy and
+// the monosomy of the SAME chromosome come from the same plane. The panel
+// groups them as clickable pairs and draws the plane of the selected pair.
+// The division key names the homologue that travels ALONE ("A" or "B"), the
+// same names the scenes use (Adjacent-A / Adjacent-B) in both figure systems.
+// Before this, the caption said the fusion went with A while the to-scale
+// figure drew it with B; tying caption, scene, and pair to one selection
+// removes that disagreement by construction.
+test('rob adjacent tags each gamete with its division; complements share a key', () => {
+  const adj = model('45,XY,der(13;14)(q10;q10)').modes[1];
+  const div = {};
+  native(adj.gametes).forEach((g) => { div[g.zygote] = g.division; });
+  // trisomy 14 and monosomy 14 come from the division where 13 goes alone
+  assert.equal(div['46,XY,der(13;14)(q10;q10),+14'], 'A');
+  assert.equal(div['45,XY,-14'], 'A');
+  assert.equal(div['46,XY,der(13;14)(q10;q10),+13'], 'B');
+  assert.equal(div['45,XY,-13'], 'B');
+});
+test('reciprocal gametes carry no division key (those modes draw one scene each)', () => {
+  model('46,XX,t(2;5)(q21;q31)').modes.forEach((md) =>
+    md.gametes.forEach((g) => assert.ok(!g.division, g.zygote)));
+});
+test('the rob panel draws BOTH adjacent planes and radio-selects between them', () => {
+  const html = Seg.render(model('45,XY,der(13;14)(q10;q10)'));
+  // pairing figure + alternate + two adjacent variants = 4 scene svgs
+  assert.equal((html.match(/class="seg-scene-svg"/g) || []).length, 4);
+  assert.match(html, /class="seg-scene seg-scene-div" data-div="A"/);
+  assert.match(html, /class="seg-scene seg-scene-div" data-div="B"/);
+  assert.equal((html.match(/name="seg-div"/g) || []).length, 2);
+  assert.equal((html.match(/name="seg-div"[^>]*\schecked/g) || []).length, 1);
+  assert.match(html, /id="seg-div-a"[^>]*\schecked/);   // default: the first-listed pair
+});
+test('a reciprocal panel gets no division radios (nothing for them to select)', () => {
+  assert.doesNotMatch(Seg.render(model('46,XX,t(2;5)(q21;q31)')), /name="seg-div"/);
+});
+test('the caption names both planes, each variant keyed to its scene', () => {
+  const html = Seg.render(model('45,XY,der(13;14)(q10;q10)'));
+  assert.match(html, /class="seg-why-div" data-div="A">Drawn above: the fusion travels with <b>14<\/b> and <b>13<\/b> goes alone\./);
+  assert.match(html, /class="seg-why-div" data-div="B">Drawn above: the fusion travels with <b>13<\/b> and <b>14<\/b> goes alone\./);
+  // the one-sided sentence this replaces, which contradicted the to-scale figure
+  assert.doesNotMatch(html, /Shown here the fusion goes with/);
+});
+test('gametes group into pair boxes wired to the radios, affordance stated', () => {
+  const html = Seg.render(model('45,XY,der(13;14)(q10;q10)'));
+  assert.equal((html.match(/class="seg-pair" data-div=/g) || []).length, 2);
+  assert.match(html, /class="seg-pair-hit" for="seg-div-a"/);
+  assert.match(html, /class="seg-pair-hit" for="seg-div-b"/);
+  assert.match(html, /the fusion travels with <b>14<\/b>/);   // pair header names the division
+  assert.match(html, /drawn above/);
+  assert.match(html, /click to draw/);
+});
+test('the typed outcome sorts its pair first and preselects its plane', () => {
+  const h13 = Seg.renderOrigin(Seg.origin(clone0('46,XX,der(13;14)(q10;q10),+13')));
+  const a13 = h13.indexOf('class="seg-pair" data-div="A"');
+  const b13 = h13.indexOf('class="seg-pair" data-div="B"');
+  assert.ok(a13 > 0 && b13 > 0, 'both pairs render');
+  assert.ok(b13 < a13, 'the +13 pair (division B) leads');
+  assert.match(h13, /id="seg-div-b"[^>]*\schecked/);
+  assert.doesNotMatch(h13, /id="seg-div-a"[^>]*\schecked/);
+  const h14 = Seg.renderOrigin(Seg.origin(clone0('46,XX,der(13;14)(q10;q10),+14')));
+  assert.ok(h14.indexOf('class="seg-pair" data-div="A"') < h14.indexOf('class="seg-pair" data-div="B"'),
+    'the +14 pair (division A) leads');
+  assert.match(h14, /id="seg-div-a"[^>]*\schecked/);
+});
+test('adjacent pair gametes are keyed to their pole, like the other single divisions', () => {
+  const html = Seg.render(model('45,XY,der(13;14)(q10;q10)'));
+  // alternate two + adjacent four; the tint no longer overclaims because the
+  // selected pair is exactly the division the scene draws
+  assert.equal((html.match(/seg-g-(teal|rose)/g) || []).length, 6);
+});
+test('the closing note stops at what the figure teaches (no ascertainment clause)', () => {
+  const html = Seg.render(model('45,XY,der(13;14)(q10;q10)'));
+  assert.doesNotMatch(html, /ascertainment/);
+  assert.doesNotMatch(html, /genetic counselor/);
+  assert.match(html, /the specific chromosomes and segment sizes\./);
+});
+
 test('nothing the segregation model emits is called out of order', () => {
   // The listing-order check is deliberately narrow because a broader one flagged
   // 46,XX,+der(5)t(2;5)(q21;q31),-2, which this model emits and which follows ISCN

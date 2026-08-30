@@ -190,8 +190,13 @@
     var sex = sexOf(clone);
     var F = "der(" + A + ";" + B + ")(" + bandA + ";" + bandB + ")";
 
-    function g(bodies, zygote, imbalance, viability, label) {
-      return { bodies: bodies, zygote: zygote, imbalance: imbalance, viability: viability, label: label };
+    // division: the homologue that travels ALONE in the plane that yields this
+    // gamete ("A"/"B"), the same key the scenes use (Adjacent-A = A alone). One
+    // plane reads out twice, so the gametes sharing a key are complements: the
+    // trisomy and the monosomy of the same chromosome. Alternate has one plane
+    // only and carries no key.
+    function g(bodies, zygote, imbalance, viability, label, division) {
+      return { bodies: bodies, zygote: zygote, imbalance: imbalance, viability: viability, label: label, division: division || null };
     }
 
     var modes = [
@@ -204,10 +209,10 @@
       { name: "Adjacent", sub: "2:1", balanced: false,
         blurb: "The fusion chromosome goes with one normal homologue, or a normal homologue goes alone. Each gamete is nullisomic or disomic for a whole long arm, giving a whole-chromosome trisomy or monosomy.",
         gametes: [
-          g(["dF", "B"], "46," + sex + "," + F + ",+" + B, "three copies of " + B + "q", trisomyViability(B), "trisomy " + B),
-          g(["dF", "A"], "46," + sex + "," + F + ",+" + A, "three copies of " + A + "q", trisomyViability(A), "trisomy " + A),
-          g(["A"], "45," + sex + ",-" + B, "one copy of " + B + "q", monosomyViability(B), "monosomy " + B),
-          g(["B"], "45," + sex + ",-" + A, "one copy of " + A + "q", monosomyViability(A), "monosomy " + A)
+          g(["dF", "B"], "46," + sex + "," + F + ",+" + B, "three copies of " + B + "q", trisomyViability(B), "trisomy " + B, "A"),
+          g(["dF", "A"], "46," + sex + "," + F + ",+" + A, "three copies of " + A + "q", trisomyViability(A), "trisomy " + A, "B"),
+          g(["A"], "45," + sex + ",-" + B, "one copy of " + B + "q", monosomyViability(B), "monosomy " + B, "A"),
+          g(["B"], "45," + sex + ",-" + A, "one copy of " + A + "q", monosomyViability(A), "monosomy " + A, "B")
         ] }
     ];
 
@@ -482,13 +487,22 @@
   function robScene(model, modeName) {
     var b = model.bodies;
     var P = { dF: [106, 54], A: [56, 140], B: [156, 140] };
+    if (modeName === "Adjacent") modeName = "Adjacent-A";   // legacy callers get the same default as pachytene
+    // The adjacent suffix names the homologue that travels ALONE (matching
+    // pachytene.js). The chromosomes hold their places; only the plane and the
+    // pole assignments move, so switching variants reads as a different cut
+    // through the same trivalent.
     var CFG = {
       "Alternate": { poles: { t: [106, 18], bo: [106, 182] }, acc: { t: TEAL, bo: ROSE },
         assign: { dF: "t", A: "bo", B: "bo" }, plate: { type: "h", y: 100, x1: 30, x2: 182 }, counts: { t: 1, bo: 2 } },
-      "Adjacent": { poles: { l: [16, 96], r: [198, 96] }, acc: { l: TEAL, r: ROSE },
+      "Adjacent-A": { poles: { l: [16, 96], r: [198, 96] }, acc: { l: TEAL, r: ROSE },
+        assign: { A: "l", dF: "r", B: "r" }, plate: { type: "v", x: 86, y1: 34, y2: 170 }, counts: { l: 1, r: 2 } },
+      "Adjacent-B": { poles: { l: [16, 96], r: [198, 96] }, acc: { l: TEAL, r: ROSE },
         assign: { dF: "l", A: "l", B: "r" }, plate: { type: "v", x: 126, y1: 34, y2: 170 }, counts: { l: 2, r: 1 } }
     }[modeName];
-    return buildScene(b, ["dF", "A", "B"], P, CFG, "trivalent dividing by " + modeName.toLowerCase() + " segregation");
+    var label = modeName === "Alternate" ? "trivalent dividing by alternate segregation"
+      : "trivalent dividing by adjacent segregation (" + (modeName === "Adjacent-A" ? model.A : model.B) + " alone)";
+    return buildScene(b, ["dF", "A", "B"], P, CFG, label);
   }
 
   function buildScene(bodies, ids, P, CFG, label) {
@@ -520,7 +534,8 @@
   function gameteAccent(model, modeName) {
     var CFG = model.type === "robertsonian"
       ? { "Alternate": { assign: { dF: "t", A: "bo", B: "bo" }, acc: { t: TEAL, bo: ROSE } },
-          "Adjacent": { assign: { dF: "l", A: "l", B: "r" }, acc: { l: TEAL, r: ROSE } } }[modeName]
+          "Adjacent-A": { assign: { A: "l", dF: "r", B: "r" }, acc: { l: TEAL, r: ROSE } },
+          "Adjacent-B": { assign: { dF: "l", A: "l", B: "r" }, acc: { l: TEAL, r: ROSE } } }[modeName]
       : { "Alternate": { assign: { A: "t", B: "t", dA: "bo", dB: "bo" }, acc: { t: TEAL, bo: ROSE } },
           "Adjacent-1": { assign: { A: "l", dB: "l", B: "r", dA: "r" }, acc: { l: TEAL, r: ROSE } },
           "Adjacent-2": { assign: { A: "t", dA: "t", B: "bo", dB: "bo" }, acc: { t: TEAL, bo: ROSE } },
@@ -542,7 +557,15 @@
   function whyCaption(model, modeName) {
     if (model.type === "robertsonian") {
       if (modeName === "Alternate") return "The fusion travels to one pole and both normal homologues to the other, so each gamete carries one full dose of every long arm. Both are balanced: one is chromosomally normal, the other a balanced carrier like the parent.";
-      return "The fusion travels with one normal homologue and the other normal goes alone. One pole then carries two copies of a long arm, the other none, which reads out after fertilisation as a whole-chromosome trisomy or monosomy. Shown here the fusion goes with " + model.A + "; the mirror, the fusion with " + model.B + ", is also adjacent.";
+      // Two ways to fold one mode: the reader picks which plane is drawn, and
+      // the sentence naming it swaps with the scene (same data-div key, same
+      // radios). The old fixed sentence named the plane the SCHEMATIC drew
+      // while the to-scale figure drew the other one; keyed variants cannot
+      // disagree with the drawing.
+      return "The fusion travels with one normal homologue and the other normal goes alone. One pole then carries two copies of a long arm, the other none, which reads out after fertilisation as a whole-chromosome trisomy or monosomy. " +
+        '<span class="seg-why-div" data-div="A">Drawn above: the fusion travels with <b>' + esc(model.B) + "</b> and <b>" + esc(model.A) + "</b> goes alone.</span>" +
+        '<span class="seg-why-div" data-div="B">Drawn above: the fusion travels with <b>' + esc(model.A) + "</b> and <b>" + esc(model.B) + "</b> goes alone.</span>" +
+        " Each boxed pair below comes from one division plane, and its two gametes are complements: the trisomy and the monosomy of the same chromosome. Click the other pair to change the plane.";
     }
     if (modeName === "Alternate") return "Both chromosomes bound for one pole sit at <b>opposite corners</b> of the ring, so the spindle fibers cross. Taking every other one always pairs a normal with a normal and a derivative with a derivative, so each pole gets a complete set. This is the only balanced pattern.";
     if (modeName === "Adjacent-1") return "The two that travel together are <b>neighbors</b> in the ring, and their centromeres come from different chromosomes. The two matching (homologous) centromeres are therefore pulled apart. Each gamete keeps one normal chromosome and one non-matching derivative: one exchanged segment is duplicated, the other deleted.";
@@ -617,36 +640,75 @@
     // CSS, so the module stays DOM-free). Kept a sibling of .seg-modes for the ~ selector.
     // The conceptus karyotypes are clickable, but a dotted underline alone is too
     // quiet to be found, so the affordance is stated once here, directly above them.
-    var controls = '<input type="checkbox" id="seg-anim" class="seg-anim-cb">' +
+    // The Robertsonian division radios sit beside the checkbox for the same ~ reason:
+    // the checked one shows its adjacent scene, its caption sentence, and its pair.
+    var adjMode = null;
+    model.modes.forEach(function (m) { if (model.type === "robertsonian" && m.name === "Adjacent") adjMode = m; });
+    var hereDiv = "A";
+    if (adjMode && model.hereZygote) {
+      adjMode.gametes.forEach(function (gm) { if (gm.zygote === model.hereZygote && gm.division) hereDiv = gm.division; });
+    }
+    var radios = !adjMode ? "" : ["A", "B"].map(function (d) {
+      var withChrom = d === "A" ? model.B : model.A, lone = d === "A" ? model.A : model.B;
+      return '<input type="radio" name="seg-div" id="seg-div-' + d.toLowerCase() + '" class="seg-div-rb"' +
+        (d === hereDiv ? " checked" : "") + ' aria-label="Draw the adjacent division where the fusion travels with ' +
+        escAttr(withChrom) + " and " + escAttr(lone) + ' goes alone">';
+    }).join("");
+    var controls = '<input type="checkbox" id="seg-anim" class="seg-anim-cb">' + radios +
       '<div class="seg-controls"><label for="seg-anim" class="seg-anim-toggle"><span class="seg-switch"></span>Animate the pull to the poles</label>' +
       '<span class="seg-hint">Click any conceptus karyotype below to draw and decode that outcome.</span></div>';
 
+    function gameteCard(gm, acc) {
+      var lab = gm.label ? '<span class="seg-glabel">' + esc(gm.label) + '</span>' : "";
+      var here = (model.hereZygote && gm.zygote === model.hereZygote)
+        ? '<span class="seg-here">the karyotype you typed</span>' : "";
+      var imb = (gm.imbalance && gm.imbalance !== "balanced")
+        ? '<div class="seg-imb">' + esc(gm.imbalance) + '</div>' : "";
+      return '<div class="seg-gamete' + (acc ? " seg-g-" + acc : "") + (here ? " seg-is-here" : "") + '">' +
+        '<div class="seg-gpoles">' + glyphRow(b, gm.bodies) + '</div>' +
+        '<div class="seg-gout">' + ktButton(gm.zygote) + lab + here + imb +
+        '<div class="seg-viab">' + viabChip(gm.viability) + '</div></div></div>';
+    }
+
     var modes = model.modes.map(function (m) {
-      // Key gametes to their pole color only for a clean single division (two gametes).
-      // 3:1 and Robertsonian adjacent draw one representative split of several, so tinting
-      // all their gametes to it would overclaim; leave those neutral.
-      var accentOf = m.gametes.length === 2 ? gameteAccent(model, m.name) : function () { return null; };
-      var gametes = m.gametes.map(function (gm) {
-        var acc = accentOf(gm);
-        var lab = gm.label ? '<span class="seg-glabel">' + esc(gm.label) + '</span>' : "";
-        var here = (model.hereZygote && gm.zygote === model.hereZygote)
-          ? '<span class="seg-here">the karyotype you typed</span>' : "";
-        var imb = (gm.imbalance && gm.imbalance !== "balanced")
-          ? '<div class="seg-imb">' + esc(gm.imbalance) + '</div>' : "";
-        return '<div class="seg-gamete' + (acc ? " seg-g-" + acc : "") + (here ? " seg-is-here" : "") + '">' +
-          '<div class="seg-gpoles">' + glyphRow(b, gm.bodies) + '</div>' +
-          '<div class="seg-gout">' + ktButton(gm.zygote) + lab + here + imb +
-          '<div class="seg-viab">' + viabChip(gm.viability) + '</div></div></div>';
-      }).join("");
+      var scenes, gametes;
+      if (m === adjMode) {
+        // Both planes render; the checked radio picks the visible one, so caption,
+        // scene, and the highlighted pair cannot disagree. Each pair is one
+        // division: complements boxed together, the typed outcome's pair leading
+        // and preselected. The whole box is a click target through the overlay
+        // label; the conceptus buttons stay above it (z-index) with their own click.
+        scenes = ["A", "B"].map(function (d) {
+          return '<div class="seg-scene seg-scene-div" data-div="' + d + '">' + sceneOf("Adjacent-" + d) + "</div>";
+        }).join("");
+        var order = hereDiv === "B" ? ["B", "A"] : ["A", "B"];
+        gametes = order.map(function (d) {
+          var accentOf = gameteAccent(model, "Adjacent-" + d);
+          var cards = m.gametes.filter(function (gm) { return gm.division === d; })
+            .map(function (gm) { return gameteCard(gm, accentOf(gm)); }).join("");
+          return '<div class="seg-pair" data-div="' + d + '">' +
+            '<label class="seg-pair-hit" for="seg-div-' + d.toLowerCase() + '" aria-hidden="true"></label>' +
+            '<div class="seg-pair-h">One division: the fusion travels with <b>' +
+            esc(d === "A" ? model.B : model.A) + "</b>" +
+            '<span class="seg-pair-on">drawn above</span><span class="seg-pair-off">click to draw</span></div>' +
+            cards + "</div>";
+        }).join("");
+      } else {
+        // Key gametes to their pole color only for a clean single division (two
+        // gametes); a 3:1 gamete spans both poles, so those stay neutral.
+        var accentOf2 = m.gametes.length === 2 ? gameteAccent(model, m.name) : function () { return null; };
+        scenes = '<div class="seg-scene">' + sceneOf(m.name) + "</div>";
+        gametes = m.gametes.map(function (gm) { return gameteCard(gm, accentOf2(gm)); }).join("");
+      }
       return '<div class="seg-mode' + (m.balanced ? " seg-balanced" : "") + '">' +
         '<div class="seg-mode-h"><b>' + esc(m.name) + '</b> <span class="seg-sub">' + esc(m.sub) + '</span>' +
         (m.balanced ? '<span class="seg-ok">balanced</span>' : '<span class="seg-bad">unbalanced</span>') + '</div>' +
-        '<div class="seg-scene">' + sceneOf(m.name) + '</div>' +
+        scenes +
         '<p class="seg-why">' + whyCaption(model, m.name) + '</p>' +
         '<div class="seg-gametes">' + gametes + '</div></div>';
     }).join("");
 
-    var note = '<p class="seg-note">Segregants follow ISCN 2024, Table 5. The diagrams are schematic: chromosome lengths and pole positions are not to scale, and the fiber paths illustrate which chromosomes co-segregate, not the physical spindle. This is a teaching model of segregation, not a recurrence-risk estimate: real risks depend on the specific chromosomes, segment sizes, and ascertainment, and are set by a genetic counselor.</p>';
+    var note = '<p class="seg-note">Segregants follow ISCN 2024, Table 5. The diagrams are schematic: chromosome lengths and pole positions are not to scale, and the fiber paths illustrate which chromosomes co-segregate, not the physical spindle. This is a teaching model of segregation, not a recurrence-risk estimate: real risks depend on the specific chromosomes and segment sizes.</p>';
 
     return head + config + controls + '<div class="seg-modes">' + modes + '</div>' + note;
   }

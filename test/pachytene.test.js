@@ -22,7 +22,7 @@ const P = win.Pachytene, ISCN = win.ISCN, Seg = win.Segregation;
 const model = (k) => Seg.compute(ISCN.parse(k).clones[0]);
 
 const RECIP_MODES = ['Alternate', 'Adjacent-1', 'Adjacent-2', '3:1', '4:0'];
-const ROB_MODES = ['Alternate', 'Adjacent'];
+const ROB_MODES = ['Alternate', 'Adjacent-A', 'Adjacent-B'];
 
 // ---- svg parsing helpers ----------------------------------------------------
 function allLines(svg) {
@@ -301,6 +301,23 @@ test('the robertsonian panel uses the folded trivalent figure and label', () => 
   const html = Seg.render(model('45,XX,rob(13;14)(q10;q10)'));
   assert.match(html, /trivalent/);
   assert.match(html, /rob\(13;14\)/);   // the fusion label spelled in the figure
+});
+test('the trivalent draws either adjacent plane on request; bare Adjacent keeps the default', () => {
+  const m = model('45,XX,rob(13;14)(q10;q10)');
+  const a = P.scene(m, 'Adjacent-A'), b = P.scene(m, 'Adjacent-B');
+  assert.notEqual(a, b, 'the two planes are different figures');
+  assert.equal(P.scene(m, 'Adjacent'), a, 'bare Adjacent stays the A-alone default');
+  // the aria label says which homologue travels alone, not an internal suffix
+  assert.match(a, /adjacent segregation \(13 alone\)/);
+  assert.match(b, /adjacent segregation \(14 alone\)/);
+  assert.doesNotMatch(a + b, /adjacent-a|adjacent-b/);
+});
+test('with pachytene loaded the rob panel draws both adjacent variants to scale', () => {
+  const html = Seg.render(model('45,XX,rob(13;14)(q10;q10)'));
+  // pairing + alternate + the two adjacent planes
+  assert.equal((html.match(/class="seg-scene-svg"/g) || []).length, 4);
+  assert.match(html, /class="seg-scene seg-scene-div" data-div="A"/);
+  assert.match(html, /class="seg-scene seg-scene-div" data-div="B"/);
 });
 test('the 3:1 caption no longer says the plate cuts chromosomes', () => {
   const html = Seg.render(model('46,XY,t(2;5)(q21;q31)'));

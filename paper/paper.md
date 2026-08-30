@@ -191,7 +191,7 @@ explanations can be reused in course material. Each release is archived on Zenod
 the concept DOI 10.5281/zenodo.22119721, which resolves to the current version.
 Chromosome band data are
 derived from the UCSC Genome Browser `cytoBandIdeo` table (hg38). The application
-is validated by a dependency-free suite of more than 600 behavioral tests (Node's
+is validated by a dependency-free suite of more than 700 behavioral tests (Node's
 built-in runner, gating every pull request and every deploy) covering
 designations from aneuploidy through three-way translocations and mosaicism,
 Robertsonian derivatives, isodicentrics, polyploidy, segregation-mode

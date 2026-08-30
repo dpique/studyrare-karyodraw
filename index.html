@@ -321,6 +321,38 @@
   .seg-gamete { display: flex; gap: 11px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: 8px 9px; }
   .seg-gamete.seg-g-teal { border-left: 3px solid #1f9e8f; }
   .seg-gamete.seg-g-rose { border-left: 3px solid #c0568a; }
+  /* Adjacent divisions (Robertsonian): the four outcomes group into two boxed
+     pairs, one per division plane, complements together. Hidden radios (siblings
+     of .seg-modes, like #seg-anim) select which plane the adjacent scene draws
+     and which caption sentence shows. The whole pair box is its radio's click
+     target through an overlay label; the conceptus buttons are raised above the
+     overlay so they keep their own click. The unselected pair mutes its pole
+     tints, since only the drawn plane may claim them. */
+  .seg-div-rb { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .seg-pair { position: relative; border: 1px solid var(--line); border-radius: 11px; padding: 7px; background: #fdfdff; }
+  .seg-pair .seg-gamete + .seg-gamete { margin-top: 7px; }
+  .seg-pair:hover { border-color: var(--peri-300); }
+  .seg-pair-hit { position: absolute; inset: 0; cursor: pointer; border-radius: inherit; }
+  .seg-pair .seg-kt { position: relative; z-index: 1; }
+  .seg-pair-h { display: flex; align-items: baseline; gap: 8px; margin: 1px 2px 7px; font-size: 11.5px; color: var(--ink-2); }
+  .seg-pair-h b { font-family: var(--font-mono); }
+  .seg-pair-on, .seg-pair-off { margin-left: auto; font-size: 10.5px; font-weight: 600; border-radius: 6px; padding: 1px 7px; white-space: nowrap; }
+  .seg-pair-on { display: none; color: var(--ink-2); background: var(--line); }
+  .seg-pair-off { color: var(--peri-700); background: var(--peri-50); }
+  #seg-div-a:checked ~ .seg-modes .seg-pair[data-div="A"],
+  #seg-div-b:checked ~ .seg-modes .seg-pair[data-div="B"] { border-color: var(--muted); box-shadow: 0 1px 5px rgba(36, 42, 69, .10); }
+  #seg-div-a:checked ~ .seg-modes .seg-pair[data-div="A"] .seg-pair-on,
+  #seg-div-b:checked ~ .seg-modes .seg-pair[data-div="B"] .seg-pair-on { display: inline-block; }
+  #seg-div-a:checked ~ .seg-modes .seg-pair[data-div="A"] .seg-pair-off,
+  #seg-div-b:checked ~ .seg-modes .seg-pair[data-div="B"] .seg-pair-off { display: none; }
+  #seg-div-a:checked ~ .seg-modes .seg-scene-div[data-div="B"],
+  #seg-div-a:checked ~ .seg-modes .seg-why-div[data-div="B"],
+  #seg-div-b:checked ~ .seg-modes .seg-scene-div[data-div="A"],
+  #seg-div-b:checked ~ .seg-modes .seg-why-div[data-div="A"] { display: none; }
+  #seg-div-a:checked ~ .seg-modes .seg-pair[data-div="B"] .seg-gamete,
+  #seg-div-b:checked ~ .seg-modes .seg-pair[data-div="A"] .seg-gamete { border-left-color: var(--line); }
+  #seg-div-a:focus-visible ~ .seg-modes .seg-pair[data-div="A"],
+  #seg-div-b:focus-visible ~ .seg-modes .seg-pair[data-div="B"] { outline: 2px solid var(--periwinkle); outline-offset: 2px; }
   .seg-gpoles { flex: 0 0 auto; }
   .seg-gout { min-width: 0; }
   /* The conceptus karyotype is the panel's one interactive element: it loads that
