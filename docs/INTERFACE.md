@@ -171,7 +171,7 @@ a different configuration entirely. The page contract, a figure states what the
 notation states, is honored page-wide instead: clicking a carrier chip loads the
 parent's page, where the forward panel is native and true, carrying the child along as
 a `from=` URL parameter. The parent's panel then marks the matching gamete "the
-karyotype you came from" (preselecting its division pair where that applies), and the
+karyotype you traced" (preselecting its division pair where that applies), and the
 same card, in a plain non-amber mood, offers the way back plus a jump to the panel.
 The thread survives view toggles on the same karyotype, dies on any plain jump, and is
 validated against the forward model, so a hand-edited URL cannot fabricate a mark.

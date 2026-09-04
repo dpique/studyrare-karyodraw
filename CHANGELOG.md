@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-04 (one chromosome, one color, and the trace speaks genetics)
+
+- **A chromosome now wears the same highlight color in every figure of a
+  family.** Colors were assigned by order of appearance in the notation, so
+  der(22)t(11;22) handed chromosome 22 the first color while the parent
+  t(11;22) handed it to 11, and the child page, its hover preview, and the
+  carrier page it links to wore opposite colors (owner report). Assignment now
+  follows ISCN rearrangement naming order (sex chromosomes first, then
+  ascending), making the color a function of the chromosome set alone.
+- **The return card speaks genetics, not navigation.** "This carrier can
+  produce the karyotype you came from" became "A possible carrier parent,
+  traced from ..." with the karyotype as the chip, and the marked outcome in
+  the panel reads "the karyotype you traced".
+
 ## 2026-09-04 (the origin card slims down, and the meiosis moves home)
 
 - **The parental-origin card is now chips-first and mechanism-free** (owner call:

@@ -81,9 +81,9 @@ test('the parental-origin card: amber chips out, plain marker back', async (t) =
       await waitAlert(page);
       const st = await state(page);
       assert.ok(!st.warn, 'plain mood on the carrier page');
-      assert.match(st.head, /the karyotype you came from/);
+      assert.match(st.head, /A possible carrier parent/);
       assert.notEqual(st.panel, 'none', 'the forward panel renders here, where it is true');
-      assert.match(st.panelText, /the karyotype you came from/, 'the arrived-from outcome is marked');
+      assert.match(st.panelText, /the karyotype you traced/, 'the traced outcome is marked');
       assert.match(st.search, /from=46,XX,der\(4\)/, 'the thread rides the URL');
     });
 
@@ -91,7 +91,7 @@ test('the parental-origin card: amber chips out, plain marker back', async (t) =
       await page.evaluate(() => document.querySelector('#levelseg button[data-level]:not(.on)').click());
       await new Promise((r) => setTimeout(r, 150));
       let st = await state(page);
-      assert.match(st.panelText, /the karyotype you came from/, 'same karyotype redrawn, thread kept');
+      assert.match(st.panelText, /the karyotype you traced/, 'same karyotype redrawn, thread kept');
       await page.evaluate(() => document.querySelector('#origin-alert .seg-kt').click());
       await page.waitForFunction(() =>
         /der\(4\)/.test(document.getElementById('kinput').value));
@@ -107,7 +107,7 @@ test('the parental-origin card: amber chips out, plain marker back', async (t) =
       await waitAlert(page);
       const st = await state(page);
       assert.ok(!st.warn);
-      assert.match(st.panelText, /the karyotype you came from/);
+      assert.match(st.panelText, /the karyotype you traced/);
     });
 
     await t.test('a bogus from= is scrubbed, never rendered', async () => {
@@ -117,7 +117,7 @@ test('the parental-origin card: amber chips out, plain marker back', async (t) =
         getComputedStyle(document.getElementById('segregation-card')).display !== 'none');
       const st = await state(page);
       assert.equal(st.display, 'none', 'no card claims an outcome the panel does not produce');
-      assert.doesNotMatch(st.panelText, /came from/);
+      assert.doesNotMatch(st.panelText, /you traced/);
       assert.doesNotMatch(st.search, /from=/, 'and the URL is scrubbed');
     });
 

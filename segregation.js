@@ -457,7 +457,7 @@
   }
 
   // Called on the CARRIER page when the reader arrived through that card (the
-  // from= thread). Marks the matching gamete "the karyotype you came from" and
+  // from= thread). Marks the matching gamete "the karyotype you traced" and
   // returns the small return-card; null when nothing matches, so a hand-edited
   // URL cannot make the panel claim an outcome it does not produce.
   function applyFrom(model, k) {
@@ -469,10 +469,14 @@
         var g = model.modes[i].gametes[j];
         if (canonKeyNoSex(g.zygote) !== want) continue;
         model.hereZygote = g.zygote;
-        model.hereLabel = "the karyotype you came from";
-        return '<p class="oal-head">This carrier can produce the karyotype you came from</p>' +
-          '<div class="oal-chips">' + ktButton(k) + '</div>' +
-          '<p class="oal-hint">That outcome is marked in the <a href="#segregation-card">meiotic segregation</a> below; click the karyotype to go back.</p>';
+        model.hereLabel = "the karyotype you traced";
+        // Domain words, not navigation words ("the karyotype you came from"
+        // narrated the click, not the genetics; Dan, 2026-09-04): the page is a
+        // possible carrier parent, and the chip names what it was traced from,
+        // in the same who-plus-chip grammar as the amber card.
+        return '<p class="oal-head">A possible carrier parent</p>' +
+          '<div class="oal-chips"><span class="orig-who">traced from</span>' + ktButton(k) + '</div>' +
+          '<p class="oal-hint">That outcome is marked in the <a href="#segregation-card">meiotic segregation</a> below; click its karyotype to go back.</p>';
       }
     }
     return null;

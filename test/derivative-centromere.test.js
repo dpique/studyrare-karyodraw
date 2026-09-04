@@ -196,3 +196,21 @@ test('a Y in the affected set brings the X beside it', async () => {
   const noSex = Karyo.computeAffected(ISCN.parse('46,XY,t(9;22)(q34;q11.2)').clones);
   assert.ok(!noSex['X'] && !noSex['Y'], 'an autosomal karyotype still hides both sex chromosomes');
 });
+
+test('affected colors follow the chromosome set, not the notation path', async () => {
+  const { Karyo, ISCN } = await lib();
+  // der(22)t(11;22) and its parent t(11;22) must wear the same colors: the
+  // child page, its hover preview of the parent, and the carrier page its
+  // parental-origin chip loads are read side by side, and the legend promises
+  // that pieces take the color of the chromosome they came from (Dan,
+  // 2026-09-04: "the colours are opposite here"). Sex chromosomes keep first
+  // place, the order ISCN names them in a rearrangement.
+  const aff = (k) => Karyo.computeAffected(ISCN.parse(k).clones);
+  const child = aff('47,XY,+der(22)t(11;22)(q23;q11.2)');
+  const parent = aff('46,XX,t(11;22)(q23;q11.2)');
+  assert.equal(child['11'], parent['11'], 'chromosome 11 keeps its color across the pair');
+  assert.equal(child['22'], parent['22'], 'chromosome 22 keeps its color across the pair');
+  assert.notEqual(child['11'], child['22']);
+  const x = aff('46,XX,der(3)t(X;3)(q13;q21)');
+  assert.equal(x['X'], Karyo.AFFECTED_PALETTE[0], 'the sex chromosome leads, as in t(X;3) naming');
+});

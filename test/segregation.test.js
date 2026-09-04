@@ -336,12 +336,12 @@ test('no meiosis is embedded under the child; the chips carry the from thread', 
   assert.doesNotMatch(card, /seg-mode|seg-scene|seg-gamete/);
   assert.match(card, /data-from="46,XX,der\(14;21\)\(q10;q10\),\+21"/, 'each carrier chip hands the typed karyotype along');
 });
-test('the carrier page marks the outcome the reader came from', () => {
+test('the carrier page marks the outcome the reader traced', () => {
   const m = Seg.compute(clone0('45,XX,der(14;21)(q10;q10)'));
   const back = Seg.applyFrom(m, '46,XX,der(14;21)(q10;q10),+21');
   assert.ok(back, 'the product is recognised');
   assert.equal(m.hereZygote, '46,XX,der(14;21)(q10;q10),+21');
-  assert.match(Seg.render(m), /the karyotype you came from/);
+  assert.match(Seg.render(m), /the karyotype you traced/);
   assert.match(back, /#segregation-card/, 'the return card points at the panel');
   assert.match(back, /data-k="46,XX,der\(14;21\)\(q10;q10\),\+21"/, 'and offers the way back');
   const bogus = Seg.compute(clone0('45,XX,der(14;21)(q10;q10)'));
@@ -582,7 +582,7 @@ test('the unbalanced homologous product traces back, in either written order', (
   });
   const m = Seg.compute(clone0('45,XX,der(21;21)(q10;q10)'));
   assert.ok(Seg.applyFrom(m, '46,XX,der(21;21)(q10;q10),+21'), 'either written order matches on the carrier page');
-  assert.match(Seg.render(m), /the karyotype you came from/);
+  assert.match(Seg.render(m), /the karyotype you traced/);
 });
 test('a homologous 15 fusion carries the UPD warning through origin', () => {
   const org = Seg.origin(clone0('46,XX,+15,der(15;15)(q10;q10)'));
