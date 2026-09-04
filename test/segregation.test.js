@@ -472,3 +472,111 @@ test('nothing the segregation model emits is called out of order', () => {
   });
   assert.ok(seen >= 20, `only ${seen} conceptus karyotypes checked`);
 });
+
+// ---- inheritance qualifiers reach the origin view ---------------------------
+// ISCN 2024 Table 5 writes every segregant with dmat, so the standard's own
+// spellings must fire; 4.2.1 g defines the suffix family (mat/pat name the
+// parent, the d- forms mark one product of a parental rearrangement, inh leaves
+// the parent unstated) and 4.2.1 h makes dn mean both parents karyotyped
+// normal, which is why dn stands the inference down.
+test('ISCN 2024 Table 5 spellings, dmat included, trace to carrier and mother', () => {
+  const t5 = [
+    ['46,XX,der(5)t(2;5)(q21;q31)dmat', 'Adjacent-1'],
+    ['46,XX,der(2)t(2;5)(q21;q31)dmat', 'Adjacent-1'],
+    ['46,XX,+der(2)t(2;5)(q21;q31)dmat,-5', 'Adjacent-2'],
+    ['47,XX,+der(5)t(2;5)(q21;q31)dmat', '3:1'],
+  ];
+  t5.forEach(([k, mode]) => {
+    const org = Seg.origin(clone0(k));
+    assert.ok(org, `${k} should trace back to a carrier`);
+    assert.equal(org.candidates[0].mode, mode, k);
+    assert.equal(org.candidates[0].parent, 'mother', `${k} names the mother`);
+    assert.equal(org.deNovoPossible, false, `${k}: an inherited suffix rules out de novo`);
+  });
+});
+test('the classic Emanuel spelling with mat fires 3:1 and offers only the mother', () => {
+  const org = Seg.origin(clone0('47,XY,+der(22)t(11;22)(q23;q11.2)mat'));
+  assert.ok(org, 'the textbook +der(22)mat must fire');
+  assert.equal(org.candidates[0].mode, '3:1');
+  assert.equal(org.candidates[0].parent, 'mother');
+  const block = Seg.renderOrigin(org).match(/<div class="orig-carriers">[\s\S]*?<\/div>/)[0];
+  assert.match(block, /the mother/);
+  assert.match(block, /46,XX,t\(11;22\)\(q23;q11\.2\)/, 'her balanced karyotype is the chip');
+  assert.equal((block.match(/class="seg-kt"/g) || []).length, 1, 'one chip, not an either/or pair');
+});
+test('pat and inh branch the copy; dn stands the inference down', () => {
+  const pat = Seg.origin(clone0('46,XX,der(4)t(4;11)(p15;q23)pat'));
+  assert.equal(pat.candidates[0].parent, 'father');
+  assert.match(Seg.renderOrigin(pat), /the father/);
+  const inh = Seg.origin(clone0('46,XX,der(4)t(4;11)(p15;q23)inh'));
+  assert.equal(inh.candidates[0].parent, 'inherited');
+  assert.equal(inh.deNovoPossible, false);
+  assert.match(Seg.renderOrigin(inh), /without saying which/);
+  assert.equal(Seg.origin(clone0('46,XX,der(4)t(4;11)(p15;q23)dn')), null,
+    'dn documents normal parents, so no carrier view');
+  const bare = Seg.origin(clone0('46,XX,der(4)t(4;11)(p15;q23)'));
+  assert.equal(bare.deNovoPossible, true, 'no suffix keeps de novo on the table');
+});
+
+// ---- homologous Robertsonian: univalent, never the trivalent ----------------
+// Gardner (5th ed, rob(21q21q)): a carrier of a homologous fusion has no normal
+// homologue to pass on, so every conception is trisomic or monosomic and a
+// chromosomally normal child is not possible. The trivalent model claimed
+// otherwise for 45,XX,der(21;21)(q10;q10) until this split.
+test('a homologous fusion carrier gets the univalent model, not the trivalent', () => {
+  const m = model('45,XX,der(21;21)(q10;q10)');
+  assert.equal(m.type, 'homologous');
+  assert.equal(Seg.eligible(clone0('45,XX,rob(21;21)')), true, 'rob spelling too');
+  assert.equal(model('45,XX,der(13;14)(q10;q10)').type, 'robertsonian', 'two different acros keep the trivalent');
+  assert.equal(m.modes.length, 1);
+  assert.equal(m.modes[0].balanced, false, 'no balanced mode exists');
+  const zys = native(zygotes(m));
+  assert.deepEqual(zys, ['46,XX,+21,der(21;21)(q10;q10)', '45,XX,-21'],
+    'both gametes, trisomic spelled in ISCN 2024 printed order');
+  zys.forEach((z) => {
+    const p = ISCN.parse(z);
+    assert.equal(p.warnings.length, 0, `${z} parses clean`);
+    assert.equal(p.clones[0].counts.ok, true, `${z} is self-consistent`);
+  });
+});
+test('the univalent panel never claims a normal or balanced outcome', () => {
+  const html = Seg.render(model('45,XX,der(21;21)(q10;q10)'));
+  assert.match(html, /univalent/);
+  assert.match(html, /no alternate mode/i);
+  assert.doesNotMatch(html, /chromosomally normal/);
+  assert.doesNotMatch(html, /balanced carrier, like the parent/);
+  assert.doesNotMatch(html, /seg-scene/, 'no division scene: there is no valent to draw');
+});
+test('the unbalanced homologous product traces back, in either written order', () => {
+  ['46,XX,+21,der(21;21)(q10;q10)', '46,XX,der(21;21)(q10;q10),+21'].forEach((k) => {
+    const org = Seg.origin(clone0(k));
+    assert.ok(org, `${k} should trace back`);
+    assert.equal(org.candidates[0].type, 'homologous');
+    assert.equal(org.candidates[0].model.hereZygote, '46,XX,+21,der(21;21)(q10;q10)');
+    const html = Seg.renderOrigin(org);
+    assert.match(html, /every conception is trisomic or monosomic/);
+    assert.match(html, /i\(21\)\(q10\)/, 'the de novo isochromosome differential is named');
+    assert.match(html, /seg-here/, 'the typed outcome is marked in the embedded panel');
+  });
+});
+test('a homologous 15 fusion carries the UPD warning through origin', () => {
+  const org = Seg.origin(clone0('46,XX,+15,der(15;15)(q10;q10)'));
+  assert.ok(org);
+  assert.deepEqual(native(org.candidates[0].upd), ['15']);
+  assert.match(Seg.renderOrigin(org), /Prader-Willi and Angelman/);
+});
+
+// ---- the alert strip beside the figure --------------------------------------
+test('renderOriginAlert flags, names, and points down, from the same model', () => {
+  const bare = Seg.renderOriginAlert(Seg.origin(clone0('46,XX,der(4)t(4;11)(p15;q23)')));
+  assert.match(bare, /A parent may be a balanced carrier/);
+  assert.match(bare, /Adjacent-1/);
+  assert.match(bare, /de novo/);
+  assert.match(bare, /href="#segregation-card"/);
+  const mat = Seg.renderOriginAlert(Seg.origin(clone0('47,XY,+der(22)t(11;22)(q23;q11.2)mat')));
+  assert.match(mat, /names the mother/);
+  const hom = Seg.renderOriginAlert(Seg.origin(clone0('46,XX,+21,der(21;21)(q10;q10)')));
+  assert.match(hom, /Could a parent carry this fusion\?/);
+  assert.match(hom, /trisomic or monosomic/);
+  assert.equal(Seg.renderOriginAlert(null), '');
+});

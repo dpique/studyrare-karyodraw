@@ -212,3 +212,27 @@ lead appear — by which point it is true, about the parent.
    line naming uniparental disomy and the syndromes (Temple and Kagami-Ogata for 14,
    Prader-Willi and Angelman for 15), because it is a real reason to test the parents
    that a segregation diagram cannot show. A reciprocal carrier gets no such line.
+
+## As built, round 2 (2026-09-04)
+
+Three additions, each closing a way the view failed to fire or overspoke:
+
+- **Inheritance qualifiers match and steer.** The comparison key (`canonKey`) strips
+  mat/pat/dn/inh/dmat/dpat/dinh before comparing, because ISCN 2024 Table 5 writes
+  every segregant with dmat and the textbook Emanuel karyotype ends in mat; keeping
+  the suffix made the standard's own spellings match nothing. The suffix is then read
+  back per candidate: mat/dmat name the mother (one carrier chip, no either/or),
+  pat/dpat the father, inh/dinh keep both chips but drop the de novo alternative, and
+  dn drops the candidate entirely, since it documents normal parents (4.2.1 h). For
+  plain mat/pat the panel keeps the d- distinction visible: the balanced-carrier
+  reading is stated as the usual one, with dmat named as the form that documents it.
+- **The alert card.** `renderOriginAlert(org)` produces a compact strip for the
+  `#origin-alert-card` at the top of the tool column (see INTERFACE.md); same model
+  as the panel, so no second enumeration and no chance of disagreement.
+- **The homologous fusion is its own model.** `der(21;21)` products used to trace to
+  a trivalent whose alternate mode offered a chromosomally normal child; false, per
+  Gardner (5th ed): the carrier keeps no free homologue, so the fusion is a univalent
+  and every conception is trisomic or monosomic. `computeHomologous` models the two
+  gametes (the trisomic zygote spelled `46,XX,+21,der(21;21)(q10;q10)`, ISCN 2024's
+  printed order), `renderHomologous` draws it as text with no scene, and the origin
+  head names the de novo isochromosome differential, which is the more common origin.
