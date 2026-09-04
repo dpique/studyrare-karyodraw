@@ -473,12 +473,14 @@
         model.hereZygote = g.zygote;
         model.hereLabel = "the karyotype you traced";
         // Domain words, not navigation words ("the karyotype you came from"
-        // narrated the click, not the genetics; Dan, 2026-09-04): the page is a
-        // possible carrier parent, the chip is the product it could give rise
-        // to, in the same who-plus-chip grammar as the amber card.
-        return '<p class="oal-head">A possible carrier parent</p>' +
-          '<div class="oal-chips"><span class="orig-who">could give rise to</span>' + ktButton(k) + '</div>' +
-          '<p class="oal-hint">See it marked in the <a href="#segregation-card">meiotic segregation</a> below.</p>';
+        // narrated the click, not the genetics; Dan, 2026-09-04): the page IS
+        // the carrier parent (the drawn karyotype is unambiguously a balanced
+        // carrier), and they could give rise to the product, in the same
+        // who-plus-chip grammar as the amber card. The de novo hedge stays on
+        // the child page; here the karyotype is a carrier, full stop.
+        return '<p class="oal-head">This is a carrier parent</p>' +
+          '<div class="oal-chips"><span class="orig-who">They could give rise to</span>' + ktButton(k) + '</div>' +
+          '<p class="oal-hint">See the <a href="#segregation-card">meiotic segregation</a> below.</p>';
       }
     }
     return null;
