@@ -148,21 +148,37 @@ used as ink. The shape palette is tuned for fills; its light periwinkle and ambe
 unreadable at 12px. `test/detailed-form-color-browser.test.js` checks the contrast
 with its own color math, independent of textInk.
 
-## The unbalanced karyotype flags its carrier question up top (2026-09-04)
+## The unbalanced karyotype flags its carrier question up top (2026-09-04, revised same day)
 
 When an unbalanced karyotype traces to a balanced-carrier parent (any product the
 segregation model can run backwards: unbalanced reciprocal, 3:1 tertiary trisomy,
 Robertsonian trisomy, homologous fusion product), a compact Parental origin card leads
-the tool column, above the decode. The full reasoning lives in the "Where this came
-from" panel at the bottom of the page; the card exists because that panel is below the
-fold, and the carrier question is the one a clinic or an exam asks first. Prominence is
-the invariant, per the feedback-flag rule above; the exact slot in the column is the
-owner's to move.
+the tool column, above the decode. Prominence is the invariant, per the feedback-flag
+rule above; the exact slot in the column is the owner's to move.
 
-The card is the one panel allowed the amber caution wash. That is a notice identity,
-not the toolbar flag's action identity: the flag stays the only amber BUTTON, the card
-carries no controls at all, only a jump link. Card and panel render from one
-`Segregation.origin()` result in `renderSegregation`, so the alert can never flag what
-the panel does not show, and the draw gate sweeps the card like every other
-`data-drawing` panel. `test/origin-alert-browser.test.js` pins appearance, the named
-parent, the empty states, and the sweep in a real browser.
+**The card is chips-first and mechanism-free** (owner call, same day the first version
+shipped: "that amber box is too wordy... people would just want to jump straight to the
+possible parental karyotype"). Headline, then the carrier karyotypes as loadable chips
+(one when a mat/pat/dmat/dpat suffix names the parent, an either/or pair otherwise),
+then one caveat line. Mode names and segregation talk stay out of the card.
+
+**The parent's meiosis is never embedded under the child.** The first version rendered
+the inferred carrier's full segregation panel at the bottom of the child's page, and it
+was confusable by placement: the quadrivalent draws chromosomes the child's karyotype
+does not contain (the Emanuel child has no der(11)), its lead reads "this carrier" on a
+page whose karyotype is not a carrier, and the proband's own meiosis, if any, would be
+a different configuration entirely. The page contract, a figure states what the
+notation states, is honored page-wide instead: clicking a carrier chip loads the
+parent's page, where the forward panel is native and true, carrying the child along as
+a `from=` URL parameter. The parent's panel then marks the matching gamete "the
+karyotype you came from" (preselecting its division pair where that applies), and the
+same card, in a plain non-amber mood, offers the way back plus a jump to the panel.
+The thread survives view toggles on the same karyotype, dies on any plain jump, and is
+validated against the forward model, so a hand-edited URL cannot fabricate a mark.
+
+The amber wash is the caution mood only: a notice identity, not the toolbar flag's
+action identity, and the plain mood drops it so a balanced carrier page never reads as
+a warning. Both moods render from `renderSegregation`, and the draw gate sweeps the
+card like every other `data-drawing` panel. `test/origin-alert-browser.test.js` pins
+the full loop in a real browser: chips out, marker on the parent, toggle persistence,
+return trip, deep link, bogus-from scrub, and the refusal sweep.

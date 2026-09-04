@@ -284,10 +284,8 @@
 
   // Comparison key: two designations for the same complement must match even when the
   // spelling (rob/der) or the order of aberrations differs, since ISCN fixes neither.
-  function canonKey(k) {
-    var m = window.ISCN.parse(k), c = m.clones && m.clones[0];
-    if (!c || c.modalNumber == null) return null;
-    var parts = (c.aberrations || []).map(function (ab) {
+  function canonParts(c) {
+    return (c.aberrations || []).map(function (ab) {
       var raw = String(ab.raw || "");
       // An inheritance qualifier (mat, dmat, dn, ...) says where the aberration
       // came from, not what it is, and ISCN 2024 Table 5 writes every segregant
@@ -295,8 +293,21 @@
       // separately to name the parent or to stand down.
       if (ab.qualifier) raw = raw.slice(0, raw.length - ab.qualifier.length);
       return raw.toLowerCase().replace(/\s+/g, "").replace(/^([+\-\u2212\u2013]?)rob\(/, "$1der(");
-    }).sort();
-    return c.modalNumber + "|" + (c.sex.label || "") + "|" + parts.join(",");
+    }).sort().join(",");
+  }
+  function canonKey(k) {
+    var m = window.ISCN.parse(k), c = m.clones && m.clones[0];
+    if (!c || c.modalNumber == null) return null;
+    return c.modalNumber + "|" + (c.sex.label || "") + "|" + canonParts(c);
+  }
+  // Sexless variant for the from= thread: the panel's zygotes wear the CARRIER
+  // page's sex tokens, and which parent carries a translocation says nothing
+  // about whether the conception was XX or XY, so a reader arriving from
+  // 47,XY,+der(22)... must still match the mother's 47,XX,... spelling.
+  function canonKeyNoSex(k) {
+    var m = window.ISCN.parse(k), c = m.clones && m.clones[0];
+    if (!c || c.modalNumber == null) return null;
+    return c.modalNumber + "|" + canonParts(c);
   }
 
   // The carriers that could have produced this, as ISCN strings. Small and
@@ -382,123 +393,89 @@
     return { typed: clone.raw || "", candidates: candidates, deNovoPossible: !q || q === "c" };
   }
 
-  // What each inheritance qualifier states, phrased to follow "The X suffix".
-  // The definitions are ISCN 2024, 4.2.1 g: mat/pat name the parent the
-  // aberration is inherited from; the d- forms say only PART of a parental
+  // One line per inheritance suffix: what it lets the card claim (ISCN 2024,
+  // 4.2.1 g: mat/pat name the parent; the d- forms say only PART of a parental
   // rearrangement was inherited, which for a derivative means the parent
-  // carries the balanced complement.
-  var QUAL_GLOSS = {
-    mat: "records maternal origin",
-    pat: "records paternal origin",
-    dmat: "marks this chromosome as one product of a maternal rearrangement (ISCN 4.2.1 g)",
-    dpat: "marks this chromosome as one product of a paternal rearrangement (ISCN 4.2.1 g)",
-    inh: "records an inherited aberration without naming the parent",
-    dinh: "marks this chromosome as one product of a parental rearrangement without naming the parent (ISCN 4.2.1 g)"
+  // carries the balanced complement).
+  var QUAL_LINE = {
+    mat: "The mat suffix records maternal origin; a balanced parental form is written dmat (ISCN 4.2.1 g).",
+    pat: "The pat suffix records paternal origin; a balanced parental form is written dpat (ISCN 4.2.1 g).",
+    dmat: "The dmat suffix marks this chromosome as one product of her balanced rearrangement (ISCN 4.2.1 g).",
+    dpat: "The dpat suffix marks this chromosome as one product of his balanced rearrangement (ISCN 4.2.1 g).",
+    inh: "The inh suffix says a parent carries it without saying which.",
+    dinh: "The dinh suffix marks one product of a parental rearrangement without naming the parent (ISCN 4.2.1 g)."
   };
-  // The balanced rearrangement a carrier parent would hold, as written notation.
-  function balancedName(model) {
-    if (model.type === "reciprocal") return "t(" + model.A + ";" + model.B + ")(" + model.bandA + ";" + model.bandB + ")";
-    return "der(" + model.A + ";" + model.B + ")(" + model.bandA + ";" + model.bandB + ")";
-  }
 
-  function renderOrigin(m) {
+  // The compact parental-origin card (the card leads the tool column; see
+  // docs/INTERFACE.md). Headline first, carrier karyotypes right after: the
+  // chips are the payload (Dan, 2026-09-04), and mechanism talk stays out of
+  // the card entirely. The meiosis itself lives on the CARRIER page the chips
+  // load, where the figures are true of the karyotype drawn above them; each
+  // chip carries the typed karyotype as data-from so that page can mark this
+  // outcome (see applyFrom).
+  function renderOriginCard(m) {
     if (!m || !m.candidates.length) return "";
     var c = m.candidates[0];
     var parent = c.parent, named = parent === "mother" || parent === "father";
-    var qNote = c.qual && QUAL_GLOSS[c.qual]
-      ? 'The <b>' + esc(c.qual) + '</b> suffix ' + QUAL_GLOSS[c.qual] + ': ' : "";
-
-    var lead;
+    var A = esc(c.model.A);
+    var head, caveat;
     if (c.type === "homologous") {
-      var A = c.model.A, F = balancedName(c.model);
-      lead = 'This karyotype carries a <b>homologous</b> Robertsonian fusion: both copies of chromosome ' + esc(A) +
-        ' joined into one. A parent who carries ' + esc(F) + ' has no normal ' + esc(A) +
-        ' to pass on, so <b>every conception is trisomic or monosomic</b> for chromosome ' + esc(A) +
-        ' and a chromosomally normal child is not possible from that parent. ';
-      if (named) lead += qNote + 'the ' + parent + ' carries the fusion, and the same holds for every further pregnancy.';
-      else if (parent === "inherited") lead += qNote + 'a parent carries the fusion; which one takes karyotyping both.';
-      else lead += 'More often, though, such a chromosome arises <b>de novo</b>, where it is indistinguishable on a karyotype from the isochromosome i(' +
-        esc(A) + ')(q10), and the outlook for future pregnancies is entirely different. Parental karyotypes tell the two apart.';
-    } else {
-      var kind = c.type === "robertsonian" ? "Robertsonian" : "reciprocal";
-      var what = c.label ? "the <b>" + esc(c.label) + "</b> outcome of " : "the product of ";
-      // The parenthetical ratio only earns its place when it says something the
-      // mode name does not ("Adjacent-1 (2:2)"); "3:1 segregation (3:1)" is noise.
-      var ratio = c.sub === c.mode ? "" : " (" + esc(c.sub) + ")";
-      lead = 'This karyotype is ' + what + '<b>' + esc(c.mode) + '</b> segregation' + ratio +
-        ' in a parent who carries a balanced ' + kind + ' translocation. ';
-      // dmat/dpat state the balanced parental rearrangement outright; plain
-      // mat/pat state only the parent of origin, so the balanced reading is
-      // the usual one rather than the written one, and the d- form is the
-      // teaching point (ISCN 4.2.1 g).
-      if (named && c.qual.charAt(0) === "d") lead += qNote + 'the ' + parent + ' carries the balanced form, and this karyotype is one of its meiotic products.';
-      else if (named) lead += qNote + 'this chromosome came from the ' + parent + ', usually as one product of the balanced form; when that documented parental rearrangement is meant, ISCN writes d' + esc(c.qual) + ' (4.2.1 g).';
-      else if (parent === "inherited") lead += qNote + 'a parent carries the balanced form; which one takes karyotyping both.';
-      else lead += 'It can also arise <b>de novo</b>, ' +
-        'in a gamete or shortly after fertilisation, with both parents having normal karyotypes. ' +
-        'The two are told apart by karyotyping both parents, which is why that is the next step ' +
-        'whichever answer you expect.';
-    }
-    var head = '<div class="seg-head"><h2>Where this came from</h2><p class="seg-lead">' + lead + '</p></div>';
-
-    var carriers;
-    if (named) {
-      var chip = parent === "mother" ? c.carrier.XX : c.carrier.XY;
-      carriers = '<div class="orig-carriers"><span class="orig-label">The carrier parent</span>' +
-        '<span class="orig-pair"><span class="orig-who">the ' + parent + '</span>' + ktButton(chip) + '</span>' +
-        '<span class="orig-note">Named by the ' + esc(c.qual) + ' suffix, so this is the karyotype to draw.</span></div>';
-    } else {
-      var note = parent === "inherited"
-        ? 'The ' + esc(c.qual) + ' suffix says a parent carries it without saying which, so both are worth drawing.'
-        : 'Nothing in this karyotype says which parent, so both are worth drawing.';
-      carriers = '<div class="orig-carriers"><span class="orig-label">The carrier parent would be</span>' +
-        '<span class="orig-pair"><span class="orig-who">either</span>' + ktButton(c.carrier.XX) +
-        '<span class="orig-who">or</span>' + ktButton(c.carrier.XY) + '</span>' +
-        '<span class="orig-note">' + note + '</span></div>';
-    }
-    var upd = c.upd.length ? '<p class="orig-upd">A carrier of this translocation also passes a risk of ' +
-      '<b>uniparental disomy</b> for ' + c.upd.map(function (x) { return UPD_RISK[x]; }).join(" and ") +
-      ', which no segregation diagram shows and which parental testing is needed to address.</p>' : "";
-    var who = named ? "the " + parent + "\u2019s" : "that carrier parent\u2019s";
-    var lead2 = '<p class="orig-lead2">Below is ' + who + ' meiosis, with the outcome you typed marked.</p>';
-    return head + carriers + upd + lead2 + render(c.model);
-  }
-
-  // The compact alert for the card beside the figure. Fed the SAME origin model
-  // as the full panel, so the two can never disagree; this one only flags the
-  // possibility and points down. Kept to a headline, a sentence or two, and the
-  // jump link: the carrier chips, the caveats, and the meiosis live in the
-  // panel it points to.
-  function renderOriginAlert(m) {
-    if (!m || !m.candidates.length) return "";
-    var c = m.candidates[0];
-    var parent = c.parent, named = parent === "mother" || parent === "father";
-    var name = esc(balancedName(c.model));
-    var head, body;
-    if (c.type === "homologous") {
-      var A = esc(c.model.A);
-      head = named ? "The " + parent + " carries this fusion" : "Could a parent carry this fusion?";
-      body = named
-        ? "The " + esc(c.qual) + " suffix names the " + parent + ". A carrier of " + name +
-          " has no normal " + A + " to pass on, so every conception is trisomic or monosomic for chromosome " + A + "."
-        : "A parent who carries " + name + " balanced has no normal " + A +
-          " to pass on: every conception is trisomic or monosomic for chromosome " + A +
-          ". More often such a chromosome arises de novo; parental karyotypes tell the two apart.";
+      var fact = "no normal " + A + " to pass on: every conception is trisomic or monosomic for chromosome " + A + ".";
+      if (named) {
+        head = "The " + parent + " carries this fusion";
+        caveat = (parent === "mother" ? "She has " : "He has ") + fact + " " + (QUAL_LINE[c.qual] || "");
+      } else if (parent === "inherited") {
+        head = "A parent carries this fusion";
+        caveat = "That parent has " + fact + " " + (QUAL_LINE[c.qual] || "");
+      } else {
+        head = "Could a parent carry this fusion?";
+        caveat = "A carrier has " + fact + " More often the fusion arises de novo, indistinguishable on a karyotype from the isochromosome i(" + A + ")(q10).";
+      }
     } else if (named) {
       head = "The notation names the " + parent + " as the carrier";
-      body = "The " + esc(c.qual) + " suffix marks this karyotype as a product of the " + parent +
-        "\u2019s balanced " + name + ", passed on through <b>" + esc(c.mode) + "</b> segregation at meiosis.";
+      caveat = QUAL_LINE[c.qual] || "";
     } else if (parent === "inherited") {
       head = "A parent carries the balanced form";
-      body = "The " + esc(c.qual) + " suffix records that this came from a parent carrying the balanced " + name +
-        "; which parent takes karyotyping both.";
+      caveat = QUAL_LINE[c.qual] || "";
     } else {
       head = "A parent may be a balanced carrier";
-      body = "This unbalanced pattern is what <b>" + esc(c.mode) + "</b> segregation of a balanced " + name +
-        " produces at meiosis. It can also arise de novo; parental karyotypes tell the two apart.";
+      caveat = "It can also arise de novo; parental karyotypes tell the two apart.";
     }
-    return '<p class="oal-head">' + head + '</p><p class="oal-body">' + body +
-      ' <a class="oal-jump" href="#segregation-card">See where this came from</a></p>';
+    var chips = named
+      ? '<span class="orig-who">the ' + parent + '</span>' + ktButton(parent === "mother" ? c.carrier.XX : c.carrier.XY, m.typed)
+      : '<span class="orig-who">either</span>' + ktButton(c.carrier.XX, m.typed) +
+        '<span class="orig-who">or</span>' + ktButton(c.carrier.XY, m.typed);
+    var upd = c.upd.length ? '<p class="oal-body">A carrier also passes a risk of <b>uniparental disomy</b> for ' +
+      c.upd.map(function (x) { return UPD_RISK[x]; }).join(" and ") + '.</p>' : "";
+    var hint = named
+      ? "Click the karyotype to draw that parent; this outcome will be marked in the meiosis."
+      : "Click a parent to draw it; this outcome will be marked in the meiosis.";
+    return '<p class="oal-head">' + head + '</p>' +
+      '<div class="oal-chips">' + chips + '</div>' +
+      (caveat ? '<p class="oal-body">' + caveat + '</p>' : "") + upd +
+      '<p class="oal-hint">' + hint + '</p>';
+  }
+
+  // Called on the CARRIER page when the reader arrived through that card (the
+  // from= thread). Marks the matching gamete "the karyotype you came from" and
+  // returns the small return-card; null when nothing matches, so a hand-edited
+  // URL cannot make the panel claim an outcome it does not produce.
+  function applyFrom(model, k) {
+    if (!model || !model.modes || !k) return null;
+    var want = canonKeyNoSex(k);
+    if (!want) return null;
+    for (var i = 0; i < model.modes.length; i++) {
+      for (var j = 0; j < model.modes[i].gametes.length; j++) {
+        var g = model.modes[i].gametes[j];
+        if (canonKeyNoSex(g.zygote) !== want) continue;
+        model.hereZygote = g.zygote;
+        model.hereLabel = "the karyotype you came from";
+        return '<p class="oal-head">This carrier can produce the karyotype you came from</p>' +
+          '<div class="oal-chips">' + ktButton(k) + '</div>' +
+          '<p class="oal-hint">That outcome is marked in the <a href="#segregation-card">meiotic segregation</a> below; click the karyotype to go back.</p>';
+      }
+    }
+    return null;
   }
 
   function compute(clone) {
@@ -542,8 +519,11 @@
   function escAttr(s) { return esc(s).replace(/"/g, "&quot;"); }
   // A conceptus karyotype the reader can load: same data-k contract as the example
   // chips and the "did you mean" fix, so one delegated listener serves all three.
-  function ktButton(k) {
-    return '<button type="button" class="seg-kt" data-k="' + escAttr(k) +
+  // fromK rides along as data-from on the carrier chips of the origin card: the
+  // click hands it to the next draw, and the carrier page marks that outcome.
+  function ktButton(k, fromK) {
+    var from = fromK ? '" data-from="' + escAttr(fromK) : "";
+    return '<button type="button" class="seg-kt" data-k="' + escAttr(k) + from +
       '" title="Draw ' + escAttr(k) + '">' + esc(k) + '</button>';
   }
   function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
@@ -794,7 +774,7 @@
     var hint = '<div class="seg-controls"><span class="seg-hint">Click either conceptus karyotype below to draw and decode that outcome.</span></div>';
     var cards = md.gametes.map(function (gm) {
       var here = (model.hereZygote && gm.zygote === model.hereZygote)
-        ? '<span class="seg-here">the karyotype you typed</span>' : "";
+        ? '<span class="seg-here">' + esc(model.hereLabel || "the karyotype you typed") + '</span>' : "";
       return '<div class="seg-gamete' + (here ? " seg-is-here" : "") + '">' +
         '<div class="seg-gpoles">' + glyphRow(model.bodies, gm.bodies) + '</div>' +
         '<div class="seg-gout">' + ktButton(gm.zygote) +
@@ -871,7 +851,7 @@
     function gameteCard(gm, acc) {
       var lab = gm.label ? '<span class="seg-glabel">' + esc(gm.label) + '</span>' : "";
       var here = (model.hereZygote && gm.zygote === model.hereZygote)
-        ? '<span class="seg-here">the karyotype you typed</span>' : "";
+        ? '<span class="seg-here">' + esc(model.hereLabel || "the karyotype you typed") + '</span>' : "";
       var imb = (gm.imbalance && gm.imbalance !== "balanced")
         ? '<div class="seg-imb">' + esc(gm.imbalance) + '</div>' : "";
       return '<div class="seg-gamete' + (acc ? " seg-g-" + acc : "") + (here ? " seg-is-here" : "") + '">' +
@@ -925,6 +905,6 @@
 
   window.Segregation = {
     eligible: eligible, compute: compute, render: render,
-    origin: origin, renderOrigin: renderOrigin, renderOriginAlert: renderOriginAlert
+    origin: origin, renderOriginCard: renderOriginCard, applyFrom: applyFrom
   };
 })();

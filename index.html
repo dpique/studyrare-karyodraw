@@ -254,15 +254,19 @@
   .summary .kt { font: 600 17px var(--font-mono); color: var(--ink); }
   .card h2.withaction { display: flex; align-items: center; gap: 8px; }
 
-  /* Parental-origin alert: a compact caution card at the top of the tool column
-     whenever an unbalanced karyotype traces to a balanced-carrier parent. The
-     wash borrows the caution palette of the correction notes, not the toolbar
-     flag's amber button identity: this is a notice, not an action, and it only
-     ever points at the full panel below. */
-  #origin-alert-card { background: var(--amber-50); border-color: var(--amber); }
-  #origin-alert-card h2 { color: var(--amber-800); border-bottom-color: rgba(236, 155, 39, .35); }
-  .oal-head { margin: 0 0 4px; font-size: 13.5px; font-weight: 700; color: var(--ink); }
-  .oal-body { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+  /* Parental-origin card, two moods. Amber caution (.oal-warn) under an
+     unbalanced karyotype: headline, then the carrier karyotypes themselves
+     (chips first, mechanism talk stays out; Dan, 2026-09-04), one caveat line.
+     Plain mood on a carrier page reached through those chips, pointing at the
+     outcome the reader came from. The wash borrows the caution palette of the
+     correction notes, not the toolbar flag's amber button identity: this is a
+     notice, not an action. */
+  #origin-alert-card.oal-warn { background: var(--amber-50); border-color: var(--amber); }
+  #origin-alert-card.oal-warn h2 { color: var(--amber-800); border-bottom-color: rgba(236, 155, 39, .35); }
+  .oal-head { margin: 0 0 6px; font-size: 13.5px; font-weight: 700; color: var(--ink); }
+  .oal-chips { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 0 0 8px; }
+  .oal-body { margin: 0 0 6px; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+  .oal-hint { margin: 0; font-size: 11.5px; color: var(--muted); }
 
   /* Meiotic segregation panel */
   #segregation-card { margin-top: 16px; }
@@ -286,15 +290,10 @@
   .seg-hint { font-size: 12.5px; color: var(--ink-2); }
   /* Parental origin (the reverse view): the carrier parent this karyotype could have
      come from, above that parent's own segregation panel. */
-  .orig-carriers { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin: 0 0 10px; }
-  .orig-label { font-size: 12.5px; color: var(--ink-2); }
-  .orig-pair { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
   .orig-who { font-size: 12px; color: var(--muted); }
-  .orig-note { font-size: 12px; color: var(--muted); flex-basis: 100%; }
   .orig-upd { font-size: 12.5px; line-height: 1.45; color: var(--ink-2); background: var(--amber-50);
     border-radius: 8px; padding: 8px 10px; margin: 0 0 12px; }
-  .orig-lead2 { font-size: 12.5px; color: var(--ink-2); margin: 0 0 10px; }
-  /* The outcome the reader typed, inside the carrier's panel. */
+  /* The outcome the reader typed (or arrived from), inside the carrier's panel. */
   .seg-gamete.seg-is-here { border-color: var(--periwinkle); box-shadow: 0 0 0 2px var(--peri-50); }
   .seg-here { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 600;
     color: var(--peri-700); background: var(--peri-50); border-radius: 6px; padding: 2px 7px; }
@@ -882,7 +881,12 @@
       <aside>
         <!-- First in the tool column on purpose: an unbalanced karyotype that can
              come from a balanced-carrier parent is flagged where the eye lands,
-             and the card links down to the full "Where this came from" panel. -->
+             with the carrier karyotypes as chips (.oal-warn mood). Clicking one
+             draws that parent, and this same card, in its plain mood, then
+             points back at the outcome the reader came from. The parent's
+             meiosis is never embedded under the child: those figures belong to
+             the carrier page, where they are true of the karyotype drawn above
+             them. -->
         <div class="card" id="origin-alert-card" data-drawing="conditional" style="display:none" aria-label="Parental origin">
           <h2>Parental origin</h2>
           <div class="body" id="origin-alert"></div>
@@ -1567,32 +1571,40 @@
     for (var i = 0; i < syns.length; i++) { if (syns[i].acquired) return true; }
     return false;
   }
-  // A balanced carrier gets the forward panel (its meiosis, its possible conceptions).
-  // An unbalanced product gets the reverse: the carrier parent it could have come
-  // from, with that parent's panel embedded and the typed outcome marked. Both render
-  // into the same host, so the conceptus buttons, their previews, and the animation
-  // toggle are wired once. The single-clone and acquired gates cover both: parental
-  // origin is meaningless for a somatic tumour clone, and a mosaic is out of scope.
+  // A balanced carrier gets the forward panel (its meiosis, its possible
+  // conceptions). An unbalanced product gets the compact parental-origin card
+  // instead: the parent's meiosis is never embedded under the child, because
+  // those figures describe chromosomes the drawn karyotype does not contain
+  // (the Emanuel child has no der(11), yet the quadrivalent draws one). The
+  // card's carrier chips load the parent page, threading the typed karyotype
+  // along as from= so the parent's own panel marks the outcome; FROM below is
+  // that thread, validated here against the forward model and scrubbed from
+  // the URL when nothing matches. The single-clone and acquired gates cover
+  // both directions: parental origin is meaningless for a somatic tumour
+  // clone, and a mosaic is out of scope.
+  var FROM = null;
   function renderSegregation(clones) {
     var card = $("#segregation-card"), host = $("#segregation");
     var alertCard = $("#origin-alert-card"), alertHost = $("#origin-alert");
     var clone = (clones && clones.length === 1) ? clones[0] : null;
-    var html = "", alertHtml = "";
+    var html = "", cardHtml = "", warn = false;
     if (window.Segregation && clone && !isAcquired(clone)) {
       if (window.Segregation.eligible(clone)) {
-        html = window.Segregation.render(window.Segregation.compute(clone));
-      } else {
-        // The alert card beside the figure and the full panel below render from
-        // the SAME origin model, so they cannot disagree about the inference.
-        var org = window.Segregation.origin(clone);
-        if (org) {
-          html = window.Segregation.renderOrigin(org);
-          alertHtml = window.Segregation.renderOriginAlert(org);
+        var model = window.Segregation.compute(clone);
+        if (FROM) {
+          cardHtml = window.Segregation.applyFrom(model, FROM) || "";
+          if (!cardHtml) { FROM = null; setHash(input.value, false); }
         }
+        html = window.Segregation.render(model);
+      } else {
+        if (FROM) { FROM = null; setHash(input.value, false); }
+        var org = window.Segregation.origin(clone);
+        if (org) { cardHtml = window.Segregation.renderOriginCard(org); warn = true; }
       }
-    }
-    if (!alertHtml) { alertCard.style.display = "none"; alertHost.innerHTML = ""; }
-    else { alertHost.innerHTML = alertHtml; alertCard.style.display = ""; }
+    } else if (FROM) { FROM = null; setHash(input.value, false); }
+    alertCard.classList.toggle("oal-warn", warn);
+    if (!cardHtml) { alertCard.style.display = "none"; alertHost.innerHTML = ""; }
+    else { alertHost.innerHTML = cardHtml; alertCard.style.display = ""; }
     if (!html) { card.style.display = "none"; host.innerHTML = ""; return; }
     host.innerHTML = html;
     card.style.display = "";
@@ -1939,6 +1951,15 @@
     // Skip the URL rewrite on the auto-loaded demo so a bare visit keeps a clean
     // landing URL; the first real interaction (type, toggle, pick an example) writes it.
     var push = run.pushNext; run.pushNext = false;
+    // The from= thread: a carrier chip in the parental-origin card hands the
+    // karyotype it was clicked under to this draw (run.fromNext), so the
+    // carrier page can mark that outcome. The thread survives re-draws of the
+    // same karyotype (view toggles) and dies on any plain jump to a different
+    // one; renderSegregation validates it against the forward model.
+    var fromReq = run.fromNext; run.fromNext = null;
+    if (fromReq != null) FROM = fromReq;
+    else if (val !== run.lastVal) FROM = null;
+    run.lastVal = val;
     if (run.skipHashOnce) { run.skipHashOnce = false; } else { setHash(val, push); }
     var bad = window.Karyo.invalidBands(model);
     // Per-band advice up to a few; past that the list would crowd out everything
@@ -2258,8 +2279,11 @@
       var url = "?k=" + prettyEncode(k) +
         "&style=" + STYLE_TO_URL[MODE] + "&bands=" + BANDS_TO_URL[LEVEL] + "&show=" + SHOW_TO_URL[SHOW] +
         // Only the non-default rides in the URL, so every link already shared
-        // keeps its meaning and the common case stays clean.
-        (SCALEBAR ? "&scale=on" : "");
+        // keeps its meaning and the common case stays clean. from= is the
+        // carrier-page thread (see renderSegregation) and rides only while it
+        // is live, so Back and shared links restore the marked outcome.
+        (SCALEBAR ? "&scale=on" : "") +
+        (FROM ? "&from=" + prettyEncode(FROM) : "");
       history[push ? "pushState" : "replaceState"](null, "", url);
     } catch (e) {}
   }
@@ -2290,6 +2314,15 @@
   // case where a "+" there could have meant a space, and it is put back.
   function getKaryotypeParam() {
     var m = /[?&]k=([^&]*)/.exec(location.search);
+    if (!m) return null;
+    var v;
+    try { v = decodeURIComponent(m[1]); } catch (e) { v = m[1]; }
+    return v.replace(/^(mos|chi)\+/i, "$1 ");
+  }
+  // from= carries a karyotype too, so it gets the same plus-literal reading as
+  // ?k= and never the form decode of getParam.
+  function getFromParam() {
+    var m = /[?&]from=([^&]*)/.exec(location.search);
     if (!m) return null;
     var v;
     try { v = decodeURIComponent(m[1]); } catch (e) { v = m[1]; }
@@ -2624,6 +2657,15 @@
     var top = $("#summary") || $("#karyo");
     if (top && top.scrollIntoView) top.scrollIntoView({ behavior: "smooth", block: "start" });
   });
+  // The parental-origin card's chips: a carrier chip hands the current
+  // karyotype along (data-from) so the carrier page can mark this outcome; the
+  // plain-mood return chip carries data-k only and just goes back. The card
+  // sits beside the drawing already, so no scroll.
+  $("#origin-alert").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest(".seg-kt") : null; if (!b) return;
+    run.fromNext = b.getAttribute("data-from");
+    loadKaryotype(b.getAttribute("data-k"));
+  });
   // ---- conceptus preview ----------------------------------------------------
   // Six outcomes in the segregation panel differ from each other in two or three
   // chromosomes, so the useful preview is the affected-only view, not a whole
@@ -2682,23 +2724,27 @@
     }
     function arm(btn) { clearTimeout(timer); timer = setTimeout(function () { show(btn); }, 260); }
 
-    var host = $("#segregation");
-    host.addEventListener("mouseover", function (e) {
-      if (!canHover) return;
-      var b = e.target.closest ? e.target.closest(".seg-kt") : null;
-      if (b) arm(b); else hide();
+    // Both chip hosts share one preview: the panel's conceptus chips and the
+    // parental-origin card's carrier chips, whose preview shows the parent's
+    // two derivatives, the fastest look at what "balanced carrier" means here.
+    [$("#segregation"), $("#origin-alert")].forEach(function (host) {
+      host.addEventListener("mouseover", function (e) {
+        if (!canHover) return;
+        var b = e.target.closest ? e.target.closest(".seg-kt") : null;
+        if (b) arm(b); else hide();
+      });
+      host.addEventListener("mouseleave", hide);
+      host.addEventListener("focusin", function (e) {
+        var b = e.target.closest ? e.target.closest(".seg-kt") : null;
+        if (b) arm(b);
+      });
+      host.addEventListener("focusout", hide);
+      host.addEventListener("click", hide);
     });
-    host.addEventListener("mouseleave", hide);
-    host.addEventListener("focusin", function (e) {
-      var b = e.target.closest ? e.target.closest(".seg-kt") : null;
-      if (b) arm(b);
-    });
-    host.addEventListener("focusout", hide);
     // A preview pinned to a stale position is worse than none.
     window.addEventListener("scroll", hide, { passive: true });
     window.addEventListener("resize", hide);
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") hide(); });
-    host.addEventListener("click", hide);
   })();
 
   // Without this, Back would change the URL while the page kept showing the old
@@ -2710,6 +2756,7 @@
     leaveTourIfActive();
     applyUrlView();
     input.value = getKaryotypeParam() || DEMO_K;
+    run.fromNext = getFromParam();   // restore the carrier-page thread with the entry
     run.skipHashOnce = true;
     run();
   });
@@ -2816,6 +2863,7 @@
     if (_pg && _can) _can.setAttribute("href", "https://karyodraw.com/karyotype/" + _pg.slug + "/");
   } catch (e) {} }
   if (!hasK) { beaconDraw.skipOnce = true; run.skipHashOnce = true; }   // auto-loaded demo: do not count it, and keep the landing URL clean
+  if (hasK) run.fromNext = getFromParam();   // a shared carrier link restores its marked outcome
   // The URL-bar rule: focusing the box while it holds exactly what is drawn (the
   // demo, an example chip, a tour step, a deep link, or anything after Draw)
   // selects it all, so one keystroke starts the next karyotype. Mid-edit focus

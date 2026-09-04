@@ -53,11 +53,14 @@ test('clicking a pair switches the drawn division plane; its buttons still load'
   const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   try {
     const page = await browser.newPage();
-    await page.goto(`http://127.0.0.1:${port}/index.html?k=46,XY,der(13;14)(q10;q10),+14`,
+    // The unbalanced product no longer embeds the carrier's panel; the same
+    // preselection now happens on the CARRIER page reached through the
+    // parental-origin card, whose chips thread the product along as from=.
+    await page.goto(`http://127.0.0.1:${port}/index.html?k=45,XY,der(13;14)(q10;q10)&from=46,XY,der(13;14)(q10;q10),+14`,
       { waitUntil: 'load' });
     await page.waitForSelector('#segregation .seg-pair');
 
-    await t.test('the typed pair leads, is preselected, and its plane is the one drawn', async () => {
+    await t.test('the arrived-from pair leads, is preselected, and its plane is the one drawn', async () => {
       const s = await page.evaluate(state);
       assert.equal(s.firstPair, 'A', 'the +14 pair (13 alone) leads');
       assert.equal(s.aChecked, true);

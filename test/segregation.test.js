@@ -326,10 +326,29 @@ test('the carrier is offered in both sexes, and both parse to a balanced carrier
     assert.equal(Seg.eligible(p.clones[0]), true, k + ' is a balanced carrier');
   });
 });
-test('the typed karyotype is marked in the embedded panel', () => {
+test('no meiosis is embedded under the child; the chips carry the from thread', () => {
   const org = Seg.origin(clone0('46,XX,der(14;21)(q10;q10),+21'));
   assert.equal(org.candidates[0].model.hereZygote, '46,XX,der(14;21)(q10;q10),+21');
-  assert.match(Seg.renderOrigin(org), /seg-here/);
+  const card = Seg.renderOriginCard(org);
+  // The parent's meiosis stays on the parent page: its figures describe
+  // chromosomes this karyotype does not contain (the trivalent pairs a free
+  // homologue the child replaced), so embedding it here misattributes them.
+  assert.doesNotMatch(card, /seg-mode|seg-scene|seg-gamete/);
+  assert.match(card, /data-from="46,XX,der\(14;21\)\(q10;q10\),\+21"/, 'each carrier chip hands the typed karyotype along');
+});
+test('the carrier page marks the outcome the reader came from', () => {
+  const m = Seg.compute(clone0('45,XX,der(14;21)(q10;q10)'));
+  const back = Seg.applyFrom(m, '46,XX,der(14;21)(q10;q10),+21');
+  assert.ok(back, 'the product is recognised');
+  assert.equal(m.hereZygote, '46,XX,der(14;21)(q10;q10),+21');
+  assert.match(Seg.render(m), /the karyotype you came from/);
+  assert.match(back, /#segregation-card/, 'the return card points at the panel');
+  assert.match(back, /data-k="46,XX,der\(14;21\)\(q10;q10\),\+21"/, 'and offers the way back');
+  const bogus = Seg.compute(clone0('45,XX,der(14;21)(q10;q10)'));
+  assert.equal(Seg.applyFrom(bogus, '46,XY,del(5)(p15.2)'), null, 'a foreign karyotype cannot claim a mark');
+  const sexless = Seg.compute(clone0('46,XX,t(11;22)(q23;q11.2)'));
+  assert.ok(Seg.applyFrom(sexless, '47,XY,+der(22)t(11;22)(q23;q11.2)mat'),
+    'conceptus sex and suffix do not defeat the match on the mother side');
 });
 test('rob spelling and aberration order do not defeat the match', () => {
   assert.ok(Seg.origin(clone0('46,XX,rob(14;21)(q10;q10),+21')), 'rob() matches a der() candidate');
@@ -353,25 +372,25 @@ test('origin() answers per clone; the mosaic gate belongs to the caller', () => 
   assert.match(m.clones[0].raw, /\[12\]$/, 'and a trailing cell count does not defeat the match');
 });
 test('the origin view names de novo as the alternative, and says who to test', () => {
-  const html = Seg.renderOrigin(Seg.origin(clone0('46,XX,der(14;21)(q10;q10),+21')));
+  const html = Seg.renderOriginCard(Seg.origin(clone0('46,XX,der(14;21)(q10;q10),+21')));
   assert.match(html, /de novo/i);
-  assert.match(html, /both parents|karyotyping the parents|test both/i);
+  assert.match(html, /parental karyotypes/i);
 });
 test('the origin view quotes no recurrence risk', () => {
   // The spec's hard line: this is where "what are the odds again" is most tempting,
   // and the numbers swing on chromosome pair, carrier sex, and ascertainment.
   CARRIERS.forEach((carrier) => {
     unbalancedZygotes(carrier).filter((g) => hasDer(g.zy)).forEach((g) => {
-      const html = Seg.renderOrigin(Seg.origin(clone0(g.zy)));
+      const html = Seg.renderOriginCard(Seg.origin(clone0(g.zy)));
       assert.doesNotMatch(html, /\d\s*%/, g.zy + ' must not quote a percentage');
       assert.doesNotMatch(html, /\d+\s*in\s*\d/, g.zy + ' must not quote a 1-in-N risk');
     });
   });
 });
 test('a Robertsonian carrier of 14 or 15 names the UPD risk, without a figure', () => {
-  const html = Seg.renderOrigin(Seg.origin(clone0('46,XX,der(14;21)(q10;q10),+21')));
+  const html = Seg.renderOriginCard(Seg.origin(clone0('46,XX,der(14;21)(q10;q10),+21')));
   assert.match(html, /uniparental disomy|UPD/i, 'named, because it is a reason to test the parents');
-  const noUpd = Seg.renderOrigin(Seg.origin(clone0('46,XX,der(5)t(2;5)(q21;q31)')));
+  const noUpd = Seg.renderOriginCard(Seg.origin(clone0('46,XX,der(5)t(2;5)(q21;q31)')));
   assert.doesNotMatch(noUpd, /uniparental disomy|UPD/i, 'not relevant to a 2;5 reciprocal');
 });
 
@@ -428,15 +447,19 @@ test('gametes group into pair boxes wired to the radios, affordance stated', () 
   assert.match(html, /drawn above/);
   assert.match(html, /click to draw/);
 });
-test('the typed outcome sorts its pair first and preselects its plane', () => {
-  const h13 = Seg.renderOrigin(Seg.origin(clone0('46,XX,der(13;14)(q10;q10),+13')));
+test('arriving from an outcome sorts its pair first and preselects its plane', () => {
+  const m13 = Seg.compute(clone0('45,XX,der(13;14)(q10;q10)'));
+  assert.ok(Seg.applyFrom(m13, '46,XX,der(13;14)(q10;q10),+13'));
+  const h13 = Seg.render(m13);
   const a13 = h13.indexOf('class="seg-pair" data-div="A"');
   const b13 = h13.indexOf('class="seg-pair" data-div="B"');
   assert.ok(a13 > 0 && b13 > 0, 'both pairs render');
   assert.ok(b13 < a13, 'the +13 pair (division B) leads');
   assert.match(h13, /id="seg-div-b"[^>]*\schecked/);
   assert.doesNotMatch(h13, /id="seg-div-a"[^>]*\schecked/);
-  const h14 = Seg.renderOrigin(Seg.origin(clone0('46,XX,der(13;14)(q10;q10),+14')));
+  const m14 = Seg.compute(clone0('45,XX,der(13;14)(q10;q10)'));
+  assert.ok(Seg.applyFrom(m14, '46,XX,der(13;14)(q10;q10),+14'));
+  const h14 = Seg.render(m14);
   assert.ok(h14.indexOf('class="seg-pair" data-div="A"') < h14.indexOf('class="seg-pair" data-div="B"'),
     'the +14 pair (division A) leads');
   assert.match(h14, /id="seg-div-a"[^>]*\schecked/);
@@ -499,19 +522,19 @@ test('the classic Emanuel spelling with mat fires 3:1 and offers only the mother
   assert.ok(org, 'the textbook +der(22)mat must fire');
   assert.equal(org.candidates[0].mode, '3:1');
   assert.equal(org.candidates[0].parent, 'mother');
-  const block = Seg.renderOrigin(org).match(/<div class="orig-carriers">[\s\S]*?<\/div>/)[0];
-  assert.match(block, /the mother/);
-  assert.match(block, /46,XX,t\(11;22\)\(q23;q11\.2\)/, 'her balanced karyotype is the chip');
-  assert.equal((block.match(/class="seg-kt"/g) || []).length, 1, 'one chip, not an either/or pair');
+  const card = Seg.renderOriginCard(org);
+  assert.match(card, /the mother/);
+  assert.match(card, /46,XX,t\(11;22\)\(q23;q11\.2\)/, 'her balanced karyotype is the chip');
+  assert.equal((card.match(/class="seg-kt"/g) || []).length, 1, 'one chip, not an either/or pair');
 });
 test('pat and inh branch the copy; dn stands the inference down', () => {
   const pat = Seg.origin(clone0('46,XX,der(4)t(4;11)(p15;q23)pat'));
   assert.equal(pat.candidates[0].parent, 'father');
-  assert.match(Seg.renderOrigin(pat), /the father/);
+  assert.match(Seg.renderOriginCard(pat), /the father/);
   const inh = Seg.origin(clone0('46,XX,der(4)t(4;11)(p15;q23)inh'));
   assert.equal(inh.candidates[0].parent, 'inherited');
   assert.equal(inh.deNovoPossible, false);
-  assert.match(Seg.renderOrigin(inh), /without saying which/);
+  assert.match(Seg.renderOriginCard(inh), /without saying which/);
   assert.equal(Seg.origin(clone0('46,XX,der(4)t(4;11)(p15;q23)dn')), null,
     'dn documents normal parents, so no carrier view');
   const bare = Seg.origin(clone0('46,XX,der(4)t(4;11)(p15;q23)'));
@@ -553,30 +576,36 @@ test('the unbalanced homologous product traces back, in either written order', (
     assert.ok(org, `${k} should trace back`);
     assert.equal(org.candidates[0].type, 'homologous');
     assert.equal(org.candidates[0].model.hereZygote, '46,XX,+21,der(21;21)(q10;q10)');
-    const html = Seg.renderOrigin(org);
-    assert.match(html, /every conception is trisomic or monosomic/);
-    assert.match(html, /i\(21\)\(q10\)/, 'the de novo isochromosome differential is named');
-    assert.match(html, /seg-here/, 'the typed outcome is marked in the embedded panel');
+    const card = Seg.renderOriginCard(org);
+    assert.match(card, /trisomic or monosomic/);
+    assert.match(card, /i\(21\)\(q10\)/, 'the de novo isochromosome differential is named');
   });
+  const m = Seg.compute(clone0('45,XX,der(21;21)(q10;q10)'));
+  assert.ok(Seg.applyFrom(m, '46,XX,der(21;21)(q10;q10),+21'), 'either written order matches on the carrier page');
+  assert.match(Seg.render(m), /the karyotype you came from/);
 });
 test('a homologous 15 fusion carries the UPD warning through origin', () => {
   const org = Seg.origin(clone0('46,XX,+15,der(15;15)(q10;q10)'));
   assert.ok(org);
   assert.deepEqual(native(org.candidates[0].upd), ['15']);
-  assert.match(Seg.renderOrigin(org), /Prader-Willi and Angelman/);
+  assert.match(Seg.renderOriginCard(org), /Prader-Willi and Angelman/);
 });
 
-// ---- the alert strip beside the figure --------------------------------------
-test('renderOriginAlert flags, names, and points down, from the same model', () => {
-  const bare = Seg.renderOriginAlert(Seg.origin(clone0('46,XX,der(4)t(4;11)(p15;q23)')));
+// ---- the parental-origin card -----------------------------------------------
+test('the card is chips-first and mechanism-free', () => {
+  const bare = Seg.renderOriginCard(Seg.origin(clone0('46,XX,der(4)t(4;11)(p15;q23)')));
   assert.match(bare, /A parent may be a balanced carrier/);
-  assert.match(bare, /Adjacent-1/);
   assert.match(bare, /de novo/);
-  assert.match(bare, /href="#segregation-card"/);
-  const mat = Seg.renderOriginAlert(Seg.origin(clone0('47,XY,+der(22)t(11;22)(q23;q11.2)mat')));
+  // Chips lead (Dan, 2026-09-04): headline, then the carrier karyotypes, then
+  // one caveat line. Mode names and mechanism live on the carrier page the
+  // chips load, beside figures that are true of that page's karyotype.
+  assert.ok(bare.indexOf('oal-chips') < bare.indexOf('oal-body'), 'chips come before the caveat');
+  assert.doesNotMatch(bare, /Adjacent|3:1|segregation of/, 'no mechanism talk in the card');
+  assert.doesNotMatch(bare, /#segregation-card/, 'nothing to jump to: no panel renders under the child');
+  const mat = Seg.renderOriginCard(Seg.origin(clone0('47,XY,+der(22)t(11;22)(q23;q11.2)mat')));
   assert.match(mat, /names the mother/);
-  const hom = Seg.renderOriginAlert(Seg.origin(clone0('46,XX,+21,der(21;21)(q10;q10)')));
+  const hom = Seg.renderOriginCard(Seg.origin(clone0('46,XX,+21,der(21;21)(q10;q10)')));
   assert.match(hom, /Could a parent carry this fusion\?/);
   assert.match(hom, /trisomic or monosomic/);
-  assert.equal(Seg.renderOriginAlert(null), '');
+  assert.equal(Seg.renderOriginCard(null), '');
 });
