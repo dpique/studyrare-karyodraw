@@ -133,20 +133,26 @@ test('the parental-origin card: amber chips out, plain marker back', async (t) =
       assert.equal(st.chips[0].k, '46,XX,t(11;22)(q23;q11.2)');
     });
 
-    await t.test('a subset hover inherits the page colors, in one popover only', async () => {
+    await t.test('a subset preview inherits the page colors, below the chip', async () => {
       // On 45,XX,der(14;21) the page hands 14 the first color and 21 the
-      // second; the hovered 45,XX,-21 involves only 21 and must show it in the
-      // page's amber, never in the first color it would earn on its own page.
-      // And one hover means one popover: chips carry no title attribute, so no
-      // native tooltip races the drawn preview.
+      // second; the previewed 45,XX,-21 involves only 21 and must show it in
+      // the page's amber, never in the first color it would earn on its own
+      // page. Driven by FOCUS, not hover: the preview's focusin path is
+      // ungated (keyboard users need it) and reaches the same show()
+      // placement, while the mouseover path is gated on a hover-capable
+      // pointer that headless Chrome does not report. Also asserts no chip
+      // carries a native title tooltip to race the drawn preview.
       await open(page, 'k=' + encodeURIComponent('45,XX,der(14;21)(q10;q10)'));
       await page.waitForSelector('#segregation .seg-kt');
       assert.equal(await page.evaluate(() =>
         document.querySelectorAll('.seg-kt[title]').length), 0, 'no native tooltip on any chip');
       const chip = await page.$('#segregation .seg-kt[data-k="45,XX,-21"]');
       await chip.scrollIntoView();
-      const box = await chip.boundingBox();
-      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      // Let the scrollIntoView scroll event settle before focusing: the preview
+      // hides on scroll, and a scroll landing just after focus would clear the
+      // armed popover.
+      await new Promise((r) => setTimeout(r, 200));
+      await chip.focus();
       await page.waitForSelector('.ktpeek.on');
       const colors = await page.evaluate(() => ({
         fills: [...document.querySelectorAll('.ktpeek [fill]')].map((e) => e.getAttribute('fill')),
