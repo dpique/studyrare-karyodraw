@@ -82,6 +82,9 @@ test('the parental-origin card: amber chips out, plain marker back', async (t) =
       const st = await state(page);
       assert.ok(!st.warn, 'plain mood on the carrier page');
       assert.match(st.head, /A possible carrier parent/);
+      const label = await page.evaluate(() =>
+        document.querySelector('#origin-alert .orig-who').textContent);
+      assert.equal(label, 'could give rise to', 'the chip label speaks genetics, forward');
       assert.notEqual(st.panel, 'none', 'the forward panel renders here, where it is true');
       assert.match(st.panelText, /the karyotype you traced/, 'the traced outcome is marked');
       assert.match(st.search, /from=46,XX,der\(4\)/, 'the thread rides the URL');
@@ -128,6 +131,31 @@ test('the parental-origin card: amber chips out, plain marker back', async (t) =
       assert.match(st.head, /names the mother/);
       assert.equal(st.chips.length, 1);
       assert.equal(st.chips[0].k, '46,XX,t(11;22)(q23;q11.2)');
+    });
+
+    await t.test('a subset hover inherits the page colors, in one popover only', async () => {
+      // On 45,XX,der(14;21) the page hands 14 the first color and 21 the
+      // second; the hovered 45,XX,-21 involves only 21 and must show it in the
+      // page's amber, never in the first color it would earn on its own page.
+      // And one hover means one popover: chips carry no title attribute, so no
+      // native tooltip races the drawn preview.
+      await open(page, 'k=' + encodeURIComponent('45,XX,der(14;21)(q10;q10)'));
+      await page.waitForSelector('#segregation .seg-kt');
+      assert.equal(await page.evaluate(() =>
+        document.querySelectorAll('.seg-kt[title]').length), 0, 'no native tooltip on any chip');
+      const chip = await page.$('#segregation .seg-kt[data-k="45,XX,-21"]');
+      await chip.scrollIntoView();
+      const box = await chip.boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.waitForSelector('.ktpeek.on');
+      const colors = await page.evaluate(() => ({
+        fills: [...document.querySelectorAll('.ktpeek [fill]')].map((e) => e.getAttribute('fill')),
+        below: document.querySelector('.ktpeek').getBoundingClientRect().top >
+          document.querySelector('#segregation .seg-kt[data-k="45,XX,-21"]').getBoundingClientRect().top,
+      }));
+      assert.ok(colors.fills.includes('#ec9b27'), '21 wears the page amber in the preview');
+      assert.ok(!colors.fills.includes('#5e72e4'), 'and never the first color the page gave to 14');
+      assert.ok(colors.below, 'the popover opens below the chip, the one consistent side');
     });
 
     await t.test('a refusal sweeps the card with the rest of the drawing', async () => {

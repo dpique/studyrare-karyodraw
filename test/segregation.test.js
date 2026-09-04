@@ -371,10 +371,16 @@ test('origin() answers per clone; the mosaic gate belongs to the caller', () => 
   assert.ok(Seg.origin(m.clones[0]), 'the clone on its own traces to a carrier');
   assert.match(m.clones[0].raw, /\[12\]$/, 'and a trailing cell count does not defeat the match');
 });
-test('the origin view names de novo as the alternative, and says who to test', () => {
-  const html = Seg.renderOriginCard(Seg.origin(clone0('46,XX,der(14;21)(q10;q10),+21')));
-  assert.match(html, /de novo/i);
-  assert.match(html, /parental karyotypes/i);
+test('the bare card claims possibility only, and adds no caveat line', () => {
+  // "may" in the headline carries the de novo alternative; the sentence that
+  // spelled it out was cut as unnecessary (Dan, 2026-09-04). Pinned so it does
+  // not creep back: the bare card is headline, chips, hint, nothing else.
+  const rob = Seg.renderOriginCard(Seg.origin(clone0('46,XX,der(14;21)(q10;q10),+21')));
+  assert.match(rob, /may be a balanced carrier/);
+  assert.doesNotMatch(rob, /de novo/i);
+  assert.match(rob, /uniparental disomy/, 'the UPD line stays: a reason to test, not a caveat');
+  const recip = Seg.renderOriginCard(Seg.origin(clone0('46,XX,der(4)t(4;11)(p15;q23)')));
+  assert.doesNotMatch(recip, /oal-body/, 'no caveat paragraph at all on the bare reciprocal card');
 });
 test('the origin view quotes no recurrence risk', () => {
   // The spec's hard line: this is where "what are the odds again" is most tempting,
@@ -595,11 +601,10 @@ test('a homologous 15 fusion carries the UPD warning through origin', () => {
 test('the card is chips-first and mechanism-free', () => {
   const bare = Seg.renderOriginCard(Seg.origin(clone0('46,XX,der(4)t(4;11)(p15;q23)')));
   assert.match(bare, /A parent may be a balanced carrier/);
-  assert.match(bare, /de novo/);
-  // Chips lead (Dan, 2026-09-04): headline, then the carrier karyotypes, then
-  // one caveat line. Mode names and mechanism live on the carrier page the
-  // chips load, beside figures that are true of that page's karyotype.
-  assert.ok(bare.indexOf('oal-chips') < bare.indexOf('oal-body'), 'chips come before the caveat');
+  // Chips lead (Dan, 2026-09-04): headline, then the carrier karyotypes.
+  // Mode names and mechanism live on the carrier page the chips load, beside
+  // figures that are true of that page's karyotype.
+  assert.ok(bare.indexOf('oal-head') < bare.indexOf('oal-chips'), 'headline, then chips');
   assert.doesNotMatch(bare, /Adjacent|3:1|segregation of/, 'no mechanism talk in the card');
   assert.doesNotMatch(bare, /#segregation-card/, 'nothing to jump to: no panel renders under the child');
   const mat = Seg.renderOriginCard(Seg.origin(clone0('47,XY,+der(22)t(11;22)(q23;q11.2)mat')));

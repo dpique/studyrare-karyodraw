@@ -3,6 +3,26 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-04 (one hover, one popover, one side; and the preview wears the page's colors)
+
+- **A chip's hover opens the drawn preview and nothing else.** The native title
+  tooltip ("Draw ...") that raced the preview is gone (owner call: two hovers,
+  and the click's meaning is obvious). The popover now always opens below the
+  chip, centered, flipping above only at the viewport bottom; it used to pick
+  left or right by available room, so it jumped sides between the tool column
+  and the panel.
+- **The preview inherits the page's colors.** A hovered karyotype that shares
+  chromosomes with the drawing beneath shows them in the page's colors, even
+  when it involves only a subset: 45,XX,-21 hovered on a der(14;21) page now
+  shows 21 in the page's amber rather than the first color it would earn on
+  its own page, and the popover never borrows a color the page uses for a
+  different chromosome. With the naming-order rule below, parent and offspring
+  now agree on colors everywhere, whatever is hovered.
+- **The origin card sheds its last extra line, and the trace runs forward.**
+  The bare card is headline, chips, hint: the de novo sentence is gone ("may"
+  carries it; owner call), the plain mood reads "could give rise to" instead of
+  "traced from", and its go-back instruction was cut.
+
 ## 2026-09-04 (one chromosome, one color, and the trace speaks genetics)
 
 - **A chromosome now wears the same highlight color in every figure of a

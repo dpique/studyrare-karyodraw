@@ -246,8 +246,10 @@ describe chromosomes the child's karyotype does not contain, and the embedded le
 compact card; the meiosis is seen by standing on the carrier's page.
 
 - `renderOriginCard(org)` replaces `renderOrigin` + `renderOriginAlert`: one home,
-  headline first, carrier chips immediately after (chips-first is an owner call), one
-  caveat line, the UPD line when it applies. No mode names in the card; the mode is
+  headline first, carrier chips immediately after (chips-first is an owner call), the
+  UPD line when it applies. The bare card carries no caveat line at all ("may" in the
+  headline holds the de novo alternative open; second owner trim, same day); only an
+  inheritance suffix earns its one-line gloss. No mode names in the card; the mode is
   seen in context on the carrier page, where the matched outcome is marked.
 - `applyFrom(model, k)` replaces the embedding. Carrier chips carry the typed
   karyotype as `data-from`; the app threads it through the URL (`from=`), and the
