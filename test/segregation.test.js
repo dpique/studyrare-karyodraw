@@ -342,7 +342,9 @@ test('the carrier page marks the outcome the reader traced', () => {
   assert.ok(back, 'the product is recognised');
   assert.equal(m.hereZygote, '46,XX,der(14;21)(q10;q10),+21');
   assert.match(Seg.render(m), /the karyotype you traced/);
-  assert.match(back, /See it marked in the <a href="#segregation-card">/, 'the hint directs the eye and keeps the marked cue');
+  assert.match(back, /This is a carrier parent/, 'the head states it plainly');
+  assert.match(back, /They could give rise to/, 'and the chip label runs parent to product');
+  assert.match(back, /See the <a href="#segregation-card">meiotic segregation<\/a> below/, 'the hint points at the panel');
   assert.match(back, /data-k="46,XX,der\(14;21\)\(q10;q10\),\+21"/, 'and offers the way back');
   const bogus = Seg.compute(clone0('45,XX,der(14;21)(q10;q10)'));
   assert.equal(Seg.applyFrom(bogus, '46,XY,del(5)(p15.2)'), null, 'a foreign karyotype cannot claim a mark');

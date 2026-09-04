@@ -81,10 +81,10 @@ test('the parental-origin card: amber chips out, plain marker back', async (t) =
       await waitAlert(page);
       const st = await state(page);
       assert.ok(!st.warn, 'plain mood on the carrier page');
-      assert.match(st.head, /A possible carrier parent/);
+      assert.match(st.head, /This is a carrier parent/);
       const label = await page.evaluate(() =>
         document.querySelector('#origin-alert .orig-who').textContent);
-      assert.equal(label, 'could give rise to', 'the chip label speaks genetics, forward');
+      assert.equal(label, 'They could give rise to', 'the chip label runs parent to product');
       assert.notEqual(st.panel, 'none', 'the forward panel renders here, where it is true');
       assert.match(st.panelText, /the karyotype you traced/, 'the traced outcome is marked');
       assert.match(st.search, /from=46,XX,der\(4\)/, 'the thread rides the URL');

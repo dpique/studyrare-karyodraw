@@ -3,12 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-04 (the carrier card states it plainly)
+
+- **On the carrier page the return card now reads "This is a carrier parent /
+  They could give rise to [product]"** (was "A possible carrier parent / could
+  give rise to ..."). The drawn karyotype is unambiguously a balanced carrier,
+  so it is stated as fact; the de novo hedge stays on the child page where it
+  belongs. The pointer trims to "See the meiotic segregation below."
+
 ## 2026-09-04 (the return hint directs the eye)
 
-- **The carrier page's return card reads "See it marked in the meiotic
-  segregation below"** (was "That outcome is marked in ..."). More direct, and
-  it keeps the cue that the traced outcome is highlighted among the panel's
-  several, which a bare "look below" would drop.
+- **The carrier page's return card read "See it marked in the meiotic
+  segregation below"** (was "That outcome is marked in ..."), since superseded
+  by the plainer card above.
 
 ## 2026-09-04 (one hover, one popover, one side; and the preview wears the page's colors)
 
