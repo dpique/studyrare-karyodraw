@@ -251,7 +251,7 @@ compact card; the meiosis is seen by standing on the carrier's page.
   seen in context on the carrier page, where the matched outcome is marked.
 - `applyFrom(model, k)` replaces the embedding. Carrier chips carry the typed
   karyotype as `data-from`; the app threads it through the URL (`from=`), and the
-  carrier page's own panel marks the matching gamete "the karyotype you came from",
+  carrier page's own panel marks the matching gamete "the karyotype you traced",
   reusing the hereZygote machinery (division-pair preselection included). Matching
   ignores conceptus sex, since the panel's zygotes wear the carrier page's sex tokens
   and the reader may have arrived from the other spelling. No match, no claim: the

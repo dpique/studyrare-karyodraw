@@ -1905,10 +1905,20 @@
         clones.some(function (c) { return c.sex && (c.sex.label || "").indexOf("X") >= 0; })) {
       add("X");
     }
+    // Colors are an identity encoding ("pieces take the color of the chromosome
+    // they came from"), so the SAME set of chromosomes must wear the SAME colors
+    // in every figure: the karyogram, its hover previews, and the carrier page a
+    // parental-origin chip leads to. Assignment therefore follows ISCN
+    // rearrangement naming order (sex chromosomes first, then ascending), not
+    // order of appearance in the notation: der(22)t(11;22) used to hand 22 the
+    // first color while the parent t(11;22) handed it to 11, so the two figures
+    // of one family wore opposite colors (Dan, 2026-09-04).
+    order.sort(function (a, b) { return sexFirstRank(a) - sexFirstRank(b); });
     var map = {};
     order.forEach(function (c, i) { map[c] = AFFECTED_PALETTE[i % AFFECTED_PALETTE.length]; });
     return map;
   }
+  function sexFirstRank(c) { return c === "X" ? -2 : (c === "Y" ? -1 : parseInt(c, 10)); }
 
   // Every cell a karyogram is made of, in order, for BOTH views. One list, because a
   // cell kind added to one view used to be able to go missing from the other, and did:
