@@ -1,11 +1,11 @@
 'use strict';
-// The parental-origin alert in a real browser: the amber card at the top of the
-// tool column appears exactly when an unbalanced karyotype traces to a
-// balanced-carrier parent, names the parent when the notation does, jumps to
-// the full panel, and is swept away with everything else by the draw gate.
-// Driven through the page, not the module, because the unit tests bypass the
-// draw gate (see karyodraw-tests-bypass-the-draw-gate): a green Segregation
-// test proves nothing about what a typed karyotype shows.
+// The parental-origin card in a real browser, both moods and the thread between
+// them. Under an unbalanced karyotype the amber card leads the tool column with
+// the carrier karyotypes as chips and NO meiosis panel below (those figures
+// belong to the carrier page). Clicking a chip draws the parent carrying the
+// child along as from=; the parent's own panel marks "the karyotype you came
+// from" and the card, now plain, offers the way back. Driven through the page,
+// not the module, because the unit tests bypass the draw gate.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -36,77 +36,101 @@ function serve() {
   return new Promise((res) => server.listen(0, '127.0.0.1', () => res(server)));
 }
 
-test('the parental-origin alert appears, names the parent, and obeys the gate', async (t) => {
+test('the parental-origin card: amber chips out, plain marker back', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
   const puppeteer = require('puppeteer-core');
   const server = await serve();
   const port = server.address().port;
   const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
-  const open = async (page, k) => {
-    await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent(k)}`, { waitUntil: 'load' });
+  const open = async (page, query) => {
+    await page.goto(`http://127.0.0.1:${port}/index.html?${query}`, { waitUntil: 'load' });
     await page.waitForSelector('#kinput');
   };
-  const alertState = (page) => page.evaluate(() => ({
+  const state = (page) => page.evaluate(() => ({
     display: getComputedStyle(document.getElementById('origin-alert-card')).display,
+    warn: document.getElementById('origin-alert-card').classList.contains('oal-warn'),
     head: (document.querySelector('#origin-alert .oal-head') || {}).textContent || '',
-    body: (document.querySelector('#origin-alert .oal-body') || {}).textContent || '',
-    jump: !!document.querySelector('#origin-alert a[href="#segregation-card"]'),
+    chips: [...document.querySelectorAll('#origin-alert .seg-kt')].map((b) => ({
+      k: b.getAttribute('data-k'), from: b.getAttribute('data-from'),
+    })),
     panel: getComputedStyle(document.getElementById('segregation-card')).display,
     panelText: document.getElementById('segregation').textContent,
+    input: document.getElementById('kinput').value,
+    search: location.search,
   }));
+  const waitAlert = (page) => page.waitForFunction(() =>
+    getComputedStyle(document.getElementById('origin-alert-card')).display !== 'none');
   try {
     const page = await browser.newPage();
 
-    await t.test('a lone derivative raises the alert beside the figure', async () => {
-      await open(page, '46,XX,der(4)t(4;11)(p15;q23)');
-      await page.waitForFunction(() =>
-        getComputedStyle(document.getElementById('origin-alert-card')).display !== 'none');
-      const st = await alertState(page);
+    await t.test('the unbalanced karyotype gets chips, and no meiosis panel', async () => {
+      await open(page, 'k=' + encodeURIComponent('46,XX,der(4)t(4;11)(p15;q23)'));
+      await waitAlert(page);
+      const st = await state(page);
+      assert.ok(st.warn, 'amber mood');
       assert.match(st.head, /A parent may be a balanced carrier/);
-      assert.match(st.body, /Adjacent-1/);
-      assert.ok(st.jump, 'the alert links down to the panel');
-      assert.notEqual(st.panel, 'none', 'and the panel it points to is rendered');
-      assert.match(st.panelText, /Where this came from/);
+      assert.equal(st.chips.length, 2, 'either parent, as chips');
+      assert.equal(st.chips[0].from, '46,XX,der(4)t(4;11)(p15;q23)', 'chips carry the from thread');
+      assert.equal(st.panel, 'none', 'no meiosis figures under the child');
     });
 
-    await t.test('the textbook Emanuel spelling, mat included, names the mother', async () => {
-      await open(page, '47,XY,+der(22)t(11;22)(q23;q11.2)mat');
+    await t.test('a carrier chip draws the parent with the outcome marked', async () => {
+      await page.evaluate(() => document.querySelector('#origin-alert .seg-kt').click());
       await page.waitForFunction(() =>
-        getComputedStyle(document.getElementById('origin-alert-card')).display !== 'none');
-      const st = await alertState(page);
-      assert.match(st.head, /names the mother/);
-      assert.match(st.panelText, /the mother/);
+        document.getElementById('kinput').value === '46,XX,t(4;11)(p15;q23)');
+      await waitAlert(page);
+      const st = await state(page);
+      assert.ok(!st.warn, 'plain mood on the carrier page');
+      assert.match(st.head, /the karyotype you came from/);
+      assert.notEqual(st.panel, 'none', 'the forward panel renders here, where it is true');
+      assert.match(st.panelText, /the karyotype you came from/, 'the arrived-from outcome is marked');
+      assert.match(st.search, /from=46,XX,der\(4\)/, 'the thread rides the URL');
     });
 
-    await t.test('a homologous fusion product states the no-normal-child fact', async () => {
-      await open(page, '46,XX,+21,der(21;21)(q10;q10)');
+    await t.test('a view toggle keeps the marker; the return chip goes back clean', async () => {
+      await page.evaluate(() => document.querySelector('#levelseg button[data-level]:not(.on)').click());
+      await new Promise((r) => setTimeout(r, 150));
+      let st = await state(page);
+      assert.match(st.panelText, /the karyotype you came from/, 'same karyotype redrawn, thread kept');
+      await page.evaluate(() => document.querySelector('#origin-alert .seg-kt').click());
       await page.waitForFunction(() =>
-        getComputedStyle(document.getElementById('origin-alert-card')).display !== 'none');
-      const st = await alertState(page);
-      assert.match(st.head, /Could a parent carry this fusion\?/);
-      assert.match(st.panelText, /univalent/);
-      assert.doesNotMatch(st.panelText, /Viable: chromosomally normal/,
-        'the false trivalent claim (a normal gamete on offer) stays gone at the entry point');
-      assert.match(st.panelText, /chromosomally normal child is not possible/,
-        'and the negation is stated instead');
+        /der\(4\)/.test(document.getElementById('kinput').value));
+      await waitAlert(page);
+      st = await state(page);
+      assert.ok(st.warn, 'back on the child, amber again');
+      assert.doesNotMatch(st.search, /from=/, 'the thread does not linger');
     });
 
-    await t.test('a balanced carrier and a normal karyotype raise no alert', async () => {
-      await open(page, '46,XX,t(11;22)(q23;q11.2)');
+    await t.test('a shared carrier link with from= restores the marker', async () => {
+      await open(page, 'k=' + encodeURIComponent('46,XX,t(4;11)(p15;q23)') +
+        '&from=' + encodeURIComponent('46,XX,der(4)t(4;11)(p15;q23)'));
+      await waitAlert(page);
+      const st = await state(page);
+      assert.ok(!st.warn);
+      assert.match(st.panelText, /the karyotype you came from/);
+    });
+
+    await t.test('a bogus from= is scrubbed, never rendered', async () => {
+      await open(page, 'k=' + encodeURIComponent('46,XX,t(4;11)(p15;q23)') +
+        '&from=' + encodeURIComponent('46,XY,del(5)(p15.2)'));
       await page.waitForFunction(() =>
         getComputedStyle(document.getElementById('segregation-card')).display !== 'none');
-      let st = await alertState(page);
-      assert.equal(st.display, 'none', 'the forward panel needs no alert');
-      await open(page, '46,XX');
-      await page.waitForFunction(() => document.querySelector('#karyo svg'));
-      st = await alertState(page);
-      assert.equal(st.display, 'none');
+      const st = await state(page);
+      assert.equal(st.display, 'none', 'no card claims an outcome the panel does not produce');
+      assert.doesNotMatch(st.panelText, /came from/);
+      assert.doesNotMatch(st.search, /from=/, 'and the URL is scrubbed');
     });
 
-    await t.test('a refusal sweeps the alert with the rest of the drawing', async () => {
-      await open(page, '46,XX,der(4)t(4;11)(p15;q23)');
-      await page.waitForFunction(() =>
-        getComputedStyle(document.getElementById('origin-alert-card')).display !== 'none');
+    await t.test('the textbook Emanuel spelling names the mother, one chip', async () => {
+      await open(page, 'k=' + encodeURIComponent('47,XY,+der(22)t(11;22)(q23;q11.2)mat'));
+      await waitAlert(page);
+      const st = await state(page);
+      assert.match(st.head, /names the mother/);
+      assert.equal(st.chips.length, 1);
+      assert.equal(st.chips[0].k, '46,XX,t(11;22)(q23;q11.2)');
+    });
+
+    await t.test('a refusal sweeps the card with the rest of the drawing', async () => {
       await page.evaluate(() => {
         const input = document.getElementById('kinput');
         input.value = '45,XX,der(4)t(4;11)(p15;q23)';   // count contradicts the changes
@@ -115,7 +139,7 @@ test('the parental-origin alert appears, names the parent, and obeys the gate', 
       });
       await page.waitForFunction(() =>
         getComputedStyle(document.getElementById('origin-alert-card')).display === 'none');
-      const st = await alertState(page);
+      const st = await state(page);
       assert.equal(st.panel, 'none', 'the panel goes with it');
     });
   } finally {

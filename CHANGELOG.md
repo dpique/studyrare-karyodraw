@@ -3,6 +3,24 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-04 (the origin card slims down, and the meiosis moves home)
+
+- **The parental-origin card is now chips-first and mechanism-free** (owner call:
+  the first version was too wordy). Headline, the carrier karyotypes as clickable
+  chips (one when mat/pat/dmat/dpat names the parent), one caveat line. Segregation
+  mode names left the card entirely, and the carrier chips get the same hover
+  preview as the panel's conceptus chips.
+- **The parent's meiosis is no longer embedded under the child.** Those figures
+  describe chromosomes the child's karyotype does not contain (an Emanuel child has
+  no der(11), yet the quadrivalent drew one), so they now live only on the carrier
+  page, where they are true of the karyotype drawn above them. Clicking a carrier
+  chip draws that parent and threads the child along as from= in the URL; the
+  parent's own panel marks the matching gamete "the karyotype you came from",
+  preselects its division pair where that applies, and the card, in a plain mood,
+  offers the way back. The thread survives view toggles, dies on any plain jump,
+  rides shared links and Back, and a from= that matches nothing is scrubbed rather
+  than rendered.
+
 ## 2026-09-04 (the unbalanced karyotype flags its possible carrier parent)
 
 - **A parental-origin alert joins the tool column.** Whenever an unbalanced

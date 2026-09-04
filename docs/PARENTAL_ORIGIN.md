@@ -236,3 +236,26 @@ Three additions, each closing a way the view failed to fire or overspoke:
   gametes (the trisomic zygote spelled `46,XX,+21,der(21;21)(q10;q10)`, ISCN 2024's
   printed order), `renderHomologous` draws it as text with no scene, and the origin
   head names the de novo isochromosome differential, which is the more common origin.
+
+## As built, round 3 (2026-09-04): the view splits across the two pages
+
+The embedded panel is gone. Round 2 rendered the inferred carrier's entire forward
+panel under the child, and the owner called the confusion correctly: those figures
+describe chromosomes the child's karyotype does not contain, and the embedded lead
+("this carrier") misattributes them to the page it is on. The reverse view is now a
+compact card; the meiosis is seen by standing on the carrier's page.
+
+- `renderOriginCard(org)` replaces `renderOrigin` + `renderOriginAlert`: one home,
+  headline first, carrier chips immediately after (chips-first is an owner call), one
+  caveat line, the UPD line when it applies. No mode names in the card; the mode is
+  seen in context on the carrier page, where the matched outcome is marked.
+- `applyFrom(model, k)` replaces the embedding. Carrier chips carry the typed
+  karyotype as `data-from`; the app threads it through the URL (`from=`), and the
+  carrier page's own panel marks the matching gamete "the karyotype you came from",
+  reusing the hereZygote machinery (division-pair preselection included). Matching
+  ignores conceptus sex, since the panel's zygotes wear the carrier page's sex tokens
+  and the reader may have arrived from the other spelling. No match, no claim: the
+  parameter is scrubbed rather than rendered.
+- The round-trip property survives the split: `origin()` is untouched, and the marked
+  outcome on the carrier page is found by the same canonical-key comparison the
+  reverse inference uses.
