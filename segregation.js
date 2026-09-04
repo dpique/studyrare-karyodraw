@@ -478,7 +478,7 @@
         // to, in the same who-plus-chip grammar as the amber card.
         return '<p class="oal-head">A possible carrier parent</p>' +
           '<div class="oal-chips"><span class="orig-who">could give rise to</span>' + ktButton(k) + '</div>' +
-          '<p class="oal-hint">That outcome is marked in the <a href="#segregation-card">meiotic segregation</a> below.</p>';
+          '<p class="oal-hint">See it marked in the <a href="#segregation-card">meiotic segregation</a> below.</p>';
       }
     }
     return null;
