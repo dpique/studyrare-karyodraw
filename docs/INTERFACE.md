@@ -182,3 +182,24 @@ a warning. Both moods render from `renderSegregation`, and the draw gate sweeps 
 card like every other `data-drawing` panel. `test/origin-alert-browser.test.js` pins
 the full loop in a real browser: chips out, marker on the parent, toggle persistence,
 return trip, deep link, bogus-from scrub, and the refusal sweep.
+
+Second same-day trim (owner review of the shipped card): the bare card carries NO
+caveat line at all, because "may" in the headline already holds the de novo
+alternative open; only an inheritance suffix earns its one-line gloss, and the UPD
+line stays as a testing reason. The plain mood's chip label is "could give rise to"
+(genetics, forward) rather than "traced from" (navigation, backward), and its
+go-back instruction was cut: the chip is self-evidently the way back.
+
+## One hover, one popover, one side (2026-09-04)
+
+A karyotype chip's hover opens the drawn preview and nothing else: chips carry no
+title attribute, because a native tooltip saying "Draw ..." raced the preview and said
+less (owner call). The popover opens BELOW the chip, centered and clamped on screen,
+flipping above only at the viewport bottom; the old beside-the-button placement
+flipped left or right with the room available, so it jumped sides between the tool
+column and the panel. And a preview floating over a drawing must wear that drawing's
+colors: for chromosomes the two share it inherits the page's assignment, even when
+the hovered karyotype involves only a subset (45,XX,-21 over a der(14;21) page shows
+21 in the page's second color, not the first it would earn alone), and colors the
+page uses for other chromosomes are withheld from the rest of the popover. The
+preview cache is per drawing for exactly this reason.

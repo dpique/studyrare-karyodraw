@@ -438,8 +438,10 @@
       head = "A parent carries the balanced form";
       caveat = QUAL_LINE[c.qual] || "";
     } else {
+      // No de novo caveat line (Dan, 2026-09-04): "may" in the headline carries
+      // the alternative, and the decode's origin sentence hedges the same way.
       head = "A parent may be a balanced carrier";
-      caveat = "It can also arise de novo; parental karyotypes tell the two apart.";
+      caveat = "";
     }
     var chips = named
       ? '<span class="orig-who">the ' + parent + '</span>' + ktButton(parent === "mother" ? c.carrier.XX : c.carrier.XY, m.typed)
@@ -472,11 +474,11 @@
         model.hereLabel = "the karyotype you traced";
         // Domain words, not navigation words ("the karyotype you came from"
         // narrated the click, not the genetics; Dan, 2026-09-04): the page is a
-        // possible carrier parent, and the chip names what it was traced from,
-        // in the same who-plus-chip grammar as the amber card.
+        // possible carrier parent, the chip is the product it could give rise
+        // to, in the same who-plus-chip grammar as the amber card.
         return '<p class="oal-head">A possible carrier parent</p>' +
-          '<div class="oal-chips"><span class="orig-who">traced from</span>' + ktButton(k) + '</div>' +
-          '<p class="oal-hint">That outcome is marked in the <a href="#segregation-card">meiotic segregation</a> below; click its karyotype to go back.</p>';
+          '<div class="oal-chips"><span class="orig-who">could give rise to</span>' + ktButton(k) + '</div>' +
+          '<p class="oal-hint">That outcome is marked in the <a href="#segregation-card">meiotic segregation</a> below.</p>';
       }
     }
     return null;
@@ -525,10 +527,13 @@
   // chips and the "did you mean" fix, so one delegated listener serves all three.
   // fromK rides along as data-from on the carrier chips of the origin card: the
   // click hands it to the next draw, and the carrier page marks that outcome.
+  // No title attribute on purpose (Dan, 2026-09-04): the hover already opens the
+  // drawn preview, and a second, native tooltip saying "Draw ..." beside it was
+  // one hover too many for a click whose meaning the hint lines state.
   function ktButton(k, fromK) {
     var from = fromK ? '" data-from="' + escAttr(fromK) : "";
     return '<button type="button" class="seg-kt" data-k="' + escAttr(k) + from +
-      '" title="Draw ' + escAttr(k) + '">' + esc(k) + '</button>';
+      '">' + esc(k) + '</button>';
   }
   function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
 

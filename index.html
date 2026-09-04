@@ -2673,7 +2673,7 @@
   // real hover-capable pointer; focus covers the keyboard, and neither is the only
   // way to the information (clicking still draws and decodes it in full).
   (function () {
-    var peek = null, timer = null, cache = {};
+    var peek = null, timer = null, cache = {}, cacheModel = null, pageAff = {};
     var canHover = !window.matchMedia || window.matchMedia("(hover: hover)").matches;
 
     function el() {
@@ -2686,6 +2686,18 @@
       return peek;
     }
     function bodyFor(k) {
+      // The preview floats over the current drawing, so a chromosome they share
+      // must wear the page's color there, even when the preview involves only a
+      // SUBSET (45,XX,-21 hovered on a der(14;21) page would otherwise hand 21
+      // the first color while the page shows it in the second). Colors the page
+      // uses for other chromosomes are withheld from the rest, so nothing in
+      // the popover borrows a color that means something else underneath. The
+      // cache is therefore per drawing, keyed on the model object.
+      if (cacheModel !== currentModel) {
+        cacheModel = currentModel;
+        cache = {};
+        pageAff = currentModel ? window.Karyo.computeAffected(currentModel.clones) : {};
+      }
       if (k in cache) return cache[k];
       cache[k] = null;
       var model = window.ISCN.parse(k);
@@ -2697,6 +2709,13 @@
       // to isolate. Twenty-four normal chromosomes in a popover would say nothing that
       // the row's own "normal" label does not, so skip the preview entirely.
       if (!only.length) return null;
+      var used = {};
+      Object.keys(pageAff).forEach(function (c) { used[pageAff[c]] = 1; });
+      var pool = window.Karyo.AFFECTED_PALETTE.filter(function (col) { return !used[col]; });
+      var next = 0;
+      only.forEach(function (c) {
+        aff[c] = pageAff[c] || pool[next++ % (pool.length || 1)] || aff[c];
+      });
       var host = document.createElement("div");
       window.Karyo.render(host, clone, { theme: "simple", level: 1, affected: aff, only: only });
       cache[k] = '<div class="ktpeek-k">' + escapeHtml(k) + "</div>" + host.innerHTML;
@@ -2709,12 +2728,16 @@
       var p = el();
       p.innerHTML = html;
       p.classList.add("on");
-      // Place beside the button, flipped or clamped to stay on screen.
+      // Always below the chip, centered and clamped on screen; above only when
+      // the viewport bottom forces it. One consistent side, wherever the chip
+      // sits (the old beside-the-button rule flipped left or right with the
+      // room available, so the popover jumped sides between the tool column
+      // and the panel; Dan, 2026-09-04).
       var r = btn.getBoundingClientRect(), pw = p.offsetWidth, ph = p.offsetHeight, gap = 10;
-      var left = r.right + gap;
-      if (left + pw > window.innerWidth - 8) left = Math.max(8, r.left - gap - pw);
-      var top = r.top + r.height / 2 - ph / 2;
-      top = Math.max(8, Math.min(top, window.innerHeight - ph - 8));
+      var left = r.left + r.width / 2 - pw / 2;
+      left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+      var top = r.bottom + gap;
+      if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - gap - ph);
       p.style.left = left + "px";
       p.style.top = top + "px";
     }
