@@ -3,6 +3,13 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-04 (the return hint directs the eye)
+
+- **The carrier page's return card reads "See it marked in the meiotic
+  segregation below"** (was "That outcome is marked in ..."). More direct, and
+  it keeps the cue that the traced outcome is highlighted among the panel's
+  several, which a bare "look below" would drop.
+
 ## 2026-09-04 (one hover, one popover, one side; and the preview wears the page's colors)
 
 - **A chip's hover opens the drawn preview and nothing else.** The native title
