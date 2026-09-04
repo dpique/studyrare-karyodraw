@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-04 (the unbalanced karyotype flags its possible carrier parent)
+
+- **A parental-origin alert joins the tool column.** Whenever an unbalanced
+  karyotype traces back to a balanced-carrier parent (an unbalanced reciprocal
+  product, a 3:1 tertiary trisomy, a Robertsonian trisomy), an amber card at
+  the top of the column says so where the eye lands and links down to the full
+  "Where this came from" panel. Alert and panel render from the same origin
+  model, so they cannot disagree. Requested by Dan.
+- **Inheritance suffixes now reach the origin view.** ISCN 2024 Table 5 writes
+  every segregant with dmat, and the textbook Emanuel karyotype ends in mat;
+  both previously matched nothing because the comparison key kept the suffix.
+  Matching now sees through mat, pat, inh, dmat, dpat, and dinh, and the copy
+  branches on what the suffix states (4.2.1 g): a named parent gets one carrier
+  chip instead of the either/or pair, inh drops the de novo alternative, and dn
+  stands the whole inference down since it documents normal parents (4.2.1 h).
+- **A homologous Robertsonian fusion no longer borrows the trivalent.** For
+  45,XX,der(21;21)(q10;q10) the segregation panel showed alternate segregation
+  offering a chromosomally normal child, which is false: that carrier keeps no
+  free chromosome 21, so the fusion is a univalent and every conception is
+  trisomic or monosomic (Gardner, 5th ed). The carrier now gets a univalent
+  panel of its two gametes, the product 46,XX,+21,der(21;21)(q10;q10) traces
+  back to it with the de novo isochromosome differential named, and the fusion
+  glyph paints both long arms in one chromosome-of-origin color.
+
 ## 2026-08-30 (adjacent outcomes pair up, and clicking a pair redraws its plane)
 
 - **The Robertsonian adjacent card groups its four outcomes into two boxed

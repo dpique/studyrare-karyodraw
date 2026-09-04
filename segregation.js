@@ -13,7 +13,10 @@
  * Given a balanced RECIPROCAL translocation carrier the parser produced, this models
  * the pachytene QUADRIVALENT and its segregation modes: 2:2 (alternate / adjacent-1 /
  * adjacent-2), 3:1 (tertiary and interchange), and 4:0. For a ROBERTSONIAN carrier it
- * models the TRIVALENT and its 2:1 segregation. For each mode it lists the gametes, the
+ * models the TRIVALENT and its 2:1 segregation. A HOMOLOGOUS fusion (der(21;21)) is a
+ * UNIVALENT with no balanced outcome and gets a text panel of its two gametes; the
+ * trivalent must never see it, since that would claim a normal child is possible.
+ * For each mode it lists the gametes, the
  * conceptus karyotype in ISCN, the resulting imbalance in plain language, and a rough
  * viability. The canonical segregants follow ISCN 2024, Table 5; interstitial crossing-over
  * adds still more 3:1 combinations (noted, not enumerated). This is a teaching visualizer of
@@ -68,7 +71,7 @@
       ab.breakpoints[0].length === 1 && ab.breakpoints[1].length === 1 &&
       !(ab.chroms[0] in { X: 1, Y: 1 }) && !(ab.chroms[1] in { X: 1, Y: 1 });
   }
-  function isRobertsonian(ab) {
+  function wholeArmAcroFusion(ab) {
     if (!ab || ab.kind !== "der" || !ab.chroms || ab.chroms.length !== 2) return false;
     if (!ACRO[ab.chroms[0]] || !ACRO[ab.chroms[1]]) return false;
     var robNote = /robertsonian/i.test(ab.note || "");
@@ -76,9 +79,20 @@
       ab.breakpoints.every(function (g) { return g.length && g.every(function (b) { return /(p|q)10/.test(b); }); });
     return robNote || wholeArm;
   }
+  function isRobertsonian(ab) {
+    // Two DIFFERENT acrocentrics. A homologous fusion (der(21;21)) is not a
+    // trivalent carrier: that parent keeps no free homologue, so nothing pairs,
+    // no alternate mode exists, and no gamete is balanced. Feeding it this
+    // model claimed a chromosomally normal child was possible, which Gardner
+    // (5th ed, rob(21q21q)) flatly denies. computeHomologous owns that case.
+    return wholeArmAcroFusion(ab) && String(ab.chroms[0]) !== String(ab.chroms[1]);
+  }
+  function isHomologousRob(ab) {
+    return wholeArmAcroFusion(ab) && String(ab.chroms[0]) === String(ab.chroms[1]);
+  }
   function eligible(clone) {
     var ab = soleAberration(clone);
-    return !!ab && (isReciprocal(ab) || isRobertsonian(ab));
+    return !!ab && (isReciprocal(ab) || isRobertsonian(ab) || isHomologousRob(ab));
   }
 
   // ---- shared helpers -------------------------------------------------------
@@ -224,6 +238,42 @@
     };
   }
 
+  // ---- homologous Robertsonian: univalent, no balanced outcome --------------
+  // der(21;21) and its kin. The carrier's only chromosome-A material is the
+  // fusion itself, so at meiosis it pairs with nothing (a univalent) and
+  // travels whole to one pole or the other: one gamete carries both copies of
+  // Aq, the other carries no A at all. There is no alternate mode and no
+  // balanced gamete; every conception is trisomic or monosomic for A (Gardner,
+  // 5th ed: for rob(21q21q) a normal child is not possible from any gamete).
+  // Shaped like the other models (modes/gametes) so origin() can round-trip
+  // through it unchanged, but rendered as text: there is no valent to draw.
+  function computeHomologous(clone, ab) {
+    var A = ab.chroms[0];
+    var bandA = (ab.breakpoints[0] && ab.breakpoints[0][0]) || "q10";
+    var bandB = (ab.breakpoints[1] && ab.breakpoints[1][0]) || "q10";
+    var sex = sexOf(clone);
+    var F = "der(" + A + ";" + A + ")(" + bandA + ";" + bandB + ")";
+    function g(bodies, zygote, imbalance, viability, label) {
+      return { bodies: bodies, zygote: zygote, imbalance: imbalance, viability: viability, label: label };
+    }
+    var modes = [
+      { name: "Univalent", sub: "1:0", balanced: false,
+        blurb: "The fusion has no partner to pair with, so it travels whole to one pole or the other. One gamete carries both copies of " + A + "q, the other carries no chromosome " + A + " at all; no balanced gamete exists.",
+        gametes: [
+          // ISCN 2024 prints this order for the trisomic conceptus:
+          // 46,XX,+21,der(21;21)(q10;q10) (numerical change listed first).
+          g(["dF"], "46," + sex + ",+" + A + "," + F, "three copies of " + A + "q", trisomyViability(A), "translocation trisomy " + A),
+          g([], "45," + sex + ",-" + A, "one copy of " + A + "q", monosomyViability(A), "monosomy " + A)
+        ] }
+    ];
+    return {
+      type: "homologous", valent: "univalent", valentN: 1,
+      A: A, B: A, bandA: bandA, bandB: bandB, sex: sex, carrier: "45," + sex + "," + F,
+      bodies: robertsonianBodies(A, A),
+      modes: modes
+    };
+  }
+
   // ---- parental origin: the forward model, run backwards ---------------------
   // Typing an unbalanced product is how clinic and the boards actually work: you are
   // handed the abnormal result and reason toward the parents. Rather than enumerate
@@ -238,7 +288,13 @@
     var m = window.ISCN.parse(k), c = m.clones && m.clones[0];
     if (!c || c.modalNumber == null) return null;
     var parts = (c.aberrations || []).map(function (ab) {
-      return String(ab.raw || "").toLowerCase().replace(/\s+/g, "").replace(/^([+\-\u2212\u2013]?)rob\(/, "$1der(");
+      var raw = String(ab.raw || "");
+      // An inheritance qualifier (mat, dmat, dn, ...) says where the aberration
+      // came from, not what it is, and ISCN 2024 Table 5 writes every segregant
+      // with dmat. Matching sees through the suffix; origin() reads it
+      // separately to name the parent or to stand down.
+      if (ab.qualifier) raw = raw.slice(0, raw.length - ab.qualifier.length);
+      return raw.toLowerCase().replace(/\s+/g, "").replace(/^([+\-\u2212\u2013]?)rob\(/, "$1der(");
     }).sort();
     return c.modalNumber + "|" + (c.sex.label || "") + "|" + parts.join(",");
   }
@@ -249,22 +305,29 @@
   // carrier at the same count.
   function candidateCarriers(clone) {
     var sex = sexOf(clone), out = [], seen = {};
-    function add(k) { if (k && !seen[k]) { seen[k] = 1; out.push(k); } }
+    // The qualifier rides along with each candidate: it belongs to the
+    // aberration the candidate was built from (for a sub-op t, to the der that
+    // carries it), and it decides who the panel may name as the carrier.
+    function add(k, ab) {
+      if (!k || seen[k]) return;
+      seen[k] = 1;
+      out.push({ k: k, qual: (ab && ab.qualifier) || null });
+    }
     function bps(ab) {
       return (ab.breakpoints || []).map(function (g) { return (g || []).join(""); }).join(";");
     }
     (clone.aberrations || []).forEach(function (ab) {
       if (!ab || !ab.chroms) return;
       if (ab.kind === "der" && ab.chroms.length === 2) {
-        add((clone.modalNumber - 1) + "," + sex + ",der(" + ab.chroms.join(";") + ")(" + bps(ab) + ")");
+        add((clone.modalNumber - 1) + "," + sex + ",der(" + ab.chroms.join(";") + ")(" + bps(ab) + ")", ab);
       }
       if (ab.kind === "t" && ab.chroms.length === 2) {
-        add("46," + sex + ",t(" + ab.chroms.join(";") + ")(" + bps(ab) + ")");
+        add("46," + sex + ",t(" + ab.chroms.join(";") + ")(" + bps(ab) + ")", ab);
       }
       (ab.subOps || []).forEach(function (sub) {
         if (sub.op === "t" && sub.chroms && sub.chroms.length === 2) {
           add("46," + sex + ",t(" + sub.chroms.join(";") + ")(" +
-            (sub.breakpoints || []).map(function (g) { return (g || []).join(""); }).join(";") + ")");
+            (sub.breakpoints || []).map(function (g) { return (g || []).join(""); }).join(";") + ")", ab);
         }
       });
     });
@@ -279,17 +342,25 @@
     "15": "chromosome 15 (Prader-Willi and Angelman syndromes)"
   };
 
+  // Which parent an inheritance qualifier names (ISCN 4.2.1 g). dn is absent on
+  // purpose: it records that both parents were karyotyped and are normal
+  // (4.2.1 h), so there is no carrier to point at and the candidate is dropped.
+  var QUAL_PARENT = { mat: "mother", dmat: "mother", pat: "father", dpat: "father", inh: "inherited", dinh: "inherited" };
+
   function origin(clone) {
     if (!clone || clone.modalNumber == null) return null;
     if (eligible(clone)) return null;         // a balanced carrier: the forward panel serves it
     var typedKey = canonKey(clone.raw || "");
     if (!typedKey) return null;
     var candidates = [];
-    candidateCarriers(clone).forEach(function (ck) {
+    candidateCarriers(clone).forEach(function (cand) {
+      if (cand.qual === "dn") return;         // parents documented normal: nothing to infer
+      var ck = cand.k;
       var cc = window.ISCN.parse(ck).clones[0];
       if (!cc || !eligible(cc)) return;
       var m = compute(cc);
       if (!m) return;
+      var updChroms = m.type === "robertsonian" ? [m.A, m.B] : (m.type === "homologous" ? [m.A] : []);
       for (var i = 0; i < m.modes.length; i++) {
         for (var j = 0; j < m.modes[i].gametes.length; j++) {
           var g = m.modes[i].gametes[j];
@@ -299,36 +370,135 @@
             carrier: { XX: ck.replace(/,X[XY],/, ",XX,"), XY: ck.replace(/,X[XY],/, ",XY,") },
             mode: m.modes[i].name, sub: m.modes[i].sub, label: g.label || "",
             type: m.type, model: m,
-            upd: m.type === "robertsonian" ? [m.A, m.B].filter(function (c) { return UPD_RISK[c]; }) : []
+            qual: cand.qual || null, parent: QUAL_PARENT[cand.qual] || null,
+            upd: updChroms.filter(function (c) { return UPD_RISK[c]; })
           });
           return;
         }
       }
     });
     if (!candidates.length) return null;
-    return { typed: clone.raw || "", candidates: candidates, deNovoPossible: true };
+    var q = candidates[0].qual;
+    return { typed: clone.raw || "", candidates: candidates, deNovoPossible: !q || q === "c" };
+  }
+
+  // What each inheritance qualifier states, phrased to follow "The X suffix".
+  // The definitions are ISCN 2024, 4.2.1 g: mat/pat name the parent the
+  // aberration is inherited from; the d- forms say only PART of a parental
+  // rearrangement was inherited, which for a derivative means the parent
+  // carries the balanced complement.
+  var QUAL_GLOSS = {
+    mat: "records maternal origin",
+    pat: "records paternal origin",
+    dmat: "marks this chromosome as one product of a maternal rearrangement (ISCN 4.2.1 g)",
+    dpat: "marks this chromosome as one product of a paternal rearrangement (ISCN 4.2.1 g)",
+    inh: "records an inherited aberration without naming the parent",
+    dinh: "marks this chromosome as one product of a parental rearrangement without naming the parent (ISCN 4.2.1 g)"
+  };
+  // The balanced rearrangement a carrier parent would hold, as written notation.
+  function balancedName(model) {
+    if (model.type === "reciprocal") return "t(" + model.A + ";" + model.B + ")(" + model.bandA + ";" + model.bandB + ")";
+    return "der(" + model.A + ";" + model.B + ")(" + model.bandA + ";" + model.bandB + ")";
   }
 
   function renderOrigin(m) {
     if (!m || !m.candidates.length) return "";
     var c = m.candidates[0];
-    var kind = c.type === "robertsonian" ? "Robertsonian" : "reciprocal";
-    var what = c.label ? "the <b>" + esc(c.label) + "</b> outcome of " : "the product of ";
-    var head = '<div class="seg-head"><h2>Where this came from</h2>' +
-      '<p class="seg-lead">This karyotype is ' + what + '<b>' + esc(c.mode) + '</b> segregation (' + esc(c.sub) +
-      ') in a parent who carries a balanced ' + kind + ' translocation. It can also arise <b>de novo</b>, ' +
-      'in a gamete or shortly after fertilisation, with both parents having normal karyotypes. ' +
-      'The two are told apart by karyotyping both parents, which is why that is the next step ' +
-      'whichever answer you expect.</p></div>';
-    var carriers = '<div class="orig-carriers"><span class="orig-label">The carrier parent would be</span>' +
-      '<span class="orig-pair"><span class="orig-who">either</span>' + ktButton(c.carrier.XX) +
-      '<span class="orig-who">or</span>' + ktButton(c.carrier.XY) + '</span>' +
-      '<span class="orig-note">Nothing in this karyotype says which parent, so both are worth drawing.</span></div>';
+    var parent = c.parent, named = parent === "mother" || parent === "father";
+    var qNote = c.qual && QUAL_GLOSS[c.qual]
+      ? 'The <b>' + esc(c.qual) + '</b> suffix ' + QUAL_GLOSS[c.qual] + ': ' : "";
+
+    var lead;
+    if (c.type === "homologous") {
+      var A = c.model.A, F = balancedName(c.model);
+      lead = 'This karyotype carries a <b>homologous</b> Robertsonian fusion: both copies of chromosome ' + esc(A) +
+        ' joined into one. A parent who carries ' + esc(F) + ' has no normal ' + esc(A) +
+        ' to pass on, so <b>every conception is trisomic or monosomic</b> for chromosome ' + esc(A) +
+        ' and a chromosomally normal child is not possible from that parent. ';
+      if (named) lead += qNote + 'the ' + parent + ' carries the fusion, and the same holds for every further pregnancy.';
+      else if (parent === "inherited") lead += qNote + 'a parent carries the fusion; which one takes karyotyping both.';
+      else lead += 'More often, though, such a chromosome arises <b>de novo</b>, where it is indistinguishable on a karyotype from the isochromosome i(' +
+        esc(A) + ')(q10), and the outlook for future pregnancies is entirely different. Parental karyotypes tell the two apart.';
+    } else {
+      var kind = c.type === "robertsonian" ? "Robertsonian" : "reciprocal";
+      var what = c.label ? "the <b>" + esc(c.label) + "</b> outcome of " : "the product of ";
+      // The parenthetical ratio only earns its place when it says something the
+      // mode name does not ("Adjacent-1 (2:2)"); "3:1 segregation (3:1)" is noise.
+      var ratio = c.sub === c.mode ? "" : " (" + esc(c.sub) + ")";
+      lead = 'This karyotype is ' + what + '<b>' + esc(c.mode) + '</b> segregation' + ratio +
+        ' in a parent who carries a balanced ' + kind + ' translocation. ';
+      // dmat/dpat state the balanced parental rearrangement outright; plain
+      // mat/pat state only the parent of origin, so the balanced reading is
+      // the usual one rather than the written one, and the d- form is the
+      // teaching point (ISCN 4.2.1 g).
+      if (named && c.qual.charAt(0) === "d") lead += qNote + 'the ' + parent + ' carries the balanced form, and this karyotype is one of its meiotic products.';
+      else if (named) lead += qNote + 'this chromosome came from the ' + parent + ', usually as one product of the balanced form; when that documented parental rearrangement is meant, ISCN writes d' + esc(c.qual) + ' (4.2.1 g).';
+      else if (parent === "inherited") lead += qNote + 'a parent carries the balanced form; which one takes karyotyping both.';
+      else lead += 'It can also arise <b>de novo</b>, ' +
+        'in a gamete or shortly after fertilisation, with both parents having normal karyotypes. ' +
+        'The two are told apart by karyotyping both parents, which is why that is the next step ' +
+        'whichever answer you expect.';
+    }
+    var head = '<div class="seg-head"><h2>Where this came from</h2><p class="seg-lead">' + lead + '</p></div>';
+
+    var carriers;
+    if (named) {
+      var chip = parent === "mother" ? c.carrier.XX : c.carrier.XY;
+      carriers = '<div class="orig-carriers"><span class="orig-label">The carrier parent</span>' +
+        '<span class="orig-pair"><span class="orig-who">the ' + parent + '</span>' + ktButton(chip) + '</span>' +
+        '<span class="orig-note">Named by the ' + esc(c.qual) + ' suffix, so this is the karyotype to draw.</span></div>';
+    } else {
+      var note = parent === "inherited"
+        ? 'The ' + esc(c.qual) + ' suffix says a parent carries it without saying which, so both are worth drawing.'
+        : 'Nothing in this karyotype says which parent, so both are worth drawing.';
+      carriers = '<div class="orig-carriers"><span class="orig-label">The carrier parent would be</span>' +
+        '<span class="orig-pair"><span class="orig-who">either</span>' + ktButton(c.carrier.XX) +
+        '<span class="orig-who">or</span>' + ktButton(c.carrier.XY) + '</span>' +
+        '<span class="orig-note">' + note + '</span></div>';
+    }
     var upd = c.upd.length ? '<p class="orig-upd">A carrier of this translocation also passes a risk of ' +
       '<b>uniparental disomy</b> for ' + c.upd.map(function (x) { return UPD_RISK[x]; }).join(" and ") +
       ', which no segregation diagram shows and which parental testing is needed to address.</p>' : "";
-    var lead = '<p class="orig-lead2">Below is that carrier parent\u2019s meiosis, with the outcome you typed marked.</p>';
-    return head + carriers + upd + lead + render(c.model);
+    var who = named ? "the " + parent + "\u2019s" : "that carrier parent\u2019s";
+    var lead2 = '<p class="orig-lead2">Below is ' + who + ' meiosis, with the outcome you typed marked.</p>';
+    return head + carriers + upd + lead2 + render(c.model);
+  }
+
+  // The compact alert for the card beside the figure. Fed the SAME origin model
+  // as the full panel, so the two can never disagree; this one only flags the
+  // possibility and points down. Kept to a headline, a sentence or two, and the
+  // jump link: the carrier chips, the caveats, and the meiosis live in the
+  // panel it points to.
+  function renderOriginAlert(m) {
+    if (!m || !m.candidates.length) return "";
+    var c = m.candidates[0];
+    var parent = c.parent, named = parent === "mother" || parent === "father";
+    var name = esc(balancedName(c.model));
+    var head, body;
+    if (c.type === "homologous") {
+      var A = esc(c.model.A);
+      head = named ? "The " + parent + " carries this fusion" : "Could a parent carry this fusion?";
+      body = named
+        ? "The " + esc(c.qual) + " suffix names the " + parent + ". A carrier of " + name +
+          " has no normal " + A + " to pass on, so every conception is trisomic or monosomic for chromosome " + A + "."
+        : "A parent who carries " + name + " balanced has no normal " + A +
+          " to pass on: every conception is trisomic or monosomic for chromosome " + A +
+          ". More often such a chromosome arises de novo; parental karyotypes tell the two apart.";
+    } else if (named) {
+      head = "The notation names the " + parent + " as the carrier";
+      body = "The " + esc(c.qual) + " suffix marks this karyotype as a product of the " + parent +
+        "\u2019s balanced " + name + ", passed on through <b>" + esc(c.mode) + "</b> segregation at meiosis.";
+    } else if (parent === "inherited") {
+      head = "A parent carries the balanced form";
+      body = "The " + esc(c.qual) + " suffix records that this came from a parent carrying the balanced " + name +
+        "; which parent takes karyotyping both.";
+    } else {
+      head = "A parent may be a balanced carrier";
+      body = "This unbalanced pattern is what <b>" + esc(c.mode) + "</b> segregation of a balanced " + name +
+        " produces at meiosis. It can also arise de novo; parental karyotypes tell the two apart.";
+    }
+    return '<p class="oal-head">' + head + '</p><p class="oal-body">' + body +
+      ' <a class="oal-jump" href="#segregation-card">See where this came from</a></p>';
   }
 
   function compute(clone) {
@@ -336,6 +506,7 @@
     if (!ab) return null;
     if (isReciprocal(ab)) return computeReciprocal(clone, ab);
     if (isRobertsonian(ab)) return computeRobertsonian(clone, ab);
+    if (isHomologousRob(ab)) return computeHomologous(clone, ab);
     return null;
   }
 
@@ -353,10 +524,14 @@
     };
   }
   function robertsonianBodies(A, B) {
+    // Peri/amber encode chromosome of origin, so a HOMOLOGOUS fusion (A === B)
+    // paints both long arms peri: amber there would claim second-chromosome
+    // material that does not exist.
+    var second = String(A) === String(B) ? PERI : AMBER;
     return {
       A: { id: "A", name: A, cen: PERI, blocks: [{ c: STALK, h: 5, arm: "p" }, { cen: true }, { c: PERI, h: 34, arm: "q" }] },
-      B: { id: "B", name: B, cen: AMBER, blocks: [{ c: STALK, h: 5, arm: "p" }, { cen: true }, { c: AMBER, h: 34, arm: "q" }] },
-      dF: { id: "dF", name: "der(" + A + ";" + B + ")", cen: INK, blocks: [{ c: PERI, h: 30, arm: "q" }, { cen: true }, { c: AMBER, h: 30, arm: "q" }] }
+      B: { id: "B", name: B, cen: second, blocks: [{ c: STALK, h: 5, arm: "p" }, { cen: true }, { c: second, h: 34, arm: "q" }] },
+      dF: { id: "dF", name: "der(" + A + ";" + B + ")", cen: INK, blocks: [{ c: PERI, h: 30, arm: "q" }, { cen: true }, { c: second, h: 30, arm: "q" }] }
     };
   }
 
@@ -602,11 +777,46 @@
     }).join("") + '</span>';
   }
 
+  // The homologous fusion panel is text-first: nothing pairs at meiosis (the
+  // fusion is a univalent), so there is no valent figure, no division plane,
+  // and no animation. The two outcomes and the reason they exhaust the list
+  // are the whole lesson. hereZygote still marks the typed outcome when
+  // origin() embeds this panel under "Where this came from".
+  function renderHomologous(model) {
+    var A = esc(model.A), md = model.modes[0];
+    var head = '<div class="seg-head"><h2>Meiotic segregation</h2>' +
+      '<p class="seg-lead">This carrier’s two chromosome ' + A + 's are fused into one: <b>der(' + A + ';' + A +
+      ')</b> is the only chromosome ' + A + ' material in the cell. At meiosis it has <b>nothing to pair with</b>, so it sits as a <b>univalent</b> and travels whole to one pole or the other. ' +
+      'Both possible gametes are unbalanced: one carries both copies of ' + A + 'q, the other carries no chromosome ' + A +
+      ' at all. Unlike a carrier of two different fused chromosomes, this parent has <b>no alternate mode</b>, so no gamete is balanced and every conception is trisomic or monosomic for chromosome ' + A + '.</p></div>';
+    var upd = UPD_RISK[model.A] ? '<p class="orig-upd">If an unbalanced conception is rescued by losing or duplicating a chromosome after fertilisation, both remaining copies can come from one parent: a risk of <b>uniparental disomy</b> for ' +
+      UPD_RISK[model.A] + ', which parental testing is needed to address.</p>' : "";
+    var hint = '<div class="seg-controls"><span class="seg-hint">Click either conceptus karyotype below to draw and decode that outcome.</span></div>';
+    var cards = md.gametes.map(function (gm) {
+      var here = (model.hereZygote && gm.zygote === model.hereZygote)
+        ? '<span class="seg-here">the karyotype you typed</span>' : "";
+      return '<div class="seg-gamete' + (here ? " seg-is-here" : "") + '">' +
+        '<div class="seg-gpoles">' + glyphRow(model.bodies, gm.bodies) + '</div>' +
+        '<div class="seg-gout">' + ktButton(gm.zygote) +
+        '<span class="seg-glabel">' + esc(gm.label) + '</span>' + here +
+        '<div class="seg-imb">' + esc(gm.imbalance) + '</div>' +
+        '<div class="seg-viab">' + viabChip(gm.viability) + '</div></div></div>';
+    }).join("");
+    var mode = '<div class="seg-mode">' +
+      '<div class="seg-mode-h"><b>' + esc(md.name) + '</b> <span class="seg-sub">' + esc(md.sub) + '</span>' +
+      '<span class="seg-bad">unbalanced</span></div>' +
+      '<p class="seg-why">' + md.blurb + '</p>' +
+      '<div class="seg-gametes">' + cards + '</div></div>';
+    var note = '<p class="seg-note">The trisomic conceptus follows the spelling ISCN 2024 prints for a homologous fusion, 46,XX,+21,der(21;21)(q10;q10). This is a teaching model of segregation, not a recurrence-risk estimate.</p>';
+    return head + upd + hint + '<div class="seg-modes seg-modes-one">' + mode + '</div>' + note;
+  }
+
   // Only shown for a constitutional (germline) balanced carrier. The caller suppresses
   // the panel for a recognized acquired/somatic cancer translocation, where meiotic
   // segregation does not apply, so no somatic caveat is needed here.
   function render(model) {
     if (!model) return "";
+    if (model.type === "homologous") return renderHomologous(model);
     var b = model.bodies;
     var typeLabel = model.type === "robertsonian" ? "Robertsonian" : "reciprocal";
     // Prefer the to-scale pachytene figures (real breakpoint geometry) when the ideogram has
@@ -715,6 +925,6 @@
 
   window.Segregation = {
     eligible: eligible, compute: compute, render: render,
-    origin: origin, renderOrigin: renderOrigin
+    origin: origin, renderOrigin: renderOrigin, renderOriginAlert: renderOriginAlert
   };
 })();

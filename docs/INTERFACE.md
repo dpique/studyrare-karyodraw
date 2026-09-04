@@ -147,3 +147,22 @@ through `Karyo.textInk` (same hue, darkened to WCAG AA 4.5:1 on white) before it
 used as ink. The shape palette is tuned for fills; its light periwinkle and amber are
 unreadable at 12px. `test/detailed-form-color-browser.test.js` checks the contrast
 with its own color math, independent of textInk.
+
+## The unbalanced karyotype flags its carrier question up top (2026-09-04)
+
+When an unbalanced karyotype traces to a balanced-carrier parent (any product the
+segregation model can run backwards: unbalanced reciprocal, 3:1 tertiary trisomy,
+Robertsonian trisomy, homologous fusion product), a compact Parental origin card leads
+the tool column, above the decode. The full reasoning lives in the "Where this came
+from" panel at the bottom of the page; the card exists because that panel is below the
+fold, and the carrier question is the one a clinic or an exam asks first. Prominence is
+the invariant, per the feedback-flag rule above; the exact slot in the column is the
+owner's to move.
+
+The card is the one panel allowed the amber caution wash. That is a notice identity,
+not the toolbar flag's action identity: the flag stays the only amber BUTTON, the card
+carries no controls at all, only a jump link. Card and panel render from one
+`Segregation.origin()` result in `renderSegregation`, so the alert can never flag what
+the panel does not show, and the draw gate sweeps the card like every other
+`data-drawing` panel. `test/origin-alert-browser.test.js` pins appearance, the named
+parent, the empty states, and the sweep in a real browser.

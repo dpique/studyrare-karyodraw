@@ -174,7 +174,7 @@ test('a refusal puts away every card that describes a drawing', () => {
   // decode, the band map and the legend, and the segregation panel was never added to
   // it, so a refused karyotype sat under "Fix the karyotype above" with the PREVIOUS
   // karyotype's quadrivalent and its four outcomes still drawn below.
-  ['legend-card', 'decode-card', 'detail-card', 'clinical-card', 'segregation-card'].forEach((id) =>
+  ['legend-card', 'decode-card', 'detail-card', 'clinical-card', 'segregation-card', 'origin-alert-card'].forEach((id) =>
     assert.match(html, new RegExp(`id="${id}"[^>]*data-drawing`), `${id} must carry data-drawing`));
   // Every card in main that a renderer writes into has to be one of them. This is the
   // check that catches the NEXT panel: add one without the attribute and it fails here.

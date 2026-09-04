@@ -254,6 +254,16 @@
   .summary .kt { font: 600 17px var(--font-mono); color: var(--ink); }
   .card h2.withaction { display: flex; align-items: center; gap: 8px; }
 
+  /* Parental-origin alert: a compact caution card at the top of the tool column
+     whenever an unbalanced karyotype traces to a balanced-carrier parent. The
+     wash borrows the caution palette of the correction notes, not the toolbar
+     flag's amber button identity: this is a notice, not an action, and it only
+     ever points at the full panel below. */
+  #origin-alert-card { background: var(--amber-50); border-color: var(--amber); }
+  #origin-alert-card h2 { color: var(--amber-800); border-bottom-color: rgba(236, 155, 39, .35); }
+  .oal-head { margin: 0 0 4px; font-size: 13.5px; font-weight: 700; color: var(--ink); }
+  .oal-body { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+
   /* Meiotic segregation panel */
   #segregation-card { margin-top: 16px; }
   .seg-head h2 { margin: 0 0 4px; font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--ink); text-transform: none; letter-spacing: 0; padding: 0; border: 0; }
@@ -870,6 +880,13 @@
       </section>
 
       <aside>
+        <!-- First in the tool column on purpose: an unbalanced karyotype that can
+             come from a balanced-carrier parent is flagged where the eye lands,
+             and the card links down to the full "Where this came from" panel. -->
+        <div class="card" id="origin-alert-card" data-drawing="conditional" style="display:none" aria-label="Parental origin">
+          <h2>Parental origin</h2>
+          <div class="body" id="origin-alert"></div>
+        </div>
         <div class="card" id="decode-card" data-drawing>
           <h2 class="withaction">Karyotype decoded
             <button class="speak" id="speakbtn" type="button" title="Hear the karyotype read aloud" aria-label="Hear the karyotype read aloud">
@@ -1558,16 +1575,24 @@
   // origin is meaningless for a somatic tumour clone, and a mosaic is out of scope.
   function renderSegregation(clones) {
     var card = $("#segregation-card"), host = $("#segregation");
+    var alertCard = $("#origin-alert-card"), alertHost = $("#origin-alert");
     var clone = (clones && clones.length === 1) ? clones[0] : null;
-    var html = "";
+    var html = "", alertHtml = "";
     if (window.Segregation && clone && !isAcquired(clone)) {
       if (window.Segregation.eligible(clone)) {
         html = window.Segregation.render(window.Segregation.compute(clone));
       } else {
+        // The alert card beside the figure and the full panel below render from
+        // the SAME origin model, so they cannot disagree about the inference.
         var org = window.Segregation.origin(clone);
-        if (org) html = window.Segregation.renderOrigin(org);
+        if (org) {
+          html = window.Segregation.renderOrigin(org);
+          alertHtml = window.Segregation.renderOriginAlert(org);
+        }
       }
     }
+    if (!alertHtml) { alertCard.style.display = "none"; alertHost.innerHTML = ""; }
+    else { alertHost.innerHTML = alertHtml; alertCard.style.display = ""; }
     if (!html) { card.style.display = "none"; host.innerHTML = ""; return; }
     host.innerHTML = html;
     card.style.display = "";
