@@ -140,8 +140,8 @@
       return parts.length ? parts.join(", ") : "balanced";
     }
 
-    function g(bodies, zygote, viability, label) {
-      return { bodies: bodies, zygote: zygote, imbalance: imbalance(bodies), viability: viability, label: label };
+    function g(bodies, zygote, viability, label, division) {
+      return { bodies: bodies, zygote: zygote, imbalance: imbalance(bodies), viability: viability, label: label, division: division || null };
     }
     var recipUnbalanced = { tag: "unbalanced", text: "Unbalanced: whether it is liveborn depends on the size of the duplicated and deleted segments" };
     // t(11;22)(q23;q11.2) is the recurrent reciprocal whose 3:1 +der(22) is liveborn.
@@ -170,15 +170,20 @@
         ] },
       { name: "3:1", sub: "3:1", balanced: false,
         blurb: "Three chromosomes go to one pole, one to the other, giving 47- or 45-chromosome conceptions. The odd chromosome may be a derivative (tertiary trisomy / monosomy) or a whole normal chromosome (interchange trisomy / monosomy). Interstitial crossing-over expands the set further.",
+        // division: the single chromosome that travels ALONE to the far pole, so
+        // the two gametes sharing a division are complements (the 3-chromosome
+        // trisomy and the 1-chromosome monosomy of one plane). Four planes: each
+        // corner of the quadrivalent can be the lone one. Same key the scenes and
+        // the pair boxes use, mirroring the Robertsonian adjacent pairs (#256).
         gametes: [
-          g(["A", "B", "dA"], "47," + sex + ",+der(" + A + ")" + T, isEmanuel && A === "22" ? emanuel : t31, "tertiary trisomy"),
-          g(["A", "B", "dB"], "47," + sex + ",+der(" + B + ")" + T, isEmanuel && B === "22" ? emanuel : t31, "tertiary trisomy"),
-          g(["dA"], "45," + sex + ",der(" + A + ")" + T + ",-" + B, { tag: "lethal", text: "Usually lost in early pregnancy (tertiary monosomy)" }, "tertiary monosomy"),
-          g(["dB"], "45," + sex + ",der(" + B + ")" + T + ",-" + A, { tag: "lethal", text: "Usually lost in early pregnancy (tertiary monosomy)" }, "tertiary monosomy"),
-          g(["A", "dA", "dB"], "47," + sex + ",+" + A + "," + T, trisomyViability(A), "interchange trisomy"),
-          g(["B", "dA", "dB"], "47," + sex + ",+" + B + "," + T, trisomyViability(B), "interchange trisomy"),
-          g(["B"], "45," + sex + ",-" + A, monosomyViability(A), "interchange monosomy"),
-          g(["A"], "45," + sex + ",-" + B, monosomyViability(B), "interchange monosomy")
+          g(["A", "B", "dA"], "47," + sex + ",+der(" + A + ")" + T, isEmanuel && A === "22" ? emanuel : t31, "tertiary trisomy", "dB"),
+          g(["dB"], "45," + sex + ",der(" + B + ")" + T + ",-" + A, { tag: "lethal", text: "Usually lost in early pregnancy (tertiary monosomy)" }, "tertiary monosomy", "dB"),
+          g(["A", "B", "dB"], "47," + sex + ",+der(" + B + ")" + T, isEmanuel && B === "22" ? emanuel : t31, "tertiary trisomy", "dA"),
+          g(["dA"], "45," + sex + ",der(" + A + ")" + T + ",-" + B, { tag: "lethal", text: "Usually lost in early pregnancy (tertiary monosomy)" }, "tertiary monosomy", "dA"),
+          g(["A", "dA", "dB"], "47," + sex + ",+" + A + "," + T, trisomyViability(A), "interchange trisomy", "B"),
+          g(["B"], "45," + sex + ",-" + A, monosomyViability(A), "interchange monosomy", "B"),
+          g(["B", "dA", "dB"], "47," + sex + ",+" + B + "," + T, trisomyViability(B), "interchange trisomy", "A"),
+          g(["A"], "45," + sex + ",-" + B, monosomyViability(B), "interchange monosomy", "A")
         ] },
       { name: "4:0", sub: "4:0", balanced: false,
         blurb: "All four chromosomes travel to one pole and none to the other, the rarest outcome (two nondisjunctions at once). One gamete is disomic for the whole quadrivalent, the other nullisomic; both conceptions are grossly imbalanced.",
@@ -597,7 +602,37 @@
   function plateSvg(p) {
     if (!p) return "";
     if (p.type === "v") return line(p.x, p.y1, p.x, p.y2, "#aeb6d6", 1.4, "4 4");
+    if (p.type === "seg") return line(p.x1, p.y1, p.x2, p.y2, "#aeb6d6", 1.4, "4 4");
     return line(p.x1, p.y, p.x2, p.y, "#aeb6d6", 1.4, "4 4");
+  }
+
+  // The 3:1 division that pulls one corner of the quadrivalent off alone. Unlike
+  // a 2:2 cut (a single straight plane), a 3-versus-1 split is a diagonal that
+  // fences off one corner: the lone chromosome to its own pole (count 1), the
+  // other three to the opposite pole (count 3). Geometry is derived, not tabled,
+  // so all four planes stay consistent: the plate is the perpendicular bisector
+  // of the corner-to-centre line, and the poles sit outward from the corner and
+  // opposite it. lone is one of A/dA/B/dB.
+  var QUAD_P = { A: [56, 64], dA: [156, 64], B: [156, 138], dB: [56, 138] };
+  var QUAD_C = [106, 101];
+  function cfg31(lone) {
+    var c = QUAD_P[lone], dx = c[0] - QUAD_C[0], dy = c[1] - QUAD_C[1];
+    var len = Math.sqrt(dx * dx + dy * dy), ux = dx / len, uy = dy / len;   // corner-outward unit
+    var px = -uy, py = ux;                                                   // perpendicular unit
+    var mx = (c[0] + QUAD_C[0]) / 2, my = (c[1] + QUAD_C[1]) / 2;            // midpoint corner..centre
+    var lonePole = [Math.round(c[0] + ux * 44), Math.round(c[1] + uy * 44)];
+    // The three stay-together chromosomes leave from a pole diametrically
+    // opposite the lone one, so its aster sits clear of the cluster rather than
+    // among it (the corner opposite the lone corner is where the three lean).
+    var crowdPole = [2 * QUAD_C[0] - lonePole[0], 2 * QUAD_C[1] - lonePole[1]];
+    var assign = {};
+    ["A", "dA", "B", "dB"].forEach(function (id) { assign[id] = id === lone ? "lo" : "cr"; });
+    return {
+      poles: { lo: lonePole, cr: crowdPole }, acc: { lo: ROSE, cr: TEAL },
+      assign: assign, counts: { lo: 1, cr: 3 },
+      plate: { type: "seg", x1: Math.round(mx + px * 40), y1: Math.round(my + py * 40),
+        x2: Math.round(mx - px * 40), y2: Math.round(my - py * 40) }
+    };
   }
 
   // ---- pairing figure (the ring in prophase I) ------------------------------
@@ -634,7 +669,14 @@
   // destination accent so gametes below can be keyed to the pole they leave from.
   function recipScene(model, modeName) {
     var b = model.bodies;
-    var P = { A: [56, 64], dA: [156, 64], B: [156, 138], dB: [56, 138] };
+    var P = QUAD_P;
+    // "3:1-dB" and its siblings each draw one of the four 3:1 division planes.
+    if (modeName.indexOf("3:1-") === 0) {
+      var lone = modeName.slice(4);
+      var loneName = b[lone] ? b[lone].name : lone;
+      return buildScene(b, ["A", "dA", "B", "dB"], P, cfg31(lone),
+        "quadrivalent dividing 3:1 with " + loneName + " travelling alone");
+    }
     var CFG = {
       "Alternate": { poles: { t: [106, 18], bo: [106, 180] }, acc: { t: TEAL, bo: ROSE },
         assign: { A: "t", B: "t", dA: "bo", dB: "bo" }, plate: null, counts: { t: 2, bo: 2 } },
@@ -698,6 +740,14 @@
   // Which pole a gamete leaves from, if all its chromosomes share one — used to tint the
   // gamete card to match the scene. Mixed-pole gametes (3:1 combinations) get no accent.
   function gameteAccent(model, modeName) {
+    // A 3:1 plane sends the lone chromosome to the rose pole and its three-chromosome
+    // complement to the teal pole, so each gamete is single-pole and takes a tint.
+    if (modeName.indexOf("3:1-") === 0) {
+      var lone31 = modeName.slice(4);
+      return function (gm) {
+        return (gm.bodies.length === 1 && gm.bodies[0] === lone31) ? "rose" : "teal";
+      };
+    }
     var CFG = model.type === "robertsonian"
       ? { "Alternate": { assign: { dF: "t", A: "bo", B: "bo" }, acc: { t: TEAL, bo: ROSE } },
           "Adjacent-A": { assign: { A: "l", dF: "r", B: "r" }, acc: { l: TEAL, r: ROSE } },
@@ -737,7 +787,15 @@
     if (modeName === "Adjacent-1") return "The two that travel together are <b>neighbors</b> in the ring, and their centromeres come from different chromosomes. The two matching (homologous) centromeres are therefore pulled apart. Each gamete keeps one normal chromosome and one non-matching derivative: one exchanged segment is duplicated, the other deleted.";
     if (modeName === "Adjacent-2") return "Neighbors again, but here the two <b>matching centromeres</b> (a chromosome and its own derivative) go to the same pole. That is a meiosis I non-disjunction, so it is rarer. The imbalance falls on the proximal, centromere-bearing segments.";
     if (modeName === "4:0") return "All four chromosomes are pulled to the <b>same pole</b>, leaving the other empty. This needs two non-disjunctions at once, so it is the rarest pattern. One gamete is disomic for the whole quadrivalent, the other nullisomic; both conceptions are grossly imbalanced and lost very early.";
-    return "Here the quadrivalent splits three-to-one instead of two-and-two: the odd chromosome may be a <b>derivative</b> (tertiary trisomy or monosomy) or a <b>whole normal chromosome</b> (interchange trisomy or monosomy), so all four single-chromosome gametes and their three-chromosome complements occur. The conceptus then has 47 or 45. Interstitial crossing-over adds still more combinations.";
+    // 3:1 folds four ways, one per corner of the cross that can travel alone. The
+    // sentence naming the drawn plane swaps with the scene and the highlighted pair
+    // (same data-div key, same radios), so they cannot disagree.
+    return "Here the quadrivalent splits three-to-one instead of two-and-two: the odd chromosome may be a <b>derivative</b> (tertiary trisomy or monosomy) or a <b>whole normal chromosome</b> (interchange trisomy or monosomy). " +
+      ["dB", "dA", "B", "A"].map(function (d) {
+        return '<span class="seg-why-div" data-div="' + d + '">Drawn above: <b>' + esc(model.bodies[d].name) +
+          "</b> travels alone to the far pole, the other three together.</span>";
+      }).join("") +
+      " Each boxed pair below is one division plane: its two gametes are complements, the 47-chromosome trisomy and the 45-chromosome monosomy. Click another pair to change the plane. Interstitial crossing-over adds still more combinations.";
   }
 
   function viabChip(v) {
@@ -843,17 +901,26 @@
     // quiet to be found, so the affordance is stated once here, directly above them.
     // The Robertsonian division radios sit beside the checkbox for the same ~ reason:
     // the checked one shows its adjacent scene, its caption sentence, and its pair.
-    var adjMode = null;
-    model.modes.forEach(function (m) { if (model.type === "robertsonian" && m.name === "Adjacent") adjMode = m; });
-    var hereDiv = "A";
-    if (adjMode && model.hereZygote) {
-      adjMode.gametes.forEach(function (gm) { if (gm.zygote === model.hereZygote && gm.division) hereDiv = gm.division; });
+    // The mode that splits into selectable division-pairs: the Robertsonian Adjacent
+    // (two folds) or the reciprocal 3:1 (four planes, one per corner of the cross that
+    // can travel alone). Both drive the same radios/scenes/pairs machinery, generalised
+    // from two divisions to N. Division order matches the model's gamete order so a
+    // pair's two cards sit together.
+    var pairedMode = null, divisions = [], sceneNameFor = null;
+    model.modes.forEach(function (m) {
+      if (model.type === "robertsonian" && m.name === "Adjacent") { pairedMode = m; divisions = ["A", "B"]; sceneNameFor = function (d) { return "Adjacent-" + d; }; }
+      if (model.type === "reciprocal" && m.name === "3:1") { pairedMode = m; divisions = ["dB", "dA", "B", "A"]; sceneNameFor = function (d) { return "3:1-" + d; }; }
+    });
+    var hereDiv = divisions[0] || null;
+    if (pairedMode && model.hereZygote) {
+      pairedMode.gametes.forEach(function (gm) { if (gm.zygote === model.hereZygote && gm.division) hereDiv = gm.division; });
     }
-    var radios = !adjMode ? "" : ["A", "B"].map(function (d) {
-      var withChrom = d === "A" ? model.B : model.A, lone = d === "A" ? model.A : model.B;
+    var radios = !pairedMode ? "" : divisions.map(function (d) {
+      var aria = model.type === "robertsonian"
+        ? "Draw the adjacent division where the fusion travels with " + escAttr(d === "A" ? model.B : model.A) + " and " + escAttr(d === "A" ? model.A : model.B) + " goes alone"
+        : "Draw the 3:1 division where " + escAttr(model.bodies[d].name) + " travels alone";
       return '<input type="radio" name="seg-div" id="seg-div-' + d.toLowerCase() + '" class="seg-div-rb"' +
-        (d === hereDiv ? " checked" : "") + ' aria-label="Draw the adjacent division where the fusion travels with ' +
-        escAttr(withChrom) + " and " + escAttr(lone) + ' goes alone">';
+        (d === hereDiv ? " checked" : "") + ' aria-label="' + aria + '">';
     }).join("");
     var controls = '<input type="checkbox" id="seg-anim" class="seg-anim-cb">' + radios +
       '<div class="seg-controls"><label for="seg-anim" class="seg-anim-toggle"><span class="seg-switch"></span>Animate the pull to the poles</label>' +
@@ -873,24 +940,26 @@
 
     var modes = model.modes.map(function (m) {
       var scenes, gametes;
-      if (m === adjMode) {
-        // Both planes render; the checked radio picks the visible one, so caption,
-        // scene, and the highlighted pair cannot disagree. Each pair is one
-        // division: complements boxed together, the typed outcome's pair leading
-        // and preselected. The whole box is a click target through the overlay
-        // label; the conceptus buttons stay above it (z-index) with their own click.
-        scenes = ["A", "B"].map(function (d) {
-          return '<div class="seg-scene seg-scene-div" data-div="' + d + '">' + sceneOf("Adjacent-" + d) + "</div>";
+      if (m === pairedMode) {
+        // Every plane renders; the checked radio picks the visible one, so caption,
+        // scene, and the highlighted pair cannot disagree. Each pair is one division:
+        // complements boxed together, the typed/traced outcome's pair leading and
+        // preselected. The whole box is a click target through the overlay label; the
+        // conceptus buttons stay above it (z-index) with their own click.
+        scenes = divisions.map(function (d) {
+          return '<div class="seg-scene seg-scene-div" data-div="' + d + '">' + sceneOf(sceneNameFor(d)) + "</div>";
         }).join("");
-        var order = hereDiv === "B" ? ["B", "A"] : ["A", "B"];
+        var order = hereDiv ? [hereDiv].concat(divisions.filter(function (d) { return d !== hereDiv; })) : divisions.slice();
         gametes = order.map(function (d) {
-          var accentOf = gameteAccent(model, "Adjacent-" + d);
+          var accentOf = gameteAccent(model, sceneNameFor(d));
           var cards = m.gametes.filter(function (gm) { return gm.division === d; })
             .map(function (gm) { return gameteCard(gm, accentOf(gm)); }).join("");
+          var header = model.type === "robertsonian"
+            ? "One division: the fusion travels with <b>" + esc(d === "A" ? model.B : model.A) + "</b>"
+            : "One division: <b>" + esc(model.bodies[d].name) + "</b> travels alone";
           return '<div class="seg-pair" data-div="' + d + '">' +
             '<label class="seg-pair-hit" for="seg-div-' + d.toLowerCase() + '" aria-hidden="true"></label>' +
-            '<div class="seg-pair-h">One division: the fusion travels with <b>' +
-            esc(d === "A" ? model.B : model.A) + "</b>" +
+            '<div class="seg-pair-h">' + header +
             '<span class="seg-pair-on">drawn above</span><span class="seg-pair-off">click to draw</span></div>' +
             cards + "</div>";
         }).join("");
