@@ -97,3 +97,61 @@ test('clicking a pair switches the drawn division plane; its buttons still load'
     server.close();
   }
 });
+
+test('the reciprocal 3:1 mode boxes four planes and swaps the cross on click', async (t) => {
+  if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
+  const puppeteer = require('puppeteer-core');
+  const server = await serve();
+  const port = server.address().port;
+  const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  try {
+    const page = await browser.newPage();
+    // A balanced carrier: the forward panel renders, and its 3:1 mode now folds four
+    // ways (the Robertsonian pair mechanism generalised to the quadrivalent).
+    await page.goto(`http://127.0.0.1:${port}/index.html?k=46,XY,t(11;22)(q23;q11.2)`,
+      { waitUntil: 'load' });
+    await page.waitForSelector('#seg-div-db');
+
+    await t.test('four planes, one preselected, its scene the only one shown', async () => {
+      const s = await page.evaluate(() => ({
+        radios: document.querySelectorAll('input[name="seg-div"]').length,
+        checked: [...document.querySelectorAll('input[name="seg-div"]')].filter((r) => r.checked).length,
+        pairs: document.querySelectorAll('#segregation .seg-pair').length,
+        shown: ['dB', 'dA', 'B', 'A'].filter((d) =>
+          getComputedStyle(document.querySelector(`.seg-scene-div[data-div="${d}"]`)).display !== 'none'),
+      }));
+      assert.equal(s.radios, 4, 'one radio per plane');
+      assert.equal(s.checked, 1, 'exactly one preselected');
+      assert.equal(s.pairs, 4, 'four boxed pairs');
+      assert.deepEqual(s.shown, ['dB'], 'only the default plane draws');
+    });
+
+    await t.test('clicking the interchange pair redraws that plane', async () => {
+      const hit = await page.$('#segregation .seg-pair[data-div="B"] .seg-pair-hit');
+      await hit.scrollIntoView();
+      await hit.click();
+      const s = await page.evaluate(() => ({
+        bChecked: document.getElementById('seg-div-b').checked,
+        shown: ['dB', 'dA', 'B', 'A'].filter((d) =>
+          getComputedStyle(document.querySelector(`.seg-scene-div[data-div="${d}"]`)).display !== 'none'),
+        caption: [...document.querySelectorAll('.seg-why-div')].filter((el) =>
+          getComputedStyle(el).display !== 'none').map((el) => el.getAttribute('data-div')),
+      }));
+      assert.equal(s.bChecked, true, 'the pair click checked its radio');
+      assert.deepEqual(s.shown, ['B'], 'only the clicked plane draws now');
+      assert.deepEqual(s.caption, ['B'], 'the caption sentence swapped with the scene');
+    });
+
+    await t.test('a conceptus button inside a pair still loads its karyotype', async () => {
+      const btn = await page.$('#segregation .seg-pair[data-div="dA"] .seg-kt[data-k="47,XY,+der(22)t(11;22)(q23;q11.2)"]');
+      assert.ok(btn, 'the Emanuel +der(22) button sits in the der(11)-alone pair');
+      await btn.scrollIntoView();
+      await btn.click();
+      await page.waitForFunction(() =>
+        document.getElementById('kinput').value === '47,XY,+der(22)t(11;22)(q23;q11.2)');
+    });
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});

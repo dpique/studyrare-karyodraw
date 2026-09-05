@@ -76,20 +76,22 @@ test('adjacent-2 gives +der,-partner conceptions (Table 5)', () => {
   eq(adj2.gametes.map((g) => g.zygote),
     ['46,XX,+der(2)t(2;5)(q21;q31),-5', '46,XX,+der(5)t(2;5)(q21;q31),-2']);
 });
-test('3:1 gives the tertiary and interchange conceptions (all four ways to split three-to-one)', () => {
+test('3:1 gives the tertiary and interchange conceptions, ordered by division plane', () => {
   const t31 = model('46,XX,t(2;5)(q21;q31)').modes[3];
-  // tertiary (extra/missing derivative): +der(A), +der(B), der(A)-B, der(B)-A
-  // then interchange (extra/missing whole normal chromosome): +2, +5, -2, -5
+  // Eight outcomes in four complementary PAIRS, one per plane (the chromosome that
+  // travels alone): tertiary planes first (der(5) alone, der(2) alone), then
+  // interchange (5 alone, 2 alone). Each pair is the 47-trisomy then its 45-monosomy.
   eq(t31.gametes.map((g) => g.zygote), [
-    '47,XX,+der(2)t(2;5)(q21;q31)',
-    '47,XX,+der(5)t(2;5)(q21;q31)',
+    '47,XX,+der(2)t(2;5)(q21;q31)',        // der(5) alone: the three complement
+    '45,XX,der(5)t(2;5)(q21;q31),-2',      // der(5) alone: der(5) by itself
+    '47,XX,+der(5)t(2;5)(q21;q31)',        // der(2) alone
     '45,XX,der(2)t(2;5)(q21;q31),-5',
-    '45,XX,der(5)t(2;5)(q21;q31),-2',
-    '47,XX,+2,t(2;5)(q21;q31)',
-    '47,XX,+5,t(2;5)(q21;q31)',
+    '47,XX,+2,t(2;5)(q21;q31)',            // 5 alone (interchange)
     '45,XX,-2',
+    '47,XX,+5,t(2;5)(q21;q31)',            // 2 alone (interchange)
     '45,XX,-5'
   ]);
+  eq(t31.gametes.map((g) => g.division), ['dB', 'dB', 'dA', 'dA', 'B', 'B', 'A', 'A']);
 });
 test('4:0 gives the disomic (48) and nullisomic (44) conceptions, both lethal', () => {
   const four = model('46,XX,t(2;5)(q21;q31)').modes[4];
@@ -187,8 +189,9 @@ test('render carries no caveat paragraph (the panel is suppressed for somatic ca
 // ---- the segregation scenes: the reason for the names is drawn --------------
 test('each mode draws its own division scene (an svg per mode)', () => {
   const html = Seg.render(model('46,XX,t(2;5)(q21;q31)'));
-  // pairing figure + one scene per mode (5) = 6 scene svgs
-  assert.equal((html.match(/class="seg-scene-svg"/g) || []).length, 6);
+  // pairing figure (1) + one scene for each single-plane mode (Alternate, Adjacent-1,
+  // Adjacent-2, 4:0 = 4) + the four 3:1 planes (4) = 9 scene svgs.
+  assert.equal((html.match(/class="seg-scene-svg"/g) || []).length, 9);
   assert.match(html, /class="seg-scene"/);
 });
 test('the captions spell out why the modes are named alternate vs adjacent', () => {
@@ -213,14 +216,15 @@ test('centromere dots are colored by the chromosome the centromere belongs to', 
   assert.equal(b.B.cen, b.dB.cen);
   assert.notEqual(b.A.cen, b.B.cen);
 });
-test('2:2 and the 4:0 disomic gamete are keyed to their pole; the 3:1 gametes stay neutral', () => {
+test('every single-pole gamete is keyed to its pole, including the 3:1 planes', () => {
   const html = Seg.render(model('46,XX,t(2;5)(q21;q31)'));
   assert.match(html, /seg-g-teal/);   // one pole
   assert.match(html, /seg-g-rose/);   // the other
-  // A single-division outcome (two gametes) is tinted to its pole; a 3:1 gamete spans both poles
-  // (eight gametes, left neutral). Tinted cards: three 2:2 modes give two each (6), plus the 4:0
-  // disomic gamete (1) whose four chromosomes all leave one pole = 7. The empty 4:0 gamete has none.
-  assert.equal((html.match(/seg-g-(teal|rose)/g) || []).length, 7);
+  // Each 3:1 gamete is single-pole now (the lone chromosome leaves rose, its three-chromosome
+  // complement teal), so all eight are keyed. Tinted cards: three 2:2 modes give two each (6),
+  // the 4:0 disomic gamete whose four chromosomes all leave one pole (1), and the eight 3:1
+  // gametes (8) = 15. The empty 4:0 nullisomic gamete has no chromosome and stays neutral.
+  assert.equal((html.match(/seg-g-(teal|rose)/g) || []).length, 15);
 });
 
 // ---- every conceptus is one click from being drawn --------------------------
@@ -422,9 +426,12 @@ test('rob adjacent tags each gamete with its division; complements share a key',
   assert.equal(div['46,XY,der(13;14)(q10;q10),+13'], 'B');
   assert.equal(div['45,XY,-13'], 'B');
 });
-test('reciprocal gametes carry no division key (those modes draw one scene each)', () => {
+test('only the 3:1 reciprocal gametes carry a division key; the single-plane modes do not', () => {
   model('46,XX,t(2;5)(q21;q31)').modes.forEach((md) =>
-    md.gametes.forEach((g) => assert.ok(!g.division, g.zygote)));
+    md.gametes.forEach((g) => {
+      if (md.name === '3:1') assert.ok(g.division, md.name + ' ' + g.zygote + ' should carry a division');
+      else assert.ok(!g.division, md.name + ' ' + g.zygote + ' should not');
+    }));
 });
 test('the rob panel draws BOTH adjacent planes and radio-selects between them', () => {
   const html = Seg.render(model('45,XY,der(13;14)(q10;q10)'));
@@ -436,8 +443,24 @@ test('the rob panel draws BOTH adjacent planes and radio-selects between them', 
   assert.equal((html.match(/name="seg-div"[^>]*\schecked/g) || []).length, 1);
   assert.match(html, /id="seg-div-a"[^>]*\schecked/);   // default: the first-listed pair
 });
-test('a reciprocal panel gets no division radios (nothing for them to select)', () => {
-  assert.doesNotMatch(Seg.render(model('46,XX,t(2;5)(q21;q31)')), /name="seg-div"/);
+test('a reciprocal panel radio-selects among the four 3:1 planes', () => {
+  const html = Seg.render(model('46,XX,t(2;5)(q21;q31)'));
+  // Four planes, one per chromosome that can travel alone (der(5), der(2), 5, 2).
+  assert.equal((html.match(/name="seg-div"/g) || []).length, 4);
+  assert.equal((html.match(/name="seg-div"[^>]*\schecked/g) || []).length, 1, 'exactly one preselected');
+  ['db', 'da', 'b', 'a'].forEach((d) => assert.match(html, new RegExp('id="seg-div-' + d + '"'), 'radio ' + d));
+  ['dB', 'dA', 'B', 'A'].forEach((d) =>
+    assert.match(html, new RegExp('class="seg-scene seg-scene-div" data-div="' + d + '"'), 'scene ' + d));
+  assert.equal((html.match(/class="seg-pair" data-div=/g) || []).length, 4, 'four boxed pairs');
+  // Only the 3:1 mode is paired; the 2:2 modes and 4:0 keep their single flat scene.
+  assert.match(html, /id="seg-div-db"[^>]*\schecked/, 'the first plane (der(B) alone) leads by default');
+});
+test('the 3:1 pair headers and captions name which chromosome travels alone', () => {
+  const html = Seg.render(model('46,XX,t(2;5)(q21;q31)'));
+  assert.match(html, /One division: <b>der\(5\)<\/b> travels alone/);
+  assert.match(html, /One division: <b>2<\/b> travels alone/);
+  assert.match(html, /class="seg-why-div" data-div="dB">Drawn above: <b>der\(5\)<\/b> travels alone/);
+  assert.match(html, /class="seg-why-div" data-div="B">Drawn above: <b>5<\/b> travels alone/);
 });
 test('the caption names both planes, each variant keyed to its scene', () => {
   const html = Seg.render(model('45,XY,der(13;14)(q10;q10)'));

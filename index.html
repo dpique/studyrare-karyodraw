@@ -348,20 +348,42 @@
   .seg-pair-on, .seg-pair-off { margin-left: auto; font-size: 10.5px; font-weight: 600; border-radius: 6px; padding: 1px 7px; white-space: nowrap; }
   .seg-pair-on { display: none; color: var(--ink-2); background: var(--line); }
   .seg-pair-off { color: var(--peri-700); background: var(--peri-50); }
+  /* Selectable division planes. One scene, one caption sentence, and one highlighted
+     pair show at a time, chosen by the checked radio; the others wait. Written for all
+     four possible division keys (A/B for the Robertsonian adjacent folds, dA/dB/A/B for
+     the reciprocal 3:1 planes) so one block serves both — a panel only ever uses the
+     radios it renders. Default-hide the scene and caption variants, then the checked
+     radio reveals its own. */
+  .seg-scene-div, .seg-why-div { display: none; }
+  #seg-div-a:checked ~ .seg-modes .seg-scene-div[data-div="A"],
+  #seg-div-b:checked ~ .seg-modes .seg-scene-div[data-div="B"],
+  #seg-div-da:checked ~ .seg-modes .seg-scene-div[data-div="dA"],
+  #seg-div-db:checked ~ .seg-modes .seg-scene-div[data-div="dB"] { display: block; }
+  #seg-div-a:checked ~ .seg-modes .seg-why-div[data-div="A"],
+  #seg-div-b:checked ~ .seg-modes .seg-why-div[data-div="B"],
+  #seg-div-da:checked ~ .seg-modes .seg-why-div[data-div="dA"],
+  #seg-div-db:checked ~ .seg-modes .seg-why-div[data-div="dB"] { display: inline; }
   #seg-div-a:checked ~ .seg-modes .seg-pair[data-div="A"],
-  #seg-div-b:checked ~ .seg-modes .seg-pair[data-div="B"] { border-color: var(--muted); box-shadow: 0 1px 5px rgba(36, 42, 69, .10); }
+  #seg-div-b:checked ~ .seg-modes .seg-pair[data-div="B"],
+  #seg-div-da:checked ~ .seg-modes .seg-pair[data-div="dA"],
+  #seg-div-db:checked ~ .seg-modes .seg-pair[data-div="dB"] { border-color: var(--muted); box-shadow: 0 1px 5px rgba(36, 42, 69, .10); }
   #seg-div-a:checked ~ .seg-modes .seg-pair[data-div="A"] .seg-pair-on,
-  #seg-div-b:checked ~ .seg-modes .seg-pair[data-div="B"] .seg-pair-on { display: inline-block; }
+  #seg-div-b:checked ~ .seg-modes .seg-pair[data-div="B"] .seg-pair-on,
+  #seg-div-da:checked ~ .seg-modes .seg-pair[data-div="dA"] .seg-pair-on,
+  #seg-div-db:checked ~ .seg-modes .seg-pair[data-div="dB"] .seg-pair-on { display: inline-block; }
   #seg-div-a:checked ~ .seg-modes .seg-pair[data-div="A"] .seg-pair-off,
-  #seg-div-b:checked ~ .seg-modes .seg-pair[data-div="B"] .seg-pair-off { display: none; }
-  #seg-div-a:checked ~ .seg-modes .seg-scene-div[data-div="B"],
-  #seg-div-a:checked ~ .seg-modes .seg-why-div[data-div="B"],
-  #seg-div-b:checked ~ .seg-modes .seg-scene-div[data-div="A"],
-  #seg-div-b:checked ~ .seg-modes .seg-why-div[data-div="A"] { display: none; }
-  #seg-div-a:checked ~ .seg-modes .seg-pair[data-div="B"] .seg-gamete,
-  #seg-div-b:checked ~ .seg-modes .seg-pair[data-div="A"] .seg-gamete { border-left-color: var(--line); }
+  #seg-div-b:checked ~ .seg-modes .seg-pair[data-div="B"] .seg-pair-off,
+  #seg-div-da:checked ~ .seg-modes .seg-pair[data-div="dA"] .seg-pair-off,
+  #seg-div-db:checked ~ .seg-modes .seg-pair[data-div="dB"] .seg-pair-off { display: none; }
+  /* Only the active pair keeps its rose/teal accent; the waiting pairs mute theirs. */
+  #seg-div-a:checked ~ .seg-modes .seg-pair:not([data-div="A"]) .seg-gamete,
+  #seg-div-b:checked ~ .seg-modes .seg-pair:not([data-div="B"]) .seg-gamete,
+  #seg-div-da:checked ~ .seg-modes .seg-pair:not([data-div="dA"]) .seg-gamete,
+  #seg-div-db:checked ~ .seg-modes .seg-pair:not([data-div="dB"]) .seg-gamete { border-left-color: var(--line); }
   #seg-div-a:focus-visible ~ .seg-modes .seg-pair[data-div="A"],
-  #seg-div-b:focus-visible ~ .seg-modes .seg-pair[data-div="B"] { outline: 2px solid var(--periwinkle); outline-offset: 2px; }
+  #seg-div-b:focus-visible ~ .seg-modes .seg-pair[data-div="B"],
+  #seg-div-da:focus-visible ~ .seg-modes .seg-pair[data-div="dA"],
+  #seg-div-db:focus-visible ~ .seg-modes .seg-pair[data-div="dB"] { outline: 2px solid var(--periwinkle); outline-offset: 2px; }
   .seg-gpoles { flex: 0 0 auto; }
   .seg-gout { min-width: 0; }
   /* The conceptus karyotype is the panel's one interactive element: it loads that

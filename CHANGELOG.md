@@ -3,6 +3,26 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-05 (the 3:1 outcomes pair up, and clicking a pair redraws its plane)
+
+- **The reciprocal 3:1 mode now folds four ways, one clickable pair per plane.**
+  Its eight outcomes used to sit in one flat list under a single fixed figure.
+  They now group into four boxed pairs, one per chromosome that can travel alone
+  (der(A) alone, der(B) alone, A alone, B alone); each pair holds its two
+  complements, the 47-chromosome trisomy and its 45-chromosome monosomy. Clicking
+  a pair redraws the to-scale cross to that plane, moving the lone chromosome, its
+  pole, and the dashed division line to the matching corner, and swaps the caption
+  sentence with it. This is the #256 Robertsonian pair mechanism generalised from
+  two planes to four. Requested by Dan.
+- **The cross figure gained the other three 3:1 planes.** `pachytene.js` drew only
+  the der(A)-alone plane; it now brackets any of the four arms with the L-plane and
+  pulls that chromosome to its own pole, the other three to the opposite one, with
+  the fibres pulled in tight so the figure stays legible.
+- **Tracing a 3:1 product preselects its plane.** Clicking a 3:1 conceptus (or a
+  parental-origin chip that traced from one) lands on the carrier page with that
+  outcome's plane already drawn and the outcome marked. The Emanuel +der(22), for
+  instance, opens the der(11)-alone plane that produces it.
+
 ## 2026-09-04 (the carrier card states it plainly)
 
 - **On the carrier page the return card now reads "This is a carrier parent /

@@ -293,9 +293,11 @@ test('with pachytene loaded, the segregation panel uses the to-scale figures', (
   const html = Seg.render(model('46,XY,t(2;5)(q21;q31)'));
   assert.match(html, /quadrivalent cross/);   // Pachytene aria-labels
   assert.match(html, /draws the cross and the plane/);
-  // six scene svgs (1 pairing + 5 modes) and the animation toggle
-  assert.equal((html.match(/class="seg-scene-svg"/g) || []).length, 6);
+  // nine scene svgs (1 pairing + 4 single-plane modes + the four 3:1 planes) and the toggle
+  assert.equal((html.match(/class="seg-scene-svg"/g) || []).length, 9);
   assert.match(html, /id="seg-anim"/);
+  // the 3:1 mode now folds four ways, one per corner of the cross that can travel alone
+  assert.equal((html.match(/quadrivalent dividing 3:1 with/g) || []).length, 4);
 });
 test('the robertsonian panel uses the folded trivalent figure and label', () => {
   const html = Seg.render(model('45,XX,rob(13;14)(q10;q10)'));

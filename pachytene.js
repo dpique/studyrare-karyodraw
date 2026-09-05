@@ -48,6 +48,7 @@
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
   function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
   function num(x) { return (Math.round(x * 10) / 10); }
+  function lerp(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
 
   // ---- geometry from ideogram band positions -------------------------------
   // A breakpoint band -> its base-pair midpoint, then the proximal (centromere-bearing) and
@@ -246,6 +247,7 @@
     var pTop = [cx, Math.max(mT - 8, 6)], pBot = [cx, h - 6];
     var pLeft = [Math.max(mL - W - 8, 7), cy], pRight = [w - 7, cy];
     var planeSvg = "", assign, badges;
+    var figLabel = "quadrivalent dividing by " + modeName + " segregation";
 
     if (modeName === "Alternate") {
       // The two balanced pairs sit at opposite corners (NW+SE, NE+SW), so the poles go on a
@@ -276,12 +278,31 @@
       badges = badge(pAll[0] + 14, pAll[1] - 1, "4", TEAL.ink) + badge(pNone[0] - 14, pNone[1] + 1, "0", ROSE.ink) +
         aster(pNone[0], pNone[1], ROSE.stroke);
     } else {
-      // 3:1 — isolate der(A) (NE) with an L-plane bracketing the upper-right; its pole sits inside
-      // the L (upper-right), the other three go to the lower-left pole. No fiber crosses the L.
-      planeSvg = plate(cx, Math.max(cy - N - 4, 6), cx, cy) + plate(cx, cy, Math.min(w - 6, cx + E + 6), cy);
-      var pOne = [w - 7, Math.max(mT - 6, 6)], pThree = [pLeft[0], h - 6];
-      assign = { NE: [pOne, ROSE], NW: [pThree, TEAL], SE: [pThree, TEAL], SW: [pThree, TEAL] };
-      badges = badge(pOne[0] - 14, pOne[1] + 1, "1", ROSE.ink) + badge(pThree[0] + 14, pThree[1] - 1, "3", TEAL.ink);
+      // 3:1 — isolate ONE arm of the cross with an L-plane bracketing its corner; that
+      // chromosome travels alone to the pole inside the L, the other three to the opposite
+      // pole. No fiber crosses the L. Which arm depends on the division suffix (which
+      // chromosome goes alone): "3:1-dA" der(A)=NE, "3:1-dB" der(B)=SW, "3:1-A" A=NW,
+      // "3:1-B" B=SE. Bare "3:1" keeps the der(A) default for older callers. Four planes,
+      // one per corner, so the reader can step through every 3:1 outcome (mirrors the
+      // Robertsonian adjacent folds).
+      var lone31 = modeName.slice(4) || "dA";
+      var corner = { dA: "NE", dB: "SW", A: "NW", B: "SE" }[lone31] || "NE";
+      figLabel = "quadrivalent dividing 3:1 with " +
+        ({ dA: "der(" + A + ")", dB: "der(" + B + ")", A: A, B: B }[lone31] || "der(" + A + ")") + " travelling alone";
+      var isN = corner.charAt(0) === "N", isE = corner.charAt(1) === "E";
+      var vEnd = isN ? Math.max(cy - N - 4, 6) : Math.min(cy + S + 4, h - 6);
+      var hEnd = isE ? Math.min(w - 6, cx + E + 6) : Math.max(6, cx - W - 6);
+      planeSvg = plate(cx, vEnd, cx, cy) + plate(cx, cy, hEnd, cy);
+      // Poles sit partway from the centre toward the frame corner (FC), not at the
+      // corner, so the three converging fibres stay short. The lone pole leans a
+      // little farther out than the crowd pole so the single chromosome reads as the
+      // one pulled away.
+      var loneCorner = [isE ? w - 7 : 7, isN ? 6 : h - 6], crowdCorner = [isE ? 7 : w - 7, isN ? h - 6 : 6];
+      var pOne = lerp([cx, cy], loneCorner, 0.72), pThree = lerp([cx, cy], crowdCorner, 0.5);
+      assign = {};
+      ["NW", "NE", "SE", "SW"].forEach(function (k) { assign[k] = k === corner ? [pOne, ROSE] : [pThree, TEAL]; });
+      badges = badge(pOne[0] + (isE ? -14 : 14), pOne[1] + (isN ? 1 : -1), "1", ROSE.ink) +
+        badge(pThree[0] + (isE ? 14 : -14), pThree[1] + (isN ? -1 : 1), "3", TEAL.ink);
     }
 
     var fibers = "", units = "", poleSet = {};
@@ -296,7 +317,7 @@
     }).join("");
 
     return svg('<g class="seg-fibers">' + fibers + "</g>" + planeSvg + '<g class="stage">' + units + "</g>" + poles + badges,
-      w, h, "quadrivalent dividing by " + modeName + " segregation");
+      w, h, figLabel);
   }
 
   // ---- Robertsonian trivalent, folded 90 degrees ---------------------------
