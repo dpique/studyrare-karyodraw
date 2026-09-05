@@ -47,6 +47,18 @@ test('the net-imbalance table appears, toggles genes, and obeys the gate', async
   try {
     const page = await browser.newPage();
 
+    await t.test('the card is titled by what it measures, not by an outcome it may not have', async () => {
+      // "Segment dosage", not "Net imbalance": the table reports every segment's
+      // dosage whether the rearrangement is balanced or not, and "imbalance" was
+      // wrong for a balanced translocation (Dan, 2026-09-05).
+      await open(page, '46,XY,t(10;15)(q23.33;p10)');
+      await page.waitForSelector('#imbalance table');
+      const title = await page.evaluate(() =>
+        document.querySelector('#imbalance-card h2').textContent.trim());
+      assert.equal(title, 'Segment dosage');
+      assert.doesNotMatch(title, /imbalance/i, 'the title no longer asserts an imbalance');
+    });
+
     await t.test('the worked example shows its partition, sizes included', async () => {
       await open(page, '45,XX,der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12)');
       await page.waitForSelector('#imbalance table');
