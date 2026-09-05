@@ -334,7 +334,11 @@
     var Cx = mL + qA, Cy = mT + 2 * O, w = Cx + 2 * O + mR, h = Cy + qB + mB;
 
     var cF = [Cx, Cy], cA = [Cx - 5, Cy - 2 * O], cB = [Cx + 2 * O, Cy + 5];
-    // Faint synapsis ribbons stay fixed while the three chromosomes are pulled apart.
+    // Faint synapsis ribbons for the resting PAIRING figure only. They marked where the
+    // chromosomes are paired at pachytene; carried into the anaphase mode scenes they
+    // stayed fixed while the chromosomes animated away, reading as a stray shadow at the
+    // old resting position (Dan, 2026-09-05). Anaphase chromosomes are no longer synapsed,
+    // so the mode scenes drop the ribbon.
     var rib = '<g opacity="0.24">' + line(Cx - 4, Cy - O, Cx - qA + 4, Cy - O, PERI, 6) +
       line(Cx + O, Cy + 4, Cx + O, Cy + qB - 4, AMBER, 6) + "</g>";
     var U = {
@@ -397,7 +401,7 @@
     var modeLabel = modeName === "Adjacent-A" ? "adjacent segregation (" + A + " alone)"
       : modeName === "Adjacent-B" ? "adjacent segregation (" + B + " alone)"
       : modeName.toLowerCase() + " segregation";
-    return svg('<g class="seg-fibers">' + fibers + "</g>" + planeSvg + '<g class="stage">' + rib + units + "</g>" + poles + badges,
+    return svg('<g class="seg-fibers">' + fibers + "</g>" + planeSvg + '<g class="stage">' + units + "</g>" + poles + badges,
       w, h, "trivalent dividing by " + modeLabel);
   }
 
