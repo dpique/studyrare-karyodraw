@@ -454,13 +454,11 @@
         '<span class="orig-who">or</span>' + ktButton(c.carrier.XY, m.typed);
     var upd = c.upd.length ? '<p class="oal-body">A carrier also passes a risk of <b>uniparental disomy</b> for ' +
       c.upd.map(function (x) { return UPD_RISK[x]; }).join(" and ") + '.</p>' : "";
-    var hint = named
-      ? "Click the karyotype to draw that parent; this outcome will be marked in the meiosis."
-      : "Click a parent to draw it; this outcome will be marked in the meiosis.";
+    // No "click a parent" hint: the carrier karyotypes are self-evidently clickable
+    // chips, and what the click does needs no narration (Dan, 2026-09-05).
     return '<p class="oal-head">' + head + '</p>' +
       '<div class="oal-chips">' + chips + '</div>' +
-      (caveat ? '<p class="oal-body">' + caveat + '</p>' : "") + upd +
-      '<p class="oal-hint">' + hint + '</p>';
+      (caveat ? '<p class="oal-body">' + caveat + '</p>' : "") + upd;
   }
 
   // Called on the CARRIER page when the reader arrived through that card (the

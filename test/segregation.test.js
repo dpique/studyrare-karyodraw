@@ -632,6 +632,7 @@ test('the card is chips-first and mechanism-free', () => {
   assert.ok(bare.indexOf('oal-head') < bare.indexOf('oal-chips'), 'headline, then chips');
   assert.doesNotMatch(bare, /Adjacent|3:1|segregation of/, 'no mechanism talk in the card');
   assert.doesNotMatch(bare, /#segregation-card/, 'nothing to jump to: no panel renders under the child');
+  assert.doesNotMatch(bare, /oal-hint|Click a parent|will be marked/, 'no click-a-parent narration; the chips are self-evident');
   const mat = Seg.renderOriginCard(Seg.origin(clone0('47,XY,+der(22)t(11;22)(q23;q11.2)mat')));
   assert.match(mat, /names the mother/);
   const hom = Seg.renderOriginCard(Seg.origin(clone0('46,XX,+21,der(21;21)(q10;q10)')));

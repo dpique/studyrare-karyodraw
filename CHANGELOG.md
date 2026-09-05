@@ -3,6 +3,13 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-05 (the parental-origin card drops its click hint)
+
+- **The amber parental-origin card no longer says "Click a parent to draw it;
+  this outcome will be marked in the meiosis."** The carrier karyotypes are
+  self-evidently clickable chips, so the instruction was noise. The card is now
+  just the headline and the chips (plus the suffix or UPD line where one applies).
+
 ## 2026-09-05 (the 3:1 outcomes pair up, and clicking a pair redraws its plane)
 
 - **The reciprocal 3:1 mode now folds four ways, one clickable pair per plane.**
