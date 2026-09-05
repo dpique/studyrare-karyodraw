@@ -1020,6 +1020,10 @@
   "use strict";
   var $ = function (s) { return document.querySelector(s); };
   var input = $("#kinput"), tooltip = $("#tooltip");
+  // The generic, keyword-bearing page title, captured before any draw overrides
+  // it. Restored for the bare homepage and the auto-loaded demo; a drawn
+  // karyotype gets its own title (see run()).
+  var DEFAULT_TITLE = document.title;
 
   // The decode glossary hover, delegated ONCE on the container so re-rendering
   // the panel never stacks listeners. The row text explains this karyotype's
@@ -2079,6 +2083,16 @@
     var invalid = !model.clones.length || model.clones.every(function (c) { return c.modalNumber == null; }) ||
       !!model.suggestion || bad.length > 0 || unreadable || countWrong || unaccounted;
     beaconDraw(val, !invalid);
+    // Name the browser tab, history entry, and bookmark after the karyotype
+    // actually drawn, so Back/Forward and a wall of tabs are navigable instead
+    // of every one reading the same generic title (Dan, 2026-09-05). Gated on a
+    // real drawing carried in the URL (?k=): the bare homepage and the
+    // auto-loaded demo keep DEFAULT_TITLE, which is the keyword-bearing title
+    // that ranks, and which every ?k= view canonicalises back to, so search
+    // engines see no change. Reading the URL param (not a local flag) means a
+    // Back/Forward that restores a ?k= URL updates the title too, since run()
+    // fires on popstate. Refused input keeps the generic title.
+    document.title = (!invalid && getKaryotypeParam() != null) ? (val + " | KaryoDraw") : DEFAULT_TITLE;
     if (invalid) {
       $("#summary").innerHTML = '<span class="kt">' + escapeHtml(val) + '</span><span class="sex">not a readable karyotype</span>';
       $("#karyo").innerHTML = '<div class="emptystate">Fix the karyotype above and the drawing appears here.</div>';

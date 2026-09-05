@@ -3,6 +3,16 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-05 (the browser tab and history name the drawn karyotype)
+
+- **Each drawn karyotype now titles its own tab, history entry, and bookmark.**
+  Before, every ?k= view read the same generic title, so Back/Forward and a wall
+  of tabs were unnavigable. The title is now "<karyotype> | KaryoDraw" whenever a
+  karyotype is drawn and carried in the URL. The bare homepage and the auto-loaded
+  demo keep the generic, keyword-bearing title, which every ?k= view canonicalises
+  back to, so search engines see no change. Reading the URL means Back/Forward
+  carry the title too.
+
 ## 2026-09-05 (three fixes from the rob(14;21) review)
 
 - **The animated trivalent no longer leaves a shadow.** The faint synapsis
