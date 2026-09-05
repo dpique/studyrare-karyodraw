@@ -3,6 +3,13 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-05 (the dosage table is titled for what it measures)
+
+- **"Net imbalance" became "Segment dosage."** The panel reports every segment's
+  copy number whether the rearrangement is balanced or not, so "imbalance" was
+  wrong for a balanced translocation, whose rows all read balanced and whose body
+  already says there is none. The new title describes the table itself.
+
 ## 2026-09-05 (the parental-origin card drops its click hint)
 
 - **The amber parental-origin card no longer says "Click a parent to draw it;

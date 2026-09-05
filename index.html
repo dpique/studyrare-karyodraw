@@ -888,14 +888,17 @@
           <h2>Band &amp; stain legend</h2>
           <div class="body"><div class="legend" id="legend"></div></div>
         </div>
-        <!-- The net imbalance of the karyotype above, as a per-segment copy-number
-             table (Karyo.computeDosage reads the same segment lists the figure is
-             drawn from). Its own card BELOW the legend (owner order, 2026-08-30);
-             hidden entirely when there is nothing structural or imbalanced.
-             data-drawing: the gate must sweep it, or a refusal would leave the
-             previous karyotype's imbalance on screen. -->
+        <!-- The per-segment copy-number (dosage) table for the karyotype above
+             (Karyo.computeDosage reads the same segment lists the figure is drawn
+             from). Titled "Segment dosage", not "Net imbalance": the table reports
+             the dosage of every segment whether the rearrangement is balanced or
+             not, and "imbalance" was wrong for a balanced translocation whose rows
+             all read balanced (Dan, 2026-09-05). Its own card BELOW the legend
+             (owner order, 2026-08-30); hidden entirely when there is nothing
+             structural to measure. data-drawing: the gate must sweep it, or a
+             refusal would leave the previous karyotype's table on screen. -->
         <div class="card" id="imbalance-card" data-drawing style="display:none">
-          <h2>Net imbalance</h2>
+          <h2>Segment dosage</h2>
           <div class="body"><div id="imbalance"></div></div>
         </div>
       </section>
