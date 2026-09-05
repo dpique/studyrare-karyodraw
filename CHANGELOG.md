@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-05 (three fixes from the rob(14;21) review)
+
+- **The animated trivalent no longer leaves a shadow.** The faint synapsis
+  ribbon was carried into the anaphase mode scenes, where it stayed fixed while
+  the chromosomes were pulled to the poles, reading as a stray shadow at the old
+  resting position. Anaphase chromosomes are no longer synapsed, so the mode
+  scenes drop the ribbon; the prophase pairing figure keeps it.
+- **"Segment dosage" became "Involved segments,"** matching the Show:Involved
+  vocabulary. Still not "Net imbalance," which was wrong for a balanced
+  rearrangement.
+- **The balanced "None: every segment keeps its expected copies" line is gone.**
+  It only existed to answer the former "Net imbalance" title; the table's own
+  "balanced" calls now say it.
+
 ## 2026-09-05 (the dosage table is titled for what it measures)
 
 - **"Net imbalance" became "Segment dosage."** The panel reports every segment's

@@ -538,7 +538,6 @@
      (amber ink for gain, red for loss, color for meaning); balanced context
      rows recede. */
   #imbalance .imb-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 5px; }
-  #imbalance .imb-none { font-size: 12.5px; color: var(--muted); margin-bottom: 5px; }
   #imbalance .imb-genes { margin-left: auto; font: 500 11.5px var(--font-sans); color: var(--muted);
     display: flex; align-items: center; gap: 5px; cursor: pointer; }
   #imbalance table { border-collapse: collapse; font-size: 12.5px; min-width: 60%; }
@@ -888,17 +887,17 @@
           <h2>Band &amp; stain legend</h2>
           <div class="body"><div class="legend" id="legend"></div></div>
         </div>
-        <!-- The per-segment copy-number (dosage) table for the karyotype above
+        <!-- The per-segment copy-number table for the karyotype above
              (Karyo.computeDosage reads the same segment lists the figure is drawn
-             from). Titled "Segment dosage", not "Net imbalance": the table reports
-             the dosage of every segment whether the rearrangement is balanced or
-             not, and "imbalance" was wrong for a balanced translocation whose rows
-             all read balanced (Dan, 2026-09-05). Its own card BELOW the legend
-             (owner order, 2026-08-30); hidden entirely when there is nothing
-             structural to measure. data-drawing: the gate must sweep it, or a
-             refusal would leave the previous karyotype's table on screen. -->
+             from). Titled "Involved segments", not "Net imbalance": the table lists
+             every segment of the involved chromosomes with its dosage, balanced or
+             not, so "imbalance" was wrong for a balanced translocation whose rows
+             all read balanced (Dan, 2026-09-05). "Involved" matches the Show:Involved
+             toggle. Its own card BELOW the legend (owner order, 2026-08-30); hidden
+             entirely when there is nothing structural to measure. data-drawing: the
+             gate must sweep it, or a refusal would leave the previous table on screen. -->
         <div class="card" id="imbalance-card" data-drawing style="display:none">
-          <h2>Segment dosage</h2>
+          <h2>Involved segments</h2>
           <div class="body"><div id="imbalance"></div></div>
         </div>
       </section>
@@ -1454,16 +1453,17 @@
         rows.join("") + "</tbody></table>" +
         (d.unknownExcluded ? '<div class="imb-note">A marker or dmin is present; material banding cannot assign to a chromosome is not counted in these rows.</div>' : ""));
     });
-    // The card carries the title; the body opens with either the gene checkbox
-    // or, when every run is balanced (a balanced inversion, a reciprocal
-    // exchange), a "none" line, so the table measures without claiming an
-    // imbalance the rows deny. The checkbox hides with nothing to mark, since
-    // genes annotate gained and lost rows only.
+    // The gene checkbox opens the body when there is a gained or lost segment to
+    // mark. When every run is balanced (a balanced inversion, a reciprocal
+    // exchange), the table's own "balanced" calls say so and no summary line is
+    // needed (Dan, 2026-09-05: the old "None:" line answered the former "Net
+    // imbalance" title, which is gone). The checkbox hides with nothing to mark,
+    // since genes annotate gained and lost rows only.
     box.innerHTML = any
       ? (anyDev
         ? '<div class="imb-head"><label class="imb-genes" title="Mark well-known cancer genes that sit inside a gained or lost segment. A teaching aid for cytogenetics, not a clinical annotation.">' +
           '<input type="checkbox" id="imbgenes"' + (SHOW_GENES ? " checked" : "") + "> cancer genes</label></div>"
-        : '<div class="imb-none">None: every segment below keeps its expected copies.</div>') +
+        : "") +
         out.join("")
       : "";
     var card = $("#imbalance-card");

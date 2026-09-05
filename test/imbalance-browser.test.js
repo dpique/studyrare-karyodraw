@@ -47,15 +47,15 @@ test('the net-imbalance table appears, toggles genes, and obeys the gate', async
   try {
     const page = await browser.newPage();
 
-    await t.test('the card is titled by what it measures, not by an outcome it may not have', async () => {
-      // "Segment dosage", not "Net imbalance": the table reports every segment's
-      // dosage whether the rearrangement is balanced or not, and "imbalance" was
-      // wrong for a balanced translocation (Dan, 2026-09-05).
+    await t.test('the card is titled by what it lists, not by an outcome it may not have', async () => {
+      // "Involved segments", not "Net imbalance": the table lists every segment of
+      // the involved chromosomes with its dosage, balanced or not, so "imbalance"
+      // was wrong for a balanced translocation (Dan, 2026-09-05).
       await open(page, '46,XY,t(10;15)(q23.33;p10)');
       await page.waitForSelector('#imbalance table');
       const title = await page.evaluate(() =>
         document.querySelector('#imbalance-card h2').textContent.trim());
-      assert.equal(title, 'Segment dosage');
+      assert.equal(title, 'Involved segments');
       assert.doesNotMatch(title, /imbalance/i, 'the title no longer asserts an imbalance');
     });
 
@@ -86,22 +86,24 @@ test('the net-imbalance table appears, toggles genes, and obeys the gate', async
       assert.ok(!withGenes.balancedRowHasGene, 'balanced context rows stay unannotated');
     });
 
-    await t.test('a balanced rearrangement measures without claiming imbalance', async () => {
-      // Dan, 2026-08-30: balanced rearrangements join the table so their
-      // segments keep a size somewhere after the prose lost its
-      // parentheticals. The body must open with "none" and the gene checkbox
-      // hides, since genes annotate gained and lost rows only.
+    await t.test('a balanced rearrangement lists its segments, no summary line, no checkbox', async () => {
+      // Dan, 2026-08-30: balanced rearrangements join the table so their segments
+      // keep a size somewhere after the prose lost its parentheticals. The old
+      // "None:" summary line is gone (Dan, 2026-09-05): the table's own "balanced"
+      // calls say it, and the line only existed to answer the former title.
       await open(page, '46,XY,t(9;22)(q34;q11.2)');
       await page.waitForSelector('#imbalance table');
       const st = await page.evaluate(() => ({
-        none: (document.querySelector('#imbalance .imb-none') || {}).textContent || '',
+        noneLine: !!document.querySelector('#imbalance .imb-none'),
+        bodyText: document.getElementById('imbalance').textContent,
         rows: document.querySelectorAll('#imbalance tbody tr').length,
         allBalanced: [...document.querySelectorAll('#imbalance td.call')].every((c) => c.textContent === 'balanced'),
         checkbox: !!document.querySelector('#imbgenes'),
         legendFirst: !!(document.getElementById('legend-card').compareDocumentPosition(
           document.getElementById('imbalance-card')) & Node.DOCUMENT_POSITION_FOLLOWING),
       }));
-      assert.match(st.none, /none/i, 'the body says no net imbalance');
+      assert.ok(!st.noneLine, 'no "None:" summary line');
+      assert.doesNotMatch(st.bodyText, /keeps its expected copies/, 'and the old phrase is gone');
       assert.equal(st.rows, 4, 'both exchange partners split at their breakpoints');
       assert.ok(st.allBalanced, 'every row is balanced');
       assert.ok(!st.checkbox, 'no gene checkbox with nothing to mark');
