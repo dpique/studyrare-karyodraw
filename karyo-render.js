@@ -2229,7 +2229,18 @@
     // different chromosome 15 homologues are involved". A dicentric of two homologues
     // draws segments that all say 13 and still prefixes every band, because two
     // chromosomes went into it.
-    var prefix = (ab && ab.chroms && ab.chroms.length > 1) ||
+    //
+    // The count has to include the SUB-OPERATIONS, because a der names one chromosome
+    // and records the rest of what went into it there: der(1)t(1;1)(p31;q32) has
+    // ab.chroms ["1"] and segments that all say 1, and is nonetheless two homologs of
+    // chromosome 1, which is why ISCN prints it 1qter→1q32::1p31→1qter. A sub-op naming
+    // two DIFFERENT chromosomes was already covered by the segment test, so the only
+    // shape this clause changes is a sub-op naming one chromosome twice.
+    var involved = (ab && ab.chroms) ? ab.chroms.length : 0;
+    ((ab && ab.subOps) || []).forEach(function (s) {
+      involved = Math.max(involved, (s.chroms || []).length);
+    });
+    var prefix = involved > 1 ||
       Object.keys(segs.reduce(function (m, g) { m[String(g.chrom)] = 1; return m; }, {})).length > 1;
     // Adjacent pieces of the same chromosome that run on from one another are ONE
     // stretch, and ISCN writes them as one: dup(1)(q22q25) is (pter->q25::q22->qter),

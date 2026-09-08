@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-08 (a derivative of two homologs numbers every band)
+
+- **The ISCN detailed form of der(1)t(1;1)(p31;q32) now reads
+  1qter→1q32::1p31→1qter, the string ISCN 2024 prints for it.** The chromosome
+  number belongs on every band when more than one chromosome is involved, and two
+  homologs of one chromosome are two chromosomes, which is the rule ISCN states on
+  dic(13;13). A derivative that names one chromosome and carries the second inside
+  a sub-operation was serialising without the numbers. Written as the translocation
+  rather than as one derivative, and for a dicentric of two homologs, the numbers
+  were already there.
+
 ## 2026-09-08 (a translocation between two homologs draws both derivatives)
 
 - **The two derivatives of a t(N;N) are now complements of each other rather than
