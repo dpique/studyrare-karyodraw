@@ -201,21 +201,20 @@ module.exports = [
   },
   // ISCN prints BOTH strings for this one short form, because der(1)t(1;1)(p31;q32)
   // names one derivative of a homologous exchange without saying which, and the two
-  // are complements. The exchange itself is built correctly as of 2026-09-08: write
-  // it as the t and both derivatives come out, 1qter→1q32::1p31→1qter beside
-  // 1pter→1q32::1p31→1pter (test/homolog-translocation.test.js pins the pair on
-  // chromosomes 16, 3 and 9). What is left is specific to the der() spelling.
+  // are complements. The exchange itself was corrected on 2026-09-08: write it as the
+  // t and both derivatives come out (test/homolog-translocation.test.js pins the pair
+  // on chromosomes 16, 3 and 9). The der() spelling builds one of the two, and which
+  // one is a choice ISCN does not make, so the reading it does not build stays a gap.
   {
     short: "46,XX,der(1)t(1;1)(p31;q32)",
     detailed: "46,XX,der(1)(1pter→1q32::1p31→1pter)",
     generated: false,
-    needs: "der(1)t(1;1) names one derivative of the two without saying which, so the app builds the other reading; ISCN prints both and does not choose either",
+    needs: "der(1)t(1;1) names one derivative of the two without saying which, so the app builds the other reading; ISCN prints both and chooses neither, and nothing in the notation decides it",
   },
   {
     short: "46,XX,der(1)t(1;1)(p31;q32)",
     detailed: "46,XX,der(1)(1qter→1q32::1p31→1qter)",
-    generated: false,
-    needs: "the geometry now matches; only the chromosome prefix is missing, since a der naming ONE chromosome serialises as qter→q32::p31→qter and ISCN prefixes every segment here",
+    generated: true,
   },
   {
     short: "47,XY,der(9)t(9;22)(q34;q11.2),+22,ider(22)(q10)t(9;22)[20]",
