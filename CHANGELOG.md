@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-08 (a translocation between two homologs marks its breakpoint)
+
+- **The dashed junction seam now appears on a translocation between two homologs,
+  where it was missing.** The seam marks where a derivative was broken and
+  rejoined, and it was drawn wherever the chromosome number changed across the
+  boundary. On t(9;22) the graft says 22 and the host says 9, so the seam
+  appeared. On t(16;16) both say 16, so the figure whose breakpoint is hardest to
+  see by eye was the one that did not mark it. The seam now follows the grafted
+  piece rather than its number. Translocations between two different chromosomes
+  are unchanged, and an inversion or duplication boundary is still not a seam.
+
 ## 2026-09-08 (a derivative of two homologs numbers every band)
 
 - **The ISCN detailed form of der(1)t(1;1)(p31;q32) now reads

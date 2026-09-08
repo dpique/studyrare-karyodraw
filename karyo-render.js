@@ -536,7 +536,12 @@
       if (g.hasCen && d.centromere > g.from && d.centromere < g.to) {
         cenList.push({ y: g.reversed ? segTop + (g.to - d.centromere) * PX : segTop + (d.centromere - g.from) * PX, chrom: g.chrom, reversed: g.reversed });
       }
-      if (gi > 0 && segments[gi - 1].chrom !== g.chrom) junctionYs.push(segTop);
+      // A junction is a place two chromosomes were joined, which the names report
+      // only when the numbers differ. The graft flag reports it directly, and a
+      // boundary contributes one seam or none, so a graft from a differently
+      // numbered chromosome is not marked twice. Boundaries that are not grafts (an
+      // inversion's ends, a duplication's seam) are left to their own vocabulary.
+      if (gi > 0 && (segments[gi - 1].chrom !== g.chrom || g.graft || segments[gi - 1].graft)) junctionYs.push(segTop);
       yOff += segH;
     });
     body.push('</g>');
@@ -1525,7 +1530,12 @@
     if (!IDEO.data[keepChrom] || !IDEO.data[addChrom] || !keepBand || !addBand) return null;
     var sk = splitAtBreak(keepChrom, keepBand), sd = splitAtBreak(addChrom, addBand);
     var keep = { chrom: keepChrom, from: sk.centric[0], to: sk.centric[1], hasCen: true, reversed: false };
-    var add = { chrom: addChrom, from: sd.acentric[0], to: sd.acentric[1], hasCen: false, reversed: false };
+    // graft marks the piece that came from the OTHER chromosome, which is what the
+    // dashed junction seam is really about. Comparing chromosome names is a proxy
+    // that holds only while the two chromosomes have different numbers: on a
+    // translocation between two homologs every segment says 16, and the figure that
+    // most needs its breakpoint marked was the one that lost it.
+    var add = { chrom: addChrom, from: sd.acentric[0], to: sd.acentric[1], hasCen: false, reversed: false, graft: true };
     // The graft's BROKEN end has to face the junction, and which end of the segment
     // that is depends on two independent things: which side of the derivative's own
     // break the graft sits on, and which arm the DONOR broke on.
