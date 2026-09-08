@@ -13,6 +13,26 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   Both are pinned to their breakpoints rather than to the chromosome, so an
   inversion of 16 or 3 elsewhere is not named a leukemia.
 
+## 2026-09-08 (sixteen more rearrangements, including three that share a chromosome pair)
+
+- **The table covers 43 recurrent rearrangements, up from 27.** Added on the
+  myeloid side: t(11;17), inv(16)(p13.3q24.3), t(6;11), t(10;11), t(3;5).
+  Lymphoid: t(2;8) and t(8;22), t(14;16), t(5;14), t(10;14). Sarcoma: t(9;22)-
+  (q22;q12), t(21;22), t(12;22), t(1;13), t(12;15), t(17;22).
+- **Three of them share a chromosome pair with an entry already in the table, and
+  are a different disease.** inv(16)(p13.3q24.3) is a pediatric megakaryoblastic
+  leukemia of adverse risk, not the favorable core-binding-factor inv(16).
+  t(9;22)(q22;q12) is a soft-tissue sarcoma, not the Philadelphia chromosome.
+  t(11;17) is a variant promyelocytic leukemia that does **not** respond to
+  all-trans retinoic acid, where t(15;17) does. Each is told apart by its
+  breakpoints.
+- **inv(16) and t(16;16) are no longer described as one lesion written two ways.**
+  They are two different rearrangements, one turning a segment of a single
+  chromosome over and one exchanging tips between the two homologs, which reach
+  the same *CBFB*::*MYH11* and the same WHO entity by different routes. The
+  figures drawn for them already differed; the note now agrees with the picture.
+  The same correction applies to inv(3) and t(3;3).
+
 ## 2026-09-08 (a table of the recurrent rearrangements, matched on their breakpoints)
 
 - **Twenty-seven recurrent rearrangements are now recognised and explained, up
