@@ -13,6 +13,29 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   Both are pinned to their breakpoints rather than to the chromosome, so an
   inversion of 16 or 3 elsewhere is not named a leukemia.
 
+## 2026-09-08 (a table of the recurrent rearrangements, matched on their breakpoints)
+
+- **Twenty-seven recurrent rearrangements are now recognised and explained, up
+  from nine.** Myeloid: t(9;22), t(8;21), inv(16)/t(16;16), t(15;17), inv(3)/t(3;3),
+  t(6;9), t(9;11), t(11;19), t(1;22), t(8;16), t(16;21), t(5;12). Lymphoid:
+  t(12;21), t(4;11), t(1;19), t(17;19), t(8;14), t(14;18), t(11;14), t(3;14),
+  t(11;18), t(4;14), t(2;5). Sarcoma: t(11;22), t(X;18), t(2;13), t(12;16).
+- **Each one answers the same four questions in the same order:** what it joins,
+  what disease that makes, whether the mechanism is a fusion protein, a
+  juxtaposition under someone else's enhancer, or an enhancer being moved, and
+  what changes for the patient. The mechanism is stated because it is the
+  difference between *BCR*::*ABL1* and the immunoglobulin partners, which make no
+  new protein at all.
+- **A lesion is now matched on its breakpoints, not on its chromosome pair.**
+  t(16;21)(p11.2;q22) is *FUS*::*ERG* and t(16;21)(q24;q22) is a different fusion
+  of the same two chromosomes; the old matcher could not tell them apart. Every
+  published spelling of a breakpoint is accepted, so t(15;17) is recognised
+  written (q22;q12), (q22;q21) or (q24.1;q21.2), all of which appear in reports.
+- **Ticking "cancer genes" names both ends of a rearrangement.** Every partner in
+  the table is on the band map, so the breakpoint line reads, for example, "At the
+  breakpoints: 9q34 *ABL1* · 22q11.2 *BCR*" rather than whichever end happened to
+  be listed already.
+
 ## 2026-09-08 (Involved segments says which pieces moved, and names the genes at the breaks)
 
 - **Each segment now says what happened to it, not only how many copies there
