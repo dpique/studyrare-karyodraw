@@ -13,6 +13,24 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   Both are pinned to their breakpoints rather than to the chromosome, so an
   inversion of 16 or 3 elsewhere is not named a leukemia.
 
+## 2026-09-08 (Involved segments says which pieces moved, and names the genes at the breaks)
+
+- **Each segment now says what happened to it, not only how many copies there
+  are.** On a balanced rearrangement every row read "balanced", which told a
+  reader that the arithmetic was checked and nothing else. A segment that crossed
+  to the other chromosome now reads "balanced, exchanged" and the span an
+  inversion turned over reads "balanced, inverted". A segment that sat between two
+  breakpoints without moving gets neither, which is what makes the marked rows
+  worth reading: t(16;16)(p13.1;q22) marks its two tips, and inv(16)(p13.1q22),
+  written at the same two breakpoints, marks the middle instead.
+- **The cancer-gene layer now opens on balanced rearrangements, and names the
+  genes at the breakpoints.** It used to appear only when some segment was gained
+  or lost, which switched it off for exactly the rearrangements whose genes are
+  the point: t(9;22) offered no way to see *BCR* or *ABL1*, and inv(16) none to
+  see *CBFB* or *MYH11*. Ticking "cancer genes" now adds a line reading, for
+  example, "At the breakpoints: 9q34 *ABL1* · 22q11.2 *BCR*". *GATA2* joins the
+  gene list as the second breakpoint of the inv(3) lesion.
+
 ## 2026-09-08 (a translocation between two homologs marks its breakpoint)
 
 - **The dashed junction seam now appears on a translocation between two homologs,

@@ -1499,7 +1499,11 @@
   // clinical annotation.
   var CANCER_GENES = [
     { g: "MYCN", c: "2", b: "p24.3" }, { g: "ALK", c: "2", b: "p23.2" },
-    { g: "MECOM", c: "3", b: "q26.2" }, { g: "FGFR3", c: "4", b: "p16.3" },
+    // GATA2 earns its place as the OTHER breakpoint of inv(3)/t(3;3): the lesion
+    // moves its distal enhancer onto MECOM, so a reader looking at 3q21.3 is
+    // looking at the half of the event that is easy to miss.
+    { g: "MECOM", c: "3", b: "q26.2" }, { g: "GATA2", c: "3", b: "q21.3" },
+    { g: "FGFR3", c: "4", b: "p16.3" },
     { g: "KIT", c: "4", b: "q12" }, { g: "PDGFRA", c: "4", b: "q12" },
     { g: "TET2", c: "4", b: "q24" }, { g: "TERT", c: "5", b: "p15.33" },
     { g: "APC", c: "5", b: "q22.2" }, { g: "PDGFRB", c: "5", b: "q32" },

@@ -1418,11 +1418,37 @@
     var box = $("#imbalance");
     if (!box) return;
     LAST_CLONES = clones;
-    var geneAt = !SHOW_GENES ? null : window.Teach.CANCER_GENES.map(function (g) {
+    // Resolved unconditionally, because whether there is anything to mark decides
+    // whether the checkbox appears at all, and that cannot be answered from inside
+    // the branch the checkbox controls. SHOW_GENES gates the rendering, not the
+    // lookup; the list is 44 entries.
+    var geneAll = window.Teach.CANCER_GENES.map(function (g) {
       var r = window.Karyo.resolveBand(g.c, g.b);
-      return r ? { g: g.g, c: g.c, mid: r.mid } : null;
+      return r ? { g: g.g, c: g.c, mid: r.mid, start: r.start, end: r.end } : null;
     }).filter(Boolean);
-    var out = [], any = false, anyDev = false;
+    var geneAt = SHOW_GENES ? geneAll : null;
+    // Genes AT a breakpoint, which is the question a balanced rearrangement asks.
+    // Nothing is gained or lost, so the copies column reads two on every row and
+    // the interesting genes are the ones the breaks run through, not the ones
+    // sitting inside a 60 Mb segment that never moved.
+    //
+    // Overlap of the two bands, not the breakpoint midpoint inside the gene's band:
+    // a break written at 16p13.1 names a band that contains p13.11, p13.12 and
+    // p13.13, and its midpoint can easily land in a different sub-band from the one
+    // the gene is in. MYH11 is at p13.11 and would have been missed.
+    function bpGenes(c) {
+      var out = [];
+      (c.breakpoints || []).forEach(function (bp) {
+        var r = window.Karyo.resolveBand(c.chrom, bp.band);
+        if (!r) return;
+        var hit = geneAll.filter(function (g) {
+          return g.c === c.chrom && g.start < r.end && g.end > r.start;
+        }).map(function (g) { return "<i>" + escapeHtml(g.g) + "</i>"; });
+        if (hit.length) out.push(escapeHtml(c.chrom + bp.band) + " " + hit.join(", "));
+      });
+      return out;
+    }
+    var out = [], any = false, anyDev = false, bpAny = false;
     (clones || []).forEach(function (clone, ci) {
       var d = window.Karyo.computeDosage(clone);
       // A chromosome earns rows when it deviates OR when the notation names
@@ -1435,7 +1461,7 @@
       });
       if (!chroms.length) return;
       any = true;
-      var rows = [];
+      var rows = [], bpLines = [];
       chroms.forEach(function (c) {
         c.runs.forEach(function (r) {
           var call = imbCall(r.copies, c.baseline);
@@ -1446,26 +1472,42 @@
               .map(function (g) { return "<i>" + escapeHtml(g.g) + "</i>"; });
             if (hit.length) genes = " (includes " + hit.join(", ") + ")";
           }
+          // What HAPPENED to this segment, beside how many copies of it there are.
+          // On a balanced rearrangement the copies column reads two on every row and
+          // says nothing, and the reader's actual question is which pieces moved.
+          // "exchanged" is a piece that crossed to the other chromosome; "inverted"
+          // is the span an inversion turned end for end. A segment between two
+          // breakpoints that merely sat there gets neither, which is the honest
+          // answer and the one that makes the marked rows mean something.
+          var moved = r.exchanged ? ", exchanged" : (r.inverted ? ", inverted" : "");
           rows.push('<tr class="' + call.cls + '"><td class="imbseg">' +
             escapeHtml(c.chrom + r.fromLabel + "→" + c.chrom + r.toLabel) +
-            '</td><td class="n">' + r.copies + '</td><td class="call">' + call.text + genes +
+            '</td><td class="n">' + r.copies + '</td><td class="call">' + call.text + moved + genes +
             '</td><td class="size">' + imbSize(r) + "</td></tr>");
         });
+        bpLines = bpLines.concat(bpGenes(c));
+        if (bpLines.length) bpAny = true;
       });
       out.push((clones.length > 1 ? '<div class="imb-clone">' + escapeHtml(clone.raw || ("clone " + (ci + 1))) + "</div>" : "") +
         "<table><thead><tr><th>Segment</th><th>Copies</th><th>Call</th><th>≈ size</th></tr></thead><tbody>" +
         rows.join("") + "</tbody></table>" +
+        (SHOW_GENES && bpLines.length
+          ? '<div class="imb-note">At the breakpoints: ' + bpLines.join(" &middot; ") + "</div>" : "") +
         (d.unknownExcluded ? '<div class="imb-note">A marker or dmin is present; material banding cannot assign to a chromosome is not counted in these rows.</div>' : ""));
     });
-    // The gene checkbox opens the body when there is a gained or lost segment to
-    // mark. When every run is balanced (a balanced inversion, a reciprocal
-    // exchange), the table's own "balanced" calls say so and no summary line is
-    // needed (Dan, 2026-09-05: the old "None:" line answered the former "Net
-    // imbalance" title, which is gone). The checkbox hides with nothing to mark,
-    // since genes annotate gained and lost rows only.
+    // The gene checkbox opens the body when there is anything to mark: a gained or
+    // lost segment with a gene inside it, OR a breakpoint a gene sits on. It used
+    // to require the first alone, which switched the gene layer off for exactly the
+    // rearrangements whose genes are the point. A balanced translocation has no
+    // gained or lost segment by definition, so t(9;22) offered no way to see BCR or
+    // ABL1 and inv(16) none to see CBFB or MYH11 (Dan, 2026-09-08).
+    //
+    // Still no balanced summary line: the table's own "balanced" calls say it, and
+    // the old "None:" line answered the former "Net imbalance" title, which is gone
+    // (Dan, 2026-09-05).
     box.innerHTML = any
-      ? (anyDev
-        ? '<div class="imb-head"><label class="imb-genes" title="Mark well-known cancer genes that sit inside a gained or lost segment. A teaching aid for cytogenetics, not a clinical annotation.">' +
+      ? ((anyDev || bpAny)
+        ? '<div class="imb-head"><label class="imb-genes" title="Mark well-known cancer genes: inside a gained or lost segment, and at the breakpoints of a rearrangement. A teaching aid for cytogenetics, not a clinical annotation.">' +
           '<input type="checkbox" id="imbgenes"' + (SHOW_GENES ? " checked" : "") + "> cancer genes</label></div>"
         : "") +
         out.join("")
