@@ -1153,6 +1153,42 @@
     });
   }
 
+  // One lesion, two spellings, pinned to its breakpoints.
+  //
+  // A pericentric inversion and a translocation between the two homologs of one
+  // chromosome can produce the SAME rearrangement, and the recurrent leukemia
+  // lesions of chromosomes 16 and 3 are both written either way: inv(16)(p13.1q22)
+  // and t(16;16)(p13.1;q22) make one CBFB::MYH11, inv(3)(q21.3q26.2) and
+  // t(3;3)(q21.3;q26.2) do one thing to MECOM. A matcher that knew one spelling
+  // would answer for one reader and not the next.
+  //
+  // Unlike hasT, this reads the bands. hasT ignores them, which is safe for t(9;22)
+  // because no other t(9;22) is a recognised entity, and is not safe for an
+  // inversion: inv(16) at other breakpoints is not CBFB::MYH11, and naming a
+  // leukemia over a constitutional rearrangement is the expensive direction to be
+  // wrong in. Same reason the fragile site is pinned to Xq27.3.
+  //
+  // Matching is by prefix in either direction, so the ISCN-precise p13.1 and the
+  // bare p13 that people actually type both land on the same note.
+  function bandsMeet(a, b) {
+    a = String(a || ""); b = String(b || "");
+    return !!a && !!b && (a.indexOf(b) === 0 || b.indexOf(a) === 0);
+  }
+  function hasInvOrHomologT(c, chrom, bandA, bandB) {
+    return (c.aberrations || []).some(function (ab) {
+      var ch = (ab.chroms || []).map(String);
+      if (!ch.length || ch.some(function (x) { return x !== String(chrom); })) return false;
+      var got;
+      if (ab.kind === "inv" && ch.length === 1) got = (ab.breakpoints[0] || []).slice(0, 2);
+      else if (ab.kind === "t" && ch.length === 2) {
+        got = [(ab.breakpoints[0] || [])[0], (ab.breakpoints[1] || [])[0]];
+      } else return false;
+      if (got.length < 2 || !got[0] || !got[1]) return false;
+      return (bandsMeet(got[0], bandA) && bandsMeet(got[1], bandB)) ||
+        (bandsMeet(got[0], bandB) && bandsMeet(got[1], bandA));
+    });
+  }
+
   // ---- curated clinical / board notes --------------------------------------
   // Each matcher inspects a clone and returns notes when it fits.
   var SYNDROMES = [
@@ -1184,6 +1220,14 @@
       note: "t(8;14)(q24;q32) places <i>MYC</i> next to the <i>IGH</i> enhancer → <i>MYC</i> overexpression. Classic 'starry-sky' Burkitt lymphoma." },
     { test: function (c) { return hasT(c, "8", "21"); }, acquired: true, name: "t(8;21), AML",
       note: "t(8;21)(q22;q22) <i>RUNX1::RUNX1T1</i>; a core-binding-factor AML with generally favorable prognosis." },
+    // The other half of the core-binding-factor pair, directly after t(8;21)
+    // because the two are taught together and share a risk category.
+    { test: function (c) { return hasInvOrHomologT(c, "16", "p13", "q22"); }, acquired: true,
+      name: "inv(16) / t(16;16), AML with abnormal eosinophils",
+      note: "inv(16)(p13.1q22) and t(16;16)(p13.1;q22) are the same lesion, fusing <i>CBFB</i> at 16q22 with <i>MYH11</i> at 16p13.1. AML with abnormal bone marrow eosinophils, formerly FAB M4Eo. With t(8;21) it is one of the two core-binding-factor AMLs, since <i>RUNX1</i> and <i>CBFB</i> are the two halves of one transcription factor, and both carry a generally favorable prognosis with high-dose cytarabine consolidation. Both breakpoints sit close to the centromere and the inversion is easy to miss on banding alone, so the fusion is confirmed by FISH or RT-PCR. A co-occurring <i>KIT</i> mutation worsens the outlook." },
+    { test: function (c) { return hasInvOrHomologT(c, "3", "q21", "q26"); }, acquired: true,
+      name: "inv(3) / t(3;3), AML with MECOM rearrangement",
+      note: "inv(3)(q21.3q26.2) and t(3;3)(q21.3;q26.2) are the same lesion, and no fusion protein is made. The rearrangement moves a distal <i>GATA2</i> enhancer from 3q21.3 to <i>MECOM</i> at 3q26.2, driving <i>EVI1</i> expression while leaving the <i>GATA2</i> allele it was taken from without that enhancer, so one event both activates an oncogene and halves a transcription factor. AML or MDS, adverse risk, often with monosomy 7. The platelet count is characteristically normal or raised with dysplastic megakaryocytes, which sets it apart from most AML at presentation." },
     { test: function (c) { return hasT(c, "14", "18"); }, acquired: true, name: "t(14;18), Follicular lymphoma",
       note: "t(14;18)(q32;q21) juxtaposes <i>BCL2</i> with <i>IGH</i> → anti-apoptotic <i>BCL2</i> overexpression." },
     { test: function (c) { return hasT(c, "11", "14"); }, acquired: true, name: "t(11;14), Mantle cell lymphoma",
