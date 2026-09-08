@@ -3,6 +3,42 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-08 (fourteen more recurrent rearrangements, reaching carcinoma and the whole-arm derivative)
+
+- **The table covers 57 recurrent rearrangements, up from 43.** Myeloid: the
+  eosinophilia family gains its imatinib-resistant members, t(8;13)
+  *ZMYM2*::*FGFR1* and t(8;9) *PCM1*::*JAK2*, beside t(16;21)(q24;q22)
+  *RUNX1*::*CBFA2T3*, t(3;21) *RUNX1*::*MECOM*, and the cryptic pediatric
+  t(5;11) *NUP98*::*NSD1*, whose partner is the Sotos syndrome gene. Lymphoid:
+  t(5;14)(q35;q32) *TLX3* in T-ALL and the inv(14)/t(14;14) of T-prolymphocytic
+  leukemia. Sarcoma: t(11;22)(p13;q12), the desmoplastic small round cell tumour
+  that shares its chromosome pair with Ewing sarcoma, and t(X;17)
+  *ASPSCR1*::*TFE3* of alveolar soft part sarcoma. And a first carcinoma
+  section: t(15;19) NUT carcinoma, inv(2)(p21p23) *EML4*::*ALK* lung
+  adenocarcinoma, inv(10)(q11.2q21) RET-rearranged papillary thyroid carcinoma,
+  and t(2;3) *PAX8*::*PPARG* follicular thyroid carcinoma.
+- **der(1;7)(q10;p10) is recognised as the MDS/AML whole-arm derivative.** The
+  matcher previously read only translocations and inversions; it now reads a
+  whole-arm derivative at its centromeric p10/q10 breakpoints too. The note
+  explains what makes this lesion different: nothing is fused and no gene is
+  broken, and the disease comes from dosage, a gained 1q and a lost 7q. A
+  Robertsonian translocation, which is written the same way, is not called a
+  cancer.
+- **The common benign inversions are never named a cancer.** inv(2)(p11.2q13),
+  inv(9)(p12q13) and inv(10)(p11.2q21.2) are population variants on the same
+  chromosomes as *EML4*::*ALK* and RET/PTC1; a test now pins each of them to
+  zero matches.
+- **A constitutional cancer translocation joins the syndrome notes.**
+  t(3;8)(p14.2;q24.1), the classic familial renal cell carcinoma translocation,
+  is described as what it is: constitutional, carried in every cell, so the
+  meiotic segregation panel stays available for the carrier the note is about.
+- **Two ambiguities are written into the notes rather than left unstated.** The
+  follicular lymphoma note explains that *MALT1* sits in the same 18q21 region
+  as *BCL2*, so a MALT lymphoma can carry an identically written
+  t(14;18)(q32;q21) and histology decides. The *PDGFRB* note names
+  *FIP1L1*::*PDGFRA*, the commonest member of its family, which comes from a
+  deletion too small for banding and therefore has no karyotype to match.
+
 ## 2026-09-08 (the two chromosome 16 and chromosome 3 leukemia rearrangements are decoded)
 
 - **inv(16) and t(16;16) now name CBFB::MYH11, and inv(3) and t(3;3) now name the

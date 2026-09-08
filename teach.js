@@ -1171,7 +1171,10 @@
   // bandB]. An inversion names one chromosome and two bands; a translocation names
   // two chromosomes and one band each; a translocation between two homologs is a
   // translocation whose two chromosomes have the same number, and needs no special
-  // case here. Anything else is not a two-ended join and returns null.
+  // case here. A whole-arm derivative names two chromosomes and the centromeric
+  // bands p10 or q10 only (ISCN 5.5.18.2 a), and is a join of two arms: read it,
+  // or der(1;7)(q10;p10) has no way into the table. Anything else is not a
+  // two-ended join and returns null.
   //
   // kind on a top-level aberration, op on a sub-operation: the parser names the
   // same field differently in the two places, and reading only kind meant
@@ -1187,6 +1190,14 @@
     if (k === "t" && ch.length === 2) {
       var a = ((ab.breakpoints || [])[0] || [])[0], b = ((ab.breakpoints || [])[1] || [])[0];
       return (a && b) ? [ch[0], a, ch[1], b] : null;
+    }
+    // Whole-arm der only: both breakpoints must be the centromeric p10/q10
+    // spellings, so a der(9)t(9;22) still reaches its join through the sub-op
+    // walk, and a Robertsonian (which the parser normalises to der) simply finds
+    // no record claiming an acrocentric q10;q10 pair.
+    if (k === "der" && ch.length === 2) {
+      var wa = ((ab.breakpoints || [])[0] || [])[0], wb = ((ab.breakpoints || [])[1] || [])[0];
+      if (/^[pq]10$/.test(wa || "") && /^[pq]10$/.test(wb || "")) return [ch[0], wa, ch[1], wb];
     }
     return null;
   }
@@ -1322,7 +1333,17 @@
       kind: "fusion", genes: ["ETV6", "PDGFRB"],
       name: "t(5;12), myeloid neoplasm with PDGFRB rearrangement",
       disease: "Myeloid or lymphoid neoplasm with eosinophilia",
-      note: "Worth recognising because it is treatable out of proportion to its rarity: <i>PDGFRB</i>-rearranged disease responds durably to imatinib at doses well below those used in CML. Eosinophilia with a 5q31-33 break is the trigger to look. A normal karyotype does not exclude the family, since several <i>PDGFRA</i> partners are cryptic." },
+      note: "Worth recognising because it is treatable out of proportion to its rarity: <i>PDGFRB</i>-rearranged disease responds durably to imatinib at doses well below those used in CML. Eosinophilia with a 5q31-33 break is the trigger to look. A normal karyotype does not exclude the family: <i>FIP1L1</i>::<i>PDGFRA</i>, the commonest member, comes from an interstitial deletion within 4q12 far below the resolution of banding, so it never shows as a translocation at all." },
+    { chroms: ["8", "13"], bands: [["p11", "q12"], ["p11.2", "q12.1"], ["p11.23", "q12.11"]],
+      kind: "fusion", genes: ["ZMYM2", "FGFR1"],
+      name: "t(8;13), myeloid/lymphoid neoplasm with FGFR1 rearrangement",
+      disease: "Myeloid or lymphoid neoplasm with eosinophilia, aggressive",
+      note: "The member of the eosinophilia family that does NOT respond to imatinib, which is why the family is worth splitting: <i>PDGFRA</i> and <i>PDGFRB</i> disease does, <i>FGFR1</i> disease does not, and pemigatinib is the targeted option here. The classic presentation pairs an eosinophilic myeloproliferative neoplasm with a T-lymphoblastic lymphoma arising from the same clone. It transforms early, so treatment is planned toward transplant." },
+    { chroms: ["8", "9"], bands: [["p22", "p24"], ["p22", "p24.1"]],
+      kind: "fusion", genes: ["PCM1", "JAK2"],
+      name: "t(8;9), myeloid/lymphoid neoplasm with PCM1::JAK2",
+      disease: "Myeloid or lymphoid neoplasm with eosinophilia",
+      note: "The <i>JAK2</i> member of the eosinophilia family, beside the <i>PDGFRA</i>, <i>PDGFRB</i> and <i>FGFR1</i> groups. Eosinophilia with erythroid hyperplasia and marrow lymphoid aggregates is the described picture. Ruxolitinib gives responses that are not durable the way imatinib responses are in <i>PDGFR</i> disease, so transplant stays in the plan. The same <i>JAK2</i> is far better known for its V617F point mutation in polycythemia vera; one gene can drive disease as a point mutation or as a fusion." },
     // --- lymphoid ---
     { chroms: ["12", "21"], bands: [["p13", "q22"], ["p13.2", "q22.1"]],
       kind: "fusion", genes: ["ETV6", "RUNX1"],
@@ -1348,7 +1369,7 @@
       kind: "juxtaposition", genes: ["IGH", "BCL2"],
       name: "t(14;18), follicular lymphoma",
       disease: "Follicular lymphoma, and a subset of diffuse large B-cell lymphoma",
-      note: "The founding example of an anti-apoptotic rather than proliferative oncogene: <i>BCL2</i> under the <i>IGH</i> enhancer stops the cell dying rather than making it divide. Present in most follicular lymphoma, and detectable at very low levels in healthy people, so it is necessary but not sufficient for the diagnosis." },
+      note: "The founding example of an anti-apoptotic rather than proliferative oncogene: <i>BCL2</i> under the <i>IGH</i> enhancer stops the cell dying rather than making it divide. Present in most follicular lymphoma, and detectable at very low levels in healthy people, so it is necessary but not sufficient for the diagnosis. One ambiguity is worth knowing: <i>MALT1</i> sits in the same 18q21 region as <i>BCL2</i>, so a MALT lymphoma with a <i>MALT1</i> rearrangement can carry an identically written t(14;18)(q32;q21), and the histology decides which disease the karyotype belongs to." },
     { chroms: ["11", "14"], bands: [["q13", "q32"], ["q13.3", "q32"]],
       kind: "juxtaposition", genes: ["IGH", "CCND1"],
       name: "t(11;14), mantle cell lymphoma",
@@ -1363,7 +1384,7 @@
       kind: "fusion", genes: ["BIRC3", "MALT1"],
       name: "t(11;18), MALT lymphoma",
       disease: "Extranodal marginal zone lymphoma of mucosa-associated lymphoid tissue",
-      note: "The one that changes management on the day it is reported: gastric MALT lymphoma carrying t(11;18) does not respond to <i>Helicobacter pylori</i> eradication, which is the first-line treatment for the ones that lack it. Finding it moves the patient to radiotherapy or systemic treatment instead of antibiotics." },
+      note: "The one that changes management on the day it is reported: gastric MALT lymphoma carrying t(11;18) does not respond to <i>Helicobacter pylori</i> eradication, which is the first-line treatment for the ones that lack it. Finding it moves the patient to radiotherapy or systemic treatment instead of antibiotics. Three rarer MALT translocations reach the same NF-kB pathway: t(1;14) with <i>BCL10</i>, t(14;18) with <i>MALT1</i>, and t(3;14) with <i>FOXP1</i>." },
     { chroms: ["4", "14"], bands: [["p16.3", "q32"]],
       kind: "juxtaposition", genes: ["IGH", "NSD2"],
       name: "t(4;14), plasma cell myeloma",
@@ -1398,11 +1419,13 @@
 
     // --- a second lesion at a chromosome pair already claimed above ----------
     //
-    // These three are the reason the table matches breakpoints rather than
-    // chromosome pairs. Each shares its pair with an entry above and is a
-    // different disease: a second inv(16), a second t(9;22) and a second
-    // rearrangement of RARA. A matcher that read only the pair would have
-    // answered confidently and wrongly for all three.
+    // These records are the reason the table matches breakpoints rather than
+    // chromosome pairs. Each shares its pair with an entry elsewhere in the table
+    // and is a different disease: a second inv(16), a second t(9;22), a second
+    // rearrangement of RARA, and a second t(16;21). The pattern repeats in the
+    // sections below with a second t(11;22) and a second t(5;14). A matcher that
+    // read only the pair would have answered confidently and wrongly for every
+    // one of them.
     { chroms: ["16", "16"], bands: [["p13.3", "q24.3"]],
       kind: "fusion", genes: ["CBFA2T3", "GLIS2"],
       name: "inv(16)(p13.3q24.3), pediatric acute megakaryoblastic leukemia",
@@ -1418,6 +1441,11 @@
       name: "t(11;17), ATRA-resistant variant APL",
       disease: "Acute promyelocytic leukemia, variant",
       note: "The exception that makes the rule about t(15;17) worth stating carefully: this variant does NOT respond to all-trans retinoic acid, so recognising it changes treatment in the opposite direction from the classic translocation. Any APL-looking marrow without t(15;17) needs the <i>RARA</i> partner identified before ATRA is relied on." },
+    { chroms: ["16", "21"], bands: [["q24", "q22"], ["q24.3", "q22.1"]],
+      kind: "fusion", genes: ["RUNX1", "CBFA2T3"],
+      name: "t(16;21)(q24;q22), AML with RUNX1::CBFA2T3",
+      disease: "AML, often therapy-related, adverse risk",
+      note: "The other t(16;21): the same two chromosomes as <i>FUS</i>::<i>ERG</i>, different arms, and a different fusion, so the pair cannot be told apart without the breakpoints. <i>CBFA2T3</i> is the closest relative of <i>RUNX1T1</i>, which makes this a structural cousin of t(8;21) with none of its favorable behaviour: it often follows prior chemotherapy or radiation, and it does poorly." },
     // --- further myeloid ---
     { chroms: ["6", "11"], bands: [["q27", "q23"], ["q27", "q23.3"]],
       kind: "fusion", genes: ["KMT2A", "AFDN"],
@@ -1434,6 +1462,21 @@
       name: "t(3;5), AML with NPM1::MLF1",
       disease: "AML or MDS, often with multilineage dysplasia",
       note: "A rearrangement of the same <i>NPM1</i> that is far better known for its insertion mutations in normal-karyotype AML. Younger patients, and a dysplastic marrow more often than the mutation-driven disease." },
+    { chroms: ["3", "21"], bands: [["q26", "q22"], ["q26.2", "q22.1"]],
+      kind: "fusion", genes: ["RUNX1", "MECOM"],
+      name: "t(3;21), therapy-related MDS/AML with RUNX1::MECOM",
+      disease: "Therapy-related MDS and AML, and CML in blast transformation, adverse risk",
+      note: "The third <i>MECOM</i> lesion after inv(3) and t(3;3), and the second leukemia built on <i>RUNX1</i>. Fusing <i>RUNX1</i> to <i>MECOM</i> lands on the opposite end of the risk table from fusing it to <i>RUNX1T1</i> in t(8;21): this one follows alkylating agents and topoisomerase II inhibitors and does badly. The same lesson as the <i>KMT2A</i> family, that the partner decides everything." },
+    { chroms: ["5", "11"], bands: [["q35", "p15.5"], ["q35.3", "p15.4"], ["q35", "p15"]],
+      kind: "fusion", genes: ["NUP98", "NSD1"],
+      name: "t(5;11), pediatric AML with NUP98::NSD1",
+      disease: "AML of children and young adults, adverse risk",
+      note: "Cryptic: both breakpoints sit in pale subtelomeric bands, the exchanged segments look alike, and the karyotype is frequently reported normal, so it is found by RT-PCR, FISH or RNA sequencing. It usually travels with <i>FLT3</i>-ITD, and the combination does distinctly badly. The same <i>NSD1</i>, deleted or mutated in the germline, causes Sotos syndrome; broken somatically it drives leukemia." },
+    { chroms: ["1", "7"], bands: [["q10", "p10"]],
+      kind: "dosage", genes: [],
+      name: "der(1;7)(q10;p10), MDS/AML with a whole-arm derivative",
+      disease: "MDS and AML, often after cytotoxic therapy, intermediate to adverse risk",
+      note: "A whole-arm exchange rather than a fusion: the derivative joins the long arm of 1 to the short arm of 7 at the centromere, no gene is broken, and the disease comes from dosage, a gained 1q and a lost 7q, usually written 46,XX,+1,der(1;7)(q10;p10). It is counted with the 7q-loss group in risk schemes, though reported outcomes are less uniformly bad than monosomy 7. The q10 and p10 breakpoints are the centromeric bands, the same convention as a Robertsonian translocation." },
     // --- further lymphoid ---
     { chroms: ["2", "8"], bands: [["p12", "q24"], ["p11.2", "q24"], ["p11.2", "q24.2"]],
       kind: "juxtaposition", genes: ["IGK", "MYC"],
@@ -1455,11 +1498,21 @@
       name: "t(5;14), B-ALL with eosinophilia",
       disease: "B-lymphoblastic leukemia with eosinophilia",
       note: "Rare, and recognisable from the blood count before the marrow: the eosinophilia is reactive, driven by interleukin-3 placed under the <i>IGH</i> enhancer, and can be marked enough that the blast count is low and the leukemia is missed." },
+    { chroms: ["5", "14"], bands: [["q35", "q32"], ["q35.1", "q32.2"]],
+      kind: "juxtaposition", genes: ["TLX3", "BCL11B"],
+      name: "t(5;14)(q35;q32), T-lymphoblastic leukemia with TLX3",
+      disease: "T-lymphoblastic leukemia, mostly of children",
+      note: "The second t(5;14) in this table and nothing like the first: different bands, different genes, different lineage. <i>TLX3</i> is placed beside <i>BCL11B</i> regulatory sequence and switched on in T cells, where it is normally silent. Both breaks are subtelomeric, so the exchange is cryptic on banding and is a FISH or RNA finding, in around a fifth of childhood T-ALL. A warning against reflexes as well: 14q32 here is <i>BCL11B</i>, not the immunoglobulin heavy chain." },
     { chroms: ["10", "14"], bands: [["q24", "q11"], ["q24.31", "q11.2"]],
       kind: "juxtaposition", genes: ["TRD", "TLX1"],
       name: "t(10;14), T-lymphoblastic leukemia",
       disease: "T-lymphoblastic leukemia and lymphoma",
       note: "<i>TLX1</i> (also <i>HOX11</i>) driven by a T-cell receptor locus. One of the better-outcome subgroups of T-ALL, and a reminder that a 14q11 break is the T-cell receptor alpha and delta locus while a 14q32 break is the immunoglobulin heavy chain." },
+    { chroms: ["14", "14"], bands: [["q11", "q32"], ["q11.2", "q32.13"]],
+      kind: "juxtaposition", genes: ["TRA", "TCL1A"],
+      name: "inv(14) / t(14;14), T-prolymphocytic leukemia",
+      disease: "T-prolymphocytic leukemia",
+      note: "One chromosome, two ways to rearrange it: inv(14)(q11q32) turns the segment between the T-cell receptor alpha locus and <i>TCL1A</i> end for end, and t(14;14)(q11;q32) makes the equivalent exchange between the two homologs. Either way <i>TCL1A</i> lands beside the receptor enhancer and is expressed in T cells, where it should be off. Near-defining for T-PLL, with <i>ATM</i> loss at 11q22.3 as the usual companion, and the same inversion appears in the clonal T-cell expansions of ataxia-telangiectasia years before any leukemia." },
     // --- further sarcoma ---
     { chroms: ["21", "22"], bands: [["q22", "q12"], ["q22.2", "q12.2"]],
       kind: "fusion", genes: ["EWSR1", "ERG"],
@@ -1471,6 +1524,11 @@
       name: "t(12;22), clear cell sarcoma",
       disease: "Clear cell sarcoma of soft tissue",
       note: "Histologically close to melanoma and immunohistochemically close too, expressing S100 and HMB45, so the translocation is what separates them. Melanoma has no <i>EWSR1</i> rearrangement, and the distinction changes treatment entirely." },
+    { chroms: ["11", "22"], bands: [["p13", "q12"], ["p13", "q12.2"]],
+      kind: "fusion", genes: ["EWSR1", "WT1"],
+      name: "t(11;22)(p13;q12), desmoplastic small round cell tumour",
+      disease: "Desmoplastic small round cell tumour",
+      note: "The same two chromosomes as Ewing sarcoma, a different arm of 11, and an unrelated disease: q24 is <i>FLI1</i> and Ewing, p13 is <i>WT1</i> and this. Adolescent and young adult males with widespread abdominal and pelvic disease, polyphenotypic by immunohistochemistry, and a poor outlook. The same <i>WT1</i> carries germline mutations in WAGR and Denys-Drash syndromes; here it is broken somatically." },
     { chroms: ["1", "13"], bands: [["p36", "q14"], ["p36.13", "q14.11"]],
       kind: "fusion", genes: ["PAX7", "FOXO1"],
       name: "t(1;13), alveolar rhabdomyosarcoma variant",
@@ -1486,6 +1544,32 @@
       name: "t(17;22), dermatofibrosarcoma protuberans",
       disease: "Dermatofibrosarcoma protuberans",
       note: "Usually carried on a supernumerary ring chromosome built from 17 and 22 material rather than as a balanced exchange, so the karyotype often shows a ring rather than the translocation. Imatinib works in unresectable and metastatic disease, since the fusion puts <i>PDGFB</i> under a strong collagen promoter." },
+    { chroms: ["X", "17"], bands: [["p11.2", "q25"], ["p11.23", "q25.3"]],
+      kind: "fusion", genes: ["ASPSCR1", "TFE3"],
+      name: "t(X;17), alveolar soft part sarcoma and TFE3 renal cell carcinoma",
+      disease: "Alveolar soft part sarcoma, and TFE3-rearranged renal cell carcinoma",
+      note: "One fusion, two tumours, and the structural detail is the teaching point: in alveolar soft part sarcoma the derivative is usually unbalanced, der(17)t(X;17), while in the renal carcinoma the same exchange tends to be balanced. <i>TFE3</i> takes other partners in the kidney, most often <i>PRCC</i> in a t(X;1), and the renal disease is one of children and young adults, over-represented after childhood chemotherapy. TFE3 immunohistochemistry marks both." },
+    // --- carcinoma ---
+    { chroms: ["15", "19"], bands: [["q14", "p13.1"], ["q13", "p13.1"]],
+      kind: "fusion", genes: ["BRD4", "NUTM1"],
+      name: "t(15;19), NUT carcinoma",
+      disease: "NUT carcinoma, a midline carcinoma of children and young adults",
+      note: "An undifferentiated carcinoma defined by a single rearrangement, which almost no other carcinoma is: solid tumours usually carry complex genomes, and this one is simple enough that its karyotype was diagnostic before its gene was known. Midline structures, head, neck and mediastinum, a rapid course, and median survival under a year. NUT immunohistochemistry is the practical test, and the <i>BRD4</i> partner made it the proving ground for BET inhibitors." },
+    { chroms: ["2", "2"], bands: [["p21", "p23"]],
+      kind: "fusion", genes: ["EML4", "ALK"],
+      name: "inv(2)(p21p23), EML4::ALK lung adenocarcinoma",
+      disease: "Non-small cell lung cancer, typically adenocarcinoma",
+      note: "The rearrangement behind ALK-positive lung cancer: a short paracentric inversion within 2p, far too small to see on banding, so it is a FISH, immunohistochemistry or sequencing finding and the notation is taught rather than observed. A few per cent of non-small cell lung cancer, typically younger patients and never or light smokers, and treatable with crizotinib and the ALK inhibitors after it. The same <i>ALK</i> is the t(2;5) partner in anaplastic large cell lymphoma." },
+    { chroms: ["10", "10"], bands: [["q11.2", "q21"], ["q11", "q21"]],
+      kind: "fusion", genes: ["CCDC6", "RET"],
+      name: "inv(10)(q11.2q21), RET-rearranged papillary thyroid carcinoma",
+      disease: "Papillary thyroid carcinoma",
+      note: "RET/PTC1 in the older literature: a paracentric inversion joining <i>CCDC6</i> to <i>RET</i>, and the classic lesion of radiation-associated papillary thyroid carcinoma, which is why its frequency spiked in children after Chernobyl. The contrast worth keeping: germline <i>RET</i> point mutations cause MEN2 and medullary thyroid carcinoma, somatic <i>RET</i> fusions cause papillary tumours, one gene and two entirely different diseases. Selective RET inhibitors now target both." },
+    { chroms: ["2", "3"], bands: [["q13", "p25"], ["q14.1", "p25.2"]],
+      kind: "fusion", genes: ["PAX8", "PPARG"],
+      name: "t(2;3)(q13;p25), follicular thyroid carcinoma",
+      disease: "Follicular thyroid carcinoma, and a subset of follicular adenomas",
+      note: "The other recurrent thyroid rearrangement: <i>PAX8</i>, the thyroid transcription factor, fused to the nuclear receptor <i>PPARG</i>. It marks follicular neoplasms rather than papillary ones, the mirror of <i>RET</i>, and it does not separate carcinoma from adenoma on its own, so invasion on histology still makes that call. Younger patients and smaller tumours than fusion-negative follicular carcinoma." },
   ];
 
   // ---- curated clinical / board notes --------------------------------------
@@ -1518,7 +1602,14 @@
     { test: function (c) { return hasDelBand(c, "15", "q11"); }, name: "del(15)(q11q13), Prader–Willi / Angelman",
       note: "The 15q11-q13 imprinted region: a paternal deletion → Prader–Willi (hypotonia, hyperphagia/obesity, hypogonadism); a maternal deletion → Angelman ('happy puppet', ataxia, seizures). Parent-of-origin matters." },
     { test: function (c) { return hasDelBand(c, "22", "q11"); }, name: "del(22)(q11.2), DiGeorge / 22q11.2 deletion",
-      note: "The most common microdeletion. CATCH-22: Cardiac (conotruncal) defects, Abnormal facies, Thymic aplasia (T-cell immunodeficiency), Cleft palate, Hypocalcemia." }
+      note: "The most common microdeletion. CATCH-22: Cardiac (conotruncal) defects, Abnormal facies, Thymic aplasia (T-cell immunodeficiency), Cleft palate, Hypocalcemia." },
+    // Constitutional, not acquired, though its subject is cancer: the carrier is
+    // a balanced-translocation carrier like any other, so the segregation panel
+    // stays available, which is exactly what a counselor drawing this family
+    // needs. Matched through hasFusion so the breakpoints are read precisely.
+    { test: function (c) { return hasFusion(c, { chroms: ["3", "8"], bands: [["p14.2", "q24.1"], ["p14", "q24"]] }); },
+      name: "t(3;8)(p14.2;q24.1), familial renal cell carcinoma",
+      note: "The classic constitutional cancer translocation: a balanced t(3;8) carried in every cell, first described in a family whose carriers developed multifocal, bilateral clear cell renal cell carcinoma. The break disrupts <i>FHIT</i> at the FRA3B fragile site, but the cancer mechanism is loss, not fusion: a kidney cell can lose the derivative carrying distal 3p, and with it <i>VHL</i>, leaving the remaining <i>VHL</i> allele one hit from inactivation. Carriers of a constitutional translocation involving 3p warrant renal imaging surveillance." }
   ];
   function hasDel(c, chrom, arm) {
     return c.aberrations.some(function (ab) {
@@ -1807,6 +1898,15 @@
     { g: "TLX1", c: "10", b: "q24.31" }, { g: "ATF1", c: "12", b: "q13.12" },
     { g: "PAX7", c: "1", b: "p36.13" }, { g: "NTRK3", c: "15", b: "q25.3" },
     { g: "COL1A1", c: "17", b: "q21.33" }, { g: "PDGFB", c: "22", b: "q13.1" },
+    { g: "ZMYM2", c: "13", b: "q12.11" }, { g: "PCM1", c: "8", b: "p22" },
+    { g: "NUP98", c: "11", b: "p15.4" }, { g: "NSD1", c: "5", b: "q35.3" },
+    { g: "TLX3", c: "5", b: "q35.1" }, { g: "BCL11B", c: "14", b: "q32.2" },
+    { g: "TRA", c: "14", b: "q11.2" }, { g: "TCL1A", c: "14", b: "q32.13" },
+    { g: "ASPSCR1", c: "17", b: "q25.3" }, { g: "TFE3", c: "X", b: "p11.23" },
+    { g: "BRD4", c: "19", b: "p13.12" }, { g: "NUTM1", c: "15", b: "q14" },
+    { g: "EML4", c: "2", b: "p21" }, { g: "RET", c: "10", b: "q11.21" },
+    { g: "CCDC6", c: "10", b: "q21.2" }, { g: "PAX8", c: "2", b: "q14.1" },
+    { g: "PPARG", c: "3", b: "p25.2" },
     { g: "FGFR3", c: "4", b: "p16.3" },
     { g: "KIT", c: "4", b: "q12" }, { g: "PDGFRA", c: "4", b: "q12" },
     { g: "TET2", c: "4", b: "q24" }, { g: "TERT", c: "5", b: "p15.33" },

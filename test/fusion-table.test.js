@@ -60,6 +60,18 @@ test('the classics are recognised, each exactly once', () => {
     ['46,XY,t(X;18)(p11.2;q11.2)', 'synovial'],
     ['46,XX,t(2;13)(q35;q14)', 'rhabdomyosarcoma'],
     ['46,XY,t(2;5)(p23;q35)', 'anaplastic'],
+    ['46,XY,t(8;13)(p11;q12)', 'FGFR1'],
+    ['46,XX,t(8;9)(p22;p24)', 'PCM1::JAK2'],
+    ['46,XY,t(3;21)(q26;q22)', 'RUNX1::MECOM'],
+    ['46,XY,t(5;11)(q35;p15.5)', 'NUP98::NSD1'],
+    ['46,XX,t(5;14)(q35;q32)', 'TLX3'],
+    ['46,XY,inv(14)(q11q32)', 'T-prolymphocytic'],
+    ['46,XX,t(11;22)(p13;q12)', 'desmoplastic'],
+    ['46,XX,t(X;17)(p11.2;q25)', 'alveolar soft part'],
+    ['46,XY,t(15;19)(q14;p13.1)', 'NUT'],
+    ['46,XY,inv(2)(p21p23)', 'EML4::ALK'],
+    ['46,XX,inv(10)(q11.2q21)', 'papillary thyroid'],
+    ['46,XX,t(2;3)(q13;p25)', 'follicular thyroid'],
   ];
   for (const [k, frag] of cases) {
     assert.ok(one(k).name.indexOf(frag) >= 0, k + ' should name ' + frag + ', got ' + one(k).name);
@@ -78,17 +90,17 @@ test('a historical spelling of the same lesion still lands', () => {
 
 test('the chromosome pair alone is not enough, which is the point of the rewrite', () => {
   // t(16;21)(p11.2;q22) is FUS::ERG. t(16;21)(q24;q22) is a different fusion of
-  // the same two chromosomes. The old hasT matched on the pair and could not have
-  // told them apart.
+  // the same two chromosomes, now a record of its own. The old hasT matched on
+  // the pair and could not have told them apart.
   assert.ok(one('46,XY,t(16;21)(p11.2;q22)').name.indexOf('FUS::ERG') >= 0);
-  assert.equal(names('46,XY,t(16;21)(q24;q22)').length, 0, 'q24;q22 is a different fusion');
+  assert.ok(one('46,XY,t(16;21)(q24;q22)').name.indexOf('RUNX1::CBFA2T3') >= 0, 'q24;q22 is the other t(16;21)');
   // Same for a Philadelphia-looking t(9;22) at the wrong band.
   assert.equal(names('46,XX,t(9;22)(q34;q13)').length, 0, 'q13 is not the BCR breakpoint');
   assert.equal(names('46,XX,t(8;14)(q11.2;q32)').length, 0, 'q11.2 is not the MYC breakpoint');
 });
 
 test('a chromosome pair can carry more than one lesion, and they stay apart', () => {
-  // The three cases that make breakpoint matching load-bearing rather than tidy.
+  // The cases that make breakpoint matching load-bearing rather than tidy.
   // Each shares its chromosome pair with a different entry and is a different
   // disease with a different prognosis. Answering from the pair alone would be
   // confident and wrong every time.
@@ -100,6 +112,16 @@ test('a chromosome pair can carry more than one lesion, and they stay apart', ()
 
   assert.ok(one('46,XY,t(15;17)(q24;q21)').name.indexOf('acute promyelocytic') >= 0);
   assert.ok(one('46,XY,t(11;17)(q23;q21)').name.indexOf('ATRA-resistant') >= 0);
+
+  // The two arms of chromosome 11 in t(11;22): q24 is Ewing sarcoma, p13 is the
+  // desmoplastic small round cell tumour, and nothing but the arm separates them.
+  assert.ok(one('46,XX,t(11;22)(q24;q12)').name.indexOf('Ewing') >= 0);
+  assert.ok(one('46,XX,t(11;22)(p13;q12)').name.indexOf('desmoplastic') >= 0);
+
+  // Two t(5;14)s: q31 puts IL3 under the IGH enhancer in B-ALL, q35 puts TLX3
+  // beside BCL11B in T-ALL.
+  assert.ok(one('46,XX,t(5;14)(q31;q32)').name.indexOf('eosinophilia') >= 0);
+  assert.ok(one('46,XX,t(5;14)(q35;q32)').name.indexOf('TLX3') >= 0);
 });
 
 test('the two spellings of one lesion are not called the same rearrangement', () => {
@@ -138,10 +160,11 @@ test('an inversion and a homologous translocation of one lesion agree', () => {
 });
 
 test('every record states a mechanism, and the lead sentence reflects it', () => {
-  const KINDS = { fusion: 1, juxtaposition: 1, enhancer: 1 };
+  const KINDS = { fusion: 1, juxtaposition: 1, enhancer: 1, dosage: 1 };
   Teach.FUSIONS.forEach((f) => {
     assert.ok(KINDS[f.kind], f.name + ' has a known kind, got ' + f.kind);
-    assert.ok(f.genes && f.genes.length === 2, f.name + ' names two genes');
+    if (f.kind === 'dosage') assert.equal(f.genes.length, 0, f.name + ' is a dosage lesion and names no fusion pair');
+    else assert.ok(f.genes && f.genes.length === 2, f.name + ' names two genes');
     assert.ok(f.disease && f.disease.length, f.name + ' names a disease');
     assert.ok(f.note && f.note.length, f.name + ' has a note');
     assert.ok(f.bands && f.bands.length, f.name + ' has at least one breakpoint pair');
@@ -212,9 +235,63 @@ test('the constitutional notes are untouched by the migration', () => {
   assert.ok(conNames('46,Y,fra(X)(q27.3)').some((n) => /Fragile X/.test(n)));
 });
 
+test('a whole-arm derivative is read at the centromere, and only there', () => {
+  // der(1;7)(q10;p10) joins 1q to 7p with no gene at the seam; the disease is
+  // dosage, and the usual written form carries the compensating +1. joinEnds
+  // reads the p10/q10 spellings only, so a der(9)t(9;22) still arrives through
+  // its sub-operations and nothing else leaks in.
+  const d = one('46,XX,+1,der(1;7)(q10;p10)');
+  assert.ok(d.name.indexOf('der(1;7)') >= 0);
+  assert.match(d.note, /gained 1q and a lost 7q/);
+  assert.ok(one('45,XY,der(1;7)(q10;p10)').name.indexOf('der(1;7)') >= 0, 'the bare derivative still lands');
+  // A Robertsonian parses to der with q10;q10 and must not borrow the note.
+  assert.equal(hits('45,XX,rob(13;14)(q10;q10)').length, 0, 'rob is not a recurrent cancer lesion');
+  assert.equal(hits('45,XY,der(13;14)(q10;q10)').length, 0, 'nor is its der spelling');
+});
+
+test('the common benign inversions stay unnamed', () => {
+  // inv(2)(p11.2q13), inv(9)(p12q13) and inv(10)(p11.2q21.2) are population
+  // heteromorphisms a reader will absolutely type. Their breakpoints differ from
+  // EML4::ALK and RET/PTC1, and calling a normal variant a cancer would be the
+  // worst answer this table could give.
+  for (const k of ['46,XX,inv(2)(p11.2q13)', '46,XY,inv(9)(p12q13)', '46,XX,inv(10)(p11.2q21.2)']) {
+    assert.equal(hits(k).length, 0, k + ' is a benign variant, not a lesion');
+  }
+});
+
+test('the inversion and homolog-translocation spellings of T-PLL agree', () => {
+  const a = one('46,XY,inv(14)(q11q32)');
+  const b = one('46,XX,t(14;14)(q11;q32)');
+  assert.equal(a.name, b.name);
+  assert.equal(a.note, b.note);
+});
+
+test('the ASPS join is found inside its usual unbalanced derivative', () => {
+  // Alveolar soft part sarcoma usually carries der(17)t(X;17), not the balanced
+  // exchange, so the sub-operation walk is what finds it in practice.
+  assert.ok(one('46,XX,der(17)t(X;17)(p11.2;q25)').name.indexOf('alveolar soft part') >= 0);
+});
+
+test('the constitutional t(3;8) is a syndrome note, not an acquired lesion', () => {
+  const all = Teach.syndromes(ISCN.parse('46,XX,t(3;8)(p14.2;q24.1)').clones[0]);
+  const rcc = [...all.filter((s) => /familial renal/.test(s.name))];
+  assert.equal(rcc.length, 1, 'the familial RCC translocation is recognised');
+  assert.ok(!rcc[0].acquired, 'it is constitutional, so the segregation panel must stay available');
+  assert.equal(hits('46,XX,t(3;8)(p14.2;q24.1)').length, 0, 'it is not in the acquired table');
+});
+
+test('the deliberate ambiguities are written into the notes', () => {
+  // t(14;18)(q32;q21) cannot distinguish BCL2 from MALT1 at the resolution people
+  // actually write, so the follicular record carries the ambiguity rather than a
+  // colliding MALT record existing. FIP1L1::PDGFRA has no karyotype at all; it is
+  // named where a reader hunting the eosinophilia family will look.
+  assert.match(one('46,XX,t(14;18)(q32;q21)').note, /MALT1/);
+  assert.match(one('46,XY,t(5;12)(q33;p13)').note, /FIP1L1/);
+});
+
 test('house style holds across every note in the table', () => {
-  // These are shipped prose. Dan's rule is every artifact, and a table of 27 is
-  // exactly where a stray contraction survives review.
+  // These are shipped prose. Dan's rule is every artifact, and a table this size
+  // is exactly where a stray contraction survives review.
   Teach.FUSIONS.forEach((f) => {
     const text = f.disease + ' ' + f.note;
     assert.equal(text.indexOf('—'), -1, f.name + ' has an em dash');
