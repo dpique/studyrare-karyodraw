@@ -1153,47 +1153,249 @@
     });
   }
 
-  // One lesion, two spellings, pinned to its breakpoints.
+  // ---- how a rearrangement is matched to a recurrent lesion ---------------
   //
-  // A pericentric inversion and a translocation between the two homologs of one
-  // chromosome can produce the SAME rearrangement, and the recurrent leukemia
-  // lesions of chromosomes 16 and 3 are both written either way: inv(16)(p13.1q22)
-  // and t(16;16)(p13.1;q22) make one CBFB::MYH11, inv(3)(q21.3q26.2) and
-  // t(3;3)(q21.3;q26.2) do one thing to MECOM. A matcher that knew one spelling
-  // would answer for one reader and not the next.
-  //
-  // Unlike hasT, this reads the bands. hasT ignores them, which is safe for t(9;22)
-  // because no other t(9;22) is a recognised entity, and is not safe for an
-  // inversion: inv(16) at other breakpoints is not CBFB::MYH11, and naming a
-  // leukemia over a constitutional rearrangement is the expensive direction to be
-  // wrong in. Same reason the fragile site is pinned to Xq27.3.
-  //
-  // Matching is by prefix in EITHER direction, and the band passed in has to be the
-  // real breakpoint rather than its ancestor. Prefix-either-way means an ancestor
-  // matches a descendant (the bare p13 someone types lands on p13.1) while two
-  // siblings never match (p13.2 is not p13.1). Keying on the ancestor instead
-  // collapses that second half: the first cut of these entries passed "p13" and
-  // "q21", so every sub-band under them matched and t(16;16)(p13.2;q22) came back
-  // a leukemia. MYH11 is at 16p13.11 and the GATA2 enhancer at 3q21.3; the
-  // neighbouring sub-bands are different places on the chromosome.
+  // Two bands "meet" when one is a prefix of the other, in EITHER direction. That
+  // single rule does two jobs. An ancestor matches a descendant, so the bare p13 a
+  // reader types lands on the p13.1 the lesion is defined at, and two siblings
+  // never match, so p13.2 does not. Keying a lesion on the ancestor instead
+  // collapses the second half: the first cut of the chromosome 16 entry was pinned
+  // at "p13", every sub-band under it matched, and t(16;16)(p13.2;q22) came back a
+  // leukemia. MYH11 is at 16p13.11 and p13.2 is somewhere else.
   function bandsMeet(a, b) {
     a = String(a || ""); b = String(b || "");
     return !!a && !!b && (a.indexOf(b) === 0 || b.indexOf(a) === 0);
   }
-  function hasInvOrHomologT(c, chrom, bandA, bandB) {
-    return (c.aberrations || []).some(function (ab) {
-      var ch = (ab.chroms || []).map(String);
-      if (!ch.length || ch.some(function (x) { return x !== String(chrom); })) return false;
-      var got;
-      if (ab.kind === "inv" && ch.length === 1) got = (ab.breakpoints[0] || []).slice(0, 2);
-      else if (ab.kind === "t" && ch.length === 2) {
-        got = [(ab.breakpoints[0] || [])[0], (ab.breakpoints[1] || [])[0]];
-      } else return false;
-      if (got.length < 2 || !got[0] || !got[1]) return false;
-      return (bandsMeet(got[0], bandA) && bandsMeet(got[1], bandB)) ||
-        (bandsMeet(got[0], bandB) && bandsMeet(got[1], bandA));
-    });
+
+  // A rearrangement reduced to the two ends it joins: [chromA, bandA, chromB,
+  // bandB]. An inversion names one chromosome and two bands; a translocation names
+  // two chromosomes and one band each; a translocation between two homologs is a
+  // translocation whose two chromosomes have the same number, and needs no special
+  // case here. Anything else is not a two-ended join and returns null.
+  //
+  // kind on a top-level aberration, op on a sub-operation: the parser names the
+  // same field differently in the two places, and reading only kind meant
+  // der(9)t(9;22)(q34;q11.2) carried the Philadelphia join and was not recognised
+  // as carrying it.
+  function joinEnds(ab) {
+    var ch = (ab.chroms || []).map(String);
+    var k = ab.kind || ab.op;
+    if (k === "inv" && ch.length === 1) {
+      var g = (ab.breakpoints || [])[0] || [];
+      return (g.length >= 2 && g[0] && g[1]) ? [ch[0], g[0], ch[0], g[1]] : null;
+    }
+    if (k === "t" && ch.length === 2) {
+      var a = ((ab.breakpoints || [])[0] || [])[0], b = ((ab.breakpoints || [])[1] || [])[0];
+      return (a && b) ? [ch[0], a, ch[1], b] : null;
+    }
+    return null;
   }
+
+  // Does this clone carry the lesion f? Every accepted breakpoint pair is tried
+  // both ways round, because which chromosome a reader writes first is theirs to
+  // choose and t(9;22) and t(22;9) are the same event. Sub-operations are walked
+  // too, so der(9)t(9;22)(q34;q11.2) is found inside its derivative.
+  function hasFusion(clone, f) {
+    function ends(v) {
+      for (var i = 0; i < f.bands.length; i++) {
+        var pr = f.bands[i];
+        if (String(f.chroms[0]) === v[0] && String(f.chroms[1]) === v[2] &&
+            bandsMeet(v[1], pr[0]) && bandsMeet(v[3], pr[1])) return true;
+        if (String(f.chroms[0]) === v[2] && String(f.chroms[1]) === v[0] &&
+            bandsMeet(v[3], pr[0]) && bandsMeet(v[1], pr[1])) return true;
+      }
+      return false;
+    }
+    var found = false;
+    function walk(ab) {
+      if (found || !ab) return;
+      var v = joinEnds(ab);
+      if (v && ends(v)) { found = true; return; }
+      (ab.subOps || []).forEach(walk);
+    }
+    (clone.aberrations || []).forEach(walk);
+    return found;
+  }
+
+  // The lead sentence of a fusion note, built from the record so that every entry
+  // states its mechanism the same way. The three kinds are not decoration: they
+  // are the distinction a cytogeneticist draws when asked what a rearrangement
+  // does. A fusion makes a chimeric protein. A juxtaposition makes no new protein
+  // and instead drags an intact oncogene under someone else's enhancer, which is
+  // why the immunoglobulin partners behave differently from BCR::ABL1. An enhancer
+  // rearrangement moves regulatory DNA and leaves both genes intact.
+  function fusionLead(f) {
+    if (!f.genes || !f.genes.length) return "";
+    // One <i> around the whole pair, not one per symbol: that is how every note in
+    // this file already writes a fusion, and teach.test.js pins the contiguous
+    // BCR::ABL1 form against the legacy hyphen. The enhancer case takes separate
+    // tags because its two genes are not a fusion pair.
+    if (f.kind === "enhancer") {
+      return "<i>" + f.genes[0] + "</i> enhancer repositioned to <i>" + f.genes[1] + "</i>. ";
+    }
+    var pair = "<i>" + f.genes.join("::") + "</i>";
+    if (f.kind === "juxtaposition") return pair + ", a juxtaposition rather than a fusion protein. ";
+    return pair + ". ";
+  }
+
+  // ---- recurrent rearrangements ------------------------------------------
+  //
+  // What a cancer cytogeneticist asks of a rearrangement, in the order they ask
+  // it: is this one of the recurrent ones, what does it join, what disease does
+  // that make, and does it change what happens to the patient. Each record answers
+  // all four, so the notes cannot drift into answering different questions from
+  // one entry to the next.
+  //
+  // bands is a LIST of accepted breakpoint pairs, not one pair, because band
+  // assignments have been revised and a reader may reasonably type any of the
+  // published spellings. t(15;17) has been written (q22;q12), (q22;q21) and
+  // (q24.1;q21.2) over the years and all three mean the promyelocytic leukemia.
+  // Refusing the spelling in someone's older report would be a worse failure than
+  // the ancestor-band looseness this list exists to avoid, so both are handled:
+  // every accepted pair is written out, and each is matched precisely.
+  //
+  // These are teaching notes for cytogenetics, not a clinical annotation, and no
+  // entry is a substitute for the molecular confirmation its own note describes.
+  var FUSIONS = [
+    // --- myeloid ---
+    { chroms: ["9", "22"], bands: [["q34", "q11.2"], ["q34.1", "q11.2"]],
+      kind: "fusion", genes: ["BCR", "ABL1"],
+      name: "t(9;22), Philadelphia chromosome",
+      disease: "Chronic myeloid leukemia, and Philadelphia-positive ALL and rarely AML",
+      note: "The rearrangement that made targeted therapy a category: imatinib and the tyrosine-kinase inhibitors after it bind the constitutively active ABL1 kinase, and a disease that once meant transplant is now managed on tablets. In ALL the same fusion is a poor-risk marker that a TKI is added for. The 190 kDa product typical of ALL and the 210 kDa product typical of CML come from different breakpoints within <i>BCR</i>, which banding cannot separate." },
+    { chroms: ["8", "21"], bands: [["q22", "q22"], ["q22", "q22.1"]],
+      kind: "fusion", genes: ["RUNX1", "RUNX1T1"],
+      name: "t(8;21), core-binding-factor AML",
+      disease: "AML, favorable risk",
+      note: "One of the two core-binding-factor AMLs, with inv(16). <i>RUNX1</i> is the alpha subunit of that transcription factor and <i>CBFB</i> the beta subunit, which is why two different-looking rearrangements land in one risk category and one treatment path, high-dose cytarabine consolidation. A co-occurring <i>KIT</i> mutation worsens the outlook. Auer rods and a maturing myeloid picture are typical." },
+    { chroms: ["16", "16"], bands: [["p13.1", "q22"], ["p13.1", "q22.1"]],
+      kind: "fusion", genes: ["CBFB", "MYH11"],
+      name: "inv(16) / t(16;16), core-binding-factor AML",
+      disease: "AML with abnormal bone marrow eosinophils, formerly FAB M4Eo, favorable risk",
+      note: "inv(16)(p13.1q22) and t(16;16)(p13.1;q22) are the same lesion written two ways. The other half of the core-binding-factor pair with t(8;21), same favorable risk and same cytarabine consolidation, and <i>KIT</i> again worsens it. Both breakpoints sit close to the centromere and the inversion is genuinely easy to miss on banding, so this is one to confirm by FISH or RT-PCR rather than to exclude by karyotype." },
+    { chroms: ["15", "17"], bands: [["q24", "q21"], ["q24.1", "q21.2"], ["q22", "q12"], ["q22", "q21"]],
+      kind: "fusion", genes: ["PML", "RARA"],
+      name: "t(15;17), acute promyelocytic leukemia",
+      disease: "APL, formerly FAB M3",
+      note: "The one karyotype that is a medical emergency before it is a diagnosis. Untreated APL kills by disseminated intravascular coagulation in days, so all-trans retinoic acid is started on morphological suspicion and not held for confirmation. With ATRA and arsenic trioxide it is now among the most curable acute leukemias. Differentiation syndrome is the treatment complication to expect." },
+    { chroms: ["3", "3"], bands: [["q21.3", "q26.2"]],
+      kind: "enhancer", genes: ["GATA2", "MECOM"],
+      name: "inv(3) / t(3;3), MECOM rearrangement",
+      disease: "AML or MDS, adverse risk",
+      note: "No fusion protein is made. A distal <i>GATA2</i> enhancer is moved to <i>MECOM</i> at 3q26.2, driving <i>EVI1</i> while leaving the <i>GATA2</i> allele it came from without that enhancer, so one event activates an oncogene and halves a transcription factor. Often with monosomy 7. The platelet count is characteristically normal or raised with dysplastic megakaryocytes, which is unlike most AML at presentation and is often the clue." },
+    { chroms: ["6", "9"], bands: [["p23", "q34"], ["p22.3", "q34.1"]],
+      kind: "fusion", genes: ["DEK", "NUP214"],
+      name: "t(6;9), AML with DEK::NUP214",
+      disease: "AML, adverse risk",
+      note: "Younger patients than most AML, marrow basophilia, and frequently a background of multilineage dysplasia. <i>FLT3</i>-ITD accompanies it in most cases, so it is worth expecting on the molecular panel. Transplant in first remission is the usual intent." },
+    { chroms: ["9", "11"], bands: [["p22", "q23"], ["p21.3", "q23.3"]],
+      kind: "fusion", genes: ["KMT2A", "MLLT3"],
+      name: "t(9;11), KMT2A-rearranged AML",
+      disease: "AML with monocytic differentiation, intermediate risk",
+      note: "The most common of the <i>KMT2A</i> (formerly <i>MLL</i>) fusions in AML, and the one with the least bad outlook of them; <i>KMT2A</i> takes more than eighty partners and the partner is what sets the risk. Monocytic morphology, gum infiltration and extramedullary disease are typical. A cryptic insertion can hide a <i>KMT2A</i> rearrangement from banding, so a break-apart FISH probe is the reliable test." },
+    { chroms: ["4", "11"], bands: [["q21", "q23"], ["q21.3", "q23.3"]],
+      kind: "fusion", genes: ["KMT2A", "AFF1"],
+      name: "t(4;11), KMT2A-rearranged ALL",
+      disease: "B-lymphoblastic leukemia, adverse risk, characteristic of infants",
+      note: "The dominant lesion of infant ALL, where it carries a distinctly worse outlook than the childhood disease that surrounds it: high white count at presentation, CNS involvement, a pro-B immunophenotype that is often CD10-negative, and frequent myeloid antigen expression." },
+    { chroms: ["11", "19"], bands: [["q23", "p13.3"], ["q23.3", "p13.3"]],
+      kind: "fusion", genes: ["KMT2A", "MLLT1"],
+      name: "t(11;19), KMT2A-rearranged leukemia",
+      disease: "Infant ALL and monocytic AML",
+      note: "Another <i>KMT2A</i> partner, and a reminder that the gene matters more than the partner chromosome when reading 11q23: a break there is worth a break-apart probe whatever it appears to be joined to." },
+    { chroms: ["1", "22"], bands: [["p13", "q13"], ["p13.3", "q13.1"]],
+      kind: "fusion", genes: ["RBM15", "MRTFA"],
+      name: "t(1;22), infant acute megakaryoblastic leukemia",
+      disease: "Acute megakaryoblastic leukemia of infants without Down syndrome",
+      note: "Rare, and specific enough to be diagnostic. Marrow fibrosis often makes the aspirate dry, so the karyotype may have to come from blood or from a trephine imprint. Distinct from the transient abnormal myelopoiesis and the megakaryoblastic leukemia seen in Down syndrome, which are <i>GATA1</i>-driven." },
+    { chroms: ["8", "16"], bands: [["p11.2", "p13.3"], ["p11.21", "p13.3"]],
+      kind: "fusion", genes: ["KAT6A", "CREBBP"],
+      name: "t(8;16), AML with KAT6A::CREBBP",
+      disease: "AML with monocytic differentiation",
+      note: "Erythrophagocytosis by the blasts is the classic morphological clue, along with coagulopathy at presentation. Reported both as a de novo leukemia and as a therapy-related one after topoisomerase II inhibitors." },
+    { chroms: ["16", "21"], bands: [["p11.2", "q22"], ["p11.2", "q22.2"]],
+      kind: "fusion", genes: ["FUS", "ERG"],
+      name: "t(16;21), AML with FUS::ERG",
+      disease: "AML, adverse risk",
+      note: "Rare and consistently poor. Not to be confused with t(16;21)(q24;q22) <i>RUNX1</i>::<i>CBFA2T3</i>, a different rearrangement of the same two chromosomes at different bands, which is why the breakpoints and not the chromosome pair decide this call." },
+    { chroms: ["5", "12"], bands: [["q33", "p13"], ["q32", "p13.2"], ["q31", "p13"]],
+      kind: "fusion", genes: ["ETV6", "PDGFRB"],
+      name: "t(5;12), myeloid neoplasm with PDGFRB rearrangement",
+      disease: "Myeloid or lymphoid neoplasm with eosinophilia",
+      note: "Worth recognising because it is treatable out of proportion to its rarity: <i>PDGFRB</i>-rearranged disease responds durably to imatinib at doses well below those used in CML. Eosinophilia with a 5q31-33 break is the trigger to look. A normal karyotype does not exclude the family, since several <i>PDGFRA</i> partners are cryptic." },
+    // --- lymphoid ---
+    { chroms: ["12", "21"], bands: [["p13", "q22"], ["p13.2", "q22.1"]],
+      kind: "fusion", genes: ["ETV6", "RUNX1"],
+      name: "t(12;21), childhood B-ALL",
+      disease: "B-lymphoblastic leukemia, favorable risk",
+      note: "The most common recurrent rearrangement in childhood B-ALL and one of the reasons its cure rate is what it is. It is also the standing argument for not trusting a normal karyotype: the two segments exchanged are so similar in size and banding that the rearrangement is cryptic, and it is found by FISH or RT-PCR rather than by looking." },
+    { chroms: ["1", "19"], bands: [["q23", "p13.3"], ["q23.3", "p13.3"]],
+      kind: "fusion", genes: ["TCF3", "PBX1"],
+      name: "t(1;19), B-ALL with TCF3::PBX1",
+      disease: "B-lymphoblastic leukemia, pre-B with cytoplasmic mu",
+      note: "Often present in the unbalanced der(19)t(1;19) form rather than as a reciprocal exchange, which is worth expecting when reading the karyotype. Historically poor-risk, now largely offset by intensified therapy, with a residual tendency to CNS relapse." },
+    { chroms: ["17", "19"], bands: [["q22", "p13.3"], ["q21.3", "p13.3"]],
+      kind: "fusion", genes: ["TCF3", "HLF"],
+      name: "t(17;19), B-ALL with TCF3::HLF",
+      disease: "B-lymphoblastic leukemia, very high risk",
+      note: "Rare and among the worst-outcome lesions in pediatric ALL, with hypercalcaemia and coagulopathy at presentation. Shares a partner gene with t(1;19) and almost nothing else." },
+    { chroms: ["8", "14"], bands: [["q24", "q32"], ["q24.2", "q32"], ["q24.1", "q32"]],
+      kind: "juxtaposition", genes: ["IGH", "MYC"],
+      name: "t(8;14), Burkitt lymphoma",
+      disease: "Burkitt lymphoma and Burkitt leukemia",
+      note: "<i>MYC</i> is moved under the immunoglobulin heavy-chain enhancer and overexpressed intact. The light-chain variants t(2;8) and t(8;22) do the same thing with kappa and lambda. Starry-sky morphology, a proliferation fraction approaching one hundred per cent, and a real risk of tumour lysis the moment treatment starts. A <i>MYC</i> rearrangement alongside <i>BCL2</i> or <i>BCL6</i> is a high-grade lymphoma of a different category, not Burkitt." },
+    { chroms: ["14", "18"], bands: [["q32", "q21"], ["q32", "q21.3"]],
+      kind: "juxtaposition", genes: ["IGH", "BCL2"],
+      name: "t(14;18), follicular lymphoma",
+      disease: "Follicular lymphoma, and a subset of diffuse large B-cell lymphoma",
+      note: "The founding example of an anti-apoptotic rather than proliferative oncogene: <i>BCL2</i> under the <i>IGH</i> enhancer stops the cell dying rather than making it divide. Present in most follicular lymphoma, and detectable at very low levels in healthy people, so it is necessary but not sufficient for the diagnosis." },
+    { chroms: ["11", "14"], bands: [["q13", "q32"], ["q13.3", "q32"]],
+      kind: "juxtaposition", genes: ["IGH", "CCND1"],
+      name: "t(11;14), mantle cell lymphoma",
+      disease: "Mantle cell lymphoma, and a subset of plasma cell myeloma",
+      note: "Cyclin D1 under the <i>IGH</i> enhancer, driving the cell cycle. Effectively defining for mantle cell lymphoma, where cyclin D1 immunohistochemistry is the everyday surrogate. The same translocation in myeloma is a standard-risk marker, and in that disease it also predicts response to venetoclax." },
+    { chroms: ["3", "14"], bands: [["q27", "q32"], ["q27.3", "q32"]],
+      kind: "juxtaposition", genes: ["IGH", "BCL6"],
+      name: "t(3;14), BCL6 rearrangement",
+      disease: "Diffuse large B-cell lymphoma",
+      note: "<i>BCL6</i> takes many partners besides <i>IGH</i>, so a 3q27 break matters whatever it is joined to. Its significance is mostly in company: with a <i>MYC</i> rearrangement it defines a high-grade B-cell lymphoma that is treated more intensively than DLBCL." },
+    { chroms: ["11", "18"], bands: [["q22", "q21"], ["q22.2", "q21.3"]],
+      kind: "fusion", genes: ["BIRC3", "MALT1"],
+      name: "t(11;18), MALT lymphoma",
+      disease: "Extranodal marginal zone lymphoma of mucosa-associated lymphoid tissue",
+      note: "The one that changes management on the day it is reported: gastric MALT lymphoma carrying t(11;18) does not respond to <i>Helicobacter pylori</i> eradication, which is the first-line treatment for the ones that lack it. Finding it moves the patient to radiotherapy or systemic treatment instead of antibiotics." },
+    { chroms: ["4", "14"], bands: [["p16.3", "q32"]],
+      kind: "juxtaposition", genes: ["IGH", "NSD2"],
+      name: "t(4;14), plasma cell myeloma",
+      disease: "Plasma cell myeloma, high risk",
+      note: "Cryptic on banding, so it is a FISH call on selected plasma cells and not a karyotype one. High-risk in every current staging system, and one of the findings that pushes toward proteasome-inhibitor-based therapy. Also written with <i>WHSC1</i> or <i>MMSET</i>, older names for <i>NSD2</i>." },
+    { chroms: ["2", "5"], bands: [["p23", "q35"], ["p23.2", "q35.1"]],
+      kind: "fusion", genes: ["NPM1", "ALK"],
+      name: "t(2;5), ALK-positive anaplastic large cell lymphoma",
+      disease: "Anaplastic large cell lymphoma, ALK-positive",
+      note: "Younger patients and a markedly better outcome than the ALK-negative disease, which is why the ALK status and not the morphology drives the prognosis. Targetable with ALK inhibitors in relapsed disease. The same gene rearranged in lung adenocarcinoma is the basis of crizotinib." },
+    // --- sarcoma ---
+    { chroms: ["11", "22"], bands: [["q24", "q12"], ["q24.3", "q12.2"]],
+      kind: "fusion", genes: ["EWSR1", "FLI1"],
+      name: "t(11;22), Ewing sarcoma",
+      disease: "Ewing sarcoma and the Ewing family of tumours",
+      note: "About eighty-five per cent of Ewing sarcoma; t(21;22) <i>EWSR1</i>::<i>ERG</i> accounts for most of the rest. A small round blue cell tumour with membranous CD99, where the fusion is what separates it from lymphoblastic lymphoma and rhabdomyosarcoma. <i>EWSR1</i> break-apart FISH is positive across several unrelated sarcomas, so the partner matters." },
+    { chroms: ["X", "18"], bands: [["p11.2", "q11.2"], ["p11.23", "q11.2"], ["p11.22", "q11.2"]],
+      kind: "fusion", genes: ["SS18", "SSX1"],
+      name: "t(X;18), synovial sarcoma",
+      disease: "Synovial sarcoma",
+      note: "Present in essentially every synovial sarcoma, monophasic and biphasic alike, and the reason the diagnosis is molecular rather than morphological: the tumour has no synovial origin and imitates several others. The partner is <i>SSX1</i>, <i>SSX2</i> or rarely <i>SSX4</i>." },
+    { chroms: ["2", "13"], bands: [["q35", "q14"], ["q36.1", "q14.1"]],
+      kind: "fusion", genes: ["PAX3", "FOXO1"],
+      name: "t(2;13), alveolar rhabdomyosarcoma",
+      disease: "Alveolar rhabdomyosarcoma",
+      note: "Fusion status now outranks alveolar-versus-embryonal histology in risk stratification, and a fusion-negative alveolar tumour behaves like an embryonal one. The variant t(1;13) <i>PAX7</i>::<i>FOXO1</i> carries a better outlook than <i>PAX3</i>." },
+    { chroms: ["12", "16"], bands: [["q13", "p11.2"], ["q13.3", "p11.2"]],
+      kind: "fusion", genes: ["FUS", "DDIT3"],
+      name: "t(12;16), myxoid liposarcoma",
+      disease: "Myxoid liposarcoma",
+      note: "Distinguishes myxoid liposarcoma from the myxoid sarcomas it resembles under the microscope. It metastasises to unusual soft-tissue and bone sites rather than to lung, so staging follows the diagnosis." },
+  ];
 
   // ---- curated clinical / board notes --------------------------------------
   // Each matcher inspects a clone and returns notes when it fits.
@@ -1218,28 +1420,6 @@
     // only reason the notation is still taught.
     { test: function (c) { return hasFra(c, "Xq27.3"); }, name: "fra(X)(q27.3), Fragile X syndrome (FRAXA)",
       note: "The gap at Xq27.3 reflects an expanded CGG repeat in <i>FMR1</i>: over about 200 repeats the promoter is methylated and the gene is silenced. Intellectual disability, a long face with large ears, macroorchidism after puberty. Diagnosis is molecular, by CGG repeat analysis (PCR and Southern blot), not by karyotype. Cytogenetic scoring was the original test and gave the syndrome its name, but it misses premutation carriers entirely and is no longer used for diagnosis." },
-    { test: function (c) { return hasT(c, "9", "22"); }, acquired: true, name: "t(9;22), Philadelphia chromosome",
-      note: "The reciprocal t(9;22)(q34;q11.2) fuses <i>BCR</i> (22) with <i>ABL1</i> (9), creating <i>BCR::ABL1</i>, the hallmark of chronic myeloid leukemia (also some ALL). Target of imatinib and other tyrosine-kinase inhibitors." },
-    { test: function (c) { return hasT(c, "15", "17"); }, acquired: true, name: "t(15;17), Acute promyelocytic leukemia",
-      note: "t(15;17)(q24;q21) fuses <i>PML::RARA</i>. APL (formerly FAB AML-M3); responsive to all-trans retinoic acid (ATRA) and arsenic. A medical emergency due to DIC." },
-    { test: function (c) { return hasT(c, "8", "14"); }, acquired: true, name: "t(8;14), Burkitt lymphoma",
-      note: "t(8;14)(q24;q32) places <i>MYC</i> next to the <i>IGH</i> enhancer → <i>MYC</i> overexpression. Classic 'starry-sky' Burkitt lymphoma." },
-    { test: function (c) { return hasT(c, "8", "21"); }, acquired: true, name: "t(8;21), AML",
-      note: "t(8;21)(q22;q22) <i>RUNX1::RUNX1T1</i>; a core-binding-factor AML with generally favorable prognosis." },
-    // The other half of the core-binding-factor pair, directly after t(8;21)
-    // because the two are taught together and share a risk category.
-    { test: function (c) { return hasInvOrHomologT(c, "16", "p13.1", "q22.1"); }, acquired: true,
-      name: "inv(16) / t(16;16), AML with abnormal eosinophils",
-      note: "inv(16)(p13.1q22) and t(16;16)(p13.1;q22) are the same lesion, fusing <i>CBFB</i> at 16q22 with <i>MYH11</i> at 16p13.1. AML with abnormal bone marrow eosinophils, formerly FAB M4Eo. With t(8;21) it is one of the two core-binding-factor AMLs, since <i>RUNX1</i> and <i>CBFB</i> are the two halves of one transcription factor, and both carry a generally favorable prognosis with high-dose cytarabine consolidation. Both breakpoints sit close to the centromere and the inversion is easy to miss on banding alone, so the fusion is confirmed by FISH or RT-PCR. A co-occurring <i>KIT</i> mutation worsens the outlook." },
-    { test: function (c) { return hasInvOrHomologT(c, "3", "q21.3", "q26.2"); }, acquired: true,
-      name: "inv(3) / t(3;3), AML with MECOM rearrangement",
-      note: "inv(3)(q21.3q26.2) and t(3;3)(q21.3;q26.2) are the same lesion, and no fusion protein is made. The rearrangement moves a distal <i>GATA2</i> enhancer from 3q21.3 to <i>MECOM</i> at 3q26.2, driving <i>EVI1</i> expression while leaving the <i>GATA2</i> allele it was taken from without that enhancer, so one event both activates an oncogene and halves a transcription factor. AML or MDS, adverse risk, often with monosomy 7. The platelet count is characteristically normal or raised with dysplastic megakaryocytes, which sets it apart from most AML at presentation." },
-    { test: function (c) { return hasT(c, "14", "18"); }, acquired: true, name: "t(14;18), Follicular lymphoma",
-      note: "t(14;18)(q32;q21) juxtaposes <i>BCL2</i> with <i>IGH</i> → anti-apoptotic <i>BCL2</i> overexpression." },
-    { test: function (c) { return hasT(c, "11", "14"); }, acquired: true, name: "t(11;14), Mantle cell lymphoma",
-      note: "t(11;14)(q13;q32) juxtaposes <i>CCND1</i> (cyclin D1) with the <i>IGH</i> enhancer → cyclin D1 overexpression driving the cell cycle. Defines mantle cell lymphoma." },
-    { test: function (c) { return hasT(c, "12", "21"); }, acquired: true, name: "t(12;21), Childhood B-ALL",
-      note: "t(12;21)(p13;q22) fuses <i>ETV6::RUNX1</i> (TEL-AML1), the most common recurrent translocation in childhood B-cell ALL; generally favorable prognosis and often cryptic on banding (needs FISH)." },
     { test: function (c) { return hasDel(c, "5", "p"); }, name: "del(5p), Cri-du-chat syndrome",
       note: "Terminal deletion of 5p ('5p−'). High-pitched cat-like cry in infancy, microcephaly, hypotonia, intellectual disability." },
     { test: function (c) { return hasDel(c, "4", "p"); }, name: "del(4p), Wolf–Hirschhorn syndrome",
@@ -1249,13 +1429,6 @@
     { test: function (c) { return hasDelBand(c, "22", "q11"); }, name: "del(22)(q11.2), DiGeorge / 22q11.2 deletion",
       note: "The most common microdeletion. CATCH-22: Cardiac (conotruncal) defects, Abnormal facies, Thymic aplasia (T-cell immunodeficiency), Cleft palate, Hypocalcemia." }
   ];
-  function hasT(c, a, b) {
-    return c.aberrations.some(function (ab) {
-      return (ab.kind === "t" || ab.kind === "dic" || ab.kind === "der") &&
-        (ab.chroms.indexOf(a) >= 0 && ab.chroms.indexOf(b) >= 0 ||
-          (ab.subOps || []).some(function (s) { return s.op === "t" && s.chroms.indexOf(a) >= 0 && s.chroms.indexOf(b) >= 0; }));
-    });
-  }
   function hasDel(c, chrom, arm) {
     return c.aberrations.some(function (ab) {
       return ab.kind === "del" && ab.chroms[0] === chrom && (ab.breakpoints[0] || []).some(function (b) { return b[0] === arm; });
@@ -1266,9 +1439,21 @@
       return ab.kind === "del" && ab.chroms[0] === chrom && (ab.breakpoints[0] || []).some(function (b) { return b.indexOf(bandPrefix) === 0; });
     });
   }
+  // Constitutional notes first, then the recurrent rearrangements, which are all
+  // acquired. The two lists answer different questions and are kept apart for that
+  // reason: SYNDROMES matches a whole-chromosome or whole-arm state, FUSIONS
+  // matches a named join at named breakpoints, and mixing them is how t(9;22)
+  // ended up beside trisomy 21 in one array with a matcher that ignored bands.
   function syndromes(clone) {
     var out = [];
     SYNDROMES.forEach(function (s) { try { if (s.test(clone)) out.push({ name: s.name, note: s.note, acquired: !!s.acquired }); } catch (e) {} });
+    FUSIONS.forEach(function (f) {
+      try {
+        if (!hasFusion(clone, f)) return;
+        out.push({ name: f.name, acquired: true, genes: f.genes, kind: f.kind,
+          note: fusionLead(f) + f.disease + ". " + f.note });
+      } catch (e) {}
+    });
     return out;
   }
 
@@ -1503,6 +1688,25 @@
     // moves its distal enhancer onto MECOM, so a reader looking at 3q21.3 is
     // looking at the half of the event that is easy to miss.
     { g: "MECOM", c: "3", b: "q26.2" }, { g: "GATA2", c: "3", b: "q21.3" },
+    // Every partner named in FUSIONS is on the map, so the "at the breakpoints"
+    // line can name both ends of a rearrangement rather than whichever end
+    // happened to be listed already. A gene missing here does not break a fusion
+    // note; it silently drops half of that note's breakpoint line, which is worse
+    // than an obvious failure, so the two lists are checked against each other by
+    // test/fusion-table.test.js.
+    { g: "DEK", c: "6", b: "p22.3" }, { g: "NUP214", c: "9", b: "q34.13" },
+    { g: "MLLT3", c: "9", b: "p21.3" }, { g: "AFF1", c: "4", b: "q21.3" },
+    { g: "MLLT1", c: "19", b: "p13.3" }, { g: "RBM15", c: "1", b: "p13.3" },
+    { g: "MRTFA", c: "22", b: "q13.1" }, { g: "KAT6A", c: "8", b: "p11.21" },
+    { g: "CREBBP", c: "16", b: "p13.3" }, { g: "FUS", c: "16", b: "p11.2" },
+    { g: "ERG", c: "21", b: "q22.2" }, { g: "TCF3", c: "19", b: "p13.3" },
+    { g: "PBX1", c: "1", b: "q23.3" }, { g: "HLF", c: "17", b: "q22" },
+    { g: "BCL2", c: "18", b: "q21.33" }, { g: "BCL6", c: "3", b: "q27.3" },
+    { g: "BIRC3", c: "11", b: "q22.2" }, { g: "MALT1", c: "18", b: "q21.32" },
+    { g: "NSD2", c: "4", b: "p16.3" }, { g: "EWSR1", c: "22", b: "q12.2" },
+    { g: "FLI1", c: "11", b: "q24.3" }, { g: "SS18", c: "18", b: "q11.2" },
+    { g: "SSX1", c: "X", b: "p11.23" }, { g: "PAX3", c: "2", b: "q36.1" },
+    { g: "FOXO1", c: "13", b: "q14.11" }, { g: "DDIT3", c: "12", b: "q13.3" },
     { g: "FGFR3", c: "4", b: "p16.3" },
     { g: "KIT", c: "4", b: "q12" }, { g: "PDGFRA", c: "4", b: "q12" },
     { g: "TET2", c: "4", b: "q24" }, { g: "TERT", c: "5", b: "p15.33" },
@@ -1540,6 +1744,7 @@
     GLOSS_PROSE_TERMS: GLOSS_PROSE_TERMS,
     glossForTerm: glossForTerm,
     CANCER_GENES: CANCER_GENES,
+    FUSIONS: FUSIONS,
     ARM_INFO: ARM_INFO
   };
 })();

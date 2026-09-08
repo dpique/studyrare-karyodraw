@@ -103,12 +103,13 @@ test('both notes are marked acquired, since neither is constitutional', () => {
 });
 
 test('the notes name their genes, italicised like every other entry', () => {
-  const cbf = noteFor('46,XY,inv(16)(p13.1q22)', CBF);
-  assert.match(cbf, /<i>CBFB<\/i>/);
-  assert.match(cbf, /<i>MYH11<\/i>/);
+  // A fusion pair takes ONE <i> around both symbols, which is how every note in
+  // teach.js writes one and what teach.test.js pins against the legacy hyphen
+  // form. The enhancer case is the exception and takes a tag per gene, because
+  // GATA2 and MECOM are not fused: one lends the other an enhancer.
+  assert.match(noteFor('46,XY,inv(16)(p13.1q22)', CBF), /<i>CBFB::MYH11<\/i>/);
   const mecom = noteFor('46,XY,inv(3)(q21.3q26.2)', MECOM);
-  assert.match(mecom, /<i>MECOM<\/i>/);
-  assert.match(mecom, /<i>GATA2<\/i>/);
+  assert.match(mecom, /<i>GATA2<\/i> enhancer repositioned to <i>MECOM<\/i>/);
 });
 
 test('the entries that were already there still answer', () => {
