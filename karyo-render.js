@@ -1829,9 +1829,25 @@
         var d = buildInstance(inst, { theme: "simple", level: 99, affected: {} });
         if (!d) return;
         if (d.marker || d.dmin) { unknownExcluded = true; return; }
+        // Each covered interval carries how it got there as well as where it is.
+        // Copy number alone says nothing about a balanced rearrangement, where
+        // every row reads two: what a reader wants there is which pieces MOVED,
+        // and that is knowable only here, at the segment, before the intervals are
+        // merged into runs. graft is the piece that came from the other chromosome,
+        // the same flag the dashed junction seam reads.
+        //
+        // reversed is read only on a piece that is NOT a graft, because it means two
+        // different things in the two places. On an inversion it is the event: the
+        // span between the breakpoints is turned end for end. On a graft it is
+        // bookkeeping, since translocationSegments turns the donated piece so its
+        // broken end faces the junction, which is a consequence of how the join is
+        // drawn and not a second rearrangement. Read on grafts it labelled both
+        // exchanged tips of t(16;16)(p13.1;q22) "inverted", which would teach a
+        // reciprocal translocation as an inversion.
         (d.segments || []).forEach(function (s) {
           if (!IDEO.data[s.chrom] || s.to <= s.from) return;
-          (cover[s.chrom] = cover[s.chrom] || []).push([s.from, s.to]);
+          (cover[s.chrom] = cover[s.chrom] || [])
+            .push([s.from, s.to, s.graft ? 1 : 0, (s.reversed && !s.graft) ? 1 : 0]);
         });
       });
     });
@@ -1867,12 +1883,18 @@
         .sort(function (x, y) { return x - y; });
       var runs = [];
       for (var i = 0; i < edges.length - 1; i++) {
-        var a = edges[i], b = edges[i + 1], n = 0;
+        var a = edges[i], b = edges[i + 1], n = 0, gr = false, rv = false;
         // Edges include every interval endpoint, so an interval covering any of
         // [a,b) covers all of it; whole-containment is the exact test.
-        cover[c].forEach(function (iv) { if (iv[0] <= a && iv[1] >= b) n++; });
-        if (runs.length && runs[runs.length - 1].copies === n && !(a in named)) runs[runs.length - 1].to = b;
-        else runs.push({ from: a, to: b, copies: n });
+        cover[c].forEach(function (iv) {
+          if (iv[0] <= a && iv[1] >= b) { n++; if (iv[2]) gr = true; if (iv[3]) rv = true; }
+        });
+        // Neighbours merge only when they agree on provenance as well as on copy
+        // number. Merging across a difference would silently average away the one
+        // thing these flags exist to say.
+        var prev = runs[runs.length - 1];
+        if (prev && prev.copies === n && prev.exchanged === gr && prev.inverted === rv && !(a in named)) prev.to = b;
+        else runs.push({ from: a, to: b, copies: n, exchanged: gr, inverted: rv });
       }
       var label = function (pos) {
         if (pos === 0) return "pter";
@@ -1889,7 +1911,13 @@
       var baseline = (c === "X" || c === "Y")
         ? (ploidy === 2 ? (yPresent ? 1 : (c === "X" ? 2 : 0)) : null)
         : ploidy;
-      return { chrom: c, baseline: baseline, runs: runs, structural: !!names[c] };
+      // The breakpoints the notation actually named, in order, so a caller can ask
+      // what sits AT them. For a balanced rearrangement that is the whole question:
+      // nothing is gained or lost, and the genes that matter are the ones the
+      // breaks run through rather than the ones inside the segments.
+      var bps = Object.keys(named).map(Number).sort(function (x, y) { return x - y; })
+        .map(function (p) { return { pos: p, band: named[p] }; });
+      return { chrom: c, baseline: baseline, runs: runs, structural: !!names[c], breakpoints: bps };
     });
     return { chroms: chroms, unknownExcluded: unknownExcluded };
   }

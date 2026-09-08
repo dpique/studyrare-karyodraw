@@ -86,18 +86,28 @@ test('the net-imbalance table appears, toggles genes, and obeys the gate', async
       assert.ok(!withGenes.balancedRowHasGene, 'balanced context rows stay unannotated');
     });
 
-    await t.test('a balanced rearrangement lists its segments, no summary line, no checkbox', async () => {
+    await t.test('a balanced rearrangement lists its segments and says which ones moved', async () => {
       // Dan, 2026-08-30: balanced rearrangements join the table so their segments
       // keep a size somewhere after the prose lost its parentheticals. The old
       // "None:" summary line is gone (Dan, 2026-09-05): the table's own "balanced"
       // calls say it, and the line only existed to answer the former title.
+      //
+      // Two expectations changed on 2026-09-08 and the change is the point of them.
+      // This test used to assert every call cell read exactly "balanced" and that
+      // there was NO gene checkbox, "with nothing to mark". Both encoded the same
+      // limitation: on a balanced rearrangement the copies column reads two on every
+      // row, and the table had nothing else to say. It now says which segments were
+      // exchanged, and the gene layer opens on the breakpoints, which for t(9;22)
+      // are where BCR and ABL1 sit. Balanced still means balanced: what is asserted
+      // now is that no row is a gain or a loss.
       await open(page, '46,XY,t(9;22)(q34;q11.2)');
       await page.waitForSelector('#imbalance table');
       const st = await page.evaluate(() => ({
         noneLine: !!document.querySelector('#imbalance .imb-none'),
         bodyText: document.getElementById('imbalance').textContent,
         rows: document.querySelectorAll('#imbalance tbody tr').length,
-        allBalanced: [...document.querySelectorAll('#imbalance td.call')].every((c) => c.textContent === 'balanced'),
+        calls: [...document.querySelectorAll('#imbalance td.call')].map((c) => c.textContent),
+        deviant: document.querySelectorAll('#imbalance tr.gain, #imbalance tr.loss').length,
         checkbox: !!document.querySelector('#imbgenes'),
         legendFirst: !!(document.getElementById('legend-card').compareDocumentPosition(
           document.getElementById('imbalance-card')) & Node.DOCUMENT_POSITION_FOLLOWING),
@@ -105,9 +115,45 @@ test('the net-imbalance table appears, toggles genes, and obeys the gate', async
       assert.ok(!st.noneLine, 'no "None:" summary line');
       assert.doesNotMatch(st.bodyText, /keeps its expected copies/, 'and the old phrase is gone');
       assert.equal(st.rows, 4, 'both exchange partners split at their breakpoints');
-      assert.ok(st.allBalanced, 'every row is balanced');
-      assert.ok(!st.checkbox, 'no gene checkbox with nothing to mark');
+      assert.equal(st.deviant, 0, 'nothing is gained or lost');
+      assert.ok(st.calls.every((c) => c.indexOf('balanced') === 0), 'every row reads balanced first');
+      assert.deepEqual(st.calls.filter((c) => c.indexOf('exchanged') >= 0).length, 2,
+        'the two distal pieces that crossed over are marked, the two proximal ones are not');
+      assert.ok(st.checkbox, 'the gene checkbox opens, since genes sit at the breakpoints');
       assert.ok(st.legendFirst, 'the legend card sits above the imbalance card (owner order)');
+    });
+
+    await t.test('the gene layer names what sits at the breakpoints of a balanced exchange', async () => {
+      // The whole point of opening the layer here: a balanced translocation has no
+      // gained or lost segment by definition, so the genes that matter are the ones
+      // the breaks run through. t(9;22) is the case everyone checks.
+      await open(page, '46,XY,t(9;22)(q34;q11.2)');
+      await page.waitForSelector('#imbgenes');
+      await page.click('#imbgenes');
+      await page.waitForFunction(() => /At the breakpoints/.test(
+        document.getElementById('imbalance').textContent));
+      const txt = await page.evaluate(() => document.getElementById('imbalance').textContent);
+      assert.match(txt, /9q34/);
+      assert.match(txt, /ABL1/);
+      assert.match(txt, /22q11\.2/);
+      assert.match(txt, /BCR/);
+      const italic = await page.evaluate(() =>
+        [...document.querySelectorAll('#imbalance .imb-note i')].map((n) => n.textContent));
+      assert.ok(italic.includes('ABL1') && italic.includes('BCR'), 'gene symbols are italicised');
+    });
+
+    await t.test('an inversion says inverted, on the span between its breakpoints', async () => {
+      // The mirror of the translocation case, and the reason the marker is not just
+      // "moved": the same two breakpoints mean opposite things here.
+      await open(page, '46,XY,inv(16)(p13.1q22)');
+      await page.waitForSelector('#imbalance table');
+      const calls = await page.evaluate(() =>
+        [...document.querySelectorAll('#imbalance td.call')].map((c) => c.textContent));
+      assert.equal(calls.length, 3);
+      assert.equal(calls.filter((c) => c.indexOf('inverted') >= 0).length, 1,
+        'only the middle span is inverted: ' + JSON.stringify(calls));
+      assert.equal(calls.filter((c) => c.indexOf('exchanged') >= 0).length, 0,
+        'an inversion exchanges nothing');
     });
 
     await t.test('a normal karyotype shows no table at all', async () => {
