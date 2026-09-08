@@ -3,6 +3,28 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-08 (a translocation between two homologs draws both derivatives)
+
+- **The two derivatives of a t(N;N) are now complements of each other rather than
+  the same chromosome drawn twice.** A reciprocal exchange between the two
+  homologs of one pair produces one derivative that keeps the centromere of the
+  homolog broken on p and carries the other's distal q, and a second that is its
+  mirror. Both were previously drawn as the first. For 46,XX,t(16;16)(p13;q22),
+  the *CBFB*::*MYH11* rearrangement of AML M4Eo, the figure now reads
+  16qter→16q22::16p13→16qter beside 16pter→16q22::16p13→16pter, which is the pair
+  ISCN 2024 prints for the same event on chromosome 1 in der(1)t(1;1)(p31;q32).
+  The same correction applies to t(3;3)(q21.3;q26.2), the *MECOM* rearrangement,
+  and to every other homologous exchange.
+- **Segment dosage no longer reports imbalance for a balanced homologous
+  exchange.** The table reads the segments the figure is drawn from, so it
+  inherited the duplicate: t(16;16)(p13;q22) was listed at 0 copies of
+  16pter→p13 and 4 copies of 16q22→qter, and t(3;3)(q21.3;q26.2) at 0 copies of
+  the 30 Mb between its breakpoints. Every segment of both now reads two copies,
+  and the rows themselves remain, one per breakpoint, as they do for any balanced
+  translocation.
+
+Reported from the banding page against 46,XX,t(16;16)(p13;q22). Thank you.
+
 ## 2026-09-05 (the browser tab and history name the drawn karyotype)
 
 - **Each drawn karyotype now titles its own tab, history entry, and bookmark.**

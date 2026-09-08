@@ -1377,18 +1377,26 @@
         // Multi-chromosome structural: convert one normal copy of each involved
         // chromosome into a derivative (count unchanged unless signed). A single-
         // chromosome idic falls here too (it replaces one homolog, count unchanged).
+        //
+        // ci, the derivative's POSITION in ab.chroms, travels with the instance.
+        // For a t between two different chromosomes the name alone identifies which
+        // derivative this is, but for a t between the two HOMOLOGS of one pair both
+        // are der(16) and only the position tells them apart. Without it the
+        // renderer fell back to chroms.indexOf(name), which returns the first match,
+        // so both der(16)s of t(16;16)(p13;q22) were built as the same derivative.
         ab.chroms.forEach(function (c, ci) {
           if (comp[c] === undefined) { if (String(c).indexOf("?") < 0) { warnings.push("“" + c + "” is not a human chromosome. They are numbered 1 to 22, plus X and Y."); clone.badChrom = true; } return; }
-          if (ab.sign === "+") { for (var sj = 0; sj < mult; sj++) { comp[c] += 1; slots[c].push(mkDer(c, ab)); } return; }
+          if (ab.sign === "+") { for (var sj = 0; sj < mult; sj++) { comp[c] += 1; slots[c].push(mkDer(c, ab, ci)); } return; }
           // Unsigned honors the multiplier too: ×2 means two copies of the
           // abnormal chromosome, each consuming a normal homolog while one
           // remains (t(9;22)(q34;q11.2)x2 converts both pairs). It used to
-          // apply once and drop the second copy in silence.
+          // apply once and drop the second copy in silence. Every copy is the SAME
+          // derivative, so they share one ci.
           for (var uj = 0; uj < mult; uj++) {
             var idx = firstNormal(slots[c]);
             // convention: normal homolog stays on the left, derivative on the right
-            if (idx >= 0) { slots[c].splice(idx, 1); slots[c].push(mkDer(c, ab)); if (uj === 0) replacedChroms.push(c); }
-            else { slots[c].push(mkDer(c, ab)); comp[c] += 1; }
+            if (idx >= 0) { slots[c].splice(idx, 1); slots[c].push(mkDer(c, ab, ci)); if (uj === 0) replacedChroms.push(c); }
+            else { slots[c].push(mkDer(c, ab, ci)); comp[c] += 1; }
           }
         });
       } else if ((ab.kind === "der" || ab.kind === "dic") && ab.chroms.length > 1) {
@@ -1464,8 +1472,14 @@
       }
     }
 
-    function mkDer(c, ab) {
-      return { chrom: c, kind: ab.kind, label: derLabel(c, ab), aberration: ab, primary: c };
+    // derIndex is which of ab.chroms this derivative is, and it is set only where
+    // the caller knows: the multi-chromosome structural branch above. Everywhere
+    // else a der is built from one named chromosome and the index is redundant, so
+    // it stays undefined and the renderer keeps its name lookup.
+    function mkDer(c, ab, derIndex) {
+      var inst = { chrom: c, kind: ab.kind, label: derLabel(c, ab), aberration: ab, primary: c };
+      if (derIndex != null) inst.derIndex = derIndex;
+      return inst;
     }
     // The caption under a drawn abnormal chromosome. It names the object, and ISCN's
     // own prose is the model for how: "the karyotype contains one normal chromosome

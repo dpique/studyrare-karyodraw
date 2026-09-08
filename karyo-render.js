@@ -1507,7 +1507,17 @@
     // segment of the PREVIOUS chromosome in the cycle (ISCN convention). For a
     // 2-way this is exactly the reciprocal swap; for 3+ way it is the cyclic
     // exchange, so every derivative shows real material from its own chromosome.
-    var pi = chroms.map(String).indexOf(String(primary));
+    // Which member of the cycle this derivative is. The instance carries its own
+    // position when the parser knew it (inst.derIndex), and that is the only thing
+    // that works for a t between the two HOMOLOGS of one pair: both derivatives are
+    // named der(16), so indexOf returns 0 for both and builds the same chromosome
+    // twice. ISCN prints the pair for 46,XX,der(1)t(1;1)(p31;q32), one derivative
+    // per reading, 1pter→1q32::1p31→1pter and 1qter→1q32::1p31→1qter, and they are
+    // complements. The name lookup stays as the fallback for the paths that build a
+    // derivative without an index, above all der(N)t(N;M) reached through subOps,
+    // where chroms comes from the sub-operation rather than from the slot loop.
+    var pi = (inst.derIndex != null && inst.derIndex < n) ? inst.derIndex
+      : chroms.map(String).indexOf(String(primary));
     if (pi < 0) pi = 0;
     var di = (pi - 1 + n) % n;                     // donor = previous in the cycle
     var keepChrom = chroms[pi], keepBand = (bps[pi] || [])[0];
