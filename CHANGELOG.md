@@ -3,6 +3,16 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-08 (the two chromosome 16 and chromosome 3 leukemia rearrangements are decoded)
+
+- **inv(16) and t(16;16) now name CBFB::MYH11, and inv(3) and t(3;3) now name the
+  MECOM rearrangement.** The curated notes covered t(8;21) and not inv(16), which
+  are the two core-binding-factor AMLs and are taught as a pair. Each note matches
+  either spelling of its lesion, since a pericentric inversion and a translocation
+  between the two homologs produce the same rearrangement and readers write both.
+  Both are pinned to their breakpoints rather than to the chromosome, so an
+  inversion of 16 or 3 elsewhere is not named a leukemia.
+
 ## 2026-09-08 (a translocation between two homologs marks its breakpoint)
 
 - **The dashed junction seam now appears on a translocation between two homologs,
