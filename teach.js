@@ -1168,8 +1168,14 @@
   // leukemia over a constitutional rearrangement is the expensive direction to be
   // wrong in. Same reason the fragile site is pinned to Xq27.3.
   //
-  // Matching is by prefix in either direction, so the ISCN-precise p13.1 and the
-  // bare p13 that people actually type both land on the same note.
+  // Matching is by prefix in EITHER direction, and the band passed in has to be the
+  // real breakpoint rather than its ancestor. Prefix-either-way means an ancestor
+  // matches a descendant (the bare p13 someone types lands on p13.1) while two
+  // siblings never match (p13.2 is not p13.1). Keying on the ancestor instead
+  // collapses that second half: the first cut of these entries passed "p13" and
+  // "q21", so every sub-band under them matched and t(16;16)(p13.2;q22) came back
+  // a leukemia. MYH11 is at 16p13.11 and the GATA2 enhancer at 3q21.3; the
+  // neighbouring sub-bands are different places on the chromosome.
   function bandsMeet(a, b) {
     a = String(a || ""); b = String(b || "");
     return !!a && !!b && (a.indexOf(b) === 0 || b.indexOf(a) === 0);
@@ -1222,10 +1228,10 @@
       note: "t(8;21)(q22;q22) <i>RUNX1::RUNX1T1</i>; a core-binding-factor AML with generally favorable prognosis." },
     // The other half of the core-binding-factor pair, directly after t(8;21)
     // because the two are taught together and share a risk category.
-    { test: function (c) { return hasInvOrHomologT(c, "16", "p13", "q22"); }, acquired: true,
+    { test: function (c) { return hasInvOrHomologT(c, "16", "p13.1", "q22.1"); }, acquired: true,
       name: "inv(16) / t(16;16), AML with abnormal eosinophils",
       note: "inv(16)(p13.1q22) and t(16;16)(p13.1;q22) are the same lesion, fusing <i>CBFB</i> at 16q22 with <i>MYH11</i> at 16p13.1. AML with abnormal bone marrow eosinophils, formerly FAB M4Eo. With t(8;21) it is one of the two core-binding-factor AMLs, since <i>RUNX1</i> and <i>CBFB</i> are the two halves of one transcription factor, and both carry a generally favorable prognosis with high-dose cytarabine consolidation. Both breakpoints sit close to the centromere and the inversion is easy to miss on banding alone, so the fusion is confirmed by FISH or RT-PCR. A co-occurring <i>KIT</i> mutation worsens the outlook." },
-    { test: function (c) { return hasInvOrHomologT(c, "3", "q21", "q26"); }, acquired: true,
+    { test: function (c) { return hasInvOrHomologT(c, "3", "q21.3", "q26.2"); }, acquired: true,
       name: "inv(3) / t(3;3), AML with MECOM rearrangement",
       note: "inv(3)(q21.3q26.2) and t(3;3)(q21.3;q26.2) are the same lesion, and no fusion protein is made. The rearrangement moves a distal <i>GATA2</i> enhancer from 3q21.3 to <i>MECOM</i> at 3q26.2, driving <i>EVI1</i> expression while leaving the <i>GATA2</i> allele it was taken from without that enhancer, so one event both activates an oncogene and halves a transcription factor. AML or MDS, adverse risk, often with monosomy 7. The platelet count is characteristically normal or raised with dysplastic megakaryocytes, which sets it apart from most AML at presentation." },
     { test: function (c) { return hasT(c, "14", "18"); }, acquired: true, name: "t(14;18), Follicular lymphoma",

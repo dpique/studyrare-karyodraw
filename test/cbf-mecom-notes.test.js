@@ -61,6 +61,39 @@ test('a rearrangement of the same chromosome at other breakpoints is not named',
   assert.equal(names('46,XY,inv(9)(p11q13)').some((n) => n.indexOf(CBF) >= 0), false);
 });
 
+test('a NEIGHBOURING sub-band is not the lesion either', () => {
+  // The first cut of these entries keyed on "p13" and "q21", which are the
+  // ancestors of the real breakpoints rather than the breakpoints. Every sub-band
+  // under them matched, so t(16;16)(p13.2;q22) and inv(3)(q21.1q26.2) were both
+  // called leukemias. <i>MYH11</i> is at 16p13.11 and the GATA2 enhancer is at
+  // 3q21.3; p13.2, p13.3 and q21.1 are different places on the chromosome.
+  //
+  // Someone who writes p13.2 has been specific and means p13.2. Someone who writes
+  // the bare p13 has named the ancestor of the real breakpoint and most likely
+  // means the lesion, which is why that one still matches: the test is that one
+  // band is a prefix of the other, in either direction, so an ancestor matches a
+  // descendant and two siblings never match.
+  for (const k of ['46,XX,t(16;16)(p13.2;q22)', '46,XX,t(16;16)(p13.3;q22)',
+                   '46,XY,inv(16)(p13.3q22)', '46,XY,inv(16)(p13.2q22)']) {
+    assert.equal(names(k).some((n) => n.indexOf(CBF) >= 0), false, k + ' is not CBFB::MYH11');
+  }
+  for (const k of ['46,XY,inv(3)(q21.1q26.2)', '46,XY,inv(3)(q21.2q26.2)',
+                   '46,XY,inv(3)(q21.3q26.1)', '46,XY,t(3;3)(q21.1;q26.2)']) {
+    assert.equal(names(k).some((n) => n.indexOf(MECOM) >= 0), false, k + ' is not the MECOM lesion');
+  }
+});
+
+test('the ancestor band and the precise band both still match', () => {
+  // The two spellings a reader actually types, and the one the gene table uses.
+  for (const k of ['46,XX,t(16;16)(p13;q22)', '46,XX,t(16;16)(p13.1;q22)',
+                   '46,XY,inv(16)(p13.1q22)', '46,XY,inv(16)(p13.11q22.1)']) {
+    assert.ok(names(k).some((n) => n.indexOf(CBF) >= 0), k + ' is CBFB::MYH11');
+  }
+  for (const k of ['46,XY,inv(3)(q21q26)', '46,XY,inv(3)(q21.3q26.2)', '46,XY,t(3;3)(q21.3;q26.2)']) {
+    assert.ok(names(k).some((n) => n.indexOf(MECOM) >= 0), k + ' is the MECOM lesion');
+  }
+});
+
 test('both notes are marked acquired, since neither is constitutional', () => {
   for (const k of ['46,XY,inv(16)(p13.1q22)', '46,XY,inv(3)(q21.3q26.2)']) {
     const hit = Teach.syndromes(ISCN.parse(k).clones[0])
