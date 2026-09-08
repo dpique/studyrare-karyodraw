@@ -87,6 +87,33 @@ test('the chromosome pair alone is not enough, which is the point of the rewrite
   assert.equal(names('46,XX,t(8;14)(q11.2;q32)').length, 0, 'q11.2 is not the MYC breakpoint');
 });
 
+test('a chromosome pair can carry more than one lesion, and they stay apart', () => {
+  // The three cases that make breakpoint matching load-bearing rather than tidy.
+  // Each shares its chromosome pair with a different entry and is a different
+  // disease with a different prognosis. Answering from the pair alone would be
+  // confident and wrong every time.
+  assert.ok(one('46,XY,inv(16)(p13.1q22)').name.indexOf('core-binding-factor') >= 0);
+  assert.ok(one('46,XY,inv(16)(p13.3q24.3)').name.indexOf('megakaryoblastic') >= 0);
+
+  assert.ok(one('46,XY,t(9;22)(q34;q11.2)').name.indexOf('Philadelphia') >= 0);
+  assert.ok(one('46,XY,t(9;22)(q22;q12)').name.indexOf('chondrosarcoma') >= 0);
+
+  assert.ok(one('46,XY,t(15;17)(q24;q21)').name.indexOf('acute promyelocytic') >= 0);
+  assert.ok(one('46,XY,t(11;17)(q23;q21)').name.indexOf('ATRA-resistant') >= 0);
+});
+
+test('the two spellings of one lesion are not called the same rearrangement', () => {
+  // inv(16) and t(16;16) reach one fusion gene by two different structural routes,
+  // one intramolecular and one between homologs, and the figures this app draws
+  // for them differ: the inversion marks its middle inverted, the translocation
+  // marks its tips exchanged. Saying "the same lesion written two ways" was wrong
+  // in a way the app's own picture contradicted (Dan, 2026-09-08).
+  const note = one('46,XY,inv(16)(p13.1q22)').note;
+  assert.match(note, /Two different rearrangements with one result/);
+  assert.doesNotMatch(note, /the same lesion written two ways/);
+  assert.match(one('46,XY,inv(3)(q21.3q26.2)').note, /Two different rearrangements with one result/);
+});
+
 test('which chromosome is written first does not matter', () => {
   // t(9;22) and t(22;9) are the same event, and ISCN order is the writer's choice.
   assert.ok(one('46,XY,t(22;9)(q11.2;q34)').name.indexOf('Philadelphia') >= 0);
