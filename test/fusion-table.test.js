@@ -177,7 +177,10 @@ test('every record states a mechanism, and the lead sentence reflects it', () =>
     assert.ok(KINDS[f.kind], f.name + ' has a known kind, got ' + f.kind);
     if (f.kind === 'dosage') assert.equal(f.genes.length, 0, f.name + ' is a dosage lesion and names no fusion pair');
     else assert.ok(f.genes && f.genes.length === 2, f.name + ' names two genes');
-    assert.ok(f.disease && f.disease.length, f.name + ' names a disease');
+    // The disease lives in the note's first sentence now, not in a field: the
+    // old field rendered as a bare fragment between the gene lead and the note
+    // (Dan, 2026-09-09).
+    assert.equal(f.disease, undefined, f.name + ' has no disease field to render as a fragment');
     assert.ok(f.note && f.note.length, f.name + ' has a note');
     assert.ok(f.bands && f.bands.length, f.name + ' has at least one breakpoint pair');
     f.bands.forEach((pr) => assert.equal(pr.length, 2, f.name + ' band pairs have two ends'));
@@ -305,7 +308,7 @@ test('house style holds across every note in the table', () => {
   // These are shipped prose. Dan's rule is every artifact, and a table this size
   // is exactly where a stray contraction survives review.
   Teach.FUSIONS.forEach((f) => {
-    const text = f.disease + ' ' + f.note;
+    const text = f.note;
     assert.equal(text.indexOf('—'), -1, f.name + ' has an em dash');
     assert.doesNotMatch(text, /\b(it|that|there|is|does|do|was|are|we|they|you|what)'(s|t|re|ve|ll|d)\b/i,
       f.name + ' has a contraction');

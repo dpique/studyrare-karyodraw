@@ -3,6 +3,25 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-09 (every clinical note rewritten karyotype-first)
+
+- **All 74 cancer notes now read as prose about the finding, not fragments
+  about a tumour.** Each note's first sentence says what the karyotype finding
+  means, disease and risk included, in complete sentences: "On a karyotype this
+  translocation means one disease..." replaces "The same two chromosomes as
+  Ewing sarcoma, a different arm of 11, and an unrelated disease: q24 is FLI1
+  and Ewing, p13 is WT1 and this."
+- **The standalone disease fragment is gone from every card.** Cards used to
+  open "EWSR1::WT1. Desmoplastic small round cell tumour." before the note
+  began; the disease now lives in the note's first sentence and the field is
+  deleted.
+- **Diagnostic strength is calibrated to the truth.** WHO defines many
+  hematologic entities by these lesions, so "this means X" is often right, and
+  the notes say it plainly there; the shared lesions, t(11;14), ETV6::NTRK3,
+  the TFE3 fusions, say "one of two diseases" instead; the dosage findings
+  keep their this-proves-nothing-alone caveats; and banding stays a hypothesis
+  that FISH or molecular work confirms.
+
 ## 2026-09-09 (the clinical notes wear the parental-origin amber)
 
 - **The clinical card's color is the carrier card's amber, exactly.** The box
