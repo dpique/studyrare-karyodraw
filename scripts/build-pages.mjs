@@ -110,7 +110,7 @@ function syndromeNotes(clones) {
   // s.note is curated static content (teach.js) that may include markup such as
   // italicized gene symbols, so render it as HTML (matching the on-screen clinical
   // card and print sheet). s.name is plain text and stays escaped.
-  return '<section class="lp-sec"><h2>Clinical notes</h2>' + syn.map((s) =>
+  return '<section class="lp-sec lp-clinical"><h2>Clinical notes</h2>' + syn.map((s) =>
     `<div class="lp-syn"><h3>${esc(s.name)}</h3><p>${s.note}</p></div>`).join('') + '</section>';
 }
 
@@ -156,6 +156,10 @@ const LANDING_CSS = `
   .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
+  /* The clinical section carries the same periwinkle attention treatment as the
+     app's clinical card, and for the same reason: a finding, not a fault. */
+  .lp-sec.lp-clinical { background: var(--peri-50); border: 1px solid var(--peri-300); border-radius: 12px; padding: 14px 18px; }
+  .lp-sec.lp-clinical h2 { color: var(--peri-700); }
   .lp-clonehead { display: flex; align-items: baseline; gap: 10px; margin: 14px 0 8px; font-weight: 400; }
   .lp-clonehead:first-child { margin-top: 0; }
   .lp-clonehead code { font: 600 14px var(--font-mono); color: var(--ink); }

@@ -3,6 +3,16 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-09 (the clinical notes wear a color)
+
+- **The clinical notes card is tinted.** Dan liked how the amber
+  "Let us sort this out" box pulls the eye and asked for the same pull on the
+  clinical notes. Same treatment, tinted fill, colored border, colored
+  heading, in the periwinkle identity family rather than amber, on purpose:
+  amber is the something-to-sort-out signal, and a recognised leukemia is a
+  finding, not a fault. The landing pages' clinical sections wear the same
+  color.
+
 ## 2026-09-09 (a pasted link is not a karyotype, and says so once)
 
 - **Pasting links hands back the karyotypes inside them.** A paste of fifteen

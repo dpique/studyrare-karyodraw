@@ -98,3 +98,16 @@ test('the clinical notes card sits above the chromosome band map', () => {
   assert.ok(html.indexOf('id="clinical-card"') < html.indexOf('id="detail-card"'),
     'clinical notes before the anatomy/band-map card');
 });
+
+test('the clinical card wears the identity color, and never the warning amber', () => {
+  // Dan liked how the amber "Let us sort this out" box draws the eye
+  // (2026-09-09) and asked for the same pull on the clinical notes. Same
+  // treatment, different hue, on purpose: amber is the app's
+  // something-to-sort-out signal (see .warnbox), and a recognised leukemia is
+  // a finding, not a fault, so the card wears the periwinkle identity family.
+  const html = read('index.html');
+  assert.match(html, /#clinical-card \{ background: var\(--peri-50\); border-color: var\(--peri-300\); \}/,
+    'the tinted treatment exists');
+  assert.doesNotMatch((html.match(/#clinical-card[^}]*\}/) || [''])[0], /amber/,
+    'and it is not the warning amber');
+});
