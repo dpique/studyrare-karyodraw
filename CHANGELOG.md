@@ -3,6 +3,38 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-08 (the dosage lesions and whole-clone patterns, beside the fusions)
+
+- **The gains, losses and patterns of cancer karyotypes are now explained, not
+  just the joins.** New cards for del(5q) (the marrow lesion with its own drug,
+  lenalidomide), monosomy 7 / del(7q) (with the germline *GATA2* and
+  *SAMD9*/*SAMD9L* thread in children), acquired trisomy 8, i(17)(q10) (one
+  stroke that gains 17q and loses *TP53*), del(20q), the CLL panel (del(13q14),
+  del(11q22) *ATM*, trisomy 12, del(17p)), *MYCN* amplification as hsr(2)(p24)
+  or double minutes, i(12)(p10) (Pallister-Killian mosaic or the germ cell
+  tumour marker), and acquired loss of Y.
+- **Whole-clone patterns are read as patterns.** High hyperdiploidy (51-65
+  chromosomes) and hypodiploidy (fewer than 40, where low-hypodiploid B-ALL is
+  a Li-Fraumeni evaluation waiting to happen) get their own cards, and a
+  complex karyotype card appears when a clone carries three or more
+  abnormalities with a recognised acquired lesion among them, noting when the
+  clone is also monosomal.
+- **A pattern outranks its parts.** A 54-chromosome hyperdiploid ALL clone
+  contains +21 twice, and used to be labelled Down syndrome; a near-haploid
+  clone that kept one X used to be labelled Turner syndrome. When a ploidy
+  pattern fires, the constitutional aneuploidy cards stand down.
+- **The narrow-matching promise extends to deletions.** Williams syndrome at
+  7q11.23 and the Sotos region at 5q35 never collect a leukemia note, terminal
+  11q deletions stay Jacobsen while interstitial 11q22 stays CLL, and the
+  dual-context bands, 13q14 (retinoblastoma or CLL), 17p (TP53 or
+  Miller-Dieker), 12p (Pallister-Killian or germ cell tumour), present both
+  readings on one card.
+- **Four landing pages finally have a clinical card behind them.** The
+  del(5q) MDS and monosomy 7 pages had shipped with intros but no card, since
+  nothing in the teach layer matched them; Pallister-Killian and Jacobsen now
+  have cards too, and new constitutional cards cover 1p36 deletion and WAGR
+  syndrome with its Wilms surveillance rationale.
+
 ## 2026-09-08 (the pathology tier joins the table, and four cancer karyotypes get pages)
 
 - **Five more recurrent rearrangements, for 62 in the table.** t(7;16)
