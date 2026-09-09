@@ -134,3 +134,21 @@ test('house style holds across every syndrome and dosage card', () => {
   const c = one('45,XX,-7,del(5)(q13q33),i(17)(q10)', 'Complex karyotype');
   assert.equal(c.note.indexOf('—'), -1);
 });
+
+test('a clone built of derivatives is acquired, and +13 there is not Patau', () => {
+  // A visitor typed exactly this complex clone (2026-09-09) and the page
+  // answered "Trisomy 13, Patau syndrome": the +13 tripped the constitutional
+  // card, while the complex-karyotype card stayed silent because none of the
+  // six lesions is individually in the tables. Multiple derivative-type
+  // products (der, dic, add, hsr, dmin) mark an acquired clone: the
+  // aneuploidy cards stand down and complexity needs no other anchor.
+  const k = '46,XY,add(3)(p13),dic(5;4)(q15;q11),der(9)t(4;9)(q11;q21.2),+13,der(13)t(5;13)(q15;p11.1),der(13)t(9;13)(q21.2;q11)';
+  none(k, 'Patau', 'a +13 beside five derivative products is clonal gain, not a syndrome');
+  one(k, 'Complex karyotype');
+});
+
+test('one derivative does not make a clone acquired', () => {
+  // Translocation Down syndrome is one der beside its +21, and it stays itself.
+  one('46,XX,der(14;21)(q10;q10),+21', 'Down syndrome');
+  none('46,XX,der(14;21)(q10;q10),+21', 'Complex karyotype', 'one inherited event, not complexity');
+});
