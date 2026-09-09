@@ -1470,8 +1470,16 @@
       any = true;
       var rows = [], bpLines = [];
       chroms.forEach(function (c) {
+        // Whether this chromosome deviates anywhere decides what its balanced
+        // rows are FOR. Beside a gain or a loss they are context, showing where
+        // the imbalance starts and stops (Dan, 2026-08-30). On a fully balanced
+        // chromosome they are filler: a segment that neither moved nor flipped
+        // says only that nothing happened to it, so it no longer earns a row
+        // (Dan, 2026-09-08, reading the stationary 57 Mb middle of t(16;16)).
+        var hasDev = c.baseline != null && c.runs.some(function (r) { return r.copies !== c.baseline; });
         c.runs.forEach(function (r) {
           var call = imbCall(r.copies, c.baseline);
+          if (!hasDev && call.cls === "even" && !r.exchanged && !r.inverted) return;
           if (call.cls === "gain" || call.cls === "loss") anyDev = true;
           var genes = "";
           if (geneAt && call.cls !== "even") {
@@ -2476,9 +2484,15 @@
     segState("#showseg button", "data-show", SHOW);
     segState("#scaleseg button", "data-scale", SCALEBAR ? "on" : "off");
     var vh = $("#viewhint");
-    if (vh) vh.innerHTML = MODE === "simple"
-      ? "<b>Highlight</b>: the chromosomes involved in the abnormality are colored."
-      : "<b>Realistic</b>: true-to-life Giemsa banding on every chromosome, nothing highlighted. Try to spot the abnormality yourself.";
+    if (vh) {
+      // Highlight explains itself the moment it is clicked: things turn color.
+      // Realistic changes the reader's TASK, which its name does not say, so
+      // only that mode keeps a caption (Dan, 2026-09-08).
+      var hint = MODE === "simple" ? ""
+        : "<b>Realistic</b>: true-to-life Giemsa banding on every chromosome, nothing highlighted. Try to spot the abnormality yourself.";
+      vh.innerHTML = hint;
+      vh.style.display = hint ? "" : "none";
+    }
     // What the folded row says. The three settings in the order they sit in, so the
     // collapsed control still answers "what am I looking at". The band button's own
     // label carries a "·" ("Std · ~550"), which would make the separator ambiguous, so
