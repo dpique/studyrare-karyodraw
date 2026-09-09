@@ -1416,6 +1416,11 @@
       name: "t(12;16), myxoid liposarcoma",
       disease: "Myxoid liposarcoma",
       note: "Distinguishes myxoid liposarcoma from the myxoid sarcomas it resembles under the microscope. It metastasises to unusual soft-tissue and bone sites rather than to lung, so staging follows the diagnosis." },
+    { chroms: ["7", "16"], bands: [["q33", "p11"], ["q33", "p11.2"], ["q34", "p11"]],
+      kind: "fusion", genes: ["FUS", "CREB3L2"],
+      name: "t(7;16), low-grade fibromyxoid sarcoma",
+      disease: "Low-grade fibromyxoid sarcoma",
+      note: "The second <i>FUS</i> sarcoma in the table, beside myxoid liposarcoma: the same gene broken at the same band, a different partner, an entirely different tumour. Bland enough under the microscope to pass for a benign fibrous lesion, then metastasising years or decades later, which is why making the diagnosis at the start matters. MUC4 immunohistochemistry is the everyday surrogate, and the rare variant fuses <i>FUS</i> to <i>CREB3L1</i> instead." },
 
     // --- a second lesion at a chromosome pair already claimed above ----------
     //
@@ -1423,9 +1428,9 @@
     // chromosome pairs. Each shares its pair with an entry elsewhere in the table
     // and is a different disease: a second inv(16), a second t(9;22), a second
     // rearrangement of RARA, and a second t(16;21). The pattern repeats in the
-    // sections below with a second t(11;22) and a second t(5;14). A matcher that
-    // read only the pair would have answered confidently and wrongly for every
-    // one of them.
+    // sections below with a second t(11;22), a second t(5;14) and a second
+    // t(6;11). A matcher that read only the pair would have answered confidently
+    // and wrongly for every one of them.
     { chroms: ["16", "16"], bands: [["p13.3", "q24.3"]],
       kind: "fusion", genes: ["CBFA2T3", "GLIS2"],
       name: "inv(16)(p13.3q24.3), pediatric acute megakaryoblastic leukemia",
@@ -1529,6 +1534,21 @@
       name: "t(11;22)(p13;q12), desmoplastic small round cell tumour",
       disease: "Desmoplastic small round cell tumour",
       note: "The same two chromosomes as Ewing sarcoma, a different arm of 11, and an unrelated disease: q24 is <i>FLI1</i> and Ewing, p13 is <i>WT1</i> and this. Adolescent and young adult males with widespread abdominal and pelvic disease, polyphenotypic by immunohistochemistry, and a poor outlook. The same <i>WT1</i> carries germline mutations in WAGR and Denys-Drash syndromes; here it is broken somatically." },
+    { chroms: ["4", "19"], bands: [["q35", "q13"], ["q35.2", "q13.2"]],
+      kind: "fusion", genes: ["CIC", "DUX4"],
+      name: "t(4;19), CIC-rearranged sarcoma",
+      disease: "CIC-rearranged sarcoma, an aggressive round cell sarcoma of soft tissue",
+      note: "The largest group of the round cell sarcomas that look like Ewing and are not: <i>EWSR1</i> break-apart FISH is negative, the course is more aggressive, and the response to Ewing-type chemotherapy is worse, which is why the WHO now separates them. <i>DUX4</i> sits in the D4Z4 repeat at 4q35, the same repeat whose contraction causes facioscapulohumeral muscular dystrophy, one locus with two unrelated diseases. A variant t(10;19) reaches the same result through a <i>DUX4</i>-like gene." },
+    { chroms: ["7", "17"], bands: [["p15", "q21"], ["p15.2", "q11.2"]],
+      kind: "fusion", genes: ["JAZF1", "SUZ12"],
+      name: "t(7;17), low-grade endometrial stromal sarcoma",
+      disease: "Low-grade endometrial stromal sarcoma",
+      note: "The defining lesion of low-grade endometrial stromal sarcoma: <i>JAZF1</i> fused to <i>SUZ12</i>, a Polycomb repressive complex subunit. The tumour is indolent enough to recur a decade later and hormone-responsive enough that endocrine therapy is standard. Historically written t(7;17)(p15;q21), though <i>SUZ12</i> in fact sits at 17q11.2, and both spellings are read here. The high-grade disease is a different lesion, most often a <i>YWHAE</i> rearrangement, so grade and genetics travel together." },
+    { chroms: ["16", "17"], bands: [["q22", "p13"], ["q21", "p13.2"]],
+      kind: "juxtaposition", genes: ["CDH11", "USP6"],
+      name: "t(16;17), aneurysmal bone cyst",
+      disease: "Primary aneurysmal bone cyst",
+      note: "The rearrangement that settled an argument: aneurysmal bone cyst looked reactive and is in fact a true neoplasm, with the <i>CDH11</i> promoter driving an intact <i>USP6</i>. The diagnostic use runs in reverse, since secondary aneurysmal-bone-cyst-like change in other bone tumours lacks any <i>USP6</i> rearrangement. <i>USP6</i> takes many partners, and with <i>MYH9</i> it makes nodular fasciitis, a lesion that grows alarmingly, regresses on its own, and has been called a transient neoplasm." },
     { chroms: ["1", "13"], bands: [["p36", "q14"], ["p36.13", "q14.11"]],
       kind: "fusion", genes: ["PAX7", "FOXO1"],
       name: "t(1;13), alveolar rhabdomyosarcoma variant",
@@ -1550,6 +1570,11 @@
       disease: "Alveolar soft part sarcoma, and TFE3-rearranged renal cell carcinoma",
       note: "One fusion, two tumours, and the structural detail is the teaching point: in alveolar soft part sarcoma the derivative is usually unbalanced, der(17)t(X;17), while in the renal carcinoma the same exchange tends to be balanced. <i>TFE3</i> takes other partners in the kidney, most often <i>PRCC</i> in a t(X;1), and the renal disease is one of children and young adults, over-represented after childhood chemotherapy. TFE3 immunohistochemistry marks both." },
     // --- carcinoma ---
+    { chroms: ["6", "11"], bands: [["p21", "q12"], ["p21.1", "q13.1"]],
+      kind: "juxtaposition", genes: ["MALAT1", "TFEB"],
+      name: "t(6;11)(p21;q12), TFEB renal cell carcinoma",
+      disease: "TFEB-rearranged renal cell carcinoma",
+      note: "The second t(6;11) in the table, on the opposite arms from the <i>KMT2A</i> lesion, and the other half of the MiT-family translocation carcinomas beside <i>TFE3</i>. No new protein is made: the promoter of <i>MALAT1</i>, a long non-coding RNA, drives an intact <i>TFEB</i>. Children and young adults, an often indolent course, and an immunophenotype worth knowing, cathepsin K and melanocytic markers positive, the renal tumour that stains like a melanoma." },
     { chroms: ["15", "19"], bands: [["q14", "p13.1"], ["q13", "p13.1"]],
       kind: "fusion", genes: ["BRD4", "NUTM1"],
       name: "t(15;19), NUT carcinoma",
@@ -1906,7 +1931,13 @@
     { g: "BRD4", c: "19", b: "p13.12" }, { g: "NUTM1", c: "15", b: "q14" },
     { g: "EML4", c: "2", b: "p21" }, { g: "RET", c: "10", b: "q11.21" },
     { g: "CCDC6", c: "10", b: "q21.2" }, { g: "PAX8", c: "2", b: "q14.1" },
-    { g: "PPARG", c: "3", b: "p25.2" },
+    { g: "PPARG", c: "3", b: "p25.2" }, { g: "CREB3L2", c: "7", b: "q33" },
+    { g: "CIC", c: "19", b: "q13.2" }, { g: "DUX4", c: "4", b: "q35.2" },
+    // HGNC files JAZF1 across 7p15.2-p15.1; the map holds one band, and the
+    // proximal edge of the range is where the gene body starts.
+    { g: "JAZF1", c: "7", b: "p15.2" }, { g: "SUZ12", c: "17", b: "q11.2" },
+    { g: "MALAT1", c: "11", b: "q13.1" }, { g: "TFEB", c: "6", b: "p21.1" },
+    { g: "CDH11", c: "16", b: "q21" }, { g: "USP6", c: "17", b: "p13.2" },
     { g: "FGFR3", c: "4", b: "p16.3" },
     { g: "KIT", c: "4", b: "q12" }, { g: "PDGFRA", c: "4", b: "q12" },
     { g: "TET2", c: "4", b: "q24" }, { g: "TERT", c: "5", b: "p15.33" },

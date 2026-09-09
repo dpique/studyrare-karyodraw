@@ -141,8 +141,9 @@ pronunciation of the karyotype. n-way translocations are described with their
 explicit ISCN cycle (e.g. 2→7→5→2), which is otherwise a common source of
 confusion. An ordered guided tour walks a newcomer through the common
 notations, drawn one at a time in the visualizer, and a library of curated
-worked examples (41 karyotypes at this writing, from trisomy 21 through
-Emanuel syndrome and acquired leukemia rearrangements) is published as
+worked examples (45 karyotypes at this writing, from trisomy 21 through
+Emanuel syndrome, acquired leukemia rearrangements, and solid-tumor
+translocations) is published as
 individual explainer pages, each with a server-rendered karyogram, the full
 decode, and clinical notes.
 

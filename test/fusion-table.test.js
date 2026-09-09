@@ -72,6 +72,11 @@ test('the classics are recognised, each exactly once', () => {
     ['46,XY,inv(2)(p21p23)', 'EML4::ALK'],
     ['46,XX,inv(10)(q11.2q21)', 'papillary thyroid'],
     ['46,XX,t(2;3)(q13;p25)', 'follicular thyroid'],
+    ['46,XX,t(7;16)(q33;p11)', 'fibromyxoid'],
+    ['46,XY,t(4;19)(q35;q13)', 'CIC-rearranged'],
+    ['46,XX,t(7;17)(p15;q21)', 'endometrial stromal'],
+    ['46,XX,t(6;11)(p21;q12)', 'TFEB'],
+    ['46,XY,t(16;17)(q22;p13)', 'aneurysmal bone cyst'],
   ];
   for (const [k, frag] of cases) {
     assert.ok(one(k).name.indexOf(frag) >= 0, k + ' should name ' + frag + ', got ' + one(k).name);
@@ -122,6 +127,11 @@ test('a chromosome pair can carry more than one lesion, and they stay apart', ()
   // beside BCL11B in T-ALL.
   assert.ok(one('46,XX,t(5;14)(q31;q32)').name.indexOf('eosinophilia') >= 0);
   assert.ok(one('46,XX,t(5;14)(q35;q32)').name.indexOf('TLX3') >= 0);
+
+  // Two t(6;11)s: q27;q23 is a KMT2A leukemia, p21;q12 is a renal carcinoma in
+  // a child, and only the arms separate a marrow disease from a kidney tumour.
+  assert.ok(one('46,XY,t(6;11)(q27;q23)').name.indexOf('KMT2A') >= 0);
+  assert.ok(one('46,XX,t(6;11)(p21;q12)').name.indexOf('TFEB') >= 0);
 });
 
 test('the two spellings of one lesion are not called the same rearrangement', () => {
