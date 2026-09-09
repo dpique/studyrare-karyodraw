@@ -2570,8 +2570,52 @@
     depth = depth || 0;
     var raw = (input || "").trim();
     var warnings = [];
+    // Exact duplicate messages collapse: the junk fragments of one pasted blob
+    // used to earn the same sentence over and over, and a wall of repeats reads
+    // as shouting. Non-enumerable so the array still compares as a plain array.
+    Object.defineProperty(warnings, "push", { value: function (m) {
+      if (this.indexOf(m) < 0) Array.prototype.push.call(this, m);
+      return this.length;
+    } });
     var result = { raw: raw, ok: false, warnings: warnings, isMosaic: false, clones: [], suggestion: null, countFix: null, orderFix: null, sexFix: null, sexCountFix: null, fixes: [], note: null };
     if (!raw) { warnings.push("Type a karyotype to begin, e.g. 46,XY, 47,XX,+21, or 46,XY,t(9;22)(q34;q11.2)."); return result; }
+
+    // A pasted link is not a karyotype, and a paste of fifteen of them earned
+    // fifteen copies of the same three complaints (Dan, 2026-09-09). No legal
+    // ISCN string contains "://", so this gate cannot catch real notation. It
+    // must run BEFORE tokenization for the same reason the platform gate below
+    // does: one respectful message, not the shredded pieces. When the links are
+    // KaryoDraw's own, the karyotypes inside their k= values come back as
+    // did-you-mean chips, the leading bare fragment included, each vetted the
+    // way every other offered fix is.
+    if (raw.indexOf("://") >= 0) {
+      var urlKs = [], seenUrlK = {};
+      var addUrlK = function (v) {
+        v = (v || "").trim();
+        if (v && !seenUrlK[v]) { seenUrlK[v] = 1; urlKs.push(v); }
+      };
+      addUrlK(raw.slice(0, raw.search(/[a-z][a-z0-9+.-]*:\/\//i)));
+      var kre = /[?&]k=((?:(?!https?:\/\/)[^&#\s])+)/gi, km;
+      while ((km = kre.exec(raw))) {
+        var kval = km[1];
+        try { kval = decodeURIComponent(kval); } catch (e) {}
+        addUrlK(kval);
+      }
+      if (depth === 0) {
+        urlKs = urlKs.filter(function (cand) { var t = parse(cand, 1); return t.ok || t.fixes.length; });
+      }
+      var linkN = (raw.match(/[a-z][a-z0-9+.-]*:\/\//gi) || []).length;
+      if (urlKs.length) {
+        warnings.push("This looks like " + (linkN > 1 ? linkN + " web links" : "a web link") +
+          " pasted in, not a karyotype: the notation stands alone, like 46,XY,t(9;22)(q34;q11.2). The karyotype" +
+          (urlKs.length > 1 ? "s" : "") + " inside " + (linkN > 1 ? "them are" : (urlKs.length > 1 ? "it are" : "it is")) +
+          " offered below.");
+        result.fixes = urlKs;
+      } else {
+        warnings.push("This looks like a web address, not a karyotype. A karyotype stands alone, like 46,XY,t(9;22)(q34;q11.2).");
+      }
+      return result;
+    }
 
     // ISCN's other platforms: ish (FISH), nucish, arr (microarray), ogm, seq.
     // Correct nomenclature this app does not draw, and its coordinates
