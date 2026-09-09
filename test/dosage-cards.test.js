@@ -94,10 +94,14 @@ test('a hyperdiploid ALL clone is a pattern, not a stack of syndromes', () => {
 });
 
 test('a hypodiploid clone is named, and its single X is not Turner syndrome', () => {
-  const k = '26,X,+10,+14,+18,+21';
+  const k = '27,X,+10,+14,+18,+21';
   const h = one(k, 'hypodiploidy');
   assert.match(h.note, /Li-Fraumeni/);
   none(k, 'Turner', 'a near-haploid clone that kept one X is not a Turner conceptus');
+  none(k, 'Down syndrome', 'a +21 against the haploid base is a disomy, not a trisomy');
+  // A stated count off by one still reads near-haploid and still fires the
+  // card; the count warning speaks to the arithmetic separately.
+  one('26,X,+10,+14,+18,+21', 'hypodiploidy');
 });
 
 test('complex karyotype needs three abnormalities AND an acquired anchor', () => {

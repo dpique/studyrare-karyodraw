@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-08 (the haploid base holds across the whole near-haploid band)
+
+- **Near-haploid clones at 27-34 chromosomes are now read against the haploid
+  baseline.** The haploid base was previously accepted only within three of 23,
+  so 27,X,+10,+14,+18,+21, a textbook near-haploid ALL clone, was scored
+  against a diploid base and came back as a 45,X clone with three invented
+  trisomies, complete with Down and Edwards syndrome notes. ISCN's own
+  near-haploid band runs to 34, and published near-haploid ALL clones sit at
+  24-31; the base now follows the band, 35 stays near-diploid, and the count
+  reconciliation pass can propose the haploid reading too.
+
 ## 2026-09-08 (the dosage lesions and whole-clone patterns, beside the fusions)
 
 - **The gains, losses and patterns of cancer karyotypes are now explained, not
