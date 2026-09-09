@@ -48,13 +48,14 @@ test('the word the app does use is present on the same control', () => {
   // edit cannot satisfy this file by deleting the vocabulary altogether.
   assert.match(HTML, /data-show="affected" title="Only the chromosomes involved in the abnormality/,
     'the tooltip and the label now agree');
-  // The Highlight caption ("the chromosomes involved... are colored") is gone
-  // entirely: it explained itself the moment the toggle was clicked (Dan,
-  // 2026-09-08). Only Realistic keeps a caption, because that mode changes the
-  // reader's task in a way its name does not say.
+  // The caption line under the controls is gone entirely (Dan, 2026-09-09,
+  // after 2026-09-08 removed the Highlight half): both Style buttons carry
+  // their explanation as tooltips, and the modes demonstrate themselves when
+  // clicked. The "spot it yourself" idea survives in the Realistic tooltip.
   assert.doesNotMatch(HTML, /the chromosomes involved in the abnormality are colored/,
     'the self-evident Highlight caption stays deleted');
-  assert.match(HTML, /Try to spot the abnormality yourself/, 'the Realistic caption remains');
+  assert.doesNotMatch(HTML, /Try to spot the abnormality yourself/, 'the caption line is gone');
+  assert.match(HTML, /Spot the abnormality yourself/, 'the idea lives on in the Realistic tooltip');
   assert.match(HTML, /gray = a chromosome not involved in the abnormality/, 'the legend gray row');
 });
 

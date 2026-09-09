@@ -187,8 +187,6 @@
   .viewopts { display: flex; align-items: center; gap: 8px 16px; margin-top: 12px; flex-wrap: wrap; }
   .viewopt { display: inline-flex; align-items: center; gap: 8px; }   /* keep each label with its toggle when the row wraps */
   .viewopts .vlabel { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-  .viewhint { margin-top: 7px; font-size: 12.5px; color: var(--muted); }
-  .viewhint b { color: var(--ink-2); font-weight: 700; }
   .seg { display: inline-flex; border: 1px solid #cdd2e1; border-radius: 9px; overflow: hidden; background: #fff; }
   .seg button {
     border: none; background: #fff; padding: 6px 12px; font-size: 13px; cursor: pointer; color: var(--ink-2);
@@ -835,7 +833,6 @@
           </div>
         </div>
       </div>
-      <div class="viewhint" id="viewhint"></div>
       </div>
     </div>
   </div>
@@ -2483,16 +2480,9 @@
     segState("#levelseg button", "data-level", LEVEL);
     segState("#showseg button", "data-show", SHOW);
     segState("#scaleseg button", "data-scale", SCALEBAR ? "on" : "off");
-    var vh = $("#viewhint");
-    if (vh) {
-      // Highlight explains itself the moment it is clicked: things turn color.
-      // Realistic changes the reader's TASK, which its name does not say, so
-      // only that mode keeps a caption (Dan, 2026-09-08).
-      var hint = MODE === "simple" ? ""
-        : "<b>Realistic</b>: true-to-life Giemsa banding on every chromosome, nothing highlighted. Try to spot the abnormality yourself.";
-      vh.innerHTML = hint;
-      vh.style.display = hint ? "" : "none";
-    }
+    // No caption line under the controls at all (Dan, 2026-09-09): both Style
+    // buttons carry their explanation as tooltips, which is where a reader who
+    // wonders will hover, and the modes demonstrate themselves when clicked.
     // What the folded row says. The three settings in the order they sit in, so the
     // collapsed control still answers "what am I looking at". The band button's own
     // label carries a "·" ("Std · ~550"), which would make the separator ambiguous, so

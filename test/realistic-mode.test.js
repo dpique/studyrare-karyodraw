@@ -1,7 +1,7 @@
 'use strict';
-// The Style toggle makes a promise the renderer has to keep. Its own caption
-// (index.html) reads: "Realistic: true-to-life Giemsa banding on every
-// chromosome, nothing highlighted. Try to spot the abnormality yourself."
+// The Style toggle makes a promise the renderer has to keep. Its button tooltip
+// (index.html) reads: "True-to-life Giemsa banding on every chromosome, nothing
+// highlighted. Spot the abnormality yourself."
 // Since the rename in 2601e2e (2026-07-01) that promise was false: the detailed
 // (Realistic) theme still drew the annotation overlays. A dup carried an amber
 // wash, an inv a blue one, and every breakpoint red carets, so the figure that

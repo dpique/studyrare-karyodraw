@@ -284,3 +284,43 @@ test('a colon inside parentheses is repaired to the semicolon, one lesson', () =
   assert.equal(ISCN.parse(m.suggestion).warnings.length, 0, 'the repair draws');
   assert.doesNotMatch(m.warnings.join(' '), /not a human chromosome/, 'no phantom bullet from the unrepaired token');
 });
+
+// ---- a pasted link is not a karyotype, and says so once ---------------------
+// Dan pasted fifteen tab URLs as one string (2026-09-09) and the tail produced
+// the same three complaints fifteen times over: "https:" is not one KaryoDraw
+// can place, "karyodraw.com" is not a number, "?k46" is not a number. No legal
+// ISCN string contains "://", so the gate cannot catch real notation; and when
+// the links are KaryoDraw's own, the karyotypes inside them come back as
+// did-you-mean chips, the leading bare fragment included.
+test('a paste of many KaryoDraw links returns their karyotypes as chips', () => {
+  const blob = '46,XX,t(16;16)(p13.1;q22)' +
+    'https://karyodraw.com/?k=46,XY,inv(16)(p13.1q22)' +
+    'https://karyodraw.com/?k=46,XX,+1,der(1;7)(q10;p10)&style=highlight&bands=550' +
+    'https://karyodraw.com/?k=mos%2047,XX,+i(12)(p10)/46,XX' +
+    'https://karyodraw.com/?k=45,X,-Y';
+  const m = ISCN.parse(blob);
+  assert.equal(m.ok, false);
+  assert.equal(m.warnings.length, 1, JSON.stringify(m.warnings));
+  assert.match(m.warnings[0], /link/);
+  assert.deepEqual([...m.fixes], [
+    '46,XX,t(16;16)(p13.1;q22)',
+    '46,XY,inv(16)(p13.1q22)',
+    '46,XX,+1,der(1;7)(q10;p10)',
+    'mos 47,XX,+i(12)(p10)/46,XX',
+    '45,X,-Y',
+  ], 'the leading fragment and every k= value, decoded, in order, ignoring view params');
+});
+
+test('a pasted link with no karyotype in it gets one sentence, not a wall', () => {
+  const m = ISCN.parse('https://example.com/some/page?q=hello');
+  assert.equal(m.warnings.length, 1, JSON.stringify(m.warnings));
+  assert.match(m.warnings[0], /web address|link/);
+  assert.equal(m.fixes.length, 0);
+});
+
+test('identical complaints collapse to one', () => {
+  // Three copies of the same junk token used to earn three copies of the same
+  // sentence, and a wall of repeats reads as shouting.
+  const texts = [...ISCN.parse('46,XX,zzz,zzz,zzz').warnings];
+  assert.equal(new Set(texts).size, texts.length, 'no message appears twice: ' + JSON.stringify(texts));
+});

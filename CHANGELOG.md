@@ -3,6 +3,21 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-09 (a pasted link is not a karyotype, and says so once)
+
+- **Pasting links hands back the karyotypes inside them.** A paste of fifteen
+  tab URLs used to earn fifteen copies of the same three complaints. No legal
+  ISCN string contains "://", so the parser now recognises the situation before
+  tokenizing: one sentence, and when the links are KaryoDraw's own, every k=
+  karyotype comes back as a did-you-mean chip, the leading bare fragment
+  included, each vetted like any other offered fix.
+- **Exact duplicate messages collapse everywhere.** Three copies of the same
+  junk token now earn one sentence, not three.
+- **The caption line under the Style toggle is gone entirely.** Both buttons
+  already explain themselves in their tooltips, and the modes demonstrate
+  themselves when clicked; "spot the abnormality yourself" lives on in the
+  Realistic tooltip.
+
 ## 2026-09-08 (the involved segments are the ones that moved)
 
 - **A stationary segment no longer earns a row.** On a fully balanced
