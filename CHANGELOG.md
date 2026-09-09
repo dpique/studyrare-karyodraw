@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-09 (red carets and slate carets each get their row)
+
+- **The two caret colors are explained, and both appear when both are drawn.**
+  Red carets are the deletion's own mark, since a deletion has no span mark,
+  the material is simply gone, and the caret carries the identity itself;
+  slate carets edge every other marked span, whose hooks, box or block already
+  carry the operation's color. The legend used to show a single row even when
+  both colors were on screen; it now shows "deletion breakpoint: the cut where
+  material was lost" and "breakpoint: cut within one chromosome" each exactly
+  when drawn.
+
 ## 2026-09-09 (the cut and the join become a labeled pair)
 
 - **The two rearrangement marks now explain their difference.** The caret mark

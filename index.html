@@ -1606,8 +1606,16 @@
       // is retired from this legend: the app already uses it for whole-arm
       // Robertsonian fusions and for gene fusions, and a third sense was one
       // too many.
-      if (has('path[fill="' + OP.del + '"]')) html += markSwatch("carets", OP.del, "breakpoint: cut within one chromosome");
-      else if (has('path[fill="#1e293b"]')) html += markSwatch("carets", "#1e293b", "breakpoint: cut within one chromosome");
+      // Two caret colors, two rows, each present exactly when drawn (Dan,
+      // 2026-09-09, asking why some carets are red and some black). Red is the
+      // deletion's own color: a deletion has no span mark, the material is
+      // simply gone, so its caret carries the identity itself. Slate is
+      // neutral ink for every other span's edges, because the span mark
+      // between them (teal hooks, amber box, magenta block) already says which
+      // operation it is. The old else-if showed one row when both were on
+      // screen, and one label cannot explain two colors.
+      if (has('path[fill="' + OP.del + '"]')) html += markSwatch("carets", OP.del, "deletion breakpoint: the cut where material was lost");
+      if (has('path[fill="#1e293b"]')) html += markSwatch("carets", "#1e293b", "breakpoint: cut within one chromosome");
       if (has('line[stroke-dasharray="2 1.5"]')) html += markSwatch("seam", "#0f172a", "junction: pieces of two chromosomes joined");
       // The ring's clasp (a seam with two arrowheads) marks where the broken ends
       // closed the circle. It was drawn on every ring and keyed nowhere; a

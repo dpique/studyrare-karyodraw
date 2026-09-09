@@ -79,6 +79,20 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
       assert.ok(!/junction/i.test(leg), 'one chromosome, no junction seam');
     });
 
+    await t.test('the two caret colors get two rows, each present exactly when drawn', async () => {
+      // Red carets are the deletion's own mark; slate carets edge every other
+      // span. The old else-if showed one row when both were on screen.
+      await open(page, '46,XY,del(5)(p15.2),inv(2)(p13q24)');
+      const both = await legendText(page);
+      assert.match(both, /deletion breakpoint: the cut where material was lost/, 'the red row');
+      assert.match(both, /breakpoint: cut within one chromosome/, 'and the slate row beside it');
+
+      await open(page, '46,XY,del(5)(p15.2)');
+      const delOnly = await legendText(page);
+      assert.match(delOnly, /deletion breakpoint/, 'a lone deletion gets the red row');
+      assert.ok(!/breakpoint: cut within one chromosome/.test(delOnly), 'and no slate row it did not draw');
+    });
+
     await t.test('an inversion teaches hooks without any box row', async () => {
       await open(page, '46,XX,inv(2)(p21q31)');
       const leg = await legendText(page);
