@@ -90,7 +90,13 @@
     gpos50: { name: "G-positive (medium)", bio: "Medium-dark band: AT-rich, gene-poorer, later-replicating." },
     gpos75: { name: "G-positive (dark)", bio: "Dark band: AT-rich, gene-poor, late-replicating heterochromatin-like." },
     gpos100: { name: "G-positive (darkest)", bio: "Darkest band: very AT-rich, gene-poor, latest-replicating." },
-    acen: { name: "Centromere", bio: "The centromere (α-satellite heterochromatin) where the kinetochore assembles and spindle fibers attach at cell division." },
+    // "Centromeric band", not "Centromere": p11.1 and q11.1 are the two acen
+    // bands that make up the drawn centromere region, while ISCN reserves the
+    // designation 10 (p10, q10) for the centromere itself, and the whole-arm
+    // notes here already teach that convention. Dan hovered 22q11.1 on the
+    // Philadelphia figure and asked whether "Centromere" was true (2026-09-09);
+    // it was true in spirit and loose in letter.
+    acen: { name: "Centromeric band", bio: "One of the two bands (p11.1 and q11.1) that together form the drawn centromere: α-satellite heterochromatin where the kinetochore assembles and spindle fibers attach at cell division. The centromere itself is designated 10, the p10 and q10 of whole-arm rearrangements." },
     gvar: { name: "Variable region", bio: "Polymorphic heterochromatin whose size varies normally between people (e.g. 1q, 9q, 16q, Yq), usually not pathogenic." },
     stalk: { name: "Acrocentric stalk", bio: "The stalk of an acrocentric short arm (chr 13,14,15,21,22): houses the ribosomal RNA genes (NOR). Losing it is generally harmless." },
     // Centromeric material that rode across a junction because the breakpoint fell inside

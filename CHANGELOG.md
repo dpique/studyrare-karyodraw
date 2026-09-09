@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-09 (the centromere tooltip earns its precision)
+
+- **Hovering the hatched centromere region now says "Centromeric band".**
+  22q11.1 is one of the two acen bands (with p11.1) that make up the drawn
+  centromere, and calling it flatly "Centromere" was true in spirit and loose
+  in letter: ISCN reserves the designation 10, the p10 and q10 of whole-arm
+  rearrangements, for the centromere itself, and the app teaches exactly that
+  convention elsewhere. The band detail explains the distinction.
+
 ## 2026-09-09 (a clone built of derivatives is not a syndrome)
 
 - **A complex cancer karyotype no longer earns a constitutional syndrome
