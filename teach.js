@@ -1600,19 +1600,19 @@
   // ---- curated clinical / board notes --------------------------------------
   // Each matcher inspects a clone and returns notes when it fits.
   var SYNDROMES = [
-    { test: function (c) { return trisomy(c, "21"); }, name: "Trisomy 21, Down syndrome",
+    { test: function (c) { return trisomy(c, "21"); }, aneuploidy: true, name: "Trisomy 21, Down syndrome",
       note: "The most common autosomal trisomy compatible with life (~1/700 births). Three copies of chromosome 21. Features: characteristic facies, hypotonia, intellectual disability, ~50% congenital heart disease (AV canal), ↑ risk of AML/ALL and early Alzheimer disease. ~95% free trisomy (nondisjunction, ↑ with maternal age), ~4% Robertsonian translocation, ~1% mosaic." },
-    { test: function (c) { return trisomy(c, "18"); }, name: "Trisomy 18, Edwards syndrome",
+    { test: function (c) { return trisomy(c, "18"); }, aneuploidy: true, name: "Trisomy 18, Edwards syndrome",
       note: "Three copies of chromosome 18. Clenched fists with overlapping fingers, rocker-bottom feet, micrognathia, congenital heart disease; most die in the first year." },
-    { test: function (c) { return trisomy(c, "13"); }, name: "Trisomy 13, Patau syndrome",
+    { test: function (c) { return trisomy(c, "13"); }, aneuploidy: true, name: "Trisomy 13, Patau syndrome",
       note: "Three copies of chromosome 13. Holoprosencephaly, cleft lip/palate, polydactyly, cutis aplasia; high early mortality." },
-    { test: function (c) { return sexCall(c) === "turner"; }, name: "Turner syndrome (45,X and variants)",
+    { test: function (c) { return sexCall(c) === "turner"; }, aneuploidy: true, name: "Turner syndrome (45,X and variants)",
       note: "Loss of all or part of the second sex chromosome. 45,X (monosomy X) is classic; variants include an isochromosome i(Xq), a ring r(X), an idic(Y), and 45,X mosaicism (e.g. 45,X/46,XX). Short stature, ovarian dysgenesis/streak gonads, webbed neck, coarctation/bicuspid aortic valve, lymphedema." },
-    { test: function (c) { return sexCall(c) === "klinefelter"; }, name: "Klinefelter syndrome (47,XXY and variants)",
+    { test: function (c) { return sexCall(c) === "klinefelter"; }, aneuploidy: true, name: "Klinefelter syndrome (47,XXY and variants)",
       note: "An extra X in a male (≥1 Y with ≥2 X); 47,XXY is classic, with 48,XXXY and 48,XXYY as higher-grade variants. Tall stature, small firm testes, gynecomastia, infertility, low testosterone. The extra X (or Xs) inactivate as Barr bodies." },
-    { test: function (c) { return sexCall(c) === "xyy"; }, name: "47,XYY",
+    { test: function (c) { return sexCall(c) === "xyy"; }, aneuploidy: true, name: "47,XYY",
       note: "An extra Y. Usually tall stature; typically normal fertility and intelligence within the normal range. Often incidental." },
-    { test: function (c) { return sexCall(c) === "xxx"; }, name: "47,XXX, Triple X",
+    { test: function (c) { return sexCall(c) === "xxx"; }, aneuploidy: true, name: "47,XXX, Triple X",
       note: "An extra X in a female. Often mild/absent phenotype; tall stature, sometimes learning difficulties. Two Barr bodies." },
     // The fragile site carries no disease information of its own: fra(11)(q23) and
     // fra(X)(q27.3) are written the same way and mean very different things, so the
@@ -1634,7 +1634,67 @@
     // needs. Matched through hasFusion so the breakpoints are read precisely.
     { test: function (c) { return hasFusion(c, { chroms: ["3", "8"], bands: [["p14.2", "q24.1"], ["p14", "q24"]] }); },
       name: "t(3;8)(p14.2;q24.1), familial renal cell carcinoma",
-      note: "The classic constitutional cancer translocation: a balanced t(3;8) carried in every cell, first described in a family whose carriers developed multifocal, bilateral clear cell renal cell carcinoma. The break disrupts <i>FHIT</i> at the FRA3B fragile site, but the cancer mechanism is loss, not fusion: a kidney cell can lose the derivative carrying distal 3p, and with it <i>VHL</i>, leaving the remaining <i>VHL</i> allele one hit from inactivation. Carriers of a constitutional translocation involving 3p warrant renal imaging surveillance." }
+      note: "The classic constitutional cancer translocation: a balanced t(3;8) carried in every cell, first described in a family whose carriers developed multifocal, bilateral clear cell renal cell carcinoma. The break disrupts <i>FHIT</i> at the FRA3B fragile site, but the cancer mechanism is loss, not fusion: a kidney cell can lose the derivative carrying distal 3p, and with it <i>VHL</i>, leaving the remaining <i>VHL</i> allele one hit from inactivation. Carriers of a constitutional translocation involving 3p warrant renal imaging surveillance." },
+    // ---- acquired dosage lesions (marrow and tumour karyotypes) -----------
+    { test: function (c) { return hasInterstitialQDel(c, "5"); }, acquired: true,
+      name: "del(5q), MDS with isolated del(5q)",
+      note: "The one marrow karyotype with its own drug: myelodysplastic syndrome with isolated del(5q) causes anemia with a normal or raised platelet count and hypolobated megakaryocytes, and it responds to lenalidomide. The mechanism is haploinsufficiency, <i>RPS14</i> for the anemia and <i>CSNK1A1</i> for the lenalidomide response, with no second hit needed. A co-occurring <i>TP53</i> mutation predicts lenalidomide failure and transformation, so it is worth looking for at diagnosis. Matched only as an interstitial q-arm deletion, so the constitutional 5q35 deletion of Sotos syndrome never collects this note." },
+    { test: function (c) { return hasLoss(c, "7") || hasDelMatching(c, "7", /^q(2|3)/); }, acquired: true,
+      name: "monosomy 7 / del(7q), MDS and AML",
+      note: "The most common adverse numeric lesion of myeloid disease, whether the whole chromosome goes or only 7q. Classic after alkylating chemotherapy or radiation, five to seven years out, often beside del(5q) and <i>TP53</i> loss. In a child or young adult it is a prompt to think about germline predisposition, <i>GATA2</i> deficiency and <i>SAMD9</i>/<i>SAMD9L</i>, in which a marrow can even lose the mutant-bearing chromosome 7 as an adaptation. The unbalanced der(1;7)(q10;p10), which also costs 7q, has its own entry." },
+    { test: function (c) { return hasGain(c, "8"); }, acquired: true,
+      name: "trisomy 8, acquired (marrow)",
+      note: "The most common acquired trisomy in myeloid disease, intermediate risk where risk is graded. On its own it is not proof of disease: WHO treats +8, del(20q) and loss of Y as insufficient to define MDS without dysplasia, since each can appear in marrows that never progress. The trap runs the other way too: constitutional trisomy 8 mosaicism, Warkany syndrome, can surface in a marrow karyotype and read as acquired, so an unexpected +8 without hematologic disease is worth a fibroblast check." },
+    { test: function (c) { return hasIso(c, "17", "q10"); }, acquired: true,
+      name: "i(17)(q10), isochromosome 17q",
+      note: "One rearrangement, two doses: two long arms and no short arm, so 17q is gained while 17p, and with it <i>TP53</i>, goes missing in a single stroke. As an isolated marrow finding it defines an aggressive MDS/MPN picture. In CML it is a classic major-route sign of clonal evolution toward blast phase, with +8, an extra Philadelphia chromosome and +19. And it is the most common chromosome abnormality of medulloblastoma, the same lesion in a different organ." },
+    { test: function (c) { return hasDelMatching(c, "20", /^q/); }, acquired: true,
+      name: "del(20q), clonal marrow finding",
+      note: "A recurrent deletion of myeloid disease with a reputation milder than its looks: in MDS it sits in the good-risk cytogenetic group, and it is common in polycythemia vera and the other myeloproliferative neoplasms. It also appears as clonal hematopoiesis in marrows with normal counts, which is why WHO does not accept it alone as proof of MDS; the dysplasia, not the deletion, makes that call." },
+    { test: function (c) { return hasDelBand(c, "13", "q14"); },
+      name: "del(13)(q14), retinoblastoma / CLL",
+      note: "One band, two eras of cancer genetics. Constitutional: deletion of <i>RB1</i>, retinoblastoma predisposition with the 13q14 deletion syndrome around it, and the ground on which Knudson built the two-hit hypothesis. Acquired: the most common and most favorable FISH finding in CLL, where the target is not <i>RB1</i> but the neighbouring microRNA cluster <i>MIR15A</i>/<i>MIR16-1</i>. Which story a report is telling is decided by the tissue it came from." },
+    { test: function (c) { return hasDelBand(c, "11", "q22"); }, acquired: true,
+      name: "del(11)(q22), CLL with ATM loss",
+      note: "The CLL deletion that takes <i>ATM</i>: historically bulky nodes and an earlier need for treatment, a disadvantage largely flattened by modern targeted therapy. The same gene inactivated in the germline is ataxia-telangiectasia, and the same gene is the usual companion loss in T-prolymphocytic leukemia, so 11q22.3 is worth knowing as an address. Distinct from the terminal 11q deletion of Jacobsen syndrome further out at q23-q24." },
+    { test: function (c) { return hasGain(c, "12"); }, acquired: true,
+      name: "trisomy 12, CLL",
+      note: "The intermediate-risk member of the CLL panel and the one with a look: atypical lymphocyte morphology and stronger surface immunoglobulin than typical CLL. Co-occurring <i>NOTCH1</i> mutations concentrate here. As with any lone trisomy in blood, an unexpected +12 without disease deserves a thought for constitutional mosaicism before it is called clonal." },
+    { test: function (c) { return hasDelBand(c, "17", "p13"); },
+      name: "del(17p), TP53 loss / Miller-Dieker",
+      note: "The sub-band carries the whole meaning. Acquired, this is loss of <i>TP53</i> at 17p13.1, the single most treatment-changing deletion in CLL and an adverse marker across MDS, AML and myeloma; the remaining allele is so often point-mutated that deletion and mutation testing travel together. Constitutional, a deletion at 17p13.3 is Miller-Dieker syndrome, lissencephaly from <i>PAFAH1B1</i> loss. Same arm, different sub-band, different world." },
+    { test: function (c) { return hasIso(c, "12", "p10"); },
+      name: "i(12)(p10), Pallister-Killian / germ cell tumour",
+      note: "Two readings, split by context. As a mosaic supernumerary chromosome in a child it is Pallister-Killian syndrome, tetrasomy 12p that is classically absent from blood and found in fibroblasts or by microarray. Acquired, i(12p) is the defining chromosome abnormality of germ cell tumours, useful precisely when a poorly differentiated midline tumour in a young adult refuses to declare its lineage." },
+    { test: function (c) { return (c.aberrations || []).some(function (a) { return a.kind === "hsr" && (a.chroms || [])[0] === "2" && (((a.breakpoints || [])[0] || [])[0] || "").indexOf("p24") === 0; }); }, acquired: true,
+      name: "hsr(2)(p24), MYCN amplification",
+      note: "A homogeneously staining region at 2p24 is <i>MYCN</i> amplification until proven otherwise, the defining adverse marker of neuroblastoma: it moves a child to high-risk therapy whatever the stage looks like. Amplification keeps two shapes, built into a chromosome as an hsr or floating free as double minutes, and both mean the same biology." },
+    { test: function (c) { return hasKind(c, "dmin"); }, acquired: true,
+      name: "double minutes (dmin), gene amplification",
+      note: "Tiny paired chromatin bodies with no centromere, each a circle of amplified DNA: the other face of gene amplification beside the homogeneously staining region. In a child's tumour the classic content is <i>MYCN</i> and the disease neuroblastoma; in AML it is most often <i>MYC</i>. Having no centromere, they segregate unevenly, so their number varies wildly from cell to cell." },
+    { test: function (c) { return hasLoss(c, "Y"); }, acquired: true,
+      name: "loss of Y, age-related clonal change",
+      note: "Written with an explicit -Y, this is usually the marrow of an older man, and loss of Y is the most common acquired chromosome change in that setting: on its own it is evidence of age rather than disease, and WHO does not accept it alone as MDS. Mosaic loss of Y in blood also tracks with smoking and cardiovascular risk in population studies. The constitutional reading, a conceptus with one X and no Y, is Turner syndrome, which is why both notes can appear together for 45,X,-Y." },
+    // ---- whole-clone patterns ---------------------------------------------
+    { test: function (c) { var n = chromCount(c); return c.ploidy === 2 && n >= 51 && n <= 65 && gainCount(c) >= 4; }, acquired: true, pattern: true,
+      name: "high hyperdiploidy (51-65 chromosomes), childhood B-ALL",
+      note: "The most common favorable category of childhood B-lymphoblastic leukemia: a clone that gained whole chromosomes in one aberrant division rather than rearranging any. The gains are nonrandom, +X, +4, +6, +10, +14, +17, +18 and +21, and the co-occurrence of +4, +10 and +17 marks the best outlook of all. The individual trisomy cards are suppressed here on purpose: +21 inside a hyperdiploid clone is part of the pattern, not Down syndrome." },
+    // Ploidy 1 or 2: a near-haploid clone written on a haploid baseline, e.g.
+    // 26,X,+10,+14,+18,+21, parses at ploidy 1, and that spelling IS the classic
+    // way near-haploid ALL is reported.
+    { test: function (c) { var n = chromCount(c); return (c.ploidy === 1 || c.ploidy === 2) && n >= 24 && n <= 39; }, acquired: true, pattern: true,
+      name: "hypodiploidy (fewer than 40 chromosomes), B-ALL",
+      note: "The mirror image of high hyperdiploidy and the opposite outlook: near-haploid (24-30 chromosomes) and low-hypodiploid (31-39) B-ALL are among the worst-risk childhood leukemias. About half of low-hypodiploid cases carry a <i>TP53</i> mutation that proves germline, so this karyotype is a Li-Fraumeni evaluation waiting to happen, one of the clearest places a tumour karyotype changes a family's counseling. The laboratory trap: the clone can double itself and masquerade as hyperdiploidy in the fifties; the giveaway is chromosomes sitting at two and four copies rather than three." },
+    // ---- constitutional deletions with a cancer thread --------------------
+    { test: function (c) { return hasDelBand(c, "1", "p36"); },
+      name: "del(1)(p36), 1p36 deletion syndrome",
+      note: "The most common terminal deletion syndrome: hypotonia, developmental disability, seizures, straight eyebrows and a deep-set look, often submicroscopic and made by microarray rather than banding. The same region is lost somatically in neuroblastoma, where 1p deletion is an adverse marker that travels with <i>MYCN</i> amplification, one address with a constitutional and an acquired story." },
+    { test: function (c) { return hasDelBand(c, "11", "p13"); },
+      name: "del(11)(p13), WAGR syndrome",
+      note: "A contiguous gene deletion that spells its own phenotype: Wilms tumour, Aniridia, Genitourinary anomalies and a Range of developmental delay, from loss of <i>WT1</i> and <i>PAX6</i> side by side. Aniridia in a newborn is the visible flag, and the deletion is the reason it triggers Wilms tumour surveillance, renal ultrasound every three months through early childhood. The same <i>WT1</i> is the desmoplastic small round cell tumour partner and the Denys-Drash gene." },
+    { test: function (c) { return hasTerminalDelAt(c, "11", ["q23", "q24"]); },
+      name: "del(11)(q23-q24), Jacobsen syndrome",
+      note: "A terminal deletion of distal 11q: growth and developmental delay, characteristic facies, and the Paris-Trousseau platelet disorder from <i>FLI1</i> loss, so a bleeding history belongs in the workup. Most arise de novo; a parental balanced rearrangement is the heritable minority worth excluding. The same <i>FLI1</i>, translocated rather than deleted, is the Ewing sarcoma partner." }
   ];
   function hasDel(c, chrom, arm) {
     return c.aberrations.some(function (ab) {
@@ -1646,6 +1706,51 @@
       return ab.kind === "del" && ab.chroms[0] === chrom && (ab.breakpoints[0] || []).some(function (b) { return b.indexOf(bandPrefix) === 0; });
     });
   }
+  // ---- matchers for the dosage lesions and whole-clone patterns -----------
+  //
+  // The joins in FUSIONS answer "what is fused". These answer the other
+  // questions a marrow karyotype gets asked: what is gained or lost, and what
+  // the whole clone looks like. Matching stays deliberately narrow, an
+  // explicit -7 rather than an inferred one, and a deletion only at the bands
+  // the acquired lesion actually uses, so Williams syndrome at 7q11.23 and
+  // Sotos syndrome at 5q35 never collect a leukemia note.
+  function hasLoss(c, chrom) {
+    return (c.aberrations || []).some(function (a) { return a.kind === "loss" && (a.chroms || [])[0] === chrom; });
+  }
+  // An explicit whole-chromosome gain, read from the notation rather than the
+  // complement: a supernumerary i(12)(p10) raises the chromosome 12 count too,
+  // but it is tetrasomy 12p, not trisomy 12, and must not collect the CLL note.
+  function hasGain(c, chrom) {
+    return (c.aberrations || []).some(function (a) { return a.kind === "gain" && (a.chroms || [])[0] === chrom; });
+  }
+  function hasInterstitialQDel(c, chrom) {
+    return (c.aberrations || []).some(function (a) {
+      var g = (a.breakpoints || [])[0] || [];
+      return a.kind === "del" && (a.chroms || [])[0] === chrom && g.length === 2 &&
+        g[0].charAt(0) === "q" && g[1].charAt(0) === "q";
+    });
+  }
+  function hasDelMatching(c, chrom, re) {
+    return (c.aberrations || []).some(function (a) {
+      return a.kind === "del" && (a.chroms || [])[0] === chrom &&
+        ((a.breakpoints || [])[0] || []).some(function (b) { return re.test(b); });
+    });
+  }
+  function hasTerminalDelAt(c, chrom, prefixes) {
+    return (c.aberrations || []).some(function (a) {
+      var g = (a.breakpoints || [])[0] || [];
+      return a.kind === "del" && (a.chroms || [])[0] === chrom && g.length === 1 &&
+        prefixes.some(function (p) { return g[0].indexOf(p) === 0; });
+    });
+  }
+  function hasIso(c, chrom, band) {
+    return (c.aberrations || []).some(function (a) {
+      return a.kind === "iso" && (a.chroms || [])[0] === chrom && (((a.breakpoints || [])[0] || [])[0] || "") === band;
+    });
+  }
+  function hasKind(c, kind) { return (c.aberrations || []).some(function (a) { return a.kind === kind; }); }
+  function chromCount(c) { var n = 0, comp = c.complement || {}; for (var k in comp) n += comp[k]; return n; }
+  function gainCount(c) { return (c.aberrations || []).filter(function (a) { return a.kind === "gain"; }).length; }
   // Constitutional notes first, then the recurrent rearrangements, which are all
   // acquired. The two lists answer different questions and are kept apart for that
   // reason: SYNDROMES matches a whole-chromosome or whole-arm state, FUSIONS
@@ -1653,7 +1758,19 @@
   // ended up beside trisomy 21 in one array with a matcher that ignored bands.
   function syndromes(clone) {
     var out = [];
-    SYNDROMES.forEach(function (s) { try { if (s.test(clone)) out.push({ name: s.name, note: s.note, acquired: !!s.acquired }); } catch (e) {} });
+    // The whole-clone pattern cards swallow the constitutional aneuploidy
+    // cards: a 54-chromosome hyperdiploid ALL clone contains +21 twice, and
+    // printing "Down syndrome" beside it would be confidently wrong, as would
+    // "Turner syndrome" on a near-haploid clone that kept a single X. When a
+    // pattern fires, entries marked aneuploidy are read as part of the pattern.
+    var pattern = false;
+    SYNDROMES.forEach(function (s) { try { if (s.pattern && s.test(clone)) pattern = true; } catch (e) {} });
+    SYNDROMES.forEach(function (s) {
+      try {
+        if (pattern && s.aneuploidy) return;
+        if (s.test(clone)) out.push({ name: s.name, note: s.note, acquired: !!s.acquired });
+      } catch (e) {}
+    });
     FUSIONS.forEach(function (f) {
       try {
         if (!hasFusion(clone, f)) return;
@@ -1661,6 +1778,24 @@
           note: fusionLead(f) + f.disease + ". " + f.note });
       } catch (e) {}
     });
+    // Complex karyotype is a finding about the whole picture, not any single
+    // lesion, so it is judged last. It fires only when the clone already
+    // carries a recognised acquired lesion, so a constitutional multi-anomaly
+    // report is left alone, and never beside a ploidy pattern, where the high
+    // abnormality count IS the pattern rather than complexity on top of it.
+    try {
+      var abs = clone.aberrations || [];
+      if (!pattern && abs.length >= 3 && out.some(function (s) { return s.acquired; })) {
+        var lost = {};
+        abs.forEach(function (a) { if (a.kind === "loss" && a.chroms[0] !== "X" && a.chroms[0] !== "Y") lost[a.chroms[0]] = 1; });
+        var monosomies = Object.keys(lost).length;
+        var structural = abs.some(function (a) { return a.kind !== "gain" && a.kind !== "loss"; });
+        var mono = monosomies >= 2 || (monosomies >= 1 && structural);
+        out.push({ name: "Complex karyotype (three or more abnormalities)", acquired: true,
+          note: "Three or more unrelated clonal abnormalities in one clone. In MDS and AML this is its own adverse category whatever the individual lesions are, tightly associated with biallelic <i>TP53</i> loss, and in CLL a complex karyotype carries independent weight in the era of targeted therapy." +
+            (mono ? " This clone also meets the definition of a monosomal karyotype, two or more autosomal monosomies or one plus a structural abnormality, which marks the worst tier of AML risk." : "") });
+      }
+    } catch (e) {}
     return out;
   }
 
@@ -1976,6 +2111,7 @@
     glossForTerm: glossForTerm,
     CANCER_GENES: CANCER_GENES,
     FUSIONS: FUSIONS,
+    SYNDROMES: SYNDROMES,
     ARM_INFO: ARM_INFO
   };
 })();
