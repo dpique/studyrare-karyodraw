@@ -1024,3 +1024,16 @@ test('an hsr at a known cancer-gene band is labeled with the gene', () => {
   assert.match(cellFor('46,XY,hsr(2)(p24)', '2'), /font-style="italic"[^>]*>MYCN</);
   assert.match(cellFor('46,XX,hsr(4)(q31)', '4'), />q31</, 'no known gene there, so the band speaks');
 });
+
+// ---- a non-diploid baseline is declared on the figure itself ------------------
+test('a non-diploid baseline is declared on the figure', () => {
+  // 27,X,+10 is one X and a DISOMY 10, not a monosomy X and a trisomy: the
+  // baseline changes what every symbol means, so the figure says which baseline
+  // it is drawn against instead of leaving that to the decode panel.
+  const html = wholeFigure('27,X,+10,+14,+18,+21');
+  assert.match(html, /class="kploidy"/, 'the badge is present');
+  assert.match(html, /haploid baseline/, 'and names the baseline');
+  assert.match(html, /one copy of each chromosome/);
+  assert.doesNotMatch(wholeFigure('46,XX'), /kploidy/, 'a diploid figure carries no badge');
+  assert.match(wholeFigure('69,XXY'), /triploid baseline/);
+});

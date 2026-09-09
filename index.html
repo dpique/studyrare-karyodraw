@@ -120,7 +120,11 @@
   .sitebar-nav a[aria-current="page"] { color: var(--peri-700); background: var(--peri-50); }
   .wrap { max-width: 1320px; margin: 0 auto; padding: 0 24px; }
   .hero-title { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(23px, 3.2vw, 28px); line-height: 1.1; letter-spacing: -.02em; color: var(--navy); }
-  .hero-sub { margin: 8px 0 0; max-width: 62ch; font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+  /* No max-width: the sentence fits one line on desktop and wraps naturally on
+     narrow screens, which reads tighter than a fixed two-line block (Dan,
+     2026-09-08). */
+  .hero-sub { margin: 8px 0 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+  .kploidy { display: inline-block; font: 600 11px var(--font-mono); color: var(--peri-700); background: var(--peri-50); border: 1px solid var(--peri-300); border-radius: 999px; padding: 2px 10px; margin: 0 0 8px; }
 
   .controls-label { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 14px; }
   .controls-label + .controls { margin-top: 6px; }

@@ -3,6 +3,22 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-08 (the baseline is declared, and two notes stop repeating the decode)
+
+- **A non-diploid figure declares its baseline.** A badge above the karyogram
+  now reads, for example, "haploid baseline · 23 chromosomes, one copy of each
+  chromosome", because the baseline changes what every symbol means: 27,X,+10
+  is one X and a disomy 10, not a monosomy and a trisomy. The count row in the
+  decode also states the actual window, counts of 20-34 read against the
+  haploid baseline, and says "one copy" rather than "one copies".
+- **The inv(16)/t(16;16) and inv(3)/t(3;3) notes name their two spellings and
+  stop re-explaining them.** The lead now reads "Two rearrangements, one
+  disease: inv(16)(p13.1q22) and t(16;16)(p13.1;q22)..." instead of gesturing
+  at two unnamed rearrangements and describing their mechanics, which the
+  decode panel beside the note already does.
+- **The tagline fits on one line.** The hero paragraph no longer wraps at an
+  arbitrary width on desktop.
+
 ## 2026-09-08 (the figure answers its own questions)
 
 - **The hsr block names what is amplified.** hsr(2)(p24) drew as a vivid
