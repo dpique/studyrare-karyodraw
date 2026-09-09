@@ -114,11 +114,15 @@ test('the net-imbalance table appears, toggles genes, and obeys the gate', async
       }));
       assert.ok(!st.noneLine, 'no "None:" summary line');
       assert.doesNotMatch(st.bodyText, /keeps its expected copies/, 'and the old phrase is gone');
-      assert.equal(st.rows, 4, 'both exchange partners split at their breakpoints');
+      // 2026-09-08, reading the t(16;16) table: on a fully balanced chromosome a
+      // segment that neither moved nor flipped says only that nothing happened to
+      // it, so it no longer earns a row. The panel is titled Involved segments,
+      // and these are the involved ones.
+      assert.equal(st.rows, 2, 'only the pieces that crossed over are listed');
       assert.equal(st.deviant, 0, 'nothing is gained or lost');
       assert.ok(st.calls.every((c) => c.indexOf('balanced') === 0), 'every row reads balanced first');
-      assert.deepEqual(st.calls.filter((c) => c.indexOf('exchanged') >= 0).length, 2,
-        'the two distal pieces that crossed over are marked, the two proximal ones are not');
+      assert.ok(st.calls.every((c) => c.indexOf('exchanged') >= 0),
+        'and every listed row is one that moved');
       assert.ok(st.checkbox, 'the gene checkbox opens, since genes sit at the breakpoints');
       assert.ok(st.legendFirst, 'the legend card sits above the imbalance card (owner order)');
     });
@@ -149,11 +153,38 @@ test('the net-imbalance table appears, toggles genes, and obeys the gate', async
       await page.waitForSelector('#imbalance table');
       const calls = await page.evaluate(() =>
         [...document.querySelectorAll('#imbalance td.call')].map((c) => c.textContent));
-      assert.equal(calls.length, 3);
+      assert.equal(calls.length, 1, 'the flanks that sat still are not listed: ' + JSON.stringify(calls));
       assert.equal(calls.filter((c) => c.indexOf('inverted') >= 0).length, 1,
-        'only the middle span is inverted: ' + JSON.stringify(calls));
+        'the inverted span is the involved segment');
       assert.equal(calls.filter((c) => c.indexOf('exchanged') >= 0).length, 0,
         'an inversion exchanges nothing');
+    });
+
+    await t.test('beside a gain or loss the balanced flanks stay, as context', async () => {
+      // The 2026-08-30 decision holds where it was made: on an IMBALANCED
+      // chromosome the balanced rows show where the imbalance starts and stops.
+      // Only the fully balanced case sheds its stationary rows.
+      await open(page, '46,XX,del(5)(q13q33)');
+      await page.waitForSelector('#imbalance table');
+      const st = await page.evaluate(() => ({
+        rows: [...document.querySelectorAll('#imbalance tbody tr')].map((r) =>
+          [...r.cells].map((c) => c.textContent.trim()).join(' | ')),
+      }));
+      assert.equal(st.rows.length, 3, 'lost run plus both flanks: ' + JSON.stringify(st.rows));
+      assert.match(st.rows[0], /5pter→5q13 \| 2 \| balanced/);
+      assert.match(st.rows[1], /5q13→5q33 \| 1 \| monosomy/);
+      assert.match(st.rows[2], /5q33→5qter \| 2 \| balanced/);
+    });
+
+    await t.test('the homolog translocation drops its stationary middle', async () => {
+      // The row Dan flagged: 16p13.1→16q22, two copies, balanced, ~57 Mb, a
+      // segment that sat still while the tips traded places.
+      await open(page, '46,XX,t(16;16)(p13.1;q22)');
+      await page.waitForSelector('#imbalance table');
+      const segs = await page.evaluate(() =>
+        [...document.querySelectorAll('#imbalance td.imbseg')].map((c) => c.textContent.trim()));
+      assert.equal(segs.length, 2, JSON.stringify(segs));
+      assert.ok(segs.indexOf('16p13.1→16q22') < 0, 'the stationary middle is gone');
     });
 
     await t.test('a normal karyotype shows no table at all', async () => {

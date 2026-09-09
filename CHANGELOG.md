@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-08 (the involved segments are the ones that moved)
+
+- **A stationary segment no longer earns a row.** On a fully balanced
+  rearrangement, the Involved segments table listed every piece the breakpoints
+  cut the chromosome into, including the one that sat still: t(16;16) showed a
+  57 Mb middle whose whole story was that nothing happened to it. Only the
+  pieces that moved or flipped are listed now. Beside a genuine gain or loss
+  the balanced flanks stay, since there they show where the imbalance starts
+  and stops.
+- **The Highlight caption is gone.** "The chromosomes involved in the
+  abnormality are colored" explained itself the moment the toggle was clicked.
+  Realistic keeps its caption, and only in that mode, because "try to spot the
+  abnormality yourself" changes the reader's task in a way the name does not.
+
 ## 2026-09-08 (the baseline is declared, and two notes stop repeating the decode)
 
 - **A non-diploid figure declares its baseline.** A badge above the karyogram
