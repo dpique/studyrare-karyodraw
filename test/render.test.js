@@ -17,6 +17,8 @@ load('ideogram-data.js');
 load('iscn-parser.js');
 load('karyo-render.js');
 load('segregation.js');
+load('teach.js');   // the hsr block label reads Teach.CANCER_GENES when present
+
 const Karyo = win.Karyo;
 const ISCN = win.ISCN;
 const IDEO = win.IDEOGRAM;
@@ -989,4 +991,36 @@ test('a donor that broke on its p arm hands over a piece the same way', () => {
   // der(1)(1pter→1q23::19p13.3→19pter).
   assert.equal(detailed('46,XY,der(1)t(1;19)(q23;p13.3)', 'der(1)'),
     `1pter→${at('1', 'q23')}::${at('19', 'p13.3')}→19pter`);
+});
+
+// ---- the sex-row placeholder follows the ploidy, and says what it stands for --
+// A ghost may draw in a cell of its own (the unnamed sex placeholder has no
+// instances beside it), so these count across the whole figure.
+const wholeFigure = (k) => {
+  const c = ISCN.parse(k).clones[0];
+  const cont = { innerHTML: '' };
+  Karyo.render(cont, c, { theme: 'simple', level: 1, affected: Karyo.computeAffected([c]) });
+  return cont.innerHTML;
+};
+test('a near-haploid clone with one X is not missing a sex chromosome', () => {
+  // 27,X,+10,+14,+18,+21: at ploidy 1 a single X IS the full sex complement. The
+  // pad to two sex chromosomes was hardcoded diploid, so the clone grew a dashed
+  // ghost that said "missing" and could not say missing what, because nothing was.
+  assert.equal(ghosts(wholeFigure('27,X,+10,+14,+18,+21')), 0, 'nothing is missing at ploidy 1');
+});
+test('the unnamed lost sex chromosome says what kind of thing is gone', () => {
+  // Bare 45,X does not name which sex chromosome was lost and the figure must not
+  // guess X or Y; it can still say what KIND of slot stands empty.
+  const html = wholeFigure('45,X');
+  assert.equal(ghosts(html), 1);
+  assert.match(html, /<div class="klabel">X or Y<\/div>/, 'the placeholder is attributed');
+});
+
+// ---- the hsr block names what is amplified -----------------------------------
+test('an hsr at a known cancer-gene band is labeled with the gene', () => {
+  // The block was a wordless vivid rectangle: the reader had to leave the figure
+  // to learn it meant MYCN. The band's known cancer gene is written on the block,
+  // italic per gene-symbol style, with the band as the fallback elsewhere.
+  assert.match(cellFor('46,XY,hsr(2)(p24)', '2'), /font-style="italic"[^>]*>MYCN</);
+  assert.match(cellFor('46,XX,hsr(4)(q31)', '4'), />q31</, 'no known gene there, so the band speaks');
 });
