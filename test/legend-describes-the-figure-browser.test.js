@@ -64,7 +64,7 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
     await t.test('a plain translocation teaches the seam and nothing it does not draw', async () => {
       await open(page, '46,XY,t(9;22)(q34;q11.2)');
       const leg = await legendText(page);
-      assert.match(leg, /fused/i, 'the dashed fusion junction, the mark actually on screen');
+      assert.match(leg, /junction: pieces of two chromosomes joined/, 'the dashed junction seam, the mark actually on screen');
       assert.ok(!/duplicated segment/.test(leg), 'no dup frame drawn, no dup row');
       assert.ok(!/inversion/i.test(leg), 'no hooks drawn, no inversion row');
       assert.ok(!/breakpoint/.test(leg), 'no carets drawn, no caret row');
@@ -76,7 +76,7 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
       assert.match(leg, /duplicated segment/, 'the amber box is on screen');
       assert.match(leg, /inversion/i, 'the teal hooks are on screen');
       assert.match(leg, /breakpoint/, 'the junction carets are on screen');
-      assert.ok(!/fused/i.test(leg), 'one chromosome, no fusion seam');
+      assert.ok(!/junction/i.test(leg), 'one chromosome, no junction seam');
     });
 
     await t.test('an inversion teaches hooks without any box row', async () => {
@@ -90,7 +90,7 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
       await open(page, '46,XX');
       const leg = await legendText(page);
       assert.match(leg, /nothing to highlight/i);
-      assert.ok(!/duplicated segment|inversion|breakpoint|fused/i.test(leg));
+      assert.ok(!/duplicated segment|inversion|breakpoint|junction/i.test(leg));
     });
   } finally {
     await browser.close();
@@ -107,8 +107,8 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
 //
 // And because the swatch shows the shape, no label names one: "box: duplicated
 // segment" is "duplicated segment", "hooks: inverted, drawn end-for-end" is
-// "inversion", "carets: a breakpoint" is "breakpoint", "dashed line: where two
-// chromosomes fused" is "where two chromosomes fused". A row that both draws a mark
+// "inversion", the carets are "breakpoint: cut within one chromosome", the dashed
+// seam is "junction: pieces of two chromosomes joined". A row that both draws a mark
 // and spells the mark out says it twice.
 test('the mark rows draw their mark, not a colored block', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
@@ -134,7 +134,7 @@ test('the mark rows draw their mark, not a colored block', async (t) => {
     const got = await rows(page);
     const find = (re) => got.find((r) => re.test(r.label));
 
-    const box = find(/^duplicated segment$/i), hooks = find(/^inversion$/i), carets = find(/^breakpoint$/i);
+    const box = find(/^duplicated segment$/i), hooks = find(/^inversion$/i), carets = find(/^breakpoint: cut within one chromosome$/i);
     assert.ok(box && hooks && carets, 'the rec draws all three marks');
     [box, hooks, carets].forEach((r) =>
       assert.match(r.sw, /^<svg class="sw-mk"/, `"${r.label}" should draw its mark, not a block`));
@@ -188,7 +188,7 @@ test('the fusion seam row draws the seam', async (t) => {
       { waitUntil: 'load' });
     await page.waitForSelector('#karyo svg');
     const seam = await page.evaluate(() => {
-      const el = [...document.querySelectorAll('#legend .item')].find((e) => /fused/i.test(e.textContent));
+      const el = [...document.querySelectorAll('#legend .item')].find((e) => /junction/i.test(e.textContent));
       return el && el.firstElementChild ? el.firstElementChild.outerHTML : '';
     });
     assert.match(seam, /^<svg class="sw-mk"/, 'the seam row draws a mark');

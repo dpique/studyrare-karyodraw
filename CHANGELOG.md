@@ -3,6 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-09 (the cut and the join become a labeled pair)
+
+- **The two rearrangement marks now explain their difference.** The caret mark
+  and the dashed seam looked like two visuals for one idea, on different
+  karyotypes. They are a pair on purpose: carets mark a cut within one
+  chromosome's own material (a deletion break, the ends of an inverted or
+  duplicated span), while the dashed seam marks a junction where pieces of two
+  chromosomes meet in one derivative. The legend now says so: "breakpoint: cut
+  within one chromosome" and "junction: pieces of two chromosomes joined".
+- **"Fused" is retired from the legend.** The app already uses fusion for
+  Robertsonian whole-arm fusions and for gene fusions; a third sense on the
+  seam row was one too many. The ring's clasp row says "joined" now too.
+
 ## 2026-09-09 (the centromere tooltip earns its precision)
 
 - **Hovering the hatched centromere region now says "Centromeric band".**

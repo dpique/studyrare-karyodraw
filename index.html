@@ -1595,13 +1595,24 @@
       if (has('path[stroke="' + OP.inv + '"]')) html += markSwatch("hooks", OP.inv, "inversion");
       // Caret swatch takes the color actually drawn: red for a deletion
       // break, slate for the edges of a marked span.
-      if (has('path[fill="' + OP.del + '"]')) html += markSwatch("carets", OP.del, "breakpoint");
-      else if (has('path[fill="#1e293b"]')) html += markSwatch("carets", "#1e293b", "breakpoint");
-      if (has('line[stroke-dasharray="2 1.5"]')) html += markSwatch("seam", "#0f172a", "where two chromosomes fused");
+      //
+      // The carets and the seam are a designed PAIR, and their labels say so
+      // (Dan, 2026-09-09, asking whether they were two visuals for one thing):
+      // carets mark a CUT within one chromosome's own material (a deletion
+      // break, the ends of an inverted or duplicated span), the dashed seam
+      // marks a JUNCTION where pieces of two source chromosomes meet in one
+      // derivative. At a derivative the cut and the join coincide, which is
+      // why the labels carry the distinction the marks alone cannot. "Fused"
+      // is retired from this legend: the app already uses it for whole-arm
+      // Robertsonian fusions and for gene fusions, and a third sense was one
+      // too many.
+      if (has('path[fill="' + OP.del + '"]')) html += markSwatch("carets", OP.del, "breakpoint: cut within one chromosome");
+      else if (has('path[fill="#1e293b"]')) html += markSwatch("carets", "#1e293b", "breakpoint: cut within one chromosome");
+      if (has('line[stroke-dasharray="2 1.5"]')) html += markSwatch("seam", "#0f172a", "junction: pieces of two chromosomes joined");
       // The ring's clasp (a seam with two arrowheads) marks where the broken ends
       // closed the circle. It was drawn on every ring and keyed nowhere; a
       // visitor-reviewed r(Y) mosaic had three of them and no explanation.
-      if (has("svg.ideo-ring")) html += markSwatch("clasp", "#ec9b27", "where the ring closed (the two broken ends, fused)");
+      if (has("svg.ideo-ring")) html += markSwatch("clasp", "#ec9b27", "where the ring closed (its two broken ends joined)");
       var keys = Object.keys(AFFECTED);
       if (keys.length) {
         html += '<span class="item" style="color:#94a3b8">involved:</span>';
