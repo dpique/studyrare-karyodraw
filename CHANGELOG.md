@@ -3,6 +3,22 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-08 (the figure answers its own questions)
+
+- **The hsr block names what is amplified.** hsr(2)(p24) drew as a vivid
+  rectangle a reader had to leave the figure to understand; the block now
+  carries the band's known cancer gene, *MYCN*, in gene-symbol italics, or the
+  band itself where no gene is on the map.
+- **The sex-row placeholder follows the ploidy, and says what it stands for.**
+  A 27,X near-haploid clone's single X is its full sex complement, but the row
+  was padded to the diploid two, inventing a dashed "missing" chromosome for a
+  clone that is missing nothing. And the genuine placeholder of 45,X, which
+  rightly refuses to guess whether an X or a Y was lost, now says the one thing
+  it does know: the label under it reads "X or Y".
+- **Clinical notes sit above the band map.** The notes are the payoff of a
+  recognised karyotype and the band map is reference, so the side panel now
+  reads in that order.
+
 ## 2026-09-08 (the haploid base holds across the whole near-haploid band)
 
 - **Near-haploid clones at 27-34 chromosomes are now read against the haploid

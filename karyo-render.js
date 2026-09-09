@@ -658,6 +658,25 @@
         // Amplified block: a solid vivid band (the homogeneously staining region).
         body.push('<rect x="' + pad + '" y="' + span.y0.toFixed(2) + '" width="' + W + '" height="' + hh +
           '" fill="' + OP_COLORS.hsr + '" clip-path="url(#' + uid + ')"/>');
+        // The block was a wordless rectangle, and the one thing a reader wants
+        // from it is what is amplified. When the band carries a known cancer
+        // gene (MYCN at 2p24 being the classic), the gene is written on the
+        // block, italic per gene-symbol style; elsewhere the band itself is.
+        // Skipped when the block is too short or the name too wide for the 28
+        // units of chromosome, rather than spilling past its edge.
+        var hGenes = (typeof window !== "undefined" && window.Teach && window.Teach.CANCER_GENES) || [];
+        var hBand = ov.band || "", hLabel = "", hItal = false;
+        for (var hg = 0; hg < hGenes.length; hg++) {
+          var hgg = hGenes[hg];
+          if (String(hgg.c) === String(ov.chrom) && hBand &&
+              (hgg.b.indexOf(hBand) === 0 || hBand.indexOf(hgg.b) === 0)) { hLabel = hgg.g; hItal = true; break; }
+        }
+        if (!hLabel || hLabel.length > 6) { hLabel = hBand; hItal = false; }
+        if (hLabel && hLabel.length <= 6 && (span.y1 - span.y0) >= 11) {
+          body.push('<text x="' + (pad + W / 2).toFixed(2) + '" y="' + ((span.y0 + span.y1) / 2 + 3).toFixed(2) +
+            '" text-anchor="middle" font-size="8"' + (hItal ? ' font-style="italic"' : '') +
+            ' fill="#fff">' + esc(hLabel) + '</text>');
+        }
       } else if (simple && (ov.type === "dup" || ov.type === "inv" || ov.type === "mov")) {
         drawSpanMark(ov, span);
       }
@@ -857,7 +876,7 @@
     if (kind === "hsr") {
       // An amplified block riding on the chromosome: mark the band as an hsr.
       var hbnd = resolveBand(chrom, (ab.breakpoints[0] || [])[0]), ov5 = [];
-      if (hbnd) ov5.push({ type: "hsr", chrom: chrom, from: hbnd.start, to: hbnd.end });
+      if (hbnd) ov5.push({ type: "hsr", chrom: chrom, from: hbnd.start, to: hbnd.end, band: (ab.breakpoints[0] || [])[0] });
       return { segments: [fullSeg(chrom)], overlays: ov5, caption: inst.label };
     }
     if (kind === "fra") {
@@ -979,7 +998,7 @@
           var bnd = resolveBand(sc, sb), dsc = IDEO.data[sc];
           if (!bnd || !dsc) return;
           if (s.op === "add") derOv.push(bnd.arm === "p" ? { type: "add", chrom: sc, from: 0, to: bnd.mid } : { type: "add", chrom: sc, from: bnd.mid, to: dsc.length });
-          else derOv.push({ type: "hsr", chrom: sc, from: bnd.start, to: bnd.end });
+          else derOv.push({ type: "hsr", chrom: sc, from: bnd.start, to: bnd.end, band: sb });
         });
       }
       if (segs) return { segments: segs, overlays: derOv, caption: inst.label, composite: true };
@@ -1219,7 +1238,7 @@
         var bnd = ob && resolveBand(oc, ob), od = IDEO.data[oc];
         if (bnd && od) {
           if (s.op === "add") overlays.push(bnd.arm === "p" ? { type: "add", chrom: oc, from: 0, to: bnd.mid } : { type: "add", chrom: oc, from: bnd.mid, to: od.length });
-          else overlays.push({ type: "hsr", chrom: oc, from: bnd.start, to: bnd.end });
+          else overlays.push({ type: "hsr", chrom: oc, from: bnd.start, to: bnd.end, band: ob });
         }
       } else {
         return null;                                    // ins and anything newer: no geometry here yet
@@ -2037,10 +2056,16 @@
         labeledGhosts++;
       });
       // The karyogram shows the karyotype: when nothing names the lost chromosome
-      // it does not label the gap "?" or guess whether an X or a Y was lost.
+      // it does not guess whether an X or a Y was lost. It still says what KIND
+      // of slot stands empty, so the label under the ghost reads "X or Y" rather
+      // than nothing at all: a bare dashed box marked "missing" answered no
+      // question a reader could ask (Dan, 2026-09-08). And the expected number
+      // of sex chromosomes follows the ploidy: a 27,X near-haploid clone's
+      // single X is its full sex complement, and padding every clone to the
+      // diploid two invented a missing chromosome for it.
       var xN = (clone.slots["X"] || []).length, yN = (clone.slots["Y"] || []).length;
-      for (var i = 0, n = 2 - (xN + yN) - labeledGhosts; i < n; i++) {
-        specs.push({ row: grp.name, chrom: "", insts: [], sexcell: true, opts: {
+      for (var i = 0, n = (clone.ploidy || 2) - (xN + yN) - labeledGhosts; i < n; i++) {
+        specs.push({ row: grp.name, chrom: "X or Y", insts: [], sexcell: true, opts: {
           ghost: true, ghostChrom: "X", ghostText: "missing", sexcell: true } });
       }
       ["mar", "dmin"].forEach(function (chrom) {

@@ -90,3 +90,11 @@ test('the app opens on the same view the generated pages render', () => {
   assert.match(html, /showOpt\.style\.display = isolatable \? "" : "none"/,
     'and the toggle hides itself when there is nothing to isolate');
 });
+
+test('the clinical notes card sits above the chromosome band map', () => {
+  // The clinical card is the payoff and the band map is reference (Dan,
+  // 2026-09-08); the aside order should match how they are read.
+  const html = read('index.html');
+  assert.ok(html.indexOf('id="clinical-card"') < html.indexOf('id="detail-card"'),
+    'clinical notes before the anatomy/band-map card');
+});
