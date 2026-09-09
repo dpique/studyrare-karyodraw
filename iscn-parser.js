@@ -1281,10 +1281,15 @@
       var p = Math.round(clone.modalNumber / 23);
       // Haploid through octaploid. Haploid is here because near-haploid ALL is real
       // (26,X,+4,+6,+21 is ISCN's own example) and reading it as diploid made the app
-      // announce that the changes came to 48 against a stated 26. A larger p is not a
+      // announce that the changes came to 48 against a stated 26. The haploid base
+      // holds across ISCN's whole near-haploid band, counts of 20 through 34:
+      // published near-haploid ALL clones sit at 24-31, and the old +/-3 window cut
+      // off at 26, so 27,X,+10,+14,+18,+21 was read against a diploid base and
+      // became a 45,X clone with three invented trisomies. A larger p is not a
       // real ploidy but a huge or mistyped count, so stay diploid and let the count
       // warning speak rather than allocating p copies of everything.
-      if (p >= 1 && p <= 8 && Math.abs(clone.modalNumber - 23 * p) <= 3) ploidy = p;
+      if (p === 1 && clone.modalNumber >= 20 && clone.modalNumber <= 34) ploidy = 1;
+      else if (p >= 2 && p <= 8 && Math.abs(clone.modalNumber - 23 * p) <= 3) ploidy = p;
     }
     clone.ploidy = ploidy;   // exposed so the renderer can spot sex-chromosome aneuploidy
     ALL.forEach(function (c) { comp[c] = 0; });
@@ -1680,7 +1685,9 @@
       // 2026-08-29). The scaffold, the tally, and the count fix all follow the
       // base that is closest to what the writer said.
       var bestCp = ploidy, bestGap = Math.abs(clone.modalNumber - clone.counts.actual);
-      for (var cp = 2; cp <= 4; cp++) {
+      // From 1, not 2: a near-haploid clone whose stated count missed the band
+      // above deserves the same rescue the polyploid readings get.
+      for (var cp = 1; cp <= 4; cp++) {
         if (cp === ploidy) continue;
         var trial = [];
         buildComplement(clone, trial, cp);

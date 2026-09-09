@@ -1679,9 +1679,8 @@
     { test: function (c) { var n = chromCount(c); return c.ploidy === 2 && n >= 51 && n <= 65 && gainCount(c) >= 4; }, acquired: true, pattern: true,
       name: "high hyperdiploidy (51-65 chromosomes), childhood B-ALL",
       note: "The most common favorable category of childhood B-lymphoblastic leukemia: a clone that gained whole chromosomes in one aberrant division rather than rearranging any. The gains are nonrandom, +X, +4, +6, +10, +14, +17, +18 and +21, and the co-occurrence of +4, +10 and +17 marks the best outlook of all. The individual trisomy cards are suppressed here on purpose: +21 inside a hyperdiploid clone is part of the pattern, not Down syndrome." },
-    // Ploidy 1 or 2: a near-haploid clone written on a haploid baseline, e.g.
-    // 26,X,+10,+14,+18,+21, parses at ploidy 1, and that spelling IS the classic
-    // way near-haploid ALL is reported.
+    // Ploidy 1 or 2: near-haploid clones are written on a haploid baseline,
+    // e.g. 27,X,+10,+14,+18,+21, and parse at ploidy 1.
     { test: function (c) { var n = chromCount(c); return (c.ploidy === 1 || c.ploidy === 2) && n >= 24 && n <= 39; }, acquired: true, pattern: true,
       name: "hypodiploidy (fewer than 40 chromosomes), B-ALL",
       note: "The mirror image of high hyperdiploidy and the opposite outlook: near-haploid (24-30 chromosomes) and low-hypodiploid (31-39) B-ALL are among the worst-risk childhood leukemias. About half of low-hypodiploid cases carry a <i>TP53</i> mutation that proves germline, so this karyotype is a Li-Fraumeni evaluation waiting to happen, one of the clearest places a tumour karyotype changes a family's counseling. The laboratory trap: the clone can double itself and masquerade as hyperdiploidy in the fifties; the giveaway is chromosomes sitting at two and four copies rather than three." },

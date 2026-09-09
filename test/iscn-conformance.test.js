@@ -239,7 +239,15 @@ test('near-haploid and polyploid clones are counted against the right baseline',
   // 26,X,+4,+6,+21 is near-haploid ALL, printed in ISCN. Read as diploid it produced
   // "you wrote 26 but the changes add up to 48", which is the app stating its own
   // wrong arithmetic as the reader's error.
+  // The haploid base holds across ISCN's whole near-haploid band, 24 to 34:
+  // published near-haploid ALL clones sit at 24-31 chromosomes, and 27 read
+  // against a diploid base becomes a 45,X clone with three invented trisomies.
+  // 35 is the near-diploid boundary and stays diploid.
   [['26,X,+4,+6,+21', 1], ['46,XY', 2], ['69,XXX', 3], ['92,XXYY', 4],
+    ['27,X,+10,+14,+18,+21', 1],
+    ['30,XX,+4,+6,+8,+10,+14,+21', 1],
+    ['34,XX,+1,+2,+4,+6,+10,+14,+18,+21,+22,+X', 1],
+    ['35,XX,-1,-3,-5,-7,-9,-13,-15,-17,-19,-21,-22', 2],
     ['81<3n>,XXX,+X,+X,+X,+X,+X,+1,+1,+3,+3,+14,+14,+14,-15,+21', 3],
     ['58<2n>,XY,+X,+4,+6,+8,+9,+10,+14,+14,+17,+18,+21,+21', 2]].forEach(([k, n]) => {
     const c = ISCN.parse(k).clones[0];
