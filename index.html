@@ -562,16 +562,18 @@
   .bandlabel:hover, .bandlabel.hot { fill: var(--periwinkle); font-weight: 700; }
   .ideo-detail .band { cursor: crosshair; }
 
-  /* The clinical card wears the same attention treatment as the amber warnbox,
-     tinted fill, colored border, colored heading, but in the periwinkle
-     identity family, on purpose: amber is the app's something-to-sort-out
-     signal, and a recognised leukemia is a finding, not a fault (Dan,
-     2026-09-09, asking for the warnbox pull on the clinical notes). The body
-     rows keep prose ink for the same reason .warnbox.notecorr does: the frame
-     carries the signal, the reading stays comfortable. */
-  #clinical-card { background: var(--peri-50); border-color: var(--peri-300); }
-  #clinical-card h2 { color: var(--peri-700); }
-  #clinical-card .syn { border-bottom-color: var(--peri-300); }
+  /* The clinical card wears the parental-origin card's amber wash, exactly
+     (Dan, 2026-09-09: the box he wanted matched was "a parent could be a
+     carrier", which is .oal-warn above). That card's own rule is the license:
+     the wash is "a notice, not an action", and a recognised leukemia is the
+     same kind of thing, a clinically important notice. A first cut used the
+     periwinkle identity family instead, reasoning that amber meant
+     something-to-sort-out; the origin card had already settled otherwise. The
+     body rows keep prose ink for the same reason .warnbox.notecorr does: the
+     frame carries the signal, the reading stays comfortable. */
+  #clinical-card { background: var(--amber-50); border-color: var(--amber); }
+  #clinical-card h2 { color: var(--amber-800); border-bottom-color: rgba(236, 155, 39, .35); }
+  #clinical-card .syn { border-bottom-color: rgba(236, 155, 39, .35); }
   .syn { padding: 9px 0; border-bottom: 1px dashed var(--line); }
   .syn:last-child { border-bottom: none; }
   .syn .name { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--navy); }
