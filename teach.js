@@ -1148,7 +1148,37 @@
     return "";
   }
 
-  function trisomy(clone, chrom) { return clone.ploidy === 2 && clone.complement[chrom] >= 3; }
+  // Trisomy read as q-arm dosage, not just as an instance count: translocation
+  // Down, 46,XX,der(14;21)(q10;q10),+21, has only two free 21s in the
+  // complement, but three copies of 21q, and the card missed it until a guard
+  // test caught the gap (2026-09-09). Every dosage run touching the q arm must
+  // sit at three or more copies, so a partial duplication does not become a
+  // whole syndrome; the p arm is left out because an acrocentric derivative
+  // sheds it. The complement shortcut stays as the fast path.
+  function trisomy(clone, chrom) {
+    if (clone.ploidy !== 2) return false;
+    if (clone.complement[chrom] >= 3) return true;
+    try {
+      var dsc = window.IDEOGRAM && window.IDEOGRAM.data && window.IDEOGRAM.data[chrom];
+      if (!dsc || !dsc.bands) return false;
+      var qStart = null;
+      for (var b = 0; b < dsc.bands.length; b++) {
+        if (String(dsc.bands[b][0]).charAt(0) === "q") { qStart = dsc.bands[b][1]; break; }
+      }
+      if (qStart == null) return false;
+      var entry = null;
+      (window.Karyo.computeDosage(clone).chroms || []).forEach(function (x) { if (x.chrom === chrom) entry = x; });
+      if (!entry || !entry.runs) return false;
+      var qRuns = 0;
+      for (var i = 0; i < entry.runs.length; i++) {
+        var r = entry.runs[i];
+        if (r.to <= qStart) continue;
+        qRuns++;
+        if (r.copies < 3) return false;
+      }
+      return qRuns > 0;
+    } catch (e) { return false; }
+  }
 
   // Which fragile site this is, since fra carries no disease information of its own.
   function hasFra(clone, band) {
@@ -1712,9 +1742,19 @@
     // pattern fires, entries marked aneuploidy are read as part of the pattern.
     var pattern = false;
     SYNDROMES.forEach(function (s) { try { if (s.pattern && s.test(clone)) pattern = true; } catch (e) {} });
+    // A clone built of derivative-type products is an acquired clone whatever
+    // else it contains: dic, add and multiple der()s are how tumour karyotypes
+    // are assembled, not how constitutional reports read. In that context the
+    // constitutional aneuploidy cards stand down (a +13 beside three
+    // derivatives is clonal gain, not Patau syndrome; a visitor typed exactly
+    // that, 2026-09-09), and below, the complex-karyotype card needs no other
+    // anchor. The threshold is two, so a Robertsonian carrier and a
+    // translocation Down, each one der, keep their constitutional reading.
+    var ACQUIRED_KINDS = { der: 1, dic: 1, add: 1, hsr: 1, dmin: 1 };
+    var acquiredContext = (clone.aberrations || []).filter(function (a) { return ACQUIRED_KINDS[a.kind]; }).length >= 2;
     SYNDROMES.forEach(function (s) {
       try {
-        if (pattern && s.aneuploidy) return;
+        if ((pattern || acquiredContext) && s.aneuploidy) return;
         if (s.test(clone)) out.push({ name: s.name, note: s.note, acquired: !!s.acquired });
       } catch (e) {}
     });
@@ -1737,7 +1777,7 @@
     // abnormality count IS the pattern rather than complexity on top of it.
     try {
       var abs = clone.aberrations || [];
-      if (!pattern && abs.length >= 3 && out.some(function (s) { return s.acquired; })) {
+      if (!pattern && abs.length >= 3 && (acquiredContext || out.some(function (s) { return s.acquired; }))) {
         var lost = {};
         abs.forEach(function (a) { if (a.kind === "loss" && a.chroms[0] !== "X" && a.chroms[0] !== "Y") lost[a.chroms[0]] = 1; });
         var monosomies = Object.keys(lost).length;

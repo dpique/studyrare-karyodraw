@@ -3,6 +3,27 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-09 (a clone built of derivatives is not a syndrome)
+
+- **A complex cancer karyotype no longer earns a constitutional syndrome
+  card.** A visitor typed a six-abnormality clone, add(3), dic(5;4), three
+  derivatives and +13, and the page answered "Trisomy 13, Patau syndrome".
+  Two or more derivative-type products (der, dic, add, hsr, dmin) now mark the
+  clone as acquired: the constitutional aneuploidy cards stand down, and the
+  complex-karyotype card fires without needing any single lesion to be in the
+  tables. One derivative stays constitutional, so a Robertsonian carrier and a
+  translocation Down keep their cards.
+- **Translocation Down syndrome finally gets its card.** The guard test for
+  the fix above found the opposite gap: 46,XX,der(14;21)(q10;q10),+21 showed
+  no Down card at all, because the trisomy check counted chromosome instances
+  and the derivative hides one. Trisomy is now read as q-arm dosage, three or
+  more copies across the whole long arm, so the derivative counts and a small
+  partial duplication still does not.
+- **The browse list sits under the tool cards, not mid-void.** When the right
+  column ran long, "Common karyotypes, explained" floated with awkward space
+  above and below; the left column's rows now size to their content, so it
+  hugs the card above it.
+
 ## 2026-09-09 (every clinical note rewritten karyotype-first)
 
 - **All 74 cancer notes now read as prose about the finding, not fragments
