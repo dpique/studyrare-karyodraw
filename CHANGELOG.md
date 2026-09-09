@@ -3,6 +3,25 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-08 (the pathology tier joins the table, and four cancer karyotypes get pages)
+
+- **Five more recurrent rearrangements, for 62 in the table.** t(7;16)
+  *FUS*::*CREB3L2*, low-grade fibromyxoid sarcoma, the second *FUS* sarcoma
+  beside myxoid liposarcoma; t(4;19) *CIC*::*DUX4*, the largest group of the
+  round cell sarcomas that look like Ewing and are not, with its *DUX4* end in
+  the same D4Z4 repeat whose contraction causes facioscapulohumeral muscular
+  dystrophy; t(7;17) *JAZF1*::*SUZ12*, low-grade endometrial stromal sarcoma;
+  t(6;11)(p21;q12) *MALAT1*::*TFEB* renal cell carcinoma, the other half of the
+  MiT family beside *TFE3*, and the second t(6;11) after the *KMT2A* leukemia,
+  told apart by its arms; and t(16;17) *CDH11*::*USP6*, the rearrangement that
+  proved aneurysmal bone cyst a true neoplasm.
+- **Four new karyotype pages: Ewing sarcoma, desmoplastic small round cell
+  tumor, NUT carcinoma, and EML4-ALK lung cancer.** Ewing sarcoma and DSRCT are
+  published side by side because they are the standing lesson in reading
+  breakpoints: the same two chromosomes, a different arm of 11, an unrelated
+  disease. The EML4-ALK page carries a resolution note, since the inversion is
+  far too small to see with banding and the page should not pretend otherwise.
+
 ## 2026-09-08 (fourteen more recurrent rearrangements, reaching carcinoma and the whole-arm derivative)
 
 - **The table covers 57 recurrent rearrangements, up from 43.** Myeloid: the
