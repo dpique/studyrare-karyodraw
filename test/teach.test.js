@@ -1074,3 +1074,16 @@ test('a gain names the derivative carrying more of the chromosome, across slots'
   assert.match(t2, /more 14 material on der\(13;14\)/);
   assert.doesNotMatch(t, /trisomy 21/, 'the somy label stays suppressed when a rider exists');
 });
+
+test('the haploid count row states its window and pluralises correctly', () => {
+  // "one copies of each chromosome" shipped; and "a count near 23" left the
+  // reader guessing where the haploid reading starts and stops. The row now
+  // states the window the parser actually uses, 20-34.
+  const count = decodeRows('27,X,+10,+14,+18,+21').find((r) => r.tag === 'count').text;
+  assert.match(count, /one copy of each chromosome/);
+  assert.doesNotMatch(count, /one copies/);
+  assert.match(count, /20-34/);
+  // The polyploid wording keeps its plural.
+  const tri = decodeRows('69,XXX').find((r) => r.tag === 'count').text;
+  assert.match(tri, /three copies of each chromosome/);
+});

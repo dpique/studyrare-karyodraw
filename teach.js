@@ -1066,6 +1066,10 @@
       } else if (clone.inferredPloidy) {
         txt += "; a count this size fits a near-" + (PLOIDY_WORD[clone.inferredPloidy] || clone.inferredPloidy + "n") +
           " clone, so the changes are scored against a baseline of " + (clone.inferredPloidy * 23);
+      } else if (clone.ploidy === 1) {
+        // The window is stated, not gestured at ("a count near 23" left the
+        // reader guessing where the reading starts), and one copy is singular.
+        txt += "; a count of 20-34 reads against the haploid baseline of 23, one copy of each chromosome";
       } else if (clone.ploidy && clone.ploidy !== 2) {
         txt += "; a count near " + (clone.ploidy * 23) + " reads as " +
           (PLOIDY_WORD[clone.ploidy] || clone.ploidy + "n") + ", " + numberWord(clone.ploidy) +
@@ -1283,7 +1287,7 @@
       kind: "fusion", genes: ["CBFB", "MYH11"],
       name: "inv(16) / t(16;16), core-binding-factor AML",
       disease: "AML with abnormal bone marrow eosinophils, formerly FAB M4Eo, favorable risk",
-      note: "Two different rearrangements with one result. inv(16)(p13.1q22) turns a segment of one chromosome 16 end for end; t(16;16)(p13.1;q22) exchanges tips between the two homologs. The karyotypes are not the same and the figures here differ, but both bring <i>CBFB</i> and <i>MYH11</i> together, and WHO classifies them as one entity with one treatment. The inversion is far the commoner of the two. The other half of the core-binding-factor pair with t(8;21), same favorable risk and same cytarabine consolidation, and <i>KIT</i> again worsens it. Both breakpoints sit close to the centromere and the inversion is genuinely easy to miss on banding, so this is one to confirm by FISH or RT-PCR rather than to exclude by karyotype." },
+      note: "Two rearrangements, one disease: inv(16)(p13.1q22) and t(16;16)(p13.1;q22) both bring <i>CBFB</i> and <i>MYH11</i> together, WHO classifies them as one entity with one treatment, and the inversion is far the commoner spelling. The other half of the core-binding-factor pair with t(8;21), same favorable risk and same cytarabine consolidation, and <i>KIT</i> again worsens it. Both breakpoints sit close to the centromere and the inversion is genuinely easy to miss on banding, so this is one to confirm by FISH or RT-PCR rather than to exclude by karyotype." },
     { chroms: ["15", "17"], bands: [["q24", "q21"], ["q24.1", "q21.2"], ["q22", "q12"], ["q22", "q21"]],
       kind: "fusion", genes: ["PML", "RARA"],
       name: "t(15;17), acute promyelocytic leukemia",
@@ -1293,7 +1297,7 @@
       kind: "enhancer", genes: ["GATA2", "MECOM"],
       name: "inv(3) / t(3;3), MECOM rearrangement",
       disease: "AML or MDS, adverse risk",
-      note: "Two different rearrangements with one result, as on chromosome 16: inv(3)(q21.3q26.2) turns a segment of one chromosome 3 over, and t(3;3)(q21.3;q26.2) exchanges tips between the two homologs. No fusion protein is made either way. A distal <i>GATA2</i> enhancer is moved to <i>MECOM</i> at 3q26.2, driving <i>EVI1</i> while leaving the <i>GATA2</i> allele it came from without that enhancer, so one event activates an oncogene and halves a transcription factor. Often with monosomy 7. The platelet count is characteristically normal or raised with dysplastic megakaryocytes, which is unlike most AML at presentation and is often the clue." },
+      note: "Two rearrangements, one disease, as on chromosome 16: inv(3)(q21.3q26.2) and t(3;3)(q21.3;q26.2) both move a distal <i>GATA2</i> enhancer onto <i>MECOM</i> at 3q26.2, driving <i>EVI1</i> while leaving the <i>GATA2</i> allele it came from without that enhancer, so one event activates an oncogene and halves a transcription factor. No fusion protein is made either way. Often with monosomy 7. The platelet count is characteristically normal or raised with dysplastic megakaryocytes, which is unlike most AML at presentation and is often the clue." },
     { chroms: ["6", "9"], bands: [["p23", "q34"], ["p22.3", "q34.1"]],
       kind: "fusion", genes: ["DEK", "NUP214"],
       name: "t(6;9), AML with DEK::NUP214",

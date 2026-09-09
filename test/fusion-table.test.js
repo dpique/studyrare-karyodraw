@@ -136,14 +136,16 @@ test('a chromosome pair can carry more than one lesion, and they stay apart', ()
 
 test('the two spellings of one lesion are not called the same rearrangement', () => {
   // inv(16) and t(16;16) reach one fusion gene by two different structural routes,
-  // one intramolecular and one between homologs, and the figures this app draws
-  // for them differ: the inversion marks its middle inverted, the translocation
-  // marks its tips exchanged. Saying "the same lesion written two ways" was wrong
-  // in a way the app's own picture contradicted (Dan, 2026-09-08).
+  // one intramolecular and one between homologs. Saying "the same lesion written
+  // two ways" was wrong in a way the app's own picture contradicted (Dan,
+  // 2026-09-08). Later the same day: the lead now NAMES the two spellings
+  // outright instead of gesturing at "two rearrangements" and re-explaining
+  // their mechanics, which the decode panel beside the note already does.
   const note = one('46,XY,inv(16)(p13.1q22)').note;
-  assert.match(note, /Two different rearrangements with one result/);
+  assert.match(note, /Two rearrangements, one disease: inv\(16\)\(p13\.1q22\) and t\(16;16\)\(p13\.1;q22\)/);
   assert.doesNotMatch(note, /the same lesion written two ways/);
-  assert.match(one('46,XY,inv(3)(q21.3q26.2)').note, /Two different rearrangements with one result/);
+  assert.doesNotMatch(note, /end for end|exchanges tips/, 'the mechanics live in the decode, not here');
+  assert.match(one('46,XY,inv(3)(q21.3q26.2)').note, /inv\(3\)\(q21\.3q26\.2\) and t\(3;3\)\(q21\.3;q26\.2\)/);
 });
 
 test('which chromosome is written first does not matter', () => {

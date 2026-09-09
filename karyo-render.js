@@ -2092,6 +2092,21 @@
     var ctx = { theme: opts.theme || "detailed", level: opts.level == null ? 99 : opts.level, affected: opts.affected || computeAffected(clone) };
     var specs = cellSpecs(clone, opts.only != null ? opts.only : null);
 
+    // A non-diploid baseline changes what every symbol means: 27,X,+10 is one X
+    // and a DISOMY 10, not a monosomy X and a trisomy. The figure says which
+    // baseline it is drawn against up front, rather than leaving that to the
+    // decode panel (Dan, 2026-09-08). The window that picks the baseline lives
+    // in iscn-parser.js (buildComplement); by the time a clone reaches here,
+    // clone.ploidy IS the baseline the complement was built on.
+    var PLOIDY_TAG = { 1: "haploid", 3: "triploid", 4: "tetraploid" };
+    var PLOIDY_COPIES = { 1: "one copy", 3: "three copies", 4: "four copies" };
+    var badge = "";
+    if (clone.ploidy && clone.ploidy !== 2) {
+      badge = '<div class="kploidy">' + (PLOIDY_TAG[clone.ploidy] || clone.ploidy + "n") +
+        " baseline · " + (clone.ploidy * 23) + " chromosomes, " +
+        (PLOIDY_COPIES[clone.ploidy] || clone.ploidy + " copies") + " of each chromosome</div>";
+    }
+
     // "Affected only" view (CyDAS AlteredChromosomesOnly): a single focused row of
     // just the involved chromosomes (each with its normal homolog + derivative), with
     // every centromere on one horizontal line — the classic karyogram look
@@ -2138,7 +2153,7 @@
         oh.push(cellHtml(s.chrom, s.insts, cellOpts(s, { cenOffset: off, seamCen: true }), ctx));
       });
       oh.push('</div></div>');
-      container.innerHTML = oh.join("");
+      container.innerHTML = badge + oh.join("");
       return;
     }
 
@@ -2151,7 +2166,7 @@
       html.push('</div>');
     });
     html.push('</div>');
-    container.innerHTML = html.join("");
+    container.innerHTML = badge + html.join("");
   }
 
   function ghost(chrom, label, mt) {
