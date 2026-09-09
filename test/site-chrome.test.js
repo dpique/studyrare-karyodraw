@@ -99,15 +99,14 @@ test('the clinical notes card sits above the chromosome band map', () => {
     'clinical notes before the anatomy/band-map card');
 });
 
-test('the clinical card wears the identity color, and never the warning amber', () => {
-  // Dan liked how the amber "Let us sort this out" box draws the eye
-  // (2026-09-09) and asked for the same pull on the clinical notes. Same
-  // treatment, different hue, on purpose: amber is the app's
-  // something-to-sort-out signal (see .warnbox), and a recognised leukemia is
-  // a finding, not a fault, so the card wears the periwinkle identity family.
+test('the clinical card wears the parental-origin amber, exactly', () => {
+  // The box Dan wanted matched (2026-09-09) was the "a parent could be a
+  // carrier" card, .oal-warn, whose own comment settles the semantics: the
+  // amber wash is a notice, not an action. A recognised leukemia is the same
+  // kind of thing, so the clinical card borrows that palette verbatim. A first
+  // cut used periwinkle instead, over-reading amber as something-to-sort-out.
   const html = read('index.html');
-  assert.match(html, /#clinical-card \{ background: var\(--peri-50\); border-color: var\(--peri-300\); \}/,
-    'the tinted treatment exists');
-  assert.doesNotMatch((html.match(/#clinical-card[^}]*\}/) || [''])[0], /amber/,
-    'and it is not the warning amber');
+  assert.match(html, /#clinical-card \{ background: var\(--amber-50\); border-color: var\(--amber\); \}/,
+    'the origin card palette, verbatim');
+  assert.match(html, /#clinical-card h2 \{ color: var\(--amber-800\)/, 'heading included');
 });

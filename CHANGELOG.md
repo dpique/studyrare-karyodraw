@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-09 (the clinical notes wear the parental-origin amber)
+
+- **The clinical card's color is the carrier card's amber, exactly.** The box
+  worth matching turned out to be the parental-origin alert, "a parent could
+  be a carrier", whose palette rule already settles the semantics: the amber
+  wash is a notice, not an action. A recognised leukemia is the same kind of
+  thing, so the clinical notes now wear that wash verbatim, on the app and on
+  every karyotype page. This replaces the periwinkle tint from earlier today.
+
 ## 2026-09-09 (the clinical notes wear a color)
 
 - **The clinical notes card is tinted.** Dan liked how the amber

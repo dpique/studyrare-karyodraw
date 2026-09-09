@@ -156,10 +156,10 @@ const LANDING_CSS = `
   .lp-res strong { color: var(--peri-700); font-weight: 700; }
   .lp-sec { margin: 24px 0; }
   .lp-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--navy); margin: 0 0 10px; }
-  /* The clinical section carries the same periwinkle attention treatment as the
-     app's clinical card, and for the same reason: a finding, not a fault. */
-  .lp-sec.lp-clinical { background: var(--peri-50); border: 1px solid var(--peri-300); border-radius: 12px; padding: 14px 18px; }
-  .lp-sec.lp-clinical h2 { color: var(--peri-700); }
+  /* The clinical section carries the app clinical card's amber wash, the
+     parental-origin card's palette: a notice, not an action. */
+  .lp-sec.lp-clinical { background: var(--amber-50); border: 1px solid var(--amber); border-radius: 12px; padding: 14px 18px; }
+  .lp-sec.lp-clinical h2 { color: var(--amber-800); }
   .lp-clonehead { display: flex; align-items: baseline; gap: 10px; margin: 14px 0 8px; font-weight: 400; }
   .lp-clonehead:first-child { margin-top: 0; }
   .lp-clonehead code { font: 600 14px var(--font-mono); color: var(--ink); }
