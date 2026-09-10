@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-09 (the ring keeps one centromere mark and quiets its cursor)
+
+- **One centromere device on the ring.** The ring drew its centromere twice:
+  the hatched sector, keyed in the legend, and a dashed radial line across the
+  annulus that no legend row explained. Dashes mean "junction" everywhere else
+  in the app, so the second radial could read as a second place the ring
+  closed, competing with the amber clasp. The hatch now stands alone; the
+  clasp is the only other mark crossing the annulus.
+- **The ring stops offering a link hand over its hole.** A ring is round in a
+  square tile, so the donut hole and the corners were most of what the pointer
+  crossed, and they showed the link hand while pointing at nothing. The empty
+  parts of the ring tile now show the plain arrow; band sectors keep the
+  crosshair, and clicking anywhere in the tile still opens the band map.
+
 ## 2026-09-09 (listing order is taught for rearrangements too)
 
 - **Out-of-order rearrangements get the rule and a one-click fix.** ISCN lists

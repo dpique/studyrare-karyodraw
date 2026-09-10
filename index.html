@@ -477,6 +477,12 @@
   .ksub { font: 600 9.5px var(--font-mono); color: #a2302c; margin-top: 1px; white-space: nowrap; }
   .ksub.muted { color: #808ba8; }
   svg.ideo .band { cursor: crosshair; }
+  /* A ring is round in a square tile: the donut hole and the corners are most
+     of what the pointer crosses, and they inherited .kchrom's link hand while
+     pointing at nothing (Dan, 2026-09-09). The svg background shows the plain
+     arrow instead; band sectors keep the crosshair from the rule above, and a
+     click anywhere in the tile still selects the chromosome. */
+  .kchrom svg.ideo-ring { cursor: default; }
   .band-hi { filter: drop-shadow(0 0 1px rgba(236,155,39,.6)); }
 
   /* teaching sidebar */

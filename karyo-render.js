@@ -1639,13 +1639,12 @@
       return sector(a0, a1, "url(#" + hatch(heteroColor(stain), base + (a0 + a1) / 2 * DEG - 90) + ")", attr);
     }
 
-    var body = [], cenAngle = null;
+    var body = [];
     getBands(chrom, ctx.level == null ? 99 : ctx.level).forEach(function (b) {
       var bs = Math.max(b[1], from), be = Math.min(b[2], to);
       if (be <= bs) return;
       var st = b[3];
       var a0 = (bs - from) / total * TAU, a1 = (be - from) / total * TAU;
-      if (st === "acen") cenAngle = (a0 + a1) / 2;
       var attr = ' class="band" data-chrom="' + esc(chrom) + '" data-band="' + esc(b[0]) + '" data-stain="' + st + '"';
       var parts = (a1 - a0 > Math.PI) ? [[a0, (a0 + a1) / 2], [(a0 + a1) / 2, a1]] : [[a0, a1]];
       parts.forEach(function (p) {
@@ -1657,14 +1656,12 @@
     var ocol = outlineFor(ctx, chrom);
     body.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + R.toFixed(2) + '" fill="none" stroke="' + ocol + '" stroke-width="1.4"/>');
     body.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + r0.toFixed(2) + '" fill="none" stroke="' + ocol + '" stroke-width="1.1"/>');
-    // Mark the centromere with a dashed radial line across the ring, echoing the
-    // dashed centromere line on the linear ideogram.
-    if (cenAngle != null) {
-      var ccol = heteroColor("acen");
-      body.push('<line x1="' + px(cenAngle, r0 - 2).toFixed(2) + '" y1="' + py(cenAngle, r0 - 2).toFixed(2) +
-        '" x2="' + px(cenAngle, R + 2).toFixed(2) + '" y2="' + py(cenAngle, R + 2).toFixed(2) +
-        '" stroke="' + ccol + '" stroke-width="1.6" stroke-dasharray="3 2"/>');
-    }
+    // The hatched acen sector alone marks the centromere. The dashed radial
+    // line that used to echo the linear ideogram's midline is gone (Dan,
+    // 2026-09-09): on a ring a second radial across the annulus reads as a
+    // second closure point competing with the clasp, dashes mean "junction"
+    // everywhere else in the app, and the legend never keyed it, which broke
+    // the rule that the legend lists exactly what the figure draws (#213).
     // Fusion point: the two broken ends meet at 12 o'clock (angle 0, the seam of
     // the wrap). Mark it like a clasp — a short seam plus a haloed node — so it
     // reads as the join where the ends fused into a ring.
