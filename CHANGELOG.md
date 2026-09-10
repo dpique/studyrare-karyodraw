@@ -3,6 +3,21 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (unbalanced sex-chromosome products trace to their carrier parent)
+
+- **Typing an unbalanced product of a sex-chromosome translocation now raises
+  the parental-origin card**, and because the carrier spellings are sexed the
+  card can say more than any suffix does: 46,XX,der(4)t(X;4)(p21;p16) needs an
+  egg carrying a free X beside the derivative, which no paternal meiosis can
+  make, so the card reads "Only the mother could carry the balanced form" with
+  her karyotype one click away. A 46,XY child with the same derivative shows
+  both possible carriers, each in their own spelling; Y;autosome and X;Y
+  products name the father; the X;Y card adds the usual familial route, a
+  parent carrying the same derivative unbalanced. An inheritance suffix that
+  contradicts the chromosomes (dpat on a complement only an egg can deliver)
+  is flagged instead of repeated, and the carrier chips thread through so the
+  parent page marks the traced outcome.
+
 ## 2026-09-10 (sex-chromosome translocation carriers get their outcomes table)
 
 - **A balanced X;autosome, Y;autosome or X;Y translocation carrier now gets a
