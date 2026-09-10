@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (clearer glass, and the extra chromosome says +)
+
+- **The hover tip is clearer still.** 86% read as solid in practice, and the
+  tip sometimes covered the very band it had just marked; it now sits at 68%,
+  with the blur carrying legibility, so the figure underneath stays readable
+  through it.
+- **A gained chromosome's chip now reads "+1", not "1".** The chip under an
+  extra chromosome sat inside a group already numbered, so a bare duplicate
+  said nothing; it now names the aberration itself, and the ISCN detailed
+  form inherits the same label ("+1  pter→qter" says why the row exists).
+
 ## 2026-09-10 (a der of three or more chromosomes is refused, with the reason)
 
 - **der(1;7;3;4)(q10;p10;p10;p16.3) no longer draws a fiction.** A derivative

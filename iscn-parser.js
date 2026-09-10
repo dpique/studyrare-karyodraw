@@ -1352,7 +1352,13 @@
         var g = ab.chroms[0];
         if (comp[g] === undefined) { warnings.push("“" + g + "” is not a human chromosome. They are numbered 1 to 22, plus X and Y, like +21."); clone.badChrom = true; return; }
         comp[g] += mult;
-        for (var gj = 0; gj < mult; gj++) slots[g].push({ chrom: g, kind: "gain", label: g, aberration: ab, primary: g });
+        // The label is the aberration's own name, "+8", not the bare "8": the
+        // chip under a gained cell sits inside a group already numbered, so a
+        // bare duplicate said nothing, while "+8" says which cell is the
+        // extra one (Dan, 2026-09-10). The detailed form inherits the same
+        // label and reads better for it ("+1  pter→qter" says why the row
+        // exists).
+        for (var gj = 0; gj < mult; gj++) slots[g].push({ chrom: g, kind: "gain", label: "+" + g, aberration: ab, primary: g });
       } else if (ab.kind === "loss") {
         var l = ab.chroms[0];
         if (comp[l] === undefined) { warnings.push("“" + l + "” is not a human chromosome. They are numbered 1 to 22, plus X and Y, like -7."); clone.badChrom = true; return; }

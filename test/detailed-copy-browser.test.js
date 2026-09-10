@@ -70,7 +70,7 @@ test('the detailed form copies as plain text lines', async (t) => {
       const copied = await page.evaluate(() => window.__copied);
       assert.ok(copied, 'the clipboard received text');
       const lines = copied.split('\n');
-      assert.ok(lines.some((l) => /^1 {2}pter→qter$/.test(l)), `the gained 1 has its line (got ${JSON.stringify(copied)})`);
+      assert.ok(lines.some((l) => /^\+1 {2}pter→qter$/.test(l)), `the gained 1 has its line, named +1 (got ${JSON.stringify(copied)})`);
       assert.ok(lines.some((l) => /^der\(1;7\) {2}1qter→1q10::7p10→7pter$/.test(l)), `the derivative has its line (got ${JSON.stringify(copied)})`);
     });
 
