@@ -95,6 +95,39 @@
     return !!ab && (isReciprocal(ab) || isRobertsonian(ab) || isHomologousRob(ab));
   }
 
+  // A reciprocal translocation touching a sex chromosome is refused by
+  // isReciprocal on purpose, and this card is the refusal said out loud
+  // (Dan, 2026-09-10: 46,X,t(X;4)(p21;p16) drew with no panel and no
+  // explanation). The quadrivalent forms at meiosis all the same, but one
+  // outcomes table would be wrong twice over: every conceptus depends on
+  // whether the partner's gamete brings an X or a Y, so each segregation
+  // mode splits into two different karyotypes; and the fate of the
+  // unbalanced products is governed by X-inactivation and its spread into
+  // the attached autosomal material, not by the partial-trisomy viability
+  // rules the autosomal table applies. Better no table than a wrong one,
+  // and better a reason than a blank.
+  function gonosomalNote(clone) {
+    var ab = soleAberration(clone);
+    var gono = !!ab && ab.kind === "t" && ab.chroms && ab.chroms.length === 2 &&
+      String(ab.chroms[0]) !== String(ab.chroms[1]) &&
+      ab.breakpoints && ab.breakpoints.length === 2 &&
+      ab.breakpoints[0].length === 1 && ab.breakpoints[1].length === 1 &&
+      ((ab.chroms[0] in { X: 1, Y: 1 }) || (ab.chroms[1] in { X: 1, Y: 1 }));
+    if (!gono) return "";
+    var T = "t(" + ab.chroms[0] + ";" + ab.chroms[1] + ")";
+    return '<p class="oal-head">Why there is no outcomes table for ' + T + '</p>' +
+      '<p class="oal-body">At meiosis this carrier forms the same quadrivalent as an autosomal ' +
+      'translocation, and the same alternate, adjacent and 3:1 modes exist. One table would still be ' +
+      'wrong here: every conceptus depends on whether the partner\'s gamete brings an X or a Y, so each ' +
+      'mode splits into two different karyotypes, and the fate of the unbalanced ones is set by ' +
+      'X-inactivation and its spread into the attached autosomal material rather than by the usual ' +
+      'partial-trisomy rules.</p>' +
+      '<p class="oal-body">In a female carrier, skewed inactivation decides the phenotype. A male ' +
+      'carrier of an X;autosome translocation usually has impaired spermatogenesis, because the ' +
+      'rearrangement disrupts the XY body at meiosis; a Y;autosome carrier\'s meiosis is different ' +
+      'again. Neither is modeled here.</p>';
+  }
+
   // ---- shared helpers -------------------------------------------------------
   function sexOf(clone) {
     var t = clone && clone.sex && clone.sex.tokens;
@@ -983,6 +1016,7 @@
 
   window.Segregation = {
     eligible: eligible, compute: compute, render: render,
-    origin: origin, renderOriginCard: renderOriginCard, applyFrom: applyFrom
+    origin: origin, renderOriginCard: renderOriginCard, applyFrom: applyFrom,
+    gonosomalNote: gonosomalNote
   };
 })();

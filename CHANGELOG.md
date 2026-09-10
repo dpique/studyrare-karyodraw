@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the missing X;autosome table explains itself)
+
+- **A sex-chromosome translocation carrier now learns why there is no
+  outcomes table.** 46,X,t(X;4)(p21;p16) drew with no segregation panel and
+  no explanation. The refusal is deliberate, and now it is said out loud: the
+  quadrivalent forms at meiosis all the same, but every conceptus depends on
+  whether the partner's gamete brings an X or a Y, and the fate of the
+  unbalanced products is set by X-inactivation rather than the usual
+  partial-trisomy rules; a male X;autosome carrier usually has impaired
+  spermatogenesis. The card appears on screen and on the printed summary.
+
 ## 2026-09-10 (the quadrivalent prints)
 
 - **Print summary now includes the segregation panel.** A genetic counselor
