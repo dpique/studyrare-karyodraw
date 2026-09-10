@@ -3,8 +3,11 @@
 // karyogram actually teaches is dosage and provenance: where else does this
 // material live, and how many copies of it does this cell carry. The renderer
 // already stamps every band rect with its SOURCE chromosome, so the same hover
-// can light a dashed twin on every other place the band is drawn and put the
-// count of places on the tooltip. 46,XX,+1,der(1;7)(q10;p10), the classic
+// lights a twin on every other place the band is drawn and puts the count of
+// places on the tooltip. The twins draw the SAME solid amber box as the mark
+// under the pointer: a dashed variant shipped for a few hours and read too
+// faint at band size (Dan, 2026-09-10), and the cursor position already says
+// which copy is being pointed at. 46,XX,+1,der(1;7)(q10;p10), the classic
 // +1q/-7q of myeloid disease, exercises all three readings at once: a 1q band
 // lives in three places (both normal-shaped 1s and the derivative), a 7p band
 // in two, and a 7q band in one, because the derivative carries no 7q and the
@@ -55,38 +58,43 @@ test('a hovered band lights every other place its material is drawn', async (t) 
       { waitUntil: 'load' });
     await page.waitForSelector('#karyo .kchrom[data-kind="der"] .band');
 
-    // Hover the first band on a NORMAL-kind cell whose name starts with the
-    // given prefix, then read the marks. The echoes are asserted without a
-    // wait of their own: highlight() draws them in the same synchronous
-    // handler as .band-hi, so once the solid mark exists the dashed ones
-    // either exist or the feature is broken.
-    const hover = async (chrom, prefix) => {
+    // Hover the first band on a cell of the given kind whose name starts with
+    // the given prefix, then read the marks. The echoes are asserted without
+    // a wait of their own: highlight() draws them in the same synchronous
+    // handler as .band-hi, so once the solid mark exists the twins either
+    // exist or the feature is broken.
+    const hover = async (chrom, prefix, kind) => {
       await page.mouse.move(0, 0);   // off the karyogram: mouseleave clears any prior mark
-      const pt = await page.evaluate((c, pre) => {
-        const el = [...document.querySelectorAll(`#karyo .kchrom[data-kind="normal"] .band[data-chrom="${c}"]`)]
+      const pt = await page.evaluate((c, pre, kd) => {
+        const el = [...document.querySelectorAll(`#karyo .kchrom[data-kind="${kd}"] .band[data-chrom="${c}"]`)]
           .find((n) => (n.getAttribute('data-band') || '').startsWith(pre));
         if (!el) return null;
         el.scrollIntoView({ block: 'center' });
         const r = el.getBoundingClientRect();
         return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-      }, chrom, prefix);
-      assert.ok(pt, `${chrom}${prefix}: a band on a normal homolog exists to hover`);
+      }, chrom, prefix, kind || 'normal');
+      assert.ok(pt, `${chrom}${prefix}: a band to hover exists`);
       await page.mouse.move(pt.x, pt.y);
       await page.waitForSelector('#karyo .band-hi');
-      return page.evaluate(() => ({
+      const state = await page.evaluate(() => ({
+        hi: { width: document.querySelector('#karyo .band-hi').getAttribute('stroke-width') },
         echoes: [...document.querySelectorAll('#karyo .band-echo')].map((e) => ({
           pointerEvents: e.getAttribute('pointer-events'),
-          dashed: !!e.getAttribute('stroke-dasharray'),
+          dash: e.getAttribute('stroke-dasharray'),
+          width: e.getAttribute('stroke-width'),
           cellKind: (e.ownerSVGElement.closest('.kchrom') || {}).getAttribute
             ? e.ownerSVGElement.closest('.kchrom').getAttribute('data-kind') : null,
         })),
         tip: (document.querySelector('#tooltip') || { textContent: '' }).textContent,
+        tipBox: (() => { const b = document.querySelector('#tooltip').getBoundingClientRect(); return { left: b.left, right: b.right }; })(),
       }));
+      state.pt = pt;
+      return state;
     };
 
     await t.test('a 1q band is in three places: both normal-shaped 1s and the der', async () => {
       const s = await hover('1', 'q25');
-      assert.equal(s.echoes.length, 2, `two dashed twins (got ${JSON.stringify(s.echoes)})`);
+      assert.equal(s.echoes.length, 2, `two twins (got ${JSON.stringify(s.echoes)})`);
       assert.deepEqual(s.echoes.map((e) => e.cellKind).sort(), ['der', 'gain'],
         'the twins sit on the extra 1 and on the derivative, not on the hovered cell');
       assert.match(s.tip, /in 3 places/, `the tooltip counts the places (got "${s.tip}")`);
@@ -94,7 +102,7 @@ test('a hovered band lights every other place its material is drawn', async (t) 
 
     await t.test('a 7p band is in two places: the lone 7 and the der graft', async () => {
       const s = await hover('7', 'p15');
-      assert.equal(s.echoes.length, 1, `one dashed twin (got ${JSON.stringify(s.echoes)})`);
+      assert.equal(s.echoes.length, 1, `one twin (got ${JSON.stringify(s.echoes)})`);
       assert.equal(s.echoes[0].cellKind, 'der', 'the twin is the graft on the derivative');
       assert.match(s.tip, /in 2 places/, `the tooltip counts the places (got "${s.tip}")`);
     });
@@ -105,12 +113,23 @@ test('a hovered band lights every other place its material is drawn', async (t) 
       assert.match(s.tip, /in 1 place\b/, `the tooltip states the single place (got "${s.tip}")`);
     });
 
-    await t.test('echoes are annotations: dashed, and no echo may swallow the pointer', async () => {
+    await t.test('every twin is the same solid box as the mark, and none may swallow the pointer', async () => {
       const s = await hover('1', 'q25');
       for (const e of s.echoes) {
         assert.equal(e.pointerEvents, 'none', 'the tooltip invariant (#197) holds for echoes');
-        assert.ok(e.dashed, 'an echo is dashed; solid means the cursor is here');
+        assert.equal(e.dash, null, 'twins are solid; the dashed variant read too faint');
+        assert.equal(e.width, s.hi.width, 'twins wear the same stroke weight as the mark under the pointer');
       }
+    });
+
+    await t.test('the tip sits on the side away from the middle of the karyogram', async () => {
+      // The normal 1 is the leftmost cell, so its tip must open to the LEFT
+      // of the cursor and leave the neighbours readable; the lone 7 is the
+      // rightmost cell and keeps the tip on the right.
+      const l = await hover('1', 'q25');
+      assert.ok(l.tipBox.right <= l.pt.x, `left-half cell: tip right edge ${l.tipBox.right} sits left of the cursor ${l.pt.x}`);
+      const r = await hover('7', 'p15');
+      assert.ok(r.tipBox.left >= r.pt.x, `right-half cell: tip left edge ${r.tipBox.left} sits right of the cursor ${r.pt.x}`);
     });
   } finally {
     await browser.close();

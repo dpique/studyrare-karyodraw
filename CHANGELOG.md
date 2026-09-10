@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the hover twins go solid and the tip steps aside)
+
+- **The other copies of a hovered band now wear the same solid amber box as
+  the band under the pointer.** The dashed twins from earlier today read too
+  faint at band size; the cursor position already says which copy is being
+  pointed at, so all copies now draw alike.
+- **The hover tip keeps out of the karyogram's way.** It now opens on the
+  side of the cursor that points away from the middle of the figure, so on a
+  left-hand chromosome it no longer lies across the neighbours to its right,
+  and its position is measured from its real width instead of a guess.
+
 ## 2026-09-10 (a hovered band lights its other copies)
 
 - **Hovering a band now shows every other place that material is drawn.** The
