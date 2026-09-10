@@ -665,10 +665,12 @@
   #tooltip {
     position: fixed; z-index: 50; pointer-events: none; display: none;
     /* Translucent over the figure, so the tip never fully hides what it sits
-       on (Dan, 2026-09-10). The blur keeps white text readable where band
-       stripes would otherwise cut through the letterforms; color-mix keeps
-       the navy single-sourced. */
-    background: color-mix(in srgb, var(--navy) 86%, transparent); color: #fff; font: 12px var(--font-mono);
+       on; 86% still read as solid, and the tip sometimes covers the very band
+       it marked, so it went clearer (Dan, 2026-09-10, twice). 68% is the
+       floor for the white text: the blur carries the legibility from there,
+       softening the band stripes that would otherwise cut through the
+       letterforms. color-mix keeps the navy single-sourced. */
+    background: color-mix(in srgb, var(--navy) 68%, transparent); color: #fff; font: 12px var(--font-mono);
     backdrop-filter: blur(2.5px); -webkit-backdrop-filter: blur(2.5px);
     padding: 5px 8px; border-radius: 7px; box-shadow: 0 6px 20px rgba(26,31,54,.3); max-width: 240px;
   }
