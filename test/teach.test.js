@@ -446,6 +446,34 @@ test('a whole second X is not monosomy, whatever the sex field spells', () => {
   }
 });
 
+// Dan's question (2026-09-10, on 45,X,dic(X;Y)(p22.33;p11.32) wearing the
+// Turner card): is that claim correct? It was not. The card fired off slot
+// counts, and a dic(X;Y) is FILED under X, so the clone read as "a single X"
+// while carrying most of a Y, SRY included (the break at Yp11.32 is distal
+// to SRY). Turner syndrome is loss of the second sex chromosome's material;
+// a complement that keeps SRY-bearing Y material is a different entity, the
+// unstable-Y spectrum: dicentric, isodicentric and ring Y chromosomes are
+// mitotically unstable, a line that has lost the abnormal Y (classically
+// 45,X) is often present or arises, and the phenotype follows the mosaic,
+// from Turner female through mixed gonadal dysgenesis to infertile male. So
+// the gates now read the drawn DOSAGE, not the slots: Turner requires no
+// SRY-bearing Y material in the clone, and an SRY-retaining rearranged Y
+// gets its own card saying what it actually is.
+test('SRY-bearing Y material suppresses the Turner card and raises the unstable-Y card', () => {
+  for (const k of ['45,X,dic(X;Y)(p22.33;p11.32)', '46,X,dic(X;Y)(p22.33;p11.32)',
+                   '46,X,idic(Y)(q11.2)', '46,X,idic(Y)(q11.23)', '46,X,r(Y)(p11.32q11.23)']) {
+    assert.doesNotMatch(called(k), /Turner/, k + ' -> ' + called(k));
+    assert.match(called(k), /SRY retained/, k + ' gets the unstable-Y card instead');
+  }
+});
+
+test('an abnormal Y that LOST SRY stays Turner territory', () => {
+  for (const k of ['46,X,del(Y)(p11.2)', '46,X,idic(Y)(p11.2)']) {
+    assert.match(called(k), /Turner/, k + ' -> ' + called(k));
+    assert.doesNotMatch(called(k), /SRY retained/, k);
+  }
+});
+
 test('the card names the syndrome ISCN names for its own fragile-site examples', () => {
   assert.match(called('45,fra(X)(q27.3)'), /Turner/, 'ISCN 5.5.7 a iii');
   assert.match(called('47,XY,fra(X)(q27.3)'), /Klinefelter/, 'ISCN 5.5.7 a iv');
@@ -454,7 +482,11 @@ test('the card names the syndrome ISCN names for its own fragile-site examples',
 });
 
 test('Turner and Klinefelter still fire for the karyotypes they were written for', () => {
-  for (const k of ['45,X', '46,X,i(X)(q10)', '46,X,r(X)(p22q28)', '46,X,idic(Y)(q11.2)', '46,X,del(X)(p21)']) {
+  // 46,X,idic(Y)(q11.2) sat in this list until 2026-09-10: that idic keeps
+  // SRY twice over, so calling it Turner asserted the wrong development. It
+  // now carries the unstable-Y card below instead; the SRY-negative Y
+  // rearrangements stay Turner territory.
+  for (const k of ['45,X', '46,X,i(X)(q10)', '46,X,r(X)(p22q28)', '46,X,del(X)(p21)']) {
     assert.match(called(k), /Turner/, k);
   }
   // 48,XXYY is named in the Klinefelter note as a higher-grade variant, but the
