@@ -3,6 +3,27 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the decode counts the whole clone, and notes link across)
+
+- **The whole-arm derivative's cost is now counted across the whole clone.**
+  46,XX,+1,der(1;7)(q10;p10) was decoded as "partially monosomic for the lost
+  arms (1p and 7q)" even though the extra chromosome 1 holds 1p at the usual
+  two copies. The sentence now reads the same copy counts the figure is drawn
+  from and says what is actually true there: 1q has three copies, 7q has one,
+  and 1p and 7p keep the usual two. The bare derivative keeps its original
+  sentence, which was already right.
+- **inv(14) and t(14;14) are two rearrangements, not two spellings.** The
+  T-prolymphocytic leukemia note called them "either spelling of this
+  rearrangement"; one folds a segment within a single chromosome 14, the
+  other exchanges between the two homologous 14s, and the note now says so.
+  The core-binding-factor note loses the same word.
+- **A clinical note that names another drawable rearrangement now links to
+  it.** On the t(14;14)(q11;q32) page, inv(14)(q11q32) is one click away, and
+  the reverse page links back; the same holds wherever a note names a fully
+  specified rearrangement that is not the one on screen. The link keeps your
+  Style, Bands, and Show settings and draws the lesion under the same sex
+  chromosomes as the page you came from.
+
 ## 2026-09-10 (the hover twins go solid and the tip steps aside)
 
 - **The other copies of a hovered band now wear the same solid amber box as

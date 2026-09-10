@@ -567,7 +567,10 @@
           // remains, the fused arm is all this cell has of the chromosome.
           var waKeptArm = waArm(0) === "long" ? "q" : "p";
           var waLostArm = waArm(0) === "long" ? "p" : "q";
-          var waNn = (clone.slots[String(ab.chroms[0])] || []).filter(function (i) { return i.kind === "normal"; }).length;
+          // "gain" counts as a homologue here and below: a +N in the same
+          // clone is drawn as a normal-shaped chromosome, and a count blind
+          // to it misstates what remains (Dan, 2026-09-10).
+          var waNn = (clone.slots[String(ab.chroms[0])] || []).filter(function (i) { return i.kind === "normal" || i.kind === "gain"; }).length;
           if (waNn === 0) {
             waLost = " With no normal " + ab.chroms[0] + " remaining, both " + ab.chroms[0] + waKeptArm +
               " arms sit on this one derivative and no copy of " + ab.chroms[0] + waLostArm + " remains.";
@@ -591,14 +594,76 @@
         }
         if (!waSame) {
           var waArmNot = function (ix) { return waArm(ix) === "long" ? "p" : "q"; };
+          var waArmKept = function (ix) { return waArm(ix) === "long" ? "q" : "p"; };
           var waLostNames = String(ab.chroms[0]) + waArmNot(0) + " and " + String(ab.chroms[1]) + waArmNot(1);
           waLost = " The " + waLostNames + " arms are not part of this derivative.";
           if (clone && clone.slots && (clone.ploidy || 2) === 2) {
-            var waN0 = (clone.slots[String(ab.chroms[0])] || []).filter(function (i) { return i.kind === "normal"; }).length;
-            var waN1 = (clone.slots[String(ab.chroms[1])] || []).filter(function (i) { return i.kind === "normal"; }).length;
-            if (waN0 === 1 && waN1 === 1) {
+            // Counting only kind "normal" made this sentence blind to a +N in
+            // the same clone: 46,XX,+1,der(1;7)(q10;p10) was decoded as
+            // partially monosomic for 1p while the extra 1 held 1p at two
+            // copies (Dan, 2026-09-10). A gain instance is a normal-shaped
+            // homologue, so it counts; and the monosomy claim itself is now
+            // checked against Karyo.computeDosage, which reads the very
+            // segment lists the figure is drawn from, so this sentence
+            // cannot disagree with the karyogram or the Involved-segments
+            // table.
+            var waHomolog = function (ix) {
+              return (clone.slots[String(ab.chroms[ix])] || []).filter(function (i) {
+                return i.kind === "normal" || i.kind === "gain";
+              }).length;
+            };
+            var waN0 = waHomolog(0), waN1 = waHomolog(1);
+            var waDose = null;
+            if (window.Karyo && window.Karyo.computeDosage &&
+                /^\d+$/.test(String(ab.chroms[0])) && /^\d+$/.test(String(ab.chroms[1]))) {
+              try { waDose = window.Karyo.computeDosage(clone); } catch (e) { waDose = null; }
+            }
+            // Copy number of one whole arm, or null when the arm is not one
+            // constant run (a sub-op inside it would make one number a lie).
+            var waArmCopies = function (chrom, arm) {
+              if (!waDose) return null;
+              var entry = null, i;
+              for (i = 0; i < waDose.chroms.length; i++) {
+                if (waDose.chroms[i].chrom === String(chrom)) entry = waDose.chroms[i];
+              }
+              var d = IDEO.data[String(chrom)];
+              if (!entry || !d) return null;
+              var lo = arm === "p" ? 0 : d.centromere, hi = arm === "p" ? d.centromere : d.length;
+              var copies = null;
+              for (i = 0; i < entry.runs.length; i++) {
+                var r = entry.runs[i];
+                if (r.to <= lo || r.from >= hi) continue;
+                if (copies === null) copies = r.copies;
+                else if (copies !== r.copies) return null;
+              }
+              return copies;
+            };
+            var waL0 = waArmCopies(ab.chroms[0], waArmNot(0)), waL1 = waArmCopies(ab.chroms[1], waArmNot(1));
+            var waK0 = waArmCopies(ab.chroms[0], waArmKept(0)), waK1 = waArmCopies(ab.chroms[1], waArmKept(1));
+            if (waN0 === 1 && waN1 === 1 && (waDose === null || (waL0 === 1 && waL1 === 1))) {
               waLost = " With one normal " + ab.chroms[0] + " and one normal " + ab.chroms[1] +
                 " remaining, the cell is partially monosomic for the lost arms (" + waLostNames + ").";
+            } else if (waL0 !== null && waL1 !== null && waK0 !== null && waK1 !== null) {
+              var waArms = [
+                { name: String(ab.chroms[0]) + waArmKept(0), c: waK0 },
+                { name: String(ab.chroms[0]) + waArmNot(0), c: waL0 },
+                { name: String(ab.chroms[1]) + waArmKept(1), c: waK1 },
+                { name: String(ab.chroms[1]) + waArmNot(1), c: waL1 },
+              ];
+              var waNum = ["no copies", "one copy", "two copies", "three copies", "four copies", "five copies"];
+              var waGains = waArms.filter(function (a) { return a.c > 2; });
+              var waLosses = waArms.filter(function (a) { return a.c < 2; });
+              var waEven = waArms.filter(function (a) { return a.c === 2; });
+              if (waGains.length || waLosses.length) {
+                var waBits = waGains.concat(waLosses).map(function (a) {
+                  return a.name + " has " + (waNum[a.c] || a.c + " copies");
+                });
+                waLost = " Counted across this clone, " + listJoin(waBits) +
+                  (waEven.length ? ", while " + listJoin(waEven.map(function (a) { return a.name; })) +
+                    (waEven.length === 1 ? " keeps" : " keep") + " the usual two" : "") + ".";
+              } else {
+                waLost = " Counted across this clone, every arm involved is back to two copies.";
+              }
             }
           }
         }
@@ -1326,7 +1391,7 @@
     { chroms: ["16", "16"], bands: [["p13.1", "q22"], ["p13.1", "q22.1"]],
       kind: "fusion", genes: ["CBFB", "MYH11"],
       name: "inv(16) / t(16;16), core-binding-factor AML",
-      note: "Two rearrangements, one disease: inv(16)(p13.1q22) and t(16;16)(p13.1;q22) both bring <i>CBFB</i> and <i>MYH11</i> together, and WHO classifies either as the same favorable-risk AML, classically with abnormal marrow eosinophils. The inversion is far the commoner spelling. It is the other half of the core-binding-factor pair with t(8;21), sharing the cytarabine consolidation, and a <i>KIT</i> mutation again worsens it. Both breakpoints sit close to the centromere and the inversion is genuinely easy to miss on banding, so it is confirmed by FISH or RT-PCR rather than excluded by karyotype." },
+      note: "Two rearrangements, one disease: inv(16)(p13.1q22) and t(16;16)(p13.1;q22) both bring <i>CBFB</i> and <i>MYH11</i> together, and WHO classifies either as the same favorable-risk AML, classically with abnormal marrow eosinophils. The inversion is far the commoner of the two. It is the other half of the core-binding-factor pair with t(8;21), sharing the cytarabine consolidation, and a <i>KIT</i> mutation again worsens it. Both breakpoints sit close to the centromere and the inversion is genuinely easy to miss on banding, so it is confirmed by FISH or RT-PCR rather than excluded by karyotype." },
     { chroms: ["15", "17"], bands: [["q24", "q21"], ["q24.1", "q21.2"], ["q22", "q12"], ["q22", "q21"]],
       kind: "fusion", genes: ["PML", "RARA"],
       name: "t(15;17), acute promyelocytic leukemia",
@@ -1516,7 +1581,7 @@
     { chroms: ["14", "14"], bands: [["q11", "q32"], ["q11.2", "q32.13"]],
       kind: "juxtaposition", genes: ["TRA", "TCL1A"],
       name: "inv(14) / t(14;14), T-prolymphocytic leukemia",
-      note: "Either spelling of this rearrangement is near-defining for T-prolymphocytic leukemia: inv(14)(q11q32) and t(14;14)(q11;q32) both put <i>TCL1A</i> beside the T-cell receptor alpha enhancer and switch it on in T cells, where it should be off. <i>ATM</i> loss at 11q22.3 is the usual companion. The same inversion appears in the clonal T-cell expansions of ataxia-telangiectasia years before any leukemia." },
+      note: "Two different rearrangements with one consequence, and either is near-defining for T-prolymphocytic leukemia: inv(14)(q11q32) folds a segment within a single chromosome 14, t(14;14)(q11;q32) is an exchange between the two homologous 14s, and both put <i>TCL1A</i> beside the T-cell receptor alpha enhancer and switch it on in T cells, where it should be off. <i>ATM</i> loss at 11q22.3 is the usual companion. The same inversion appears in the clonal T-cell expansions of ataxia-telangiectasia years before any leukemia." },
     // --- further sarcoma ---
     { chroms: ["21", "22"], bands: [["q22", "q12"], ["q22.2", "q12.2"]],
       kind: "fusion", genes: ["EWSR1", "ERG"],

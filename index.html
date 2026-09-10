@@ -596,6 +596,10 @@
   #clinical-card { background: var(--amber-50); border-color: var(--amber); }
   #clinical-card h2 { color: var(--amber-800); border-bottom-color: rgba(236, 155, 39, .35); }
   #clinical-card .syn { border-bottom-color: rgba(236, 155, 39, .35); }
+  /* A note's link to the other rearrangement it names: prose ink so the frame
+     keeps carrying the signal, the underline alone says "you can go there". */
+  .syn .note a.kref { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+  .syn .note a.kref:hover { color: var(--peri-700); }
   .syn { padding: 9px 0; border-bottom: 1px dashed var(--line); }
   .syn:last-child { border-bottom: none; }
   .syn .name { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--navy); }
@@ -1698,6 +1702,33 @@
     }
   }
 
+  // A note that names ANOTHER drawable rearrangement links to it, drawn in
+  // this page's own sex with the reader's settings riding along, so the
+  // reader of t(14;14)(q11;q32) can jump straight to inv(14)(q11q32) and back
+  // (Dan, 2026-09-10). The mention of the lesion already on screen stays
+  // plain text: a card linking to itself answers nothing. Only fully
+  // specified tokens (with a band group) link, because the k= target needs
+  // breakpoints to draw; a bare "t(8;21)" stays prose. The count is the one
+  // the lone lesion needs: 46 for anything that replaces its normals one for
+  // one, 45 for a whole-arm der/rob/dic, which replaces two chromosomes.
+  // s.note is curated static text (teach.js), so a regex over its HTML is
+  // safe; the only tags it carries are <i> around gene symbols, which the
+  // token pattern cannot cross.
+  var KREF_RE = /\b(t|inv|rob|der|dic|idic|del|dup|trp|ins|i|r)\((\d{1,2}|X|Y)(?:;(?:\d{1,2}|X|Y)){0,2}\)\([^()<>]{1,40}\)/g;
+  function linkifyKrefs(html, selfK, sex) {
+    var flat = String(selfK || "").replace(/\s+/g, "");
+    return String(html).replace(KREF_RE, function (m, op) {
+      if (flat.indexOf(m.replace(/\s+/g, "")) >= 0) return m;
+      var count = (op === "rob" || op === "dic" || op === "idic" || (op === "der" && m.indexOf(";") >= 0)) ? 45 : 46;
+      var k = count + "," + (sex || "XX") + "," + m;
+      var keep = ["style", "bands", "show", "scale"], q = ["k=" + encodeURIComponent(k)];
+      keep.forEach(function (n) {
+        var v = new RegExp("[?&]" + n + "=([^&]+)").exec(location.search);
+        if (v) q.push(n + "=" + v[1]);
+      });
+      return '<a class="kref" href="?' + q.join("&") + '">' + m + "</a>";
+    });
+  }
   function renderClinical(clones) {
     var all = [], seen = {};
     clones.forEach(function (c) {
@@ -1706,8 +1737,10 @@
     var card = $("#clinical-card");
     if (!all.length) { card.style.display = "none"; return; }
     card.style.display = "";
+    var sex = (clones[0] && clones[0].sex && clones[0].sex.label) || "XX";
     $("#clinical").innerHTML = all.map(function (s) {
-      return '<div class="syn"><div class="name">' + s.name + '</div><div class="note">' + s.note + '</div></div>';
+      return '<div class="syn"><div class="name">' + s.name + '</div><div class="note">' +
+        linkifyKrefs(s.note, input.value, sex) + '</div></div>';
     }).join("");
   }
 
