@@ -47,5 +47,5 @@ jobs:
           else
             gh pr create --base main --head "$BR" \
               --title "Sync brand colors from studyrare-brand" \
-              --body "Automated by \`.github/workflows/sync-brand.yml\`. The canonical palette in [studyrare-brand](https://github.com/dpique/studyrare-brand) changed; this regenerates the inlined \`--\`color variables in \`index.html\`. Review the color diff, merge, then deploy with \`npx wrangler deploy\`."
+              --body "Automated by \`.github/workflows/sync-brand.yml\`. The canonical palette in [studyrare-brand](https://github.com/dpique/studyrare-brand) changed; this regenerates the inlined \`--\`color variables in \`index.html\`. Review the color diff and merge; the Deploy workflow ships it on merge (the one deploy path; never deploy by hand)."
           fi

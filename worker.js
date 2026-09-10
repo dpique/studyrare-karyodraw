@@ -35,6 +35,55 @@ const TOP_MIN_DRAWS = 5;
 const TOP_MIN_DAYS = 2;
 const TOP_LIMIT = 15;
 
+// Security headers. Every HTML navigation routes through this Worker
+// (assets.run_worker_first in wrangler.jsonc), so this is the one place the
+// site's response-header posture lives. script-src keeps 'unsafe-inline'
+// deliberately: Cloudflare injects an anonymous inline bootstrap into served
+// HTML (bot detection; visible in the live page source), so hashes or nonces
+// would break the zone's own tooling. What the CSP is here for still holds
+// without it: no remote script can load, no hostile page can frame the site,
+// and object/base/form abuse is off. Binary assets on the free asset path
+// (the negative run_worker_first patterns) skip these headers; they carry no
+// scriptable surface. The Google Fonts hosts stay allowed because the
+// committed head links them; Cloudflare Fonts rewrites those to same-origin
+// in production, but the CSP must not depend on that toggle.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' data:",       // the PNG export loads its stitched SVG via a data: image
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+].join("; ");
+const SEC_HEADERS = {
+  "strict-transport-security": "max-age=31536000; includeSubDomains",
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "permissions-policy": "camera=(), microphone=(), geolocation=()",
+};
+function withSecurity(res, opts) {
+  const out = new Response(res.body, res);
+  for (const k of Object.keys(SEC_HEADERS)) out.headers.set(k, SEC_HEADERS[k]);
+  if (opts && opts.html) {
+    out.headers.set("content-security-policy", CSP);
+    const ct = out.headers.get("content-type") || "text/html";
+    if (!/charset/i.test(ct)) out.headers.set("content-type", ct + "; charset=utf-8");
+  }
+  return out;
+}
+
+// Refuse oversized bodies before reading them. The beacon and the feedback
+// dialog send a few KB at most; anything bigger is not this site's client.
+// A body without a content-length passes through to the platform's own caps.
+function tooLarge(request) {
+  const len = Number(request.headers.get("content-length"));
+  return Number.isFinite(len) && len > 32768;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -54,6 +103,7 @@ export default {
     }
     if (url.pathname === "/api/collect") {
       if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
+      if (tooLarge(request)) return new Response("payload too large", { status: 413 });
       // Per-IP rate limit. On limit, silently drop (204, same as success) so a
       // legitimate user is never disrupted — the analytics beacon ignores the body.
       if (await overLimit(env.RL_COLLECT, request)) return new Response(null, { status: 204 });
@@ -70,16 +120,32 @@ export default {
     }
     if (url.pathname === "/api/feedback") {
       if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
+      if (tooLarge(request)) return new Response("payload too large", { status: 413 });
       // Per-IP rate limit. Feedback is low-frequency for a real person, so a tight
       // cap stops a flood into the inbox/webhook without affecting normal use.
       if (await overLimit(env.RL_FEEDBACK, request)) return new Response("slow down", { status: 429 });
       return feedbackResponse(request, env, ctx);
     }
+    // The deployed commit, for the daily smoke's freshness check: deploy.yml
+    // passes GITHUB_SHA as DEPLOY_SHA, and the smoke compares this against the
+    // last successful deploy. "Deployed" and "green" stopped being the same
+    // thing once the deploy step could skip; this makes drift observable.
+    if (url.pathname === "/api/version") {
+      return withSecurity(new Response(JSON.stringify({ sha: env.DEPLOY_SHA || "dev" }), {
+        headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+      }));
+    }
     // /k/<notation> is a short, notation-based link. Redirect to the canonical
     // /karyotype/<slug>/ landing page when one exists (301), otherwise open the
     // interactive tool with that karyotype (302). Keeps one canonical URL per page.
     if (url.pathname === "/k" || url.pathname.startsWith("/k/")) {
-      const raw = decodeURIComponent(url.pathname.slice(3)).replace(/\/+$/, "").trim();
+      // decodeURIComponent throws on valid-hex, invalid-UTF-8 sequences (%C3
+      // alone), which is exactly what a link mangler produces; this returned a
+      // live 500 until 2026-09-10. Fall back to the path as written; the tool's
+      // own parse guidance then meets whatever the link says.
+      let decoded = url.pathname.slice(3);
+      try { decoded = decodeURIComponent(decoded); } catch (_) {}
+      const raw = decoded.replace(/\/+$/, "").trim();
       if (!raw) return Response.redirect(`${url.origin}/karyotype/`, 301);
       const slug = K_TO_SLUG[raw.replace(/\s+/g, "").toLowerCase()];
       return slug
@@ -89,15 +155,21 @@ export default {
     const res = await env.ASSETS.fetch(request);
     // Serve the branded 404 page for unknown page navigations (not missing images
     // or other assets, which should keep their plain 404). Preserves the 404 status.
-    if (res.status === 404 && request.method === "GET" &&
+    // HEAD gets the same status and headers with no body, per the method's contract.
+    if (res.status === 404 && (request.method === "GET" || request.method === "HEAD") &&
         (request.headers.get("accept") || "").includes("text/html")) {
       const page = await env.ASSETS.fetch(new URL("/404.html", request.url));
       if (page.ok) {
-        return new Response(page.body, {
+        return withSecurity(new Response(request.method === "HEAD" ? null : page.body, {
           status: 404,
           headers: { "content-type": "text/html; charset=utf-8" },
-        });
+        }), { html: true });
       }
+    }
+    // HTML picks up the security headers; everything else passes through as the
+    // asset layer shaped it.
+    if ((res.headers.get("content-type") || "").includes("text/html")) {
+      return withSecurity(res, { html: true });
     }
     return res;
   },
@@ -188,17 +260,29 @@ async function sendFeedbackDigest(env) {
     if (!sent) return;
 
     const ids = rows.map((x) => x.id);
-    const marks = ids.map(() => "?").join(",");
     try {
-      await env.DB.prepare("UPDATE feedback SET digested = 1 WHERE id IN (" + marks + ")").bind(...ids).run();
+      await markDigested(env, ids);
     } catch (e) {
-      // If marking fails, stop rather than re-send the same rows on the next loop.
-      console.error("digest mark failed:", e && e.message);
-      return;
+      // The email is already out, so a mark failure here means this whole batch
+      // is re-emailed on the next run. Retry once (a transient D1 write hiccup
+      // is the only thing between a clean digest and a duplicate one), then
+      // stop rather than loop on the same rows.
+      console.error("digest mark failed, retrying once:", e && e.message);
+      try {
+        await markDigested(env, ids);
+      } catch (e2) {
+        console.error("digest mark retry failed:", e2 && e2.message);
+        return;
+      }
     }
     // A short (partial) batch means the queue is drained.
     if (rows.length < 200) return;
   }
+}
+
+function markDigested(env, ids) {
+  const marks = ids.map(() => "?").join(",");
+  return env.DB.prepare("UPDATE feedback SET digested = 1 WHERE id IN (" + marks + ")").bind(...ids).run();
 }
 
 // Weekly usage digest (Mondays, on the same cron as the feedback digest). The
@@ -343,7 +427,9 @@ async function feedbackResponse(request, env, ctx) {
     } catch (e2) { console.error("feedback insert (legacy) failed:", e2 && e2.message); }
   }
 
+  let webhooked = false;
   if (env.FEEDBACK_WEBHOOK && message) {
+    webhooked = true;
     const text = "New KaryoDraw feedback" + (category ? " [" + category + "]" : "") + "\n" + message.slice(0, 1500) +
       (email ? "\nreply-to: " + email : "") +
       (karyotype ? "\nkaryotype: " + karyotype : "") +
@@ -358,13 +444,16 @@ async function feedbackResponse(request, env, ctx) {
     );
   }
 
-  if (!stored && !env.FEEDBACK_WEBHOOK) {
+  // Honest only if the report went SOMEWHERE: a stored row, or a webhook that
+  // carried the message. A bare flag with D1 down and no message hit neither
+  // path, and used to answer ok anyway, persisting nothing, nowhere.
+  if (!stored && !webhooked) {
     return new Response("could not save feedback", { status: 500 });
   }
   // Return the row id + token so the client can enrich this flag with detail.
-  return new Response(JSON.stringify({ ok: true, id, token }), {
-    status: 200, headers: { "content-type": "application/json" },
-  });
+  return withSecurity(new Response(JSON.stringify({ ok: true, id, token }), {
+    status: 200, headers: { "content-type": "application/json; charset=utf-8" },
+  }));
 }
 
 // GET /api/top — the ranked "Most-studied" list. Cached at the edge for a day so
@@ -376,21 +465,23 @@ async function topResponse(request, env, ctx) {
   const cached = await cache.match(cacheKey);
   if (cached) return cached;
 
-  let items = [];
+  let items = [], degraded = false;
   try {
     items = await topKaryotypes(env);
   } catch (e) {
+    degraded = true;
     console.error("top query failed:", e && e.message);
   }
-  const res = new Response(JSON.stringify({ items }), {
+  const res = withSecurity(new Response(JSON.stringify({ items }), {
     headers: {
       "content-type": "application/json; charset=utf-8",
-      "cache-control": "public, max-age=86400",
+      "cache-control": degraded ? "no-store" : "public, max-age=86400",
     },
-  });
+  }));
   // Cache even an empty result, so an early-days empty board is not re-queried
-  // on every request. It expires within a day and refills as usage accrues.
-  ctx.waitUntil(cache.put(cacheKey, res.clone()));
+  // on every request, but never a degraded one: a D1 hiccup cached here would
+  // blank the board for a day after the database recovered.
+  if (!degraded) ctx.waitUntil(cache.put(cacheKey, res.clone()));
   return res;
 }
 

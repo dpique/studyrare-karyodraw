@@ -206,10 +206,13 @@
     // figure, so each margin holds the wider of the two labels on that side. Both
     // sides were constants at 46, which "der(22)" alone overruns.
     var mT = 26, mB = 26;
+    // A and B must be read before the margins measure their labels: `var` hoisting
+    // otherwise hands labelMargin the string "undefined" on both sides, and every
+    // cross wears the padding of a 14-character ghost label instead of its own.
+    var A = model.A, B = model.B;
     var mL = Math.max(46, labelMargin([[A, 9.5], ["der(" + B + ")", 9]], O + 5));
     var mR = Math.max(46, labelMargin([[B, 9.5], ["der(" + A + ")", 9]], O + 5));
     var cx = mL + W, cy = mT + N, w = cx + E + mR, h = cy + S + mB;
-    var A = model.A, B = model.B;
 
     // Each unit is one L-shaped chromosome: a vertical (proximal) bar carrying its centromere
     // and a horizontal (distal) bar. Offset O from center so the two chromosomes sharing an arm
