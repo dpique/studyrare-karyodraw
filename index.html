@@ -2014,15 +2014,28 @@
     var SVGNS = "http://www.w3.org/2000/svg";
     var hiBand = null, HI = null;
     function clearHi() { if (HI && HI.parentNode) HI.parentNode.removeChild(HI); HI = null; hiBand = null; }
-    function highlight(band) {   // crisp amber box around the exact band
+    function highlight(band) {   // crisp amber mark around the exact band
       clearHi();
       var svg = band.ownerSVGElement; if (!svg) return;
-      var x = parseFloat(band.getAttribute("x")), y = parseFloat(band.getAttribute("y")),
-        w = parseFloat(band.getAttribute("width")), h = parseFloat(band.getAttribute("height"));
-      var r = document.createElementNS(SVGNS, "rect");
-      r.setAttribute("x", (x - 1.5).toFixed(2)); r.setAttribute("y", (y - 0.75).toFixed(2));
-      r.setAttribute("width", (w + 3).toFixed(2)); r.setAttribute("height", Math.max(2, h + 1.5).toFixed(2));
-      r.setAttribute("rx", "2.5"); r.setAttribute("fill", "none");
+      var r;
+      if (band.hasAttribute("width")) {
+        // Linear bands are rects: a rounded box just outside the band.
+        var x = parseFloat(band.getAttribute("x")), y = parseFloat(band.getAttribute("y")),
+          w = parseFloat(band.getAttribute("width")), h = parseFloat(band.getAttribute("height"));
+        r = document.createElementNS(SVGNS, "rect");
+        r.setAttribute("x", (x - 1.5).toFixed(2)); r.setAttribute("y", (y - 0.75).toFixed(2));
+        r.setAttribute("width", (w + 3).toFixed(2)); r.setAttribute("height", Math.max(2, h + 1.5).toFixed(2));
+        r.setAttribute("rx", "2.5");
+      } else {
+        // Ring bands are arc-sector paths: outline the sector itself. No box
+        // fits a wedge, and reading x/width off a path gave a NaN rect, a
+        // tooltip with no mark (Dan, 2026-09-10). Unclipped by the waist,
+        // the way the linear box also draws outside the body.
+        r = document.createElementNS(SVGNS, "path");
+        r.setAttribute("d", band.getAttribute("d"));
+        r.setAttribute("stroke-linejoin", "round");
+      }
+      r.setAttribute("fill", "none");
       r.setAttribute("stroke", "#ec9b27"); r.setAttribute("stroke-width", "2.4");
       r.setAttribute("pointer-events", "none"); r.setAttribute("class", "band-hi");
       svg.appendChild(r); HI = r; hiBand = band;

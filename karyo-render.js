@@ -1708,12 +1708,20 @@
     });
     var ocol = outlineFor(ctx, chrom);
     if (outerD) {
-      // The acen band sectors already hatch this zone (a dedicated overlay
-      // was tried and erased the band colors under a wide white-tiled wedge,
-      // preview rounds 2026-09-09). The dashed p/q boundary line sits inside
-      // the waist like the linear midline, pointer-transparent so the band
-      // sectors stay the honest tooltip.
+      // The linear body lays a CEN_H hatch rect OVER its bands because the
+      // acen bands can be far narrower than the waist and are rarely
+      // symmetric about the p/q boundary; the ring owes its constriction the
+      // same guarantee (chromosome 13's acen bands cover a third of the
+      // pinch, and the q side of the line sat bare, Dan 2026-09-10). One
+      // wedge, the exact waist window, clipped to the constriction the way
+      // the linear overlay clips to the body. A 2026-09-09 preview overlay
+      // failed by being far wider than the waist, a white-tiled wedge
+      // erasing band colors; the window was the fault, not the overlay.
+      // Overlay and boundary line are pointer-transparent so the band
+      // sectors beneath stay the honest tooltip, and the dashed p/q line
+      // sits inside the waist like the linear midline.
       var ccol = heteroColor("acen");
+      body.push(hatchSector(cenAngle - ah, cenAngle + ah, "acen", 45, clipRef + ' pointer-events="none"'));
       body.push('<line x1="' + px(cenAngle, r0w(cenAngle)).toFixed(2) + '" y1="' + py(cenAngle, r0w(cenAngle)).toFixed(2) +
         '" x2="' + px(cenAngle, Rw(cenAngle)).toFixed(2) + '" y2="' + py(cenAngle, Rw(cenAngle)).toFixed(2) +
         '" stroke="' + ccol + '" stroke-width="1" stroke-dasharray="2.5 2" pointer-events="none"/>');
