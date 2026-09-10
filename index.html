@@ -412,6 +412,36 @@
   .seg-unbalanced { background: var(--amber-50); color: var(--amber-800); }
   .seg-lethal { background: var(--error-50); color: var(--error-700); }
   .seg-note { margin: 16px 0 0; font-size: 11.5px; color: var(--muted); max-width: 80ch; }
+  /* Gonosomal panel: a female X;autosome carrier's gamete forks on the sperm,
+     so the outcome area splits into two lanes; a male carrier's single lane
+     fills the card. The per-outcome note carries the X-inactivation or SRY
+     reasoning, quieter than the imbalance line. The fertility card wears the
+     notice amber (.oal-warn palette: important information, not an action). */
+  /* Gonosomal modes stack as full-width rows: with two conceptus lanes plus a
+     reasoning note per gamete, the narrow mode columns wrapped word by word.
+     The scene floats left of its caption (the print sheet's stream layout,
+     proven there first), the gamete cards sit two up, and the 3:1 plane pairs
+     take a grid cell each. */
+  .seg-modes-gono { display: block; }
+  .seg-modes-gono .seg-mode { margin-bottom: 12px; }
+  .seg-modes-gono .seg-mode::after { content: ""; display: block; clear: both; }
+  .seg-modes-gono .seg-scene { float: left; width: 218px; margin: 4px 14px 6px 0; }
+  /* A to-scale cross for an X;autosome exchange is tall and thin (the X is
+     long, the exchanged tip small, and the min-arm floor stretches the rest),
+     so the height is capped and the width follows the aspect. */
+  .seg-modes-gono .seg-scene .seg-scene-svg { max-height: 320px; width: auto; max-width: 100%; display: block; margin: 0 auto; }
+  .seg-modes-gono .seg-gametes { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 9px; clear: both; padding-top: 6px; align-items: start; }
+  .seg-fork { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: 2px; }
+  .seg-fork.seg-fork-one-lane { grid-template-columns: 1fr; }
+  .seg-fork-one { min-width: 0; }
+  .seg-fork-when { display: block; font-size: 10px; font-weight: 700; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .seg-gnote { margin: 4px 0 0; font-size: 11.5px; line-height: 1.45; color: var(--muted); }
+  .seg-fert { background: var(--amber-50); border: 1px solid var(--amber); border-radius: 10px;
+    padding: 10px 12px; margin: 0 0 12px; }
+  .seg-fert .oal-head { margin: 0 0 4px; font-weight: 700; font-size: 13px; color: var(--amber-800); }
+  .seg-fert .oal-body { margin: 4px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+  .seg-fert .oal-chips { margin-top: 6px; }
   /* Anaphase-I pull: the checkbox slides each chromosome group toward its pole (CSS only). */
   .seg-scene .seg-chrom { transform: translate(0, 0); }
   .seg-scene .seg-fibers { transition: opacity .3s; }
@@ -823,8 +853,12 @@
     #printsheet .ps-seg .seg-pair .seg-gametes { flex-direction: column; }
     #printsheet .ps-seg .seg-imb, #printsheet .ps-seg .seg-viab { font-size: 8pt; }
     #printsheet .ps-seg .seg-scene { float: left; width: 132px; margin: 2px 10px 2px 0; }
-    #printsheet .ps-seg .seg-scene-svg { max-width: 128px; }
-    #printsheet .ps-seg .seg-config-fig .seg-scene-svg { width: 150px; }
+    /* Height-capped for the same reason as on screen: a tall, thin to-scale
+       cross (an X beside a small exchanged tip) otherwise stretches its card
+       across most of a page. Square autosomal crosses fit the width first and
+       never reach the cap. */
+    #printsheet .ps-seg .seg-scene-svg { max-width: 128px; max-height: 250px; width: auto; }
+    #printsheet .ps-seg .seg-config-fig .seg-scene-svg { max-width: 150px; max-height: 280px; width: auto; }
     /* The gamete boxes pair up. On screen .seg-gametes is a flex COLUMN of
        .seg-gamete wrappers (the accent-bordered boxes; .seg-gout is only
        the text inside, which is why sizing it did nothing). On paper the
@@ -832,6 +866,14 @@
        3:1 fit a single page whole. */
     #printsheet .ps-seg .seg-gametes { flex-direction: row; flex-wrap: wrap; gap: 6px; }
     #printsheet .ps-seg .seg-gamete { flex: 1 1 47%; min-width: 0; box-sizing: border-box; break-inside: avoid; }
+    /* Gonosomal fork lanes: inside a 47%-wide printed gamete box two side-by-side
+       lanes are too narrow to read, so the fork stacks on paper. The whole box
+       still keeps itself unsplit via the rule above. */
+    #printsheet .ps-seg .seg-fork { grid-template-columns: 1fr; gap: 4px; }
+    #printsheet .ps-seg .seg-gnote { font-size: 7.5pt; }
+    #printsheet .ps-seg .seg-fork-when { font-size: 6.5pt; }
+    #printsheet .ps-seg .seg-fert { break-inside: avoid; padding: 6px 8px; margin: 0 0 8px; }
+    #printsheet .ps-seg .seg-fert .oal-body { font-size: 8.5pt; }
     #printsheet .ps-seg .seg-pair { break-inside: avoid; }
     #printsheet .ps-seg .seg-mode-h { font-size: 10.5pt; break-after: avoid; }
     #printsheet .ps-seg .seg-why, #printsheet .ps-seg .seg-viab, #printsheet .ps-seg .seg-imb,

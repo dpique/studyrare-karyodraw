@@ -3,6 +3,37 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (sex-chromosome translocation carriers get their outcomes table)
+
+- **A balanced X;autosome, Y;autosome or X;Y translocation carrier now gets a
+  full meiotic segregation panel**, replacing the card that could only explain
+  why there was none. For a woman carrying t(X;4), every gamete forks on
+  whether the sperm brings an X or a Y, and the fate of each unbalanced
+  conceptus follows X-inactivation: an extra X segment reads differently with
+  and without the X-inactivation centre on board, a der(X) that kept it is
+  preferentially silenced, and the silencing can spread into the attached
+  autosomal material. The classic whole-chromosome outcomes fall out of the
+  3:1 column: Turner syndrome, the triple X and Klinefelter patterns, and the
+  never-viable conception with no X at all.
+- **Male carriers are told the fertility story first.** A balanced X;autosome
+  man pairs his chromosomes as a chain the Y holds only at the pseudoautosomal
+  tips, drawn exactly that way, with the reason spermatogenesis usually
+  fails. A Y;autosome carrier's panel turns on where the Y broke: the inert
+  Yq12 variants that ride through families unnoticed, the euchromatic AZF
+  breaks that cost fertility, and the Yp breaks that move SRY onto the
+  derivative autosome, after which the sex letters stop predicting
+  development.
+- **t(X;Y) is modeled as the entity it is.** The recurrent
+  t(X;Y)(p22.3;q11.2) page explains the pseudoautosomal geometry that leaves
+  the two derivatives nothing to pair with (why balanced men are usually
+  azoospermic), offers the unbalanced der(X) forms families actually carry as
+  clickable karyotypes, and derives each child's development from where SRY
+  sits.
+- **Karyotypes like 47,XX,t(X;4)(p21;p16) now parse at their stated count.**
+  The sex letters name the free sex chromosomes and the translocation supplies
+  the derivative, so the interchange trisomy X a carrier can produce no longer
+  draws a count lecture.
+
 ## 2026-09-10 (the isodicentric decode states its drawn length)
 
 - **An isodicentric's decode now says how long the mirror comes to.** A

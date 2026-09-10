@@ -1484,23 +1484,37 @@
       // del(12)(p12),-13,-16 tallies 44; the restore said 45 against a stated
       // 46). Dry-run first; apply only when the restores can close the gap.
       if (deficit > 0) {
+        // The additional reading is believable in two shapes. (1) The op consumed
+        // a chromosome's SOLE copy, so the derivative must be additional to a
+        // normal homolog (46,X,i(X)(q10)). (2) The consumed chromosome is a SEX
+        // chromosome and the clone stated a sex field: the tokens list the FREE
+        // normal sex chromosomes (the corpus's ISCN 2024 example 47,X,t(X;13)
+        // (q27;q12),inv(10)(p13q22),+21 writes one token for the free X beside
+        // the der(X) the t names), so 47,XX,t(X;4)(p21;p16) — interchange
+        // trisomy X from a 3:1 segregation — means two free X plus the
+        // derivative even though a free X remains after consumption. An
+        // autosome never qualifies by count alone: an extra one must be named
+        // (+4), so 47,XX,t(4;6)(q21;q23) still draws the count lecture.
+        var sexStated = !!clone.sexGiven && clone.sex.tokens.length > 0;
+        var canRestore = function (rc0) {
+          if (slots[rc0].filter(function (x) { return x.kind === "normal"; }).length === 0) return true;
+          return (rc0 === "X" || rc0 === "Y") && sexStated;
+        };
         var restorable = 0, seenRestore = {};
         for (var dr = 0; dr < replacedChroms.length; dr++) {
           var drc = replacedChroms[dr];
           if (seenRestore[drc]) continue;
-          if (slots[drc].filter(function (x) { return x.kind === "normal"; }).length === 0) {
-            seenRestore[drc] = 1; restorable++;
-          }
+          if (canRestore(drc)) { seenRestore[drc] = 1; restorable++; }
         }
         if (restorable >= deficit) {
+          var doneRestore = {};
           for (var r = 0; r < replacedChroms.length && deficit > 0; r++) {
             var rc = replacedChroms[r];
-            var normalsLeft = slots[rc].filter(function (x) { return x.kind === "normal"; }).length;
-            if (normalsLeft === 0) {
-              slots[rc].unshift({ chrom: rc, kind: "normal", label: rc, aberration: null, primary: null });
-              comp[rc] += 1;
-              deficit--;
-            }
+            if (doneRestore[rc] || !canRestore(rc)) continue;
+            doneRestore[rc] = 1;
+            slots[rc].unshift({ chrom: rc, kind: "normal", label: rc, aberration: null, primary: null });
+            comp[rc] += 1;
+            deficit--;
           }
         }
       }
