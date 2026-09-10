@@ -1010,7 +1010,7 @@
         '<div class="seg-gametes">' + gametes + '</div></div>';
     }).join("");
 
-    var note = '<p class="seg-note">Segregants follow ISCN 2024, Table 5. The diagrams are schematic: chromosome lengths and pole positions are not to scale, and the fiber paths illustrate which chromosomes co-segregate, not the physical spindle. This is a teaching model of segregation, not a recurrence-risk estimate: real risks depend on the specific chromosomes and segment sizes.</p>';
+    var note = '<p class="seg-note">The diagrams are schematic, and the fiber paths illustrate which chromosomes co-segregate, not the physical spindle. This is a teaching model of segregation, not a recurrence-risk estimate: real risks depend on the specific chromosomes and segment sizes.</p>';
 
     return head + config + controls + '<div class="seg-modes">' + modes + '</div>' + note;
   }
