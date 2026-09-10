@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the tip stops narrating a visible shade)
+
+- **The hover tip no longer repeats "G-negative (pale)" on ordinary bands.**
+  The shade is visible under the cursor, and the same hover already opens the
+  band map beside the figure, which narrates the stain in full. The tip now
+  reads "11p13 · in 3 places" for a plain band, and keeps the name only where
+  it explains a texture: centromeric band, variable region, stalk, fragile
+  site.
+
 ## 2026-09-10 (the tip names the breakpoint that splits a band)
 
 - **"In 3 places" now explains itself when a breakpoint cuts through the

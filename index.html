@@ -2170,7 +2170,14 @@
           var kr = karyo.getBoundingClientRect(), cr = tipCell.getBoundingClientRect();
           tipLeft = (cr.left + cr.right) / 2 < (kr.left + kr.right) / 2;
         }
-        showTip(ev, "<b>" + c + b + "</b>  " + prettyStain(s) +
+        // The tip says only what the pixels cannot. A plain Giemsa band's
+        // shade is visible under the cursor and fully narrated in the band
+        // map this same hover just opened, so naming it here was noise
+        // (Dan, 2026-09-10); the special textures keep their name, because
+        // "Centromeric band" or "fragile site" is the explanation of the
+        // hatch, not a restatement of a shade.
+        var stainTxt = /^g(neg|pos)/.test(s || "") ? "" : "  " + prettyStain(s);
+        showTip(ev, "<b>" + c + b + "</b>" + stainTxt +
           (hiPlaces ? ' <span class="tpl">· in ' + hiPlaces + " place" + (hiPlaces === 1 ? "" : "s") +
             (hiSplit ? " (a breakpoint splits this band)" : "") + "</span>" : ""), tipLeft);
         return;
