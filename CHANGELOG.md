@@ -3,6 +3,18 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (a der of three or more chromosomes is refused, with the reason)
+
+- **der(1;7;3;4)(q10;p10;p10;p16.3) no longer draws a fiction.** A derivative
+  written across three or more chromosomes with one breakpoint each cannot
+  exist: every piece keeps its own telomere, and one linear chromosome has
+  exactly two ends. The app used to draw the first two pieces, drop the rest
+  in silence, and still count all four chromosomes as consumed. It now
+  refuses to draw and teaches the two spellings that do exist: the balanced
+  multi-way translocation t(1;7;3;4), which makes one derivative from each
+  partner, and der(N) with each exchange spelled out, where every internal
+  piece carries two breakpoints.
+
 ## 2026-09-10 (the hover tip turns to glass)
 
 - **The hover tip is now translucent.** It sits on the figure by necessity, so

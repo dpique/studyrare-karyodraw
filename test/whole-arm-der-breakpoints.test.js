@@ -70,3 +70,27 @@ test('whole-arm der(A;B) with trailing sub-ops keeps drawing', () => {
   const m = ISCN.parse('45,XY,der(13;14)(q10;q10)del(13)(q22)');
   assert.equal(m.clones[0].unreadable, false);
 });
+
+test('a der across three or more chromosomes is refused: one chromosome has two ends', () => {
+  // 44,XX,+1,der(1;7;3;4)(q10;p10;p10;p16.3) used to draw a der(1;7) and drop
+  // chromosomes 3 and 4 in silence while the count consumed all four (Dan,
+  // 2026-09-10). Four pieces that each contribute one breakpoint carry four
+  // telomeric ends, and a single linear chromosome has exactly two, so no such
+  // derivative exists to draw.
+  const m = ISCN.parse('44,XX,+1,der(1;7;3;4)(q10;p10;p10;p16.3)');
+  assert.equal(m.clones[0].unreadable, true, 'the gate refuses it');
+  const w = m.warnings.join(' ');
+  assert.match(w, /two ends/, 'teaches the geometric reason');
+  assert.match(w, /t\(1;7;3;4\)/, 'offers the balanced multi-way translocation spelling');
+  assert.match(w, /der\(1\)t\(1;3\)/, 'offers the spelled-out derivative chain form');
+});
+
+test('the all-centromeric three-way der spelling is refused the same way', () => {
+  assert.equal(ISCN.parse('44,XX,der(13;14;21)(q10;q10;q10)').clones[0].unreadable, true);
+  assert.equal(ISCN.parse('44,XX,rob(13;14;21)(q10;q10;q10)').clones[0].unreadable, true);
+});
+
+test('the spelled-out chain across three chromosomes still draws', () => {
+  const m = ISCN.parse('46,XX,der(1)t(1;3)(p22;q13.1)t(3;7)(q26;q22)');
+  assert.ok(!m.clones[0].unreadable, 'a der(N) with two breakpoints per internal piece is the legal form');
+});
