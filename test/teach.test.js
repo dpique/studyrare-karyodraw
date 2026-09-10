@@ -558,6 +558,35 @@ test('the isodicentric decode states gain and loss, never a copy total', () => {
     'there is no second Y to count against, so no total is claimed');
 });
 
+// A real visitor's report (2026-09-09, the feedback log): "the idic Y looks quite
+// small", on 46,X,idic(Y)(q11.23)[39]/45,X[11]. The drawing was checked and is
+// right: two copies of Ypter→Yq11.23 come to about 50 Mb against 57 Mb for a
+// normal Y, because the Yq12 heterochromatin block the mirror trades away is
+// nearly as long as the piece it doubles. What was missing is the page saying so.
+// A reader who knows the mirror DOUBLES a piece expects a big chromosome, nothing
+// on the karyogram anchors "nearly the length of a normal Y", and beside the
+// 156 Mb X the honest drawing reads as an error. The decode now states the drawn
+// length and compares it with a normal homologue, in both the replacing and the
+// supernumerary case, using the same band-midpoint arithmetic as the figure.
+test('the isodicentric decode states the drawn length against a normal homologue', () => {
+  const y = decodeText('46,X,idic(Y)(q11.23)');
+  assert.match(y, /about 50 Mb/, 'the mirror length is computed from the band midpoint');
+  assert.match(y, /a little shorter than the normal Y it replaces \(57 Mb\)/);
+
+  // The comparison runs both ways: a distal break mirrors MOST of the chromosome,
+  // so the idic comes out longer than the homologue it replaces.
+  const long = decodeText('46,XX,idic(17)(p11.2)');
+  assert.match(long, /about 128 Mb/);
+  assert.match(long, /half again as long as the normal 17 it replaces \(83 Mb\)/);
+
+  // The supernumerary case compares against a normal homologue without claiming
+  // a replacement, and is what makes idic(15) a SMALL extra chromosome.
+  const extra = decodeText('47,XX,+idic(15)(q11.2)');
+  assert.match(extra, /about 46 Mb/);
+  assert.match(extra, /about half the length of a normal 15 \(102 Mb\)/);
+  assert.doesNotMatch(extra, /it replaces \(/, 'an extra chromosome replaces nothing');
+});
+
 // The same gap on the two-chromosome form: naming both breakpoints never said which
 // side of each survives. ISCN states the consequence for this exact karyotype (5.5.4
 // f ii): "loss of the segments distal to 13q22 and 15q24".
