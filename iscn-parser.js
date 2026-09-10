@@ -1207,6 +1207,29 @@
     // and spell out both; parse() re-validates each at its own count (the der
     // replaces one chromosome where der(A;B) replaced two) and offers the ones
     // that paste back clean. Production review 2026-08, rank 11.
+    // der() or rob() across THREE or more chromosomes in one designation group
+    // has no reading at all: each chromosome contributes one breakpoint, so
+    // each piece keeps its own telomere, and N pieces carry N telomeric ends
+    // where a single linear chromosome has exactly two. No such der appears
+    // anywhere in ISCN. The multi-chromosome forms that do exist: the balanced
+    // multi-way translocation t(A;B;C)(one breakpoint each), which makes one
+    // derivative PER chromosome; and a single complex derivative written
+    // der(N) with each exchange spelled out, where every piece between the
+    // two ends carries two breakpoints. Both draw here. Found when
+    // 44,XX,+1,der(1;7;3;4)(q10;p10;p10;p16.3) drew a der(1;7), dropped
+    // chromosomes 3 and 4 in silence, and still consumed all four in the
+    // count (Dan, 2026-09-10).
+    if ((op === "der" || op === "rob") && ab.chroms.length >= 3) {
+      ab.arity = ab.arity || "a single derivative cannot be built from three or more one-breakpoint pieces";
+      warnings.push("A single derivative cannot be made of " + ab.chroms.length + " chromosomes that each " +
+        "contribute one breakpoint: every piece keeps its own telomere, and one linear chromosome has only " +
+        "two ends. With one breakpoint per chromosome the multi-chromosome form is the balanced " +
+        "translocation, t(" + ab.chroms.join(";") + "), which makes one derivative chromosome from each " +
+        "partner rather than one from all of them. One chromosome genuinely built from several is written " +
+        "der(N) with each exchange spelled out, like der(1)t(1;3)(p22;q13.1)t(3;7)(q26;q22), where every " +
+        "piece between the two ends carries two breakpoints.");
+    }
+
     if ((op === "der" || op === "rob") && ab.chroms.length === 2 &&
         ab.breakpoints.length === 2 &&
         ab.breakpoints.every(function (g) { return g.length === 1; }) &&
