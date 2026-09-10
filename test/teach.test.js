@@ -279,6 +279,34 @@ test('a balanced X-autosome translocation silences the NORMAL X', () => {
   assert.match(text, /X-linked recessive/, 'names the manifesting-carrier consequence');
 });
 
+// The der(X) note asserted "the der(X) is silenced" with only a trailing
+// caveat, even when the breakpoint says the derivative LOST the center: a
+// break proximal to Xq13 sends the X-inactivation center away with the
+// translocated segment, and a der(X) without it can never be the inactive X,
+// so no X in the cell is silenced at all. The segregation model computes this
+// (its noteDerXF fork); the decode now agrees instead of hedging. Distal
+// breaks keep the old claim and now say which break side makes it possible;
+// a break inside Xq13 itself stays a hedge.
+test('a der(X) that lost the X-inactivation center is not called silenced', () => {
+  const text = decodeText('46,X,der(X)t(X;22)(q11;q11)');
+  assert.match(text, /cannot be silenced/);
+  assert.match(text, /no X is inactivated at all/);
+  assert.ok(!/der\(X\) is silenced/.test(text), 'must not assert the impossible skew');
+});
+
+test('a der(X) that kept the center names the break side that makes it possible', () => {
+  const text = decodeText('46,X,der(X)t(X;22)(q28;q11)');
+  assert.match(text, /der\(X\) is silenced/);
+  assert.match(text, /least functional imbalance/);
+  assert.match(text, /distal to Xq13/);
+});
+
+test('a der(X) broken inside Xq13 is hedged, not asserted', () => {
+  const text = decodeText('46,X,der(X)t(X;22)(q13;q11)');
+  assert.match(text, /inside Xq13/);
+  assert.ok(!/der\(X\) is silenced/.test(text));
+});
+
 test('an unbalanced der(X) silences the ABNORMAL X instead', () => {
   const text = decodeText('46,X,der(X)t(X;22)(q28;q11)');
   assert.match(text, /Expected X inactivation/);

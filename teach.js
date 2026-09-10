@@ -1086,8 +1086,25 @@
         "Silencing " + carrier + " would spread inactivation into the attached autosomal segment and leave it functionally monosomic, so those cells are selected against. " +
         "Because the intact X is the silenced one, a gene disrupted at the X breakpoint is unmasked, and a balanced female carrier can still manifest an X-linked recessive disorder";
     }
-    // A der(X) keeps the inactivation center, so it is the one that can be silenced.
+    // A der(X) can be the silenced X only while it KEEPS the center, and which
+    // it does is computable from the breakpoint, the same arithmetic the
+    // balanced branch above uses. A break distal to Xq13 leaves the center on
+    // the der(X); a break proximal to it sends the center away with the
+    // translocated segment, after which the silenced-derivative claim is
+    // exactly wrong: with a single center in the cell there is no inactivation at
+    // all, and the imbalance is fully expressed.
     if (k === "der") {
+      if (side === "der-autosome") {
+        return ". Expected X inactivation here is the exception: the X broke proximal to Xq13, so the X-inactivation center left with the translocated segment and this der(X) cannot be silenced. " +
+          "With only one center in the cell, no X is inactivated at all, and the imbalance is fully expressed";
+      }
+      if (side === "within") {
+        return ". The X broke inside Xq13, where the X-inactivation center sits, so whether this der(X) kept the center, and with it the ability to be the silenced X, is not decided by the notation alone";
+      }
+      if (side === "der-x") {
+        return ". Expected X inactivation is skewed toward the derivative: the der(X) is silenced and the normal X stays active, " +
+          "the pattern that leaves the least functional imbalance. The break is distal to Xq13, so the der(X) keeps the X-inactivation center that makes that choice possible";
+      }
       return ". Expected X inactivation is skewed toward the derivative: the der(X) is silenced and the normal X stays active, " +
         "the pattern that leaves the least functional imbalance. That choice exists only while the der(X) keeps its X-inactivation center";
     }

@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the der(X) inactivation note reads the breakpoint)
+
+- **The Expected X inactivation note for an unbalanced der(X) now computes
+  whether the derivative can be silenced at all.** It used to assert "the
+  der(X) is silenced" with a trailing caveat. A break distal to Xq13 keeps
+  that claim and now names the break side that makes it possible; a break
+  proximal to Xq13 sends the X-inactivation center away with the translocated
+  segment, and the note now says what actually follows: this der(X) cannot be
+  silenced, no X in the cell is inactivated at all, and the imbalance is fully
+  expressed. A break inside Xq13 itself stays an honest hedge.
+
 ## 2026-09-10 (unbalanced sex-chromosome products trace to their carrier parent)
 
 - **Typing an unbalanced product of a sex-chromosome translocation now raises
