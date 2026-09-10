@@ -3,6 +3,18 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-09 (every breakpoint in one ink)
+
+- **One caret ink, one caret row.** The red deletion caret and the slate
+  span-edge caret (below) carried a distinction the notation itself does not
+  make: the ISCN detailed form writes every break with the same punctuation,
+  and the caption and the span marks already name the operation. Every cut now
+  draws in the same slate, and the single legend row hands the reader to that
+  punctuation instead: "breakpoint (the :: in the detailed form)" when every
+  break on screen rejoined, "(the : in the detailed form)" for a terminal
+  deletion's broken end without reunion, and both names when a figure carries
+  both. When no detailed form is on screen, the parenthetical drops away.
+
 ## 2026-09-09 (red carets and slate carets each get their row)
 
 - **The two caret colors are explained, and both appear when both are drawn.**

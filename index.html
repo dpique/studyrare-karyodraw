@@ -1593,29 +1593,34 @@
       if (has('rect[rx="2.5"][stroke="' + OP.dup + '"]')) html += markSwatch("box", OP.dup, "duplicated segment");
       if (has('rect[rx="2.5"][stroke="' + OP.mov + '"]')) html += markSwatch("box", OP.mov, "moved segment (nothing gained or lost)");
       if (has('path[stroke="' + OP.inv + '"]')) html += markSwatch("hooks", OP.inv, "inversion");
-      // Caret swatch takes the color actually drawn: red for a deletion
-      // break, slate for the edges of a marked span.
+      // One caret ink, one caret row (Dan, 2026-09-09, reversing the red/slate
+      // split of #290/#291 after seeing both rows under one figure). The two
+      // colors carried a distinction the ISCN detailed form never makes: a
+      // deletion cut and a span edge are both breaks written with colons, and
+      // the operation's identity is already on the caption and the span mark
+      // (teal hooks, amber box, slate box). So the label is the one word, and
+      // its parenthetical hands the reader to the notation itself.
       //
-      // The carets and the seam are a designed PAIR, and their labels say so
-      // (Dan, 2026-09-09, asking whether they were two visuals for one thing):
-      // carets mark a CUT within one chromosome's own material (a deletion
-      // break, the ends of an inverted or duplicated span), the dashed seam
-      // marks a JUNCTION where pieces of two source chromosomes meet in one
-      // derivative. At a derivative the cut and the join coincide, which is
-      // why the labels carry the distinction the marks alone cannot. "Fused"
-      // is retired from this legend: the app already uses it for whole-arm
-      // Robertsonian fusions and for gene fusions, and a third sense was one
-      // too many.
-      // Two caret colors, two rows, each present exactly when drawn (Dan,
-      // 2026-09-09, asking why some carets are red and some black). Red is the
-      // deletion's own color: a deletion has no span mark, the material is
-      // simply gone, so its caret carries the identity itself. Slate is
-      // neutral ink for every other span's edges, because the span mark
-      // between them (teal hooks, amber box, magenta block) already says which
-      // operation it is. The old else-if showed one row when both were on
-      // screen, and one label cannot explain two colors.
-      if (has('path[fill="' + OP.del + '"]')) html += markSwatch("carets", OP.del, "deletion breakpoint: the cut where material was lost");
-      if (has('path[fill="#1e293b"]')) html += markSwatch("carets", "#1e293b", "breakpoint: cut within one chromosome");
+      // The parenthetical is read off the rendered #detailed block (populated
+      // before buildLegend runs), so it prints exactly the punctuation on
+      // screen: :: is break and reunion, a lone : is a broken end without
+      // reunion (a terminal deletion), a figure with both names both. When
+      // the detailed form has nothing to say, the reference drops rather than
+      // point at a block that is not there.
+      //
+      // The carets and the seam remain a designed PAIR: carets mark a cut
+      // within one chromosome's own material, the dashed seam a junction
+      // where pieces of two source chromosomes meet in one derivative.
+      // "Fused" stays retired from this legend: the app already uses it for
+      // whole-arm Robertsonian fusions and for gene fusions.
+      if (has('path[fill="' + OP.cut + '"]')) {
+        var dj = [].slice.call(document.querySelectorAll("#detailed .dj")).map(function (e) { return e.textContent; });
+        var reunion = dj.indexOf("::") >= 0, brokenEnd = dj.indexOf(":") >= 0;
+        var jRef = reunion && brokenEnd ? " (the : and :: in the detailed form)"
+          : reunion ? " (the :: in the detailed form)"
+          : brokenEnd ? " (the : in the detailed form)" : "";
+        html += markSwatch("carets", OP.cut, "breakpoint" + jRef);
+      }
       if (has('line[stroke-dasharray="2 1.5"]')) html += markSwatch("seam", "#0f172a", "junction: pieces of two chromosomes joined");
       // The ring's clasp (a seam with two arrowheads) marks where the broken ends
       // closed the circle. It was drawn on every ring and keyed nowhere; a

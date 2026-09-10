@@ -79,18 +79,29 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
       assert.ok(!/junction/i.test(leg), 'one chromosome, no junction seam');
     });
 
-    await t.test('the two caret colors get two rows, each present exactly when drawn', async () => {
-      // Red carets are the deletion's own mark; slate carets edge every other
-      // span. The old else-if showed one row when both were on screen.
-      await open(page, '46,XY,del(5)(p15.2),inv(2)(p13q24)');
-      const both = await legendText(page);
-      assert.match(both, /deletion breakpoint: the cut where material was lost/, 'the red row');
-      assert.match(both, /breakpoint: cut within one chromosome/, 'and the slate row beside it');
+    await t.test('every caret shares one row, tied to the punctuation on screen', async () => {
+      // One ink, one row (2026-09-09, reversing the red/slate split of
+      // #290/#291): a deletion cut and a span edge are both breaks the
+      // detailed form writes with colons, so the row is the one word and its
+      // parenthetical quotes the exact punctuation the #detailed block shows.
+      // Interstitial cuts and span edges are reunions (::), a terminal
+      // deletion's end is a break without reunion (:), and a figure carrying
+      // both names both.
+      const caretRows = () => page.evaluate(() =>
+        [...document.querySelectorAll('#legend .item')]
+          .map((el) => el.textContent.trim()).filter((l) => /^breakpoint/.test(l)));
+
+      await open(page, '46,XY,del(5)(q13q33),inv(16)(p13.1q22)');
+      assert.deepEqual(await caretRows(), ['breakpoint (the :: in the detailed form)'],
+        'a deletion cut and inversion edges share one row, every junction a reunion');
 
       await open(page, '46,XY,del(5)(p15.2)');
-      const delOnly = await legendText(page);
-      assert.match(delOnly, /deletion breakpoint/, 'a lone deletion gets the red row');
-      assert.ok(!/breakpoint: cut within one chromosome/.test(delOnly), 'and no slate row it did not draw');
+      assert.deepEqual(await caretRows(), ['breakpoint (the : in the detailed form)'],
+        'a terminal deletion has no reunion, and the row quotes its lone colon');
+
+      await open(page, '46,XY,del(5)(p15.2),inv(2)(p13q24)');
+      assert.deepEqual(await caretRows(), ['breakpoint (the : and :: in the detailed form)'],
+        'both punctuations on screen, both named');
     });
 
     await t.test('an inversion teaches hooks without any box row', async () => {
@@ -121,9 +132,9 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
 //
 // And because the swatch shows the shape, no label names one: "box: duplicated
 // segment" is "duplicated segment", "hooks: inverted, drawn end-for-end" is
-// "inversion", the carets are "breakpoint: cut within one chromosome", the dashed
-// seam is "junction: pieces of two chromosomes joined". A row that both draws a mark
-// and spells the mark out says it twice.
+// "inversion", the carets are "breakpoint" with the detailed form's punctuation
+// in a parenthetical, the dashed seam is "junction: pieces of two chromosomes
+// joined". A row that both draws a mark and spells the mark out says it twice.
 test('the mark rows draw their mark, not a colored block', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
   const puppeteer = require('puppeteer-core');
@@ -148,7 +159,7 @@ test('the mark rows draw their mark, not a colored block', async (t) => {
     const got = await rows(page);
     const find = (re) => got.find((r) => re.test(r.label));
 
-    const box = find(/^duplicated segment$/i), hooks = find(/^inversion$/i), carets = find(/^breakpoint: cut within one chromosome$/i);
+    const box = find(/^duplicated segment$/i), hooks = find(/^inversion$/i), carets = find(/^breakpoint\b/i);
     assert.ok(box && hooks && carets, 'the rec draws all three marks');
     [box, hooks, carets].forEach((r) =>
       assert.match(r.sw, /^<svg class="sw-mk"/, `"${r.label}" should draw its mark, not a block`));
@@ -167,6 +178,7 @@ test('the mark rows draw their mark, not a colored block', async (t) => {
     const OP = await page.evaluate(() => window.Karyo.OP_COLORS);
     assert.ok(box.sw.includes(OP.dup), 'the dup box stays amber');
     assert.ok(hooks.sw.includes(OP.inv), 'the hooks stay teal');
+    assert.ok(carets.sw.includes(OP.cut), 'the carets draw in the one cut ink');
 
     // The rule, over every row rather than the four that exist today: a label
     // describes what the mark MEANS. The moment one goes back to naming the glyph,

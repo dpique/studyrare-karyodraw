@@ -45,7 +45,13 @@
   // mark vanished against the very chromosome it sat on (found 2026-08-26).
   // mov is the moved-span box (an insertion's segment in its new home): a
   // neutral slate, because the move is balanced, nothing gained or lost.
-  var OP_COLORS = { del: "#e0554f", dup: AMBER, inv: "#1f9e8f", mov: "#64748b", add: "#808ba8", break: "#242a45", hsr: "#d6409f" };
+  // cut is the one ink every break caret draws in, deletion cuts included
+  // (Dan, 2026-09-09, retiring the red deletion variant of #290/#291: the
+  // color carried a distinction the detailed form never makes, and the del
+  // label plus the missing material already say which operation it is).
+  // buildLegend gates its caret row on this exact fill via
+  // window.Karyo.OP_COLORS, so a change here keeps the legend in step.
+  var OP_COLORS = { cut: "#1e293b", dup: AMBER, inv: "#1f9e8f", mov: "#64748b", add: "#808ba8", break: "#242a45", hsr: "#d6409f" };
 
   // Affected-chromosome hues. Leads with the brand pair — periwinkle "field"
   // then amber "signal" — so a 2-way rearrangement echoes StudyRare's motif.
@@ -616,7 +622,7 @@
       if (ov.type === "cut") {                        // deletion break / repair join
         if (!simple) return;
         var cutY = pointY(segments, ov.chrom, ov.at, pad);
-        if (cutY != null) breakMark(cutY, OP_COLORS.del);
+        if (cutY != null) breakMark(cutY);
         return;
       }
       if (ov.type === "fra") {                        // fragile site: an unstained gap
@@ -680,7 +686,7 @@
       } else if (simple && (ov.type === "dup" || ov.type === "inv" || ov.type === "mov")) {
         drawSpanMark(ov, span);
       }
-      if (simple) [span.y0, span.y1].forEach(function (yy) { if (yy > pad + 0.5 && yy < pad + H - 0.5) breakMark(yy, "#1e293b"); });
+      if (simple) [span.y0, span.y1].forEach(function (yy) { if (yy > pad + 0.5 && yy < pad + H - 0.5) breakMark(yy); });
     });
     // A dup/inv span mark, Highlight theme only (Realistic promises a bare
     // slide, #196). Designed with Dan over six preview rounds, 2026-08-26.
@@ -729,7 +735,11 @@
     // A breakpoint: thin SOLID line + inward carets. Distinct from the centromere.
     // pointer-events none on all three pieces, or the mark sits exactly on the
     // breakpoint band, the pixels a reader most wants to inspect, and mutes it.
-    function breakMark(yy, color) {
+    // One ink for every caret, OP_COLORS.cut: a deletion cut and a span edge
+    // are the same event (a break the detailed form writes as a colon), so
+    // they draw alike and share one legend row.
+    function breakMark(yy) {
+      var color = OP_COLORS.cut;
       body.push('<line x1="' + pad + '" y1="' + yy.toFixed(2) + '" x2="' + (pad + W) + '" y2="' + yy.toFixed(2) + '" stroke="' + color + '" stroke-width="1.1" pointer-events="none"/>');
       body.push('<path d="M' + (pad - 3.2) + ' ' + (yy - 2.6) + ' L' + (pad + 0.6) + ' ' + yy + ' L' + (pad - 3.2) + ' ' + (yy + 2.6) + ' Z" fill="' + color + '" pointer-events="none"/>');
       body.push('<path d="M' + (pad + W + 3.2) + ' ' + (yy - 2.6) + ' L' + (pad + W - 0.6) + ' ' + yy + ' L' + (pad + W + 3.2) + ' ' + (yy + 2.6) + ' Z" fill="' + color + '" pointer-events="none"/>');
