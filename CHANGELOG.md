@@ -3,6 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-09 (listing order is taught for rearrangements too)
+
+- **Out-of-order rearrangements get the rule and a one-click fix.** ISCN lists
+  changes in chromosome order, sex chromosomes first, and the app already said
+  so for whole-chromosome gains and losses. It now says the same for plain
+  one-chromosome rearrangements: 46,XY,del(5)(p15.2),inv(2)(p13q24) draws as
+  before and adds the rule with the corrected spelling on a chip, matching the
+  order the figure and detailed form already use. Still deliberately narrow:
+  the two groups are never ordered against each other, multi-chromosome
+  designations (t, rob, der) are left where they were written, and order among
+  changes of one chromosome is not policed, so correct notation is never
+  accused.
+
 ## 2026-09-09 (the ring and the rows join the color system)
 
 - **The selection ring wears the selected chromosome's color.** Clicking a

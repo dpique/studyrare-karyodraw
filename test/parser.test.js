@@ -940,15 +940,19 @@ test('every other symbol keeps the caption it already had', () => {
     .forEach(([k, want]) => assert.equal(labels(k), want, k));
 });
 
-// ---- whole-chromosome gains and losses are listed in chromosome order -------
-// 43,XY,rob(14;21)(q10;q10),-21,-20 lists 21 before 20 and drew silently.
+// ---- changes are listed in chromosome order, sex chromosomes first ----------
+// 43,XY,rob(14;21)(q10;q10),-21,-20 lists 21 before 20 and drew silently;
+// 46,XY,del(5)(p15.2),inv(2)(p13q24) lists 5 before 2 the same way (Dan,
+// 2026-09-09, asking whether the app should teach the ordering rule).
 //
-// Scoped hard, on purpose. ISCN's full listing order also covers structural
-// abnormalities, and a broader version of this check accused this app's own
-// segregation output of being wrong. Only +N against -N is checked.
+// Scoped hard, on purpose. Two pools, each checked only against itself:
+// whole-chromosome gains and losses, and plain one-chromosome rearrangements.
+// Never against each other, and nothing naming several chromosomes, because a
+// broader version of this check accused this app's own segregation output of
+// being wrong.
 test('gains and losses out of chromosome order are flagged, with a fix', () => {
   const m = ISCN.parse('43,XY,rob(14;21)(q10;q10),-21,-20');
-  assert.match(m.warnings.join(' '), /chromosome order, so “-20” comes before “-21”/);
+  assert.match(m.warnings.join(' '), /chromosome order, sex chromosomes first, so “-20” comes before “-21”/);
   assert.equal(m.orderFix, '43,XY,rob(14;21)(q10;q10),-20,-21', 'only the two losses move');
 });
 
@@ -965,13 +969,42 @@ test('correctly ordered karyotypes are left alone', () => {
     .forEach((k) => assert.equal(ISCN.parse(k).clones[0].outOfOrder, null, k));
 });
 
-test('structural abnormalities are not ordered against anything', () => {
+test('plain rearrangements are ordered among themselves, with a fix', () => {
+  const m = ISCN.parse('46,XY,del(5)(p15.2),inv(2)(p13q24)');
+  const c = m.clones[0];
+  // Field-wise, not deepEqual: the parser loads in its own realm, so its object
+  // literals carry a different Object.prototype and deepStrictEqual balks.
+  assert.equal(c.outOfOrder && c.outOfOrder.before, 'inv(2)(p13q24)');
+  assert.equal(c.outOfOrder && c.outOfOrder.after, 'del(5)(p15.2)');
+  assert.match(m.warnings.join(' '), /chromosome order, sex chromosomes first, so “inv\(2\)\(p13q24\)” comes before “del\(5\)\(p15\.2\)”/);
+  assert.equal(m.orderFix, '46,XY,inv(2)(p13q24),del(5)(p15.2)');
+  assert.ok(m.fixes.indexOf(m.orderFix) >= 0, 'the fix is on offer as a chip');
+  assert.equal(c.unreadable, false, 'a listing-order slip never blocks the drawing');
+  assert.equal(ISCN.parse('46,XY,inv(2)(p13q24),del(5)(p15.2)').clones[0].outOfOrder, null,
+    'the corrected spelling is left alone');
+});
+
+test('sex chromosome rearrangements come before the autosomes', () => {
+  const m = ISCN.parse('46,X,del(5)(p13),del(X)(q22)');
+  assert.equal(m.clones[0].outOfOrder && m.clones[0].outOfOrder.before, 'del(X)(q22)');
+  assert.equal(m.clones[0].outOfOrder && m.clones[0].outOfOrder.after, 'del(5)(p13)');
+  assert.equal(m.orderFix, '46,X,del(X)(q22),del(5)(p13)');
+  assert.equal(ISCN.parse('46,X,del(X)(q22),del(5)(p13)').clones[0].outOfOrder, null);
+});
+
+test('the two pools are never ordered against each other, or across designations', () => {
   // 46,XX,+der(5)t(2;5)(q21;q31),-2 is what this app's own segregation model emits for
   // a 3:1 product, and that model was checked against ISCN 2024 Table 5. A rule that
   // called it an error would be the app contradicting itself on a point it has
-  // already reasoned about (see canonKey in segregation.js).
+  // already reasoned about (see canonKey in segregation.js). The same caution keeps
+  // gains and losses out of the rearrangement pool (+8 before del(5) passes), keeps
+  // multi-chromosome designations out of both (the t stays where it was written),
+  // and leaves same-chromosome order (alphabetical, a different rule) alone.
   assert.equal(ISCN.parse('46,XX,+der(5)t(2;5)(q21;q31),-2').clones[0].outOfOrder, null);
   assert.equal(ISCN.parse('46,XY,+8,t(X;18)(p11;q11)').clones[0].outOfOrder, null);
+  assert.equal(ISCN.parse('47,XY,+8,del(5)(p15.2)').clones[0].outOfOrder, null);
+  assert.equal(ISCN.parse('46,XY,t(9;22)(q34;q11.2),inv(2)(p13q24)').clones[0].outOfOrder, null);
+  assert.equal(ISCN.parse('46,XX,inv(3)(p13q21),del(3)(q26q27)').clones[0].outOfOrder, null);
 });
 
 test('listing order does not block the drawing', () => {
