@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the fused waist wears both colors, and the detailed form copies)
+
+- **A whole-arm derivative's centromere now shows both of its sources.** The
+  q10;p10 breakpoints of der(1;7)(q10;p10) say the derivative carries the
+  long-arm face of chromosome 1's centromere and the short-arm face of
+  chromosome 7's, yet the hatched waist was painted entirely in one color. In
+  the Highlight style each half of the waist now wears its own source's hue,
+  matching the rule the legend already states: pieces take the color of the
+  chromosome they came from. The Realistic style is unchanged, since a real
+  slide's centromere does not disclose its origin.
+- **The ISCN detailed form has a copy button.** The block reads well but
+  selects badly; the small button beside its title copies every line as plain
+  text, label and form, one line per row.
+
 ## 2026-09-10 (the decode counts the whole clone, and notes link across)
 
 - **The whole-arm derivative's cost is now counted across the whole clone.**
