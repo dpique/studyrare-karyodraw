@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the quadrivalent prints)
+
+- **Print summary now includes the segregation panel.** A genetic counselor
+  asked how to print "the quadrivalent pics and information" for patients,
+  and the honest answer was that it printed nowhere. For a balanced carrier,
+  the printed sheet now carries the same meiotic pairing figure
+  (quadrivalent or trivalent) and the same outcome gametes the page shows,
+  built by the same renderer, under its own heading after the clinical
+  details. One click, no options dialog: the sheet prints what the page
+  teaches.
+
 ## 2026-09-10 (the tip stacks its rows)
 
 - **The hover tip stacks instead of stretching.** Band name on the first
