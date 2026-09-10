@@ -187,6 +187,46 @@ test('the net-imbalance table appears, toggles genes, and obeys the gate', async
       assert.ok(segs.indexOf('16p13.1→16q22') < 0, 'the stationary middle is gone');
     });
 
+    await t.test('each row wears its chromosome\'s legend swatch, muted with its row', async () => {
+      // The dot is the legend's involved-chromosome key at table scale (Dan,
+      // 2026-09-09, coordinating the page's color systems): the detailed form
+      // already inks its runs per chromosome, and the rows now key themselves
+      // the same way, without inked text that would override the muted
+      // context styling the 2026-08-30 hierarchy depends on.
+      await open(page, '46,XY,del(5)(p15.2),inv(2)(p13q24)');
+      await page.waitForSelector('#imbalance table');
+      const st = await page.evaluate(() => {
+        const legendHue = (label) => {
+          const item = [...document.querySelectorAll('#legend .item')].find((el) => el.textContent.trim() === label);
+          return item && item.firstElementChild ? item.firstElementChild.style.background : null;
+        };
+        return {
+          chr2: legendHue('chr 2'),
+          chr5: legendHue('chr 5'),
+          rows: [...document.querySelectorAll('#imbalance tbody tr')].map((r) => ({
+            seg: r.querySelector('td.imbseg').textContent.trim(),
+            dot: r.querySelector('.imb-dot') ? r.querySelector('.imb-dot').style.background : null,
+            opacity: r.querySelector('.imb-dot') ? getComputedStyle(r.querySelector('.imb-dot')).opacity : null,
+          })),
+        };
+      });
+      assert.ok(st.chr2 && st.chr5 && st.chr2 !== st.chr5, 'two involved chromosomes, two hues');
+      assert.ok(st.rows.length >= 3 && st.rows.every((r) => r.dot), 'every row carries a dot: ' + JSON.stringify(st.rows));
+      st.rows.forEach((r) => assert.equal(r.dot, r.seg.charAt(0) === '2' ? st.chr2 : st.chr5,
+        `${r.seg} keys to its own chromosome`));
+      const lost = st.rows.find((r) => r.seg === '5pter→5p15.2');
+      const context = st.rows.find((r) => r.seg === '5p15.2→5qter');
+      assert.equal(lost.opacity, '1', 'the finding row keeps its key at full strength');
+      assert.ok(parseFloat(context.opacity) < 1, 'the muted context row mutes its dot too');
+    });
+
+    await t.test('the Realistic theme keys no dots, like the rest of its bare slide', async () => {
+      await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent('46,XY,del(5)(p15.2),inv(2)(p13q24)')}&style=realistic&show=involved`,
+        { waitUntil: 'load' });
+      await page.waitForSelector('#imbalance table');
+      assert.equal(await page.evaluate(() => document.querySelectorAll('#imbalance .imb-dot').length), 0);
+    });
+
     await t.test('a normal karyotype shows no table at all', async () => {
       await open(page, '46,XX');
       await page.waitForFunction(() => document.querySelector('#karyo svg'));

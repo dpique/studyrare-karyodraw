@@ -466,7 +466,13 @@
   .kchrom { position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 2px; border-radius: 6px; }
   .kchrom:hover { background: #f0f2f7; }
   .kchrom.abn { }
-  .kchrom.sel { background: #eef1fd; outline: 1px solid #9da8ef; }
+  /* The selection ring wears the selected chromosome's own figure color (set
+     as --sel-ring/--sel-bg by markSel), because the band map the click opens
+     is drawn in that same hue: a fixed periwinkle ring around the amber
+     chromosome 5 whispered the wrong "which" (Dan, 2026-09-09). The literals
+     below are the fallback for chromosomes with no identity hue, an
+     uninvolved gray or the Realistic theme, and match the old ring exactly. */
+  .kchrom.sel { background: var(--sel-bg, #eef1fd); outline: 1px solid var(--sel-ring, #9da8ef); }
   .kchrom.ghost { opacity: .8; }
   .ksub { font: 600 9.5px var(--font-mono); color: #a2302c; margin-top: 1px; white-space: nowrap; }
   .ksub.muted { color: #808ba8; }
@@ -553,6 +559,12 @@
   /* imbseg, not "seg": .seg is the segmented view-toggle control and its pill
      border rode onto these cells when the table first borrowed the name. */
   #imbalance td.imbseg { font: 600 12px var(--font-mono); }
+  /* The dot is the legend's involved-chromosome key at table scale, so a row
+     maps to its chromosome without re-reading coordinates; same border as the
+     legend swatch so the two read as one device. A muted context row mutes
+     its dot too, or the key would outshine the words it keys. */
+  #imbalance td.imbseg .imb-dot { display: inline-block; width: 9px; height: 9px; border-radius: 2.5px; border: 1px solid rgba(0,0,0,.12); margin-right: 7px; vertical-align: -1px; }
+  #imbalance tr.even td.imbseg .imb-dot { opacity: .55; }
   #imbalance td.n { font: 600 12px var(--font-mono); }
   #imbalance td.size { color: var(--muted); }
   #imbalance tr.gain td.call { color: #894f18; font-weight: 600; }
@@ -1490,6 +1502,12 @@
         // says only that nothing happened to it, so it no longer earns a row
         // (Dan, 2026-09-08, reading the stationary 57 Mb middle of t(16;16)).
         var hasDev = c.baseline != null && c.runs.some(function (r) { return r.copies !== c.baseline; });
+        // The segment rows key themselves to the figure the same way the
+        // detailed form's colored runs do, but as the legend's swatch rather
+        // than inked text: inking the coordinates would override the muted
+        // styling that makes context rows recede (Dan kept that hierarchy,
+        // 2026-09-09). Highlight theme only, same guard as the detailed form.
+        var hue = MODE === "simple" ? AFFECTED[c.chrom] : null;
         c.runs.forEach(function (r) {
           var call = imbCall(r.copies, c.baseline);
           if (!hasDev && call.cls === "even" && !r.exchanged && !r.inverted) return;
@@ -1509,6 +1527,7 @@
           // answer and the one that makes the marked rows mean something.
           var moved = r.exchanged ? ", exchanged" : (r.inverted ? ", inverted" : "");
           rows.push('<tr class="' + call.cls + '"><td class="imbseg">' +
+            (hue ? '<span class="imb-dot" style="background:' + hue + '"></span>' : "") +
             escapeHtml(c.chrom + r.fromLabel + "→" + c.chrom + r.toLabel) +
             '</td><td class="n">' + r.copies + '</td><td class="call">' + call.text + moved + genes +
             '</td><td class="size">' + imbSize(r) + "</td></tr>");
@@ -2031,8 +2050,24 @@
     });
   }
   function markSel(chrom) {
-    Array.prototype.forEach.call(document.querySelectorAll(".kchrom.sel"), function (n) { n.classList.remove("sel"); });
-    Array.prototype.forEach.call(document.querySelectorAll('.kchrom[data-chrom="' + cssEsc(chrom) + '"]'), function (n) { n.classList.add("sel"); });
+    Array.prototype.forEach.call(document.querySelectorAll(".kchrom.sel"), function (n) {
+      n.classList.remove("sel");
+      n.style.removeProperty("--sel-ring"); n.style.removeProperty("--sel-bg");
+    });
+    // The ring takes the chromosome's identity hue, matching the band map the
+    // selection opens (renderDetail passes the same AFFECTED color). The mixes
+    // reproduce the old fixed ring exactly when the hue is the brand
+    // periwinkle, so chromosome-2 selections look unchanged. No hue in the
+    // Realistic theme or on an unhighlighted chromosome: the CSS fallback
+    // keeps the neutral ring there.
+    var hue = MODE === "simple" ? AFFECTED[chrom] : null;
+    Array.prototype.forEach.call(document.querySelectorAll('.kchrom[data-chrom="' + cssEsc(chrom) + '"]'), function (n) {
+      n.classList.add("sel");
+      if (hue) {
+        n.style.setProperty("--sel-ring", "color-mix(in srgb, " + hue + " 58%, #fff)");
+        n.style.setProperty("--sel-bg", "color-mix(in srgb, " + hue + " 11%, #fff)");
+      }
+    });
   }
   function showTip(ev, html) {
     tooltip.innerHTML = html; tooltip.style.display = "block";

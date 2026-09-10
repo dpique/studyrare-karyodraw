@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-09 (the ring and the rows join the color system)
+
+- **The selection ring wears the selected chromosome's color.** Clicking a
+  chromosome opens its band map, drawn in that chromosome's highlight hue,
+  but the ring around the clicked pair was a fixed periwinkle, so selecting
+  the amber chromosome 5 framed it in chromosome 2's color. The ring and its
+  background wash now take the chromosome's own hue, and stay neutral where
+  no hue exists (an uninvolved chromosome, the Realistic style).
+- **Involved-segment rows key themselves to the figure.** Each row of the
+  Involved segments table now carries the same color swatch the legend uses
+  for that chromosome, so a row maps to its chromosome at a glance, the way
+  the detailed form's colored runs already do. Muted context rows mute their
+  swatch with them.
+
 ## 2026-09-09 (every breakpoint in one ink)
 
 - **One caret ink, one caret row.** The red deletion caret and the slate
