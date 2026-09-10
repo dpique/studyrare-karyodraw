@@ -1251,18 +1251,47 @@
     });
   }
 
+  // Y material and SRY, read from the drawn DOSAGE rather than the slot
+  // counts: a dic(X;Y) is filed under X, so complement.Y reads 0 while the
+  // clone carries most of a Y, SRY included. Slot counts say how many
+  // chromosomes stand in a row; only the dosage says what material is there.
+  // The position is hg38, the ideogram's own coordinate system.
+  var SRY_BP = 2787000;
+  function yDose(clone, pos) {
+    try {
+      var entry = null;
+      (window.Karyo.computeDosage(clone).chroms || []).forEach(function (e) { if (String(e.chrom) === "Y") entry = e; });
+      if (!entry || !entry.runs) return 0;
+      var best = 0;
+      for (var i = 0; i < entry.runs.length; i++) {
+        var r = entry.runs[i];
+        if (pos == null) { if (r.copies > best) best = r.copies; continue; }
+        if (r.from <= pos && pos <= r.to) return r.copies;
+      }
+      return pos == null ? best : 0;
+    } catch (e) { return 0; }
+  }
+
   // Diploid only. 69,XXX is euploid for triploidy, not Triple X, and it was being
   // reported as Down, Edwards, Patau and Triple X at once because every matcher
   // counted copies without asking how many a full set is for this clone.
+  //
+  // The Turner arms also ask the dosage about Y material (Dan, 2026-09-10, on
+  // 45,X,dic(X;Y)(p22.33;p11.32) wearing the Turner card): Turner syndrome is
+  // loss of the second sex chromosome's material, and a complement that keeps
+  // SRY-bearing Y material is a different entity however the slots count. An
+  // SRY-retaining rearranged Y takes the unstable-Y card in SYNDROMES instead;
+  // the SRY-negative Y rearrangements (del(Y)(p11.2), idic(Y)(p11.2)) stay
+  // Turner territory, which is what they present as.
   function sexCall(clone) {
     if (clone.ploidy !== 2) return "";
     var x = clone.complement.X || 0, y = clone.complement.Y || 0;
     if (x >= 2 && y >= 1) return "klinefelter";               // 47,XXY / 48,XXXY / 48,XXYY
     if (x === 1 && y === 2) return "xyy";
     if (x === 3 && y === 0) return "xxx";
-    if (x === 1 && y === 0) return "turner";                  // 45,X and 45,fra(X)(q27.3)
-    if (x === 2 && y === 0 && lossOn(clone, "X")) return "turner";  // 46,X,i(X)(q10), 46,X,r(X)
-    if (x === 1 && y === 1 && lossOn(clone, "Y")) return "turner";  // 46,X,idic(Y)(q11.2)
+    if (x === 1 && y === 0) return yDose(clone, SRY_BP) >= 1 ? "" : "turner";   // 45,X; not 45,X,dic(X;Y)
+    if (x === 2 && y === 0 && lossOn(clone, "X")) return yDose(clone, SRY_BP) >= 1 ? "" : "turner";  // 46,X,i(X)(q10), 46,X,r(X)
+    if (x === 1 && y === 1 && lossOn(clone, "Y")) return yDose(clone, SRY_BP) >= 1 ? "" : "turner";  // 46,X,del(Y)(p11.2); not 46,X,idic(Y)(q11.2)
     return "";
   }
 
@@ -1703,7 +1732,21 @@
     { test: function (c) { return trisomy(c, "13"); }, aneuploidy: true, name: "Trisomy 13, Patau syndrome",
       note: "Three copies of chromosome 13. Holoprosencephaly, cleft lip/palate, polydactyly, cutis aplasia; high early mortality." },
     { test: function (c) { return sexCall(c) === "turner"; }, aneuploidy: true, name: "Turner syndrome (45,X and variants)",
-      note: "Loss of all or part of the second sex chromosome. 45,X (monosomy X) is classic; variants include an isochromosome i(Xq), a ring r(X), an idic(Y), and 45,X mosaicism (e.g. 45,X/46,XX). Short stature, ovarian dysgenesis/streak gonads, webbed neck, coarctation/bicuspid aortic valve, lymphedema." },
+      note: "Loss of all or part of the second sex chromosome. 45,X (monosomy X) is classic; variants include an isochromosome i(Xq), a ring r(X), an SRY-negative rearranged Y, and 45,X mosaicism (e.g. 45,X/46,XX, or with an unstable idic(Y) line). Short stature, ovarian dysgenesis/streak gonads, webbed neck, coarctation/bicuspid aortic valve, lymphedema." },
+    // The counterpart the Turner gate hands these clones to (Dan, 2026-09-10):
+    // a dicentric, isodicentric or ring Y that KEEPS SRY is not loss of the
+    // second sex chromosome, however the slots count it, and calling it
+    // Turner asserts the wrong development. What defines these chromosomes
+    // clinically is their instability, so the mosaic question is the note's
+    // point.
+    { test: function (c) {
+        if (c.ploidy !== 2) return false;
+        var unstableY = (c.aberrations || []).some(function (ab) {
+          return (ab.kind === "dic" || ab.kind === "ring") && (ab.chroms || []).indexOf("Y") >= 0;
+        });
+        return unstableY && yDose(c, SRY_BP) >= 1;
+      }, name: "Rearranged Y with SRY retained",
+      note: "This dicentric or ring Y keeps SRY, so development is usually male, and this is not Turner syndrome by itself. Chromosomes with two centromeres or a ring shape are mitotically unstable, and a line that has lost the abnormal Y, classically 45,X, is often present or arises; the phenotype follows the mosaic, from a Turner-like female through mixed gonadal dysgenesis to an infertile male. Finding one in a single sample is a reason to look for 45,X mosaicism, and Y material beside a 45,X line carries a gonadoblastoma risk." },
     { test: function (c) { return sexCall(c) === "klinefelter"; }, aneuploidy: true, name: "Klinefelter syndrome (47,XXY and variants)",
       note: "An extra X in a male (≥1 Y with ≥2 X); 47,XXY is classic, with 48,XXXY and 48,XXYY as higher-grade variants. Tall stature, small firm testes, gynecomastia, infertility, low testosterone. The extra X (or Xs) inactivate as Barr bodies." },
     { test: function (c) { return sexCall(c) === "xyy"; }, aneuploidy: true, name: "47,XYY",

@@ -3,6 +3,21 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (an SRY-bearing rearranged Y is not called Turner)
+
+- **The Turner card now reads the drawn material, not the chromosome slots.**
+  45,X,dic(X;Y)(p22.33;p11.32) wore the Turner card because the dicentric is
+  filed in the X column, so the clone counted as "a single X" while carrying
+  most of a Y, SRY included. Turner syndrome is loss of the second sex
+  chromosome's material; a complement that keeps SRY now gets a card naming
+  what these chromosomes actually are: dicentric, isodicentric and ring Y
+  chromosomes are mitotically unstable, a line that has lost the abnormal Y
+  (classically 45,X) is often present or arises, the phenotype follows the
+  mosaic from Turner-like female to infertile male, and Y material beside a
+  45,X line carries a gonadoblastoma risk. The SRY-negative Y rearrangements,
+  del(Y)(p11.2) and idic(Y)(p11.2), stay Turner territory, which is what they
+  present as.
+
 ## 2026-09-10 (46,X,dic(X;Y) counts to 46)
 
 - **A dicentric built from the sex chromosomes no longer eats the free sex
