@@ -3,6 +3,21 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the ring hatches its whole waist and highlights its bands)
+
+- **The ring's constriction is hatched edge to edge.** The centromeric hatch
+  on the ring came only from the acen bands themselves, which are often
+  narrower than the waist and rarely symmetric about the p/q boundary, so the
+  pinch could sit half bare, worst on the q side of the dashed line. The ring
+  now guarantees the same hatched window the linear body does: one wedge the
+  exact width of the waist, reaching equally far on both sides of the
+  boundary line.
+- **Hovering a ring band now draws the amber highlight.** The tooltip named
+  the band but the amber mark never appeared, because the highlight was built
+  for the linear rectangles and could not trace an arc. A ring band now gets
+  its own sector outline, hugging the exact wedge under the pointer, while
+  linear bands keep the rounded box.
+
 ## 2026-09-09 (the ring gets the real centromere, constriction and all)
 
 - **The ring's centromere now matches the linear one.** Side by side, the

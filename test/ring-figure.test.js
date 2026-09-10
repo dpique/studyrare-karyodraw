@@ -45,3 +45,36 @@ test('the clasp is the only solid radial device, and it carries its tooltip', ()
   // One dasharray total (asserted above), so the clasp line stays solid and
   // cannot be read as one junction among several.
 });
+
+// The linear body does not trust the acen bands to paint the constriction: it
+// lays a CEN_H hatch rect over them, because the acen bands can be far
+// narrower than the waist and are rarely symmetric about the p/q boundary.
+// #296 left the ring leaning on the bare band sectors, and Dan read the pinch
+// as underhatched, worst on the q side of the line (2026-09-10). The ring owes
+// the waist the same guarantee: one hatched wedge, the exact waist window,
+// symmetric about the dashed boundary line.
+test('the waist wears a guaranteed hatch window, symmetric about the boundary line', () => {
+  for (const theme of ['simple', 'detailed']) {
+    const svg = ring(theme);
+    const size = +/<svg[^>]* width="([\d.]+)"/.exec(svg)[1];
+    const cx = size / 2, cy = size / 2;
+    const ang = (x, y) => Math.atan2(x - cx, cy - y);   // clockwise from 12 o'clock, the ring's own convention
+    const line = /<line x1="(-?[\d.]+)" y1="(-?[\d.]+)"[^>]*stroke-dasharray="2\.5 2"/.exec(svg);
+    assert.ok(line, `${theme}: the dashed boundary line`);
+    const cen = ang(+line[1], +line[2]);
+    const overlays = (svg.match(/<path\b[^>]*>/g) || []).filter((e) =>
+      /fill="url\(#/.test(e) && /pointer-events="none"/.test(e) && !/class=/.test(e));
+    assert.equal(overlays.length, 1, `${theme}: exactly one hatched waist overlay above the bands`);
+    const ov = overlays[0];
+    assert.match(ov, /clip-path="url\(#/, `${theme}: the overlay hugs the constriction`);
+    const d = /d="M(-?[\d.]+) (-?[\d.]+) A\S+ \S+ 0 [01] 1 (-?[\d.]+) (-?[\d.]+) L/.exec(ov);
+    assert.ok(d, `${theme}: the overlay is an annulus sector: ${ov}`);
+    const norm = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+    const before = Math.abs(norm(cen - ang(+d[1], +d[2])));
+    const after = Math.abs(norm(ang(+d[3], +d[4]) - cen));
+    assert.ok(Math.abs(before - after) < 0.02,
+      `${theme}: hatch reaches equally far on both sides of the line (${before.toFixed(3)} vs ${after.toFixed(3)})`);
+    assert.ok(before > 0.1 && after > 0.1,
+      `${theme}: at least the waist half-window of hatch on each side (${before.toFixed(3)}, ${after.toFixed(3)})`);
+  }
+});
