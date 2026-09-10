@@ -887,11 +887,35 @@
     var sex = sexOf(clone), out = [], seen = {};
     // The qualifier rides along with each candidate: it belongs to the
     // aberration the candidate was built from (for a sub-op t, to the der that
-    // carries it), and it decides who the panel may name as the carrier.
-    function add(k, ab) {
+    // carries it), and it decides who the panel may name as the carrier. `who`
+    // is set only on the sexed gonosomal spellings below.
+    function add(k, ab, who) {
       if (!k || seen[k]) return;
       seen[k] = 1;
-      out.push({ k: k, qual: (ab && ab.qualifier) || null });
+      out.push({ k: k, qual: (ab && ab.qualifier) || null, who: who || null });
+    }
+    // A t naming a sex chromosome has SEXED carrier spellings: the free
+    // complement decides who can carry it. 46,X,t(X;4) is a mother and
+    // 46,Y,t(X;4) a father; a balanced t(Y;autosome) or t(X;Y) carrier can
+    // only be a father. So instead of splicing the CHILD'S sex tokens into
+    // one candidate string (which for a gonosomal t is not a carrier at
+    // all), the candidates are emitted one per possible parent. Which
+    // parents' models actually produce the typed complement is then a fact
+    // the forward round-trip discovers, and the card can say "only the
+    // mother" when only hers does: 46,XX,der(4)t(X;4) needs an egg carrying
+    // a free X beside the der(4), which no paternal meiosis can make.
+    function addT(chroms, bpsStr, ab) {
+      var a = String(chroms[0]), b = String(chroms[1]);
+      var t = "t(" + a + ";" + b + ")(" + bpsStr + ")";
+      var gA = isGonoChrom(a), gB = isGonoChrom(b);
+      if (!gA && !gB) { add("46," + sex + "," + t, ab); return; }
+      if (gA && gB) { add("46," + t, ab, "father"); return; }
+      if ((gA ? a : b) === "X") {
+        add("46,X," + t, ab, "mother");
+        add("46,Y," + t, ab, "father");
+      } else {
+        add("46,X," + t, ab, "father");
+      }
     }
     function bps(ab) {
       return (ab.breakpoints || []).map(function (g) { return (g || []).join(""); }).join(";");
@@ -902,12 +926,12 @@
         add((clone.modalNumber - 1) + "," + sex + ",der(" + ab.chroms.join(";") + ")(" + bps(ab) + ")", ab);
       }
       if (ab.kind === "t" && ab.chroms.length === 2) {
-        add("46," + sex + ",t(" + ab.chroms.join(";") + ")(" + bps(ab) + ")", ab);
+        addT(ab.chroms, bps(ab), ab);
       }
       (ab.subOps || []).forEach(function (sub) {
         if (sub.op === "t" && sub.chroms && sub.chroms.length === 2) {
-          add("46," + sex + ",t(" + sub.chroms.join(";") + ")(" +
-            (sub.breakpoints || []).map(function (g) { return (g || []).join(""); }).join(";") + ")", ab);
+          addT(sub.chroms,
+            (sub.breakpoints || []).map(function (g) { return (g || []).join(""); }).join(";"), ab);
         }
       });
     });
@@ -944,10 +968,16 @@
       for (var i = 0; i < m.modes.length; i++) {
         for (var j = 0; j < m.modes[i].gametes.length; j++) {
           var g = m.modes[i].gametes[j];
-          if (canonKey(g.zygote) !== typedKey) continue;
-          m.hereZygote = g.zygote;            // marked "you typed this" when the panel renders
+          // A gonosomal gamete carries a list of outcomes (the sperm fork);
+          // the autosomal shape is a single zygote.
+          var zys = g.outcomes ? g.outcomes.map(function (o) { return o.zygote; }) : [g.zygote];
+          var hit = null;
+          for (var z = 0; z < zys.length; z++) if (canonKey(zys[z]) === typedKey) { hit = zys[z]; break; }
+          if (hit == null) continue;
+          m.hereZygote = hit;                 // marked "you typed this" when the panel renders
           candidates.push({
             carrier: { XX: ck.replace(/,X[XY],/, ",XX,"), XY: ck.replace(/,X[XY],/, ",XY,") },
+            carrierK: ck, who: cand.who || null,
             mode: m.modes[i].name, sub: m.modes[i].sub, label: g.label || "",
             type: m.type, model: m,
             qual: cand.qual || null, parent: QUAL_PARENT[cand.qual] || null,
@@ -987,8 +1017,54 @@
     var c = m.candidates[0];
     var parent = c.parent, named = parent === "mother" || parent === "father";
     var A = esc(c.model.A);
-    var head, caveat;
-    if (c.type === "homologous") {
+    var head, caveat, chips = null;
+    // Gonosomal candidates come one per POSSIBLE parent (the carrier
+    // spellings are sexed), and only the parents whose forward model produced
+    // the typed complement survive the round-trip. That makes "who" a
+    // discovered fact rather than a suffix: a 46,XX child with a der(4) from
+    // t(X;4) can only have come through an egg, so the card names the mother
+    // outright, with no mat in the notation.
+    if (c.who) {
+      var momC = null, dadC = null;
+      m.candidates.forEach(function (x) {
+        if (x.who === "mother") momC = momC || x;
+        if (x.who === "father") dadC = dadC || x;
+      });
+      var soloC = momC || dadC, soloWho = momC ? "mother" : "father";
+      if (named) {
+        var qc = parent === "mother" ? momC : dadC;
+        if (qc) {
+          head = "The notation names the " + parent + " as the carrier";
+          caveat = QUAL_LINE[c.qual] || "";
+          chips = '<span class="orig-who">the ' + parent + '</span>' + ktButton(qc.carrierK, m.typed);
+        } else {
+          // The suffix and the meiosis disagree: dpat on a complement only an
+          // egg can deliver. Say both facts and let the reader re-check.
+          head = "The suffix and the chromosomes disagree";
+          caveat = "The " + esc(c.qual) + " suffix names the " + parent + ", but only a " +
+            (momC ? "maternal" : "paternal") + " carrier's meiosis can produce this complement, so the report is worth re-checking. " +
+            (QUAL_LINE[c.qual] || "");
+          chips = '<span class="orig-who">the ' + soloWho + '</span>' + ktButton(soloC.carrierK, m.typed);
+        }
+      } else if (momC && dadC) {
+        head = parent === "inherited" ? "A parent carries the balanced form" : "A parent may be a balanced carrier";
+        caveat = QUAL_LINE[c.qual] || "";
+        chips = '<span class="orig-who">the mother</span>' + ktButton(momC.carrierK, m.typed) +
+          '<span class="orig-who">or the father</span>' + ktButton(dadC.carrierK, m.typed);
+      } else {
+        head = "Only the " + soloWho + " could carry the balanced form";
+        caveat = "Of the two possible carriers, only the " + soloWho + "'s meiosis can produce this chromosome complement." +
+          (parent === "inherited" ? " " + (QUAL_LINE[c.qual] || "") : "");
+        chips = '<span class="orig-who">the ' + soloWho + '</span>' + ktButton(soloC.carrierK, m.typed);
+      }
+      // The balanced X;Y man is usually infertile, so the same derivative
+      // more often arrives from a parent who carries it UNBALANCED, the
+      // familial pattern the carrier page's entity card describes.
+      if (c.model && c.model.cls === "XY") {
+        caveat += (caveat ? " " : "") +
+          "A parent can also carry this same derivative unbalanced, the usual familial route, because balanced X;Y men are mostly infertile.";
+      }
+    } else if (c.type === "homologous") {
       var fact = "no normal " + A + " to pass on: every conception is trisomic or monosomic for chromosome " + A + ".";
       if (named) {
         head = "The " + parent + " carries this fusion";
@@ -1012,7 +1088,7 @@
       head = "A parent may be a balanced carrier";
       caveat = "";
     }
-    var chips = named
+    if (chips == null) chips = named
       ? '<span class="orig-who">the ' + parent + '</span>' + ktButton(parent === "mother" ? c.carrier.XX : c.carrier.XY, m.typed)
       : '<span class="orig-who">either</span>' + ktButton(c.carrier.XX, m.typed) +
         '<span class="orig-who">or</span>' + ktButton(c.carrier.XY, m.typed);

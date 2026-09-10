@@ -109,6 +109,31 @@ test('gonosomal segregation panel in the browser', { skip: !CHROME && 'no Chrome
     assert.ok(info.chips.includes('46,X,der(X)t(X;Y)(p22.3;q11.2)'), 'the familial unbalanced form is one click away');
   });
 
+  await t.test('a typed gonosomal product gets the origin card, and its chip threads from=', async () => {
+    await goto('46,XX,der(4)t(X;4)(p21;p16)');
+    await page.waitForSelector('#origin-alert-card');
+    const card = await page.evaluate(() => ({
+      shown: document.querySelector('#origin-alert-card').style.display !== 'none',
+      warn: document.querySelector('#origin-alert-card').classList.contains('oal-warn'),
+      text: document.querySelector('#origin-alert').textContent,
+      chipK: document.querySelector('#origin-alert .seg-kt')?.getAttribute('data-k') || null,
+      chipFrom: document.querySelector('#origin-alert .seg-kt')?.getAttribute('data-from') || null,
+    }));
+    assert.equal(card.shown, true);
+    assert.equal(card.warn, true, 'the amber caution mood, like the autosomal origin card');
+    assert.match(card.text, /Only the mother could carry the balanced form/);
+    assert.equal(card.chipK, '46,X,t(X;4)(p21;p16)');
+    assert.equal(card.chipFrom, '46,XX,der(4)t(X;4)(p21;p16)', 'the chip threads the typed karyotype along');
+    // Click through: the carrier page must mark the traced outcome.
+    await page.evaluate(() => document.querySelector('#origin-alert .seg-kt').click());
+    await page.waitForFunction(() => /the karyotype you traced/.test(document.querySelector('#segregation')?.textContent || ''));
+    const marked = await page.evaluate(() => {
+      const lane = [...document.querySelectorAll('#segregation .seg-here')][0];
+      return lane ? lane.closest('.seg-fork-one').textContent : '';
+    });
+    assert.match(marked, /46,XX,der\(4\)t\(X;4\)\(p21;p16\)/, 'the traced conceptus lane wears the marker');
+  });
+
   await t.test('the unmodelable spelling gets the redirect card with carrier chips', async () => {
     await goto('46,XX,t(X;4)(p21;p16)');
     await page.waitForSelector('#segregation-card');

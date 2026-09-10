@@ -217,3 +217,71 @@ test('scenes and pachytene serve the female model; male carriers stay schematic-
   assert.equal(y.bodies.A.name, 'X', 'the free X holds the fourth corner');
   assert.equal(y.bodies.dA.name, 'der(Y)');
 });
+
+// ---- backward parental origin ----------------------------------------------
+// The scoped follow-up from the model PR: an unbalanced gonosomal product
+// typed directly should trace to its carrier parent the way autosomal
+// products do. The carrier spellings are sexed (46,X,t(X;4) is a mother,
+// 46,Y,t(X;4) a father, and a balanced Y;autosome or X;Y carrier can only be
+// a father), so candidateCarriers emits one candidate per possible parent and
+// the forward round-trip DISCOVERS who can produce the typed complement. That
+// yields inferences no suffix supplies: 46,XX,der(4)t(X;4) needs an egg
+// carrying a free X beside the der(4), which no paternal meiosis can make.
+test('origin: a 46,XX der(4) child traces to the mother alone', () => {
+  const o = Seg.origin(clone0('46,XX,der(4)t(X;4)(p21;p16)'));
+  assert.ok(o, 'the round-trip finds a carrier');
+  const whos = [...new Set(o.candidates.filter((c) => c.who).map((c) => c.who))];
+  assert.deepEqual(whos, ['mother']);
+  const card = Seg.renderOriginCard(o);
+  assert.match(card, /Only the mother could carry the balanced form/);
+  assert.match(card, /46,X,t\(X;4\)\(p21;p16\)/);
+  assert.doesNotMatch(card, /46,Y,t\(X;4\)/, 'no paternal spelling is offered');
+});
+
+test('origin: a 46,XY der(4) child can come from either carrier, spelled per parent', () => {
+  const o = Seg.origin(clone0('46,XY,der(4)t(X;4)(p21;p16)'));
+  const whos = [...new Set(o.candidates.filter((c) => c.who).map((c) => c.who))].sort();
+  assert.deepEqual(whos, ['father', 'mother']);
+  const card = Seg.renderOriginCard(o);
+  assert.match(card, /the mother/);
+  assert.match(card, /the father/);
+  assert.match(card, /46,X,t\(X;4\)\(p21;p16\)/);
+  assert.match(card, /46,Y,t\(X;4\)\(p21;p16\)/);
+  assert.doesNotMatch(card, /46,XX,t\(X;4\)/, 'the old sex-token splice never appears');
+});
+
+test('origin: Y;autosome products name the father, X;Y products add the familial route', () => {
+  const y = Seg.origin(clone0('46,XX,der(7)t(Y;7)(q11.21;p15)'));
+  assert.ok(y);
+  const yCard = Seg.renderOriginCard(y);
+  assert.match(yCard, /Only the father could carry the balanced form/);
+  assert.match(yCard, /46,X,t\(Y;7\)\(q11.21;p15\)/);
+
+  const xy = Seg.origin(clone0('46,X,der(X)t(X;Y)(p22.3;q11.2)'));
+  assert.ok(xy);
+  const xyCard = Seg.renderOriginCard(xy);
+  assert.match(xyCard, /Only the father could carry the balanced form/);
+  assert.match(xyCard, /carry this same derivative unbalanced/, 'the usual familial route is named');
+});
+
+test('origin: an inheritance suffix keeps the plain grammar when it agrees, and is flagged when it cannot', () => {
+  const ok = Seg.renderOriginCard(Seg.origin(clone0('46,XY,der(4)t(X;4)(p21;p16)dmat')));
+  assert.match(ok, /notation names the mother/);
+  assert.match(ok, /46,X,t\(X;4\)\(p21;p16\)/);
+
+  const clash = Seg.renderOriginCard(Seg.origin(clone0('46,XX,der(4)t(X;4)(p21;p16)dpat')));
+  assert.match(clash, /suffix and the chromosomes disagree/);
+  assert.match(clash, /maternal/);
+  assert.match(clash, /re-check/);
+});
+
+test('origin: interchange products trace too, and autosomal cards are untouched', () => {
+  const down = Seg.origin(clone0('47,X,+21,t(X;21)(q22;q22.1)'));
+  assert.ok(down, 'the translocation Down conceptus of an X;21 carrier traces');
+  assert.match(Seg.renderOriginCard(down), /the mother/);
+
+  const emanuel = Seg.origin(clone0('47,XX,+der(22)t(11;22)(q23;q11.2)'));
+  assert.ok(emanuel, 'the Emanuel child still traces');
+  assert.equal(emanuel.candidates[0].who, null);
+  assert.match(Seg.renderOriginCard(emanuel), /either/, 'the autosomal grammar is unchanged');
+});
