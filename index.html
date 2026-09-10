@@ -793,6 +793,9 @@
     #printsheet .ps-seg svg { max-width: 100%; height: auto; }
     #printsheet .ps-seg .seg-head h2 { font-family: var(--font-display); font-size: 10.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid #ccc; margin: 11px 0 4px; padding-bottom: 2px; }
     #printsheet .ps-seg .seg-pair, #printsheet .ps-seg .seg-out { break-inside: avoid; }
+    /* Screen-only chrome: an animation toggle and a "click below" hint have
+       no meaning on paper (seen in the first printed proof, 2026-09-10). */
+    #printsheet .ps-seg .seg-controls { display: none; }
   }
 </style>
 </head>
