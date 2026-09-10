@@ -1446,7 +1446,21 @@
             ab.chroms.forEach(function (c) {
               if (comp[c] === undefined) { if (String(c).indexOf("?") < 0 && wu === 0) { warnings.push("“" + c + "” is not a human chromosome. They are numbered 1 to 22, plus X and Y."); clone.badChrom = true; } return; }
               var ridx = firstNormal(slots[c]);
-              if (ridx >= 0) { slots[c].splice(ridx, 1); comp[c] -= 1; }
+              if (ridx >= 0) {
+                slots[c].splice(ridx, 1); comp[c] -= 1;
+                // A consumed SEX chromosome is recorded as restorable. The
+                // autosomal subtraction is right because both source
+                // chromosomes sit in the 44-autosome baseline, but the sex
+                // field lists only the FREE sex chromosomes, so the X inside
+                // dic(X;Y) was never counted and eating the free X token
+                // undercounts: 46,X,dic(X;Y)(p22.33;p11.32) is a correct
+                // karyotype (44 autosomes, one free X, the dic as the second
+                // sex chromosome) and tallied 45. The reconciliation pass
+                // (canRestore) puts the token back when the stated count
+                // demands it, and the consumed reading survives where the
+                // count fits it (45,X,dic(X;Y) still parses at 45).
+                if ((c === "X" || c === "Y") && wu === 0) replacedChroms.push(c);
+              }
             });
             var dc = ab.chroms[0];
             if (comp[dc] !== undefined) { slots[dc].push(mkDer(dc, ab)); comp[dc] += 1; }

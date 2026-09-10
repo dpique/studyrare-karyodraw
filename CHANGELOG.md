@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (46,X,dic(X;Y) counts to 46)
+
+- **A dicentric built from the sex chromosomes no longer eats the free sex
+  chromosome.** 46,X,dic(X;Y)(p22.33;p11.32) is correct ISCN: 44 autosomes,
+  one free X, and the dic standing as the second sex chromosome. The app
+  counted it 45 and offered two wrong fixes, because it subtracted a
+  chromosome the way an autosomal dicentric earns it; the X and Y inside a
+  gonosomal dic were never in the count, since the sex field lists only the
+  free sex chromosomes. The stated count now decides the reading:
+  46,X,dic(X;Y) draws a free X beside the dic, 45,X,dic(X;13) draws a free X
+  beside a dic replacing the other X and a 13, and the consumed spellings
+  (45,dic(X;Y) and its kin) keep parsing at 45. Autosomal dicentric
+  arithmetic is unchanged.
+
 ## 2026-09-10 (the der(X) inactivation note reads the breakpoint)
 
 - **The Expected X inactivation note for an unbalanced der(X) now computes

@@ -1901,3 +1901,37 @@ test('the drawable-operations list matches what the app draws', () => {
   assert.match(w, /\brob\b/);
   assert.match(w, /\bidic\b/);
 });
+
+// The same free-sex-token rule, now for the two-chromosome dic/der branch. A
+// real visitor typed 46,X,dic(X;Y)(p22.33;p11.32), which is correct ISCN (44
+// autosomes, one free X, and the dic as the second sex chromosome), and the
+// app called it 45 and offered two wrong fixes. The branch consumed the free
+// X the way it consumes an autosomal homolog, but the autosomal subtraction
+// works only because both source chromosomes sit in the 44-autosome baseline;
+// the X and Y inside a gonosomal dic were never counted, so consuming the
+// token undercounts by one. The consumption is now recorded as restorable for
+// sex chromosomes (the same canRestore reading 47,XX,t(X;4) uses), so the
+// stated count decides: 46,X,dic(X;Y) restores the free X, while the
+// tolerated consumed spelling 45,X,dic(X;Y) still parses at 45.
+test('a gonosomal dicentric does not eat the free sex chromosome: 46,X,dic(X;Y)', () => {
+  const cases = [
+    ['46,X,dic(X;Y)(p22.33;p11.32)', true],
+    ['45,dic(X;Y)(p22.33;p11.32)', true],   // sex field omitted: named in the rearrangement
+    ['45,X,dic(X;Y)(p22.33;p11.32)', true], // tolerated consumed spelling, count decides
+    ['45,XX,dic(13;15)(q22;q24)', true],    // autosomal dicentric arithmetic unchanged
+    ['45,X,dic(X;13)(q28;p11.2)', true],    // one free X beside a dic replacing the other X and a 13
+    ['46,X,t(X;13)(q27;q12)', true],
+    ['46,t(X;Y)(q22;q11.2)', true],
+    ['46,X,idic(Y)(q11.23)', true],
+    ['46,X,i(X)(q10)', true],
+    ['47,XX,dic(X;Y)(p22.33;p11.32)', true],   // two free X beside the dic
+    ['47,XX,dic(13;15)(q22;q24)', false],      // an extra AUTOSOME still needs naming
+  ];
+  for (const [k, ok] of cases) {
+    const r = ISCN.parse(k);
+    assert.equal(r.clones[0].counts.ok, ok, k + ': ' + (r.warnings || []).join(' | '));
+  }
+  // The restored complement is the right one: a free normal X beside the dic.
+  const c = ISCN.parse('46,X,dic(X;Y)(p22.33;p11.32)').clones[0];
+  assert.deepEqual(Array.from(slotKinds(c, 'X')).sort(), ['dic', 'normal']);
+});
