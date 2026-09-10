@@ -1542,42 +1542,62 @@
     clone.complement = comp;
     clone.slots = slots;
 
-    // Whole-chromosome gains and losses are listed in ascending chromosome order:
-    // 43,XY,rob(14;21)(q10;q10),-21,-20 lists 21 before 20, and drew silently.
+    // Changes are listed in ascending chromosome order, sex chromosomes first:
+    // 43,XY,rob(14;21)(q10;q10),-21,-20 lists 21 before 20, and
+    // 46,XY,del(5)(p15.2),inv(2)(p13q24) lists 5 before 2. Both drew silently
+    // until checked (the second: Dan, 2026-09-09, asking whether the app should
+    // teach the ordering rule at all).
     //
-    // Scoped hard, on purpose. ISCN's full listing order also covers structural
-    // abnormalities, and this app has already taken the opposite position once:
-    // segregation.js says "ISCN fixes neither [spelling nor order]" where it builds an
-    // order-insensitive comparison key, and the segregation model, which was checked
-    // against ISCN 2024 Table 5, emits 46,XX,+der(5)t(2;5)(q21;q31),-2 with 5 before
-    // 2. A broader rule flagged that as an error. Since a false accusation here is
-    // worse than a missed one, only +N / -N against each other is checked, which is
-    // the piece that is not in dispute. Everything else is left alone.
-    // Only what this clone WROTE. A subclone's idem/sl/sdl splices the stemline's
-    // gains and losses in ahead of its own, but those are ordered where they were
-    // written; 46,sl,+1 after a stemline carrying -7 is correct notation, and the
-    // production review (2026-08, rank 11) caught this check accusing it.
-    var numeric = clone.aberrations.filter(function (ab) {
-      return (ab.kind === "gain" || ab.kind === "loss") &&
-        ab.chroms.length === 1 && /^\d+$/.test(ab.chroms[0]) &&
+    // Still scoped hard, on purpose, because a false accusation here is worse
+    // than a missed one. Two pools are checked, each only against itself:
+    // whole-chromosome gains and losses (+N/-N), and plain rearrangements that
+    // name exactly one chromosome (del, dup, trp, inv, ins, add, i, r, idic,
+    // hsr, fra). The pools are never compared with each other, and anything naming
+    // several chromosomes (t, rob, der, dic) or derived from another event
+    // (rec) is left alone entirely: the segregation model, checked against
+    // ISCN 2024 Table 5, emits 46,XX,+der(5)t(2;5)(q21;q31),-2 with 5 before
+    // 2, and a broader rule called the app's own correct output an error.
+    // Order among changes of the SAME chromosome (alphabetical by
+    // abbreviation) is a different rule and is not policed either.
+    // Only what this clone WROTE. A subclone's idem/sl/sdl splices the
+    // stemline's changes in ahead of its own, but those are ordered where they
+    // were written; 46,sl,+1 after a stemline carrying -7 is correct notation,
+    // and the production review (2026-08, rank 11) caught this check accusing
+    // it.
+    var ownAbs = clone.aberrations.filter(function (ab) {
+      return ab.chroms && ab.chroms.length === 1 &&
         (clone.inheritedAbs || []).indexOf(ab) < 0;
     });
-    clone.outOfOrder = null;
-    for (var oi = 1; oi < numeric.length; oi++) {
-      if (parseInt(numeric[oi - 1].chroms[0], 10) > parseInt(numeric[oi].chroms[0], 10)) {
-        clone.outOfOrder = { before: numeric[oi].raw, after: numeric[oi - 1].raw };
-        break;
+    var numeric = ownAbs.filter(function (ab) {
+      return (ab.kind === "gain" || ab.kind === "loss") && /^\d+$/.test(ab.chroms[0]);
+    });
+    var PLAIN_STRUCTURAL = { del: 1, dup: 1, trp: 1, inv: 1, ins: 1, add: 1, iso: 1, ring: 1, dic: 1, hsr: 1, fra: 1 };
+    var structural = ownAbs.filter(function (ab) {
+      return PLAIN_STRUCTURAL[ab.kind] === 1 && /^(\d+|X|Y)$/.test(ab.chroms[0]);
+    });
+    // X before Y before the autosomes (ISCN lists sex chromosome changes first).
+    var chromRank = function (c) { return c === "X" ? -2 : c === "Y" ? -1 : parseInt(c, 10); };
+    var firstInversion = function (pool) {
+      for (var oi = 1; oi < pool.length; oi++) {
+        if (chromRank(pool[oi - 1].chroms[0]) > chromRank(pool[oi].chroms[0])) {
+          return { before: pool[oi].raw, after: pool[oi - 1].raw };
+        }
       }
-    }
-    // The same karyotype with only those gains and losses sorted into place; anything
-    // else keeps exactly the position it was written in.
+      return null;
+    };
+    clone.outOfOrder = firstInversion(numeric) || firstInversion(structural);
+    // The same karyotype with each offending pool sorted into place; anything
+    // else keeps exactly the position it was written in. Ties (two changes of
+    // one chromosome) keep their written order: sort is stable, and their
+    // relative order is the same-chromosome rule this check stays out of.
     if (clone.outOfOrder) {
-      var sorted = numeric.slice().sort(function (a, b) {
-        return parseInt(a.chroms[0], 10) - parseInt(b.chroms[0], 10);
-      });
-      var ni = 0;
+      var byRank = function (a, b) { return chromRank(a.chroms[0]) - chromRank(b.chroms[0]); };
+      var sortedN = numeric.slice().sort(byRank), sortedS = structural.slice().sort(byRank);
+      var ni = 0, si = 0;
       clone.orderedRaws = clone.aberrations.map(function (ab) {
-        return numeric.indexOf(ab) >= 0 ? sorted[ni++].raw : ab.raw;
+        if (numeric.indexOf(ab) >= 0) return sortedN[ni++].raw;
+        if (structural.indexOf(ab) >= 0) return sortedS[si++].raw;
+        return ab.raw;
       });
     }
 
@@ -1792,7 +1812,7 @@
     // there is no honest drawing of that clone.
     || !!clone.numberedSideline;
     if (clone.outOfOrder) {
-      warnings.push("Whole-chromosome gains and losses are listed in chromosome order, so “" +
+      warnings.push("Changes are listed in chromosome order, sex chromosomes first, so “" +
         clone.outOfOrder.before + "” comes before “" + clone.outOfOrder.after + "”.");
     }
     // countWrong is the app asserting the count is wrong, and it is set at exactly the
