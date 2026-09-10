@@ -796,6 +796,8 @@
     /* Screen-only chrome: an animation toggle and a "click below" hint have
        no meaning on paper (seen in the first printed proof, 2026-09-10). */
     #printsheet .ps-seg .seg-controls { display: none; }
+    #printsheet .ps-seg .oal-head { font-weight: 700; font-size: 10pt; color: var(--navy); margin: 10px 0 3px; }
+    #printsheet .ps-seg .oal-body { font-size: 9.5pt; margin: 3px 0; }
   }
 </style>
 </head>
@@ -1812,6 +1814,11 @@
         if (FROM) { FROM = null; setHash(input.value, false); }
         var org = window.Segregation.origin(clone);
         if (org) { cardHtml = window.Segregation.renderOriginCard(org); warn = true; }
+        // A gonosomal reciprocal carrier is refused by the table on purpose;
+        // the refusal is said out loud instead of leaving a blank (see
+        // gonosomalNote in segregation.js). Quiet card, not the amber one:
+        // it explains, it does not ask anything of the reader.
+        else if (window.Segregation.gonosomalNote) cardHtml = window.Segregation.gonosomalNote(clone);
       }
     } else if (FROM) { FROM = null; setHash(input.value, false); }
     alertCard.classList.toggle("oal-warn", warn);
@@ -2525,9 +2532,16 @@
     // purpose: one click prints what the page teaches.
     renderPrintSheet.seg = "";
     var segClone = model.clones.length === 1 ? model.clones[0] : null;
-    if (window.Segregation && segClone && !isAcquired(segClone) && window.Segregation.eligible(segClone)) {
-      try { renderPrintSheet.seg = window.Segregation.render(window.Segregation.compute(segClone)); }
-      catch (e) { renderPrintSheet.seg = ""; }
+    if (window.Segregation && segClone && !isAcquired(segClone)) {
+      try {
+        if (window.Segregation.eligible(segClone)) {
+          renderPrintSheet.seg = window.Segregation.render(window.Segregation.compute(segClone));
+        } else if (window.Segregation.gonosomalNote) {
+          // The gonosomal carrier's why-no-table card prints too; the same
+          // silence the screen just lost must not survive on paper.
+          renderPrintSheet.seg = window.Segregation.gonosomalNote(segClone);
+        }
+      } catch (e) { renderPrintSheet.seg = ""; }
     }
   }
 
