@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the tip becomes white glass)
+
+- **The hover tip flips from dark glass to white glass, and the blur is
+  gone.** Three rounds of thinning the dark tip never made the figure
+  underneath readable, because a dark film at any text-safe density buries
+  light bands, and the backdrop blur, added to protect the text, smeared the
+  very bands the transparency was meant to reveal. The tip is now a thin
+  white film with crisp dark text that protects itself with a white halo, so
+  the bands, the amber marks, and their edges stay visible straight through
+  it.
+
 ## 2026-09-10 (the tip stops narrating a visible shade)
 
 - **The hover tip no longer repeats "G-negative (pale)" on ordinary bands.**

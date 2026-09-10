@@ -664,18 +664,22 @@
 
   #tooltip {
     position: fixed; z-index: 50; pointer-events: none; display: none;
-    /* Translucent over the figure, so the tip never fully hides what it sits
-       on; 86% still read as solid, and the tip sometimes covers the very band
-       it marked, so it went clearer (Dan, 2026-09-10, twice). 68% is the
-       floor for the white text: the blur carries the legibility from there,
-       softening the band stripes that would otherwise cut through the
-       letterforms. color-mix keeps the navy single-sourced. */
-    background: color-mix(in srgb, var(--navy) 68%, transparent); color: #fff; font: 12px var(--font-mono);
-    backdrop-filter: blur(2.5px); -webkit-backdrop-filter: blur(2.5px);
-    padding: 5px 8px; border-radius: 7px; box-shadow: 0 6px 20px rgba(26,31,54,.3); max-width: 240px;
+    /* WHITE glass, and no backdrop blur, after three rounds of dark glass
+       (Dan, 2026-09-10). The figure is colors on a white page, so a light
+       film only desaturates what is underneath, where a dark film at
+       readable-text density buries it, and the blur, added to protect the
+       text, smeared the very bands the transparency was meant to reveal.
+       The dark text protects itself with a white halo instead, so the film
+       can stay thin; the border and shadow carry the tip's boundary where
+       white sits on white. */
+    background: color-mix(in srgb, #ffffff 50%, transparent);
+    border: 1px solid color-mix(in srgb, var(--navy) 32%, transparent);
+    color: var(--navy); font: 12px var(--font-mono);
+    text-shadow: 0 0 3px #fff, 0 0 6px rgba(255,255,255,.85);
+    padding: 5px 8px; border-radius: 7px; box-shadow: 0 6px 20px rgba(26,31,54,.18); max-width: 240px;
   }
-  #tooltip b { color: #9da8ef; }
-  #tooltip .tpl { color: #94a3b8; }
+  #tooltip b { color: var(--peri-700); }
+  #tooltip .tpl { color: #5f698a; }
   details.anatomy summary { cursor: pointer; font-weight: 600; color: var(--periwinkle); }
 
   /* Feedback dialog (on-site, no account needed) */
