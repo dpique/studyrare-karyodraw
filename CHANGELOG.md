@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the tip names the breakpoint that splits a band)
+
+- **"In 3 places" now explains itself when a breakpoint cuts through the
+  band.** On t(11;22)(p13;q12), band 11p13 is genuinely drawn in three
+  places: whole on the normal 11, its proximal part on der(11), and its
+  distal part riding the translocated tip on der(22), summing to the usual
+  two copies. The tooltip now reads "in 3 places (a breakpoint splits this
+  band)" whenever any counted place is a piece rather than the whole band,
+  so a balanced count next to three glows no longer has to be
+  reverse-engineered.
+
 ## 2026-09-10 (clearer glass, and the extra chromosome says +)
 
 - **The hover tip is clearer still.** 86% read as solid in practice, and the

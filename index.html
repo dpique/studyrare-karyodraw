@@ -2060,11 +2060,11 @@
     wireInteractions._done = true;
     var karyo = $("#karyo");
     var SVGNS = "http://www.w3.org/2000/svg";
-    var hiBand = null, HI = null, ECHOES = [], hiPlaces = 0;
+    var hiBand = null, HI = null, ECHOES = [], hiPlaces = 0, hiSplit = false;
     function clearHi() {
       if (HI && HI.parentNode) HI.parentNode.removeChild(HI);
       ECHOES.forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); });
-      HI = null; ECHOES = []; hiBand = null; hiPlaces = 0;
+      HI = null; ECHOES = []; hiBand = null; hiPlaces = 0; hiSplit = false;
     }
     // One builder for the mark and its echoes, so a twin can never drift
     // from the mark it repeats. Same amber for both on purpose: every copy
@@ -2130,12 +2130,20 @@
           if (p.svg === owner && cr.top < p.bottom - 1 && cr.bottom > p.top + 1) {
             p.top = Math.min(p.top, cr.top); p.bottom = Math.max(p.bottom, cr.bottom);
             if (el === band) p.self = true;
+            p.part = p.part || el.hasAttribute("data-part");
             return;
           }
         }
-        places.push({ svg: owner, top: cr.top, bottom: cr.bottom, el: el, self: el === band });
+        places.push({ svg: owner, top: cr.top, bottom: cr.bottom, el: el, self: el === band,
+          part: el.hasAttribute("data-part") });
       });
       hiPlaces = places.length;
+      // When any counted place is a PIECE of the band (the renderer's
+      // data-part), the count alone confuses: three places of one band with
+      // the dosage still balanced is exactly what a breakpoint inside the
+      // band produces, and the tip now says so rather than leaving the
+      // reader to reverse-engineer it (Dan, 2026-09-10, twice).
+      hiSplit = places.some(function (p) { return p.part; });
       places.forEach(function (p) {
         if (p.self) return;
         var e = bandMark(p.el, true);
@@ -2163,7 +2171,8 @@
           tipLeft = (cr.left + cr.right) / 2 < (kr.left + kr.right) / 2;
         }
         showTip(ev, "<b>" + c + b + "</b>  " + prettyStain(s) +
-          (hiPlaces ? ' <span class="tpl">· in ' + hiPlaces + " place" + (hiPlaces === 1 ? "" : "s") + "</span>" : ""), tipLeft);
+          (hiPlaces ? ' <span class="tpl">· in ' + hiPlaces + " place" + (hiPlaces === 1 ? "" : "s") +
+            (hiSplit ? " (a breakpoint splits this band)" : "") + "</span>" : ""), tipLeft);
         return;
       }
       hideTip(); if (hiBand) clearHi();

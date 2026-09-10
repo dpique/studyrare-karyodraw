@@ -136,3 +136,54 @@ test('a hovered band lights every other place its material is drawn', async (t) 
     server.close();
   }
 });
+
+test('a band cut through by a breakpoint says so on the tooltip', async (t) => {
+  // 46,XX,t(11;22)(p13;q12): the break falls INSIDE band 11p13 (the notation
+  // cannot say where, so the drawing uses the band midpoint), which puts p13
+  // material in three places: the intact homolog, the proximal piece on
+  // der(11), and the distal piece riding the translocated tip on der(22).
+  // Three places summing to two copies confused its own author twice (Dan,
+  // 2026-09-10, here and on t(14;14)), so the tooltip now names the cause.
+  if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
+  const puppeteer = require('puppeteer-core');
+  const server = await serve();
+  const port = server.address().port;
+  const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1400, height: 1000 });
+    await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent('46,XX,t(11;22)(p13;q12)')}&style=highlight`,
+      { waitUntil: 'load' });
+    await page.waitForSelector('#karyo .kchrom[data-kind="t"] .band');
+
+    const tipFor = async (prefix) => {
+      await page.mouse.move(0, 0);
+      const pt = await page.evaluate((pre) => {
+        const el = [...document.querySelectorAll('#karyo .kchrom[data-kind="normal"] .band[data-chrom="11"]')]
+          .find((n) => (n.getAttribute('data-band') || '').startsWith(pre));
+        if (!el) return null;
+        el.scrollIntoView({ block: 'center' });
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      }, prefix);
+      assert.ok(pt, `${prefix} exists on the normal 11`);
+      await page.mouse.move(pt.x, pt.y);
+      await page.waitForSelector('#karyo .band-hi');
+      return page.evaluate(() => document.querySelector('#tooltip').textContent);
+    };
+
+    await t.test('the split band names the breakpoint', async () => {
+      const tip = await tipFor('p13');
+      assert.match(tip, /in 3 places \(a breakpoint splits this band\)/, tip);
+    });
+
+    await t.test('a neighbouring intact band stays plain', async () => {
+      const tip = await tipFor('p15');
+      assert.match(tip, /in 2 places/, tip);
+      assert.ok(tip.indexOf('splits') < 0, `no split claim on an intact band: ${tip}`);
+    });
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});

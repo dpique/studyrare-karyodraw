@@ -534,10 +534,16 @@
         if (st === "acen") fill = "url(#" + hatch(heteroColor(g.chrom, st), g.reversed ? mirrorHatch(CEN_HATCH) : CEN_HATCH) + ")";
         else if (st === "gvar" || st === "stalk" || st === "acen_carried") fill = "url(#" + hatch(heteroColor(g.chrom, st), g.reversed ? mirrorHatch(HET_HATCH) : HET_HATCH) + ")";
         else fill = fillFor(ctx, g.chrom, st);
+        // data-part marks a band the segment cuts INTO rather than carries
+        // whole: a breakpoint resolved inside the band leaves part of it
+        // here and the rest elsewhere. The hover reads it to say why one
+        // band can sit in three places while the dosage stays balanced
+        // (Dan, 2026-09-10, on t(11;22)(p13;q12) after t(14;14)(q11;q32)).
+        var cut = bs > b[1] || be < b[2];
         body.push('<rect class="band" x="' + pad + '" y="' + y0.toFixed(2) + '" width="' + W +
           '" height="' + Math.max(0.6, y1 - y0).toFixed(2) + '" fill="' + fill + '"' +
           ' data-chrom="' + esc(g.chrom) + '" data-band="' + esc(b[0]) + '" data-stain="' + st +
-          '" data-arm="' + b[0][0] + '"/>');
+          '" data-arm="' + b[0][0] + '"' + (cut ? ' data-part="1"' : '') + '/>');
       });
       if (g.hasCen && d.centromere > g.from && d.centromere < g.to) {
         cenList.push({ y: g.reversed ? segTop + (g.to - d.centromere) * PX : segTop + (d.centromere - g.from) * PX, chrom: g.chrom, reversed: g.reversed });
