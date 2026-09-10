@@ -3,6 +3,18 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the Bands control follows the notation)
+
+- **The figure no longer hides a band the karyotype names.** Typing
+  idic(Y)(q11.23) at the standard ~550-band view merged q11.21 through q11.23
+  into one stripe, so the very band the notation named was nowhere in the
+  drawing unless the reader knew to switch the Bands control. When the typed
+  karyotype names a two-decimal sub-band, the level now follows the notation
+  up to High (~850) on its own, and returns to Std for the next karyotype
+  that does not need it. An explicit choice still wins: a link that arrives
+  with a bands= setting keeps showing what its sender saw, and clicking the
+  control pins the level for the session.
+
 ## 2026-09-10 (an SRY-bearing rearranged Y is not called Turner)
 
 - **The Turner card now reads the drawn material, not the chromosome slots.**
