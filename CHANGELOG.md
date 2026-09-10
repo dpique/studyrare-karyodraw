@@ -3,6 +3,18 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (a hovered band lights its other copies)
+
+- **Hovering a band now shows every other place that material is drawn.** The
+  solid amber box still marks the band under the pointer; a dashed twin now
+  appears on each other copy of the same band in the same clone, and the
+  tooltip counts them ("1q25.1 · in 3 places"). Because each piece of a
+  derivative is stamped with the chromosome it came from, the hover reads
+  provenance in both directions: point at a grafted segment and its origin
+  lights up on the intact homolog, point at the homolog and the graft answers
+  back. Dosage becomes visible the same way: a trisomic band shows three
+  places, and a deleted one shows a single place with nothing left to echo.
+
 ## 2026-09-10 (the ring hatches its whole waist and highlights its bands)
 
 - **The ring's constriction is hatched edge to edge.** The centromeric hatch

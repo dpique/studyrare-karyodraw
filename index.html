@@ -662,6 +662,7 @@
     padding: 5px 8px; border-radius: 7px; box-shadow: 0 6px 20px rgba(26,31,54,.3); max-width: 240px;
   }
   #tooltip b { color: #9da8ef; }
+  #tooltip .tpl { color: #94a3b8; }
   details.anatomy summary { cursor: pointer; font-weight: 600; color: var(--periwinkle); }
 
   /* Feedback dialog (on-site, no account needed) */
@@ -2012,11 +2013,19 @@
     wireInteractions._done = true;
     var karyo = $("#karyo");
     var SVGNS = "http://www.w3.org/2000/svg";
-    var hiBand = null, HI = null;
-    function clearHi() { if (HI && HI.parentNode) HI.parentNode.removeChild(HI); HI = null; hiBand = null; }
-    function highlight(band) {   // crisp amber mark around the exact band
-      clearHi();
-      var svg = band.ownerSVGElement; if (!svg) return;
+    var hiBand = null, HI = null, ECHOES = [], hiPlaces = 0;
+    function clearHi() {
+      if (HI && HI.parentNode) HI.parentNode.removeChild(HI);
+      ECHOES.forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); });
+      HI = null; ECHOES = []; hiBand = null; hiPlaces = 0;
+    }
+    // One builder for the solid mark and its echoes, so a twin can never
+    // drift from the mark it repeats. Same amber for both on purpose: every
+    // copy is the same material, and hue already means identity elsewhere
+    // (the involved-chromosome colors), so only the weight may say which copy
+    // the cursor is on. Solid is under the pointer; dashed is the same band
+    // drawn somewhere else.
+    function bandMark(band, echo) {
       var r;
       if (band.hasAttribute("width")) {
         // Linear bands are rects: a rounded box just outside the band.
@@ -2036,16 +2045,67 @@
         r.setAttribute("stroke-linejoin", "round");
       }
       r.setAttribute("fill", "none");
-      r.setAttribute("stroke", "#ec9b27"); r.setAttribute("stroke-width", "2.4");
-      r.setAttribute("pointer-events", "none"); r.setAttribute("class", "band-hi");
-      svg.appendChild(r); HI = r; hiBand = band;
+      r.setAttribute("stroke", "#ec9b27"); r.setAttribute("stroke-width", echo ? "1.5" : "2.4");
+      if (echo) r.setAttribute("stroke-dasharray", "3 2.2");
+      r.setAttribute("pointer-events", "none"); r.setAttribute("class", echo ? "band-echo" : "band-hi");
+      return r;
+    }
+    function highlight(band) {   // crisp amber mark around the exact band
+      clearHi();
+      var svg = band.ownerSVGElement; if (!svg) return;
+      HI = bandMark(band, false); svg.appendChild(HI); hiBand = band;
+      // Every OTHER place the same band is drawn echoes with a dashed twin,
+      // and the count of places rides the tooltip. Because the renderer
+      // stamps each band rect with its SOURCE chromosome, the query is also
+      // a provenance answer: hover a derivative's graft and its origin
+      // lights up on the intact homolog; hover the homolog and the graft
+      // answers back. Scoped to the clone block, since in a mosaic each
+      // cell line has its own dosage and 45,X beside 46,XX must not pool
+      // their X count.
+      var c = band.getAttribute("data-chrom"), b = band.getAttribute("data-band");
+      if (!c || !b) return;
+      var scope = band.closest(".clone-block") || karyo;
+      var twins = scope.querySelectorAll('.band[data-chrom="' + cssEsc(c) + '"][data-band="' + cssEsc(b) + '"]');
+      // Two rects can be one place: a fragile-site gap carries its band's
+      // identity and sits inside that band's own rect, so nodes in the same
+      // svg whose spans genuinely overlap merge, and the count is places on
+      // screen rather than DOM nodes. Touching is not overlap: a mirrored
+      // copy (an isochromosome's innermost band) abuts its twin and is still
+      // a second place. Hidden cells report a zero-size rect and are
+      // skipped, so a view that hides a chromosome never counts it.
+      var places = [];
+      Array.prototype.forEach.call(twins, function (el) {
+        var cr = el.getBoundingClientRect();
+        if (!cr.width && !cr.height) return;
+        var owner = el.ownerSVGElement;
+        for (var i = 0; i < places.length; i++) {
+          var p = places[i];
+          if (p.svg === owner && cr.top < p.bottom - 1 && cr.bottom > p.top + 1) {
+            p.top = Math.min(p.top, cr.top); p.bottom = Math.max(p.bottom, cr.bottom);
+            if (el === band) p.self = true;
+            return;
+          }
+        }
+        places.push({ svg: owner, top: cr.top, bottom: cr.bottom, el: el, self: el === band });
+      });
+      hiPlaces = places.length;
+      places.forEach(function (p) {
+        if (p.self) return;
+        var e = bandMark(p.el, true);
+        p.svg.appendChild(e); ECHOES.push(e);
+      });
     }
     karyo.addEventListener("mousemove", function (ev) {
       var band = ev.target.closest ? ev.target.closest(".band") : null;
       if (band && band.getAttribute) {
         var c = band.getAttribute("data-chrom"), b = band.getAttribute("data-band"), s = band.getAttribute("data-stain");
-        showTip(ev, "<b>" + c + b + "</b>  " + prettyStain(s));
+        // highlight() runs before the tip so the tip can carry the fresh
+        // place count. "Places", not "copies": a breakpoint inside a band
+        // splits it, both pieces keep the name, and "3 copies" could be a
+        // dosage lie where "in 3 places" is exact.
         if (band !== hiBand) { highlight(band); renderDetail(c, b); markSel(c); }
+        showTip(ev, "<b>" + c + b + "</b>  " + prettyStain(s) +
+          (hiPlaces ? ' <span class="tpl">· in ' + hiPlaces + " place" + (hiPlaces === 1 ? "" : "s") + "</span>" : ""));
         return;
       }
       hideTip(); if (hiBand) clearHi();
