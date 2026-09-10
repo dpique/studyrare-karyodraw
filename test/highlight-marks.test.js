@@ -98,13 +98,13 @@ test('the Realistic theme draws no frames and no hooks', () => {
 // compare banding by eye. The grammar extends without bending: a box in the
 // neutral slate means "this span moved here, nothing gained or lost", the
 // hooks still mean end-for-end (so an INVERTED insertion earns them from the
-// model automatically), and red carets mark the excision point the segment
-// left behind.
+// model automatically), and carets mark the excision point the segment
+// left behind, in the one ink every cut draws in.
 test('an insertion boxes the moved span in slate and carets its excision point', () => {
   const out = drawOut('46,XY,ins(15)(p11q23q26)', '15', 'simple');
   assert.match(out.svg, frameRe(Karyo.OP_COLORS.mov), 'the moved span wears the neutral box');
   assert.equal((out.svg.match(hookRe(TEAL)) || []).length, 0, 'orientation kept, so no hooks');
-  assert.ok(/fill="#e0554f"/.test(out.svg), 'the excision point is careted');
+  assert.ok(new RegExp('fill="' + Karyo.OP_COLORS.cut + '"').test(out.svg), 'the excision point is careted');
   assert.equal(out.width, 52, 'the box rides the margin, so the canvas widens');
 });
 
