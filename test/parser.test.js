@@ -77,6 +77,44 @@ test('isochromosome — 46,X,i(X)(q10)', () => {
   assert.ok(abKinds(c).includes('iso'));
 });
 
+// The sex-token field lists the FREE normal sex chromosomes; a derivative is
+// named in the rearrangement and is additional to them. The corpus's own ISCN
+// 2024 example says so: 47,X,t(X;13)(q27;q12),inv(10)(p13q22),+21 writes ONE
+// token for the free X of a female carrier, with the der(X) carried by the t.
+// The reconciliation pass only restored a consumed homologue when NO normal
+// copy was left (the 46,X,i(X)(q10) reading), so 47,XX,t(X;4)(p21;p16) — the
+// interchange trisomy X a female t(X;4) carrier produces by 3:1 segregation,
+// two free X chromosomes plus the derivative — tallied 46 and drew a count
+// lecture on a correct karyotype. For a SEX chromosome the token field is an
+// explicit statement the way "+4" is for an autosome, so the additional
+// reading is believable even with a free homologue still present, whenever it
+// closes the stated count exactly.
+test('sex tokens are free chromosomes: 47,XX,t(X;4) restores the consumed X', () => {
+  const r = ISCN.parse('47,XX,t(X;4)(p21;p16)');
+  const c = r.clones[0];
+  assert.equal(c.counts.ok, true, (r.warnings || []).join(' | '));
+  assert.deepEqual(Array.from(slotKinds(c, 'X')).sort(), ['normal', 'normal', 't'],
+    'two free X chromosomes and the der(X)');
+  assert.equal(slotKinds(c, '4').filter((k) => k === 'normal').length, 1,
+    'the autosome side is untouched: one normal 4 beside the der(4)');
+
+  // Same reading one step further: the Klinefelter-pattern conceptus of the
+  // same carrier, two free X plus a free Y plus the derivative.
+  const k = ISCN.parse('48,XXY,t(X;4)(p21;p16)');
+  assert.equal(k.clones[0].counts.ok, true, (k.warnings || []).join(' | '));
+  assert.deepEqual(Array.from(slotKinds(k.clones[0], 'X')).sort(), ['normal', 'normal', 't']);
+
+  // An AUTOSOME stays strict: 47,XX,t(4;6)(q21;q23) still tallies 46, because
+  // an extra autosome must be named (+4), not implied by the count.
+  const a = ISCN.parse('47,XX,t(4;6)(q21;q23)');
+  assert.equal(a.clones[0].counts.ok, false, 'no silent extra autosome');
+
+  // And the female carrier herself is untouched by the new reading.
+  const f = ISCN.parse('46,X,t(X;4)(p21;p16)');
+  assert.equal(f.clones[0].counts.ok, true);
+  assert.deepEqual(Array.from(slotKinds(f.clones[0], 'X')).sort(), ['normal', 't']);
+});
+
 test('inversion — 46,XY,inv(9)(p11q13)', () => {
   const c = clone0('46,XY,inv(9)(p11q13)');
   const ab = c.aberrations[0];

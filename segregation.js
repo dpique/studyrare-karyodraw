@@ -92,41 +92,41 @@
   }
   function eligible(clone) {
     var ab = soleAberration(clone);
-    return !!ab && (isReciprocal(ab) || isRobertsonian(ab) || isHomologousRob(ab));
+    if (!ab) return false;
+    if (isReciprocal(ab) || isRobertsonian(ab) || isHomologousRob(ab)) return true;
+    // Gonosomal reciprocal carriers have their own model, gated on a sex
+    // complement the model can read as a carrier (see gonoClass).
+    return !!gonoClass(clone, ab);
   }
 
-  // A reciprocal translocation touching a sex chromosome is refused by
-  // isReciprocal on purpose, and this card is the refusal said out loud
-  // (Dan, 2026-09-10: 46,X,t(X;4)(p21;p16) drew with no panel and no
-  // explanation). The quadrivalent forms at meiosis all the same, but one
-  // outcomes table would be wrong twice over: every conceptus depends on
-  // whether the partner's gamete brings an X or a Y, so each segregation
-  // mode splits into two different karyotypes; and the fate of the
-  // unbalanced products is governed by X-inactivation and its spread into
-  // the attached autosomal material, not by the partial-trisomy viability
-  // rules the autosomal table applies. Better no table than a wrong one,
-  // and better a reason than a blank.
+  // The gonosomal model reads a balanced carrier off the sex complement
+  // (gonoClass): one free X for a female X;autosome carrier, one free Y for a
+  // male one, one free X for a Y;autosome carrier, and no free gonosome at all
+  // for t(X;Y). Any OTHER complement beside a gonosomal t is a spelling the
+  // model cannot mean anything for, and this card says so and points at the
+  // carriers it does model, as clickable karyotypes. It replaces the old
+  // why-no-table card (2026-09-10), which existed only while the model did
+  // not.
   function gonosomalNote(clone) {
     var ab = soleAberration(clone);
-    var gono = !!ab && ab.kind === "t" && ab.chroms && ab.chroms.length === 2 &&
-      String(ab.chroms[0]) !== String(ab.chroms[1]) &&
-      ab.breakpoints && ab.breakpoints.length === 2 &&
-      ab.breakpoints[0].length === 1 && ab.breakpoints[1].length === 1 &&
-      ((ab.chroms[0] in { X: 1, Y: 1 }) || (ab.chroms[1] in { X: 1, Y: 1 }));
-    if (!gono) return "";
-    var T = "t(" + ab.chroms[0] + ";" + ab.chroms[1] + ")";
+    if (!gonosomalShape(ab) || gonoClass(clone, ab)) return "";
+    var a = String(ab.chroms[0]), b = String(ab.chroms[1]);
+    var T = "t(" + a + ";" + b + ")(" + ab.breakpoints[0][0] + ";" + ab.breakpoints[1][0] + ")";
+    var chips;
+    if (isGonoChrom(a) && isGonoChrom(b)) {
+      chips = ktButton("46," + T);
+    } else if ((isGonoChrom(a) ? a : b) === "X") {
+      chips = ktButton("46,X," + T) + '<span class="orig-who">or</span>' + ktButton("46,Y," + T);
+    } else {
+      chips = ktButton("46,X," + T);
+    }
     return '<div class="seg-head"><h2>Meiotic segregation</h2></div>' +
-      '<p class="oal-head">Why there is no outcomes table for ' + T + '</p>' +
-      '<p class="oal-body">At meiosis this carrier forms the same quadrivalent as an autosomal ' +
-      'translocation, and the same alternate, adjacent and 3:1 modes exist. One table would still be ' +
-      'wrong here: every conceptus depends on whether the partner\'s gamete brings an X or a Y, so each ' +
-      'mode splits into two different karyotypes, and the fate of the unbalanced ones is set by ' +
-      'X-inactivation and its spread into the attached autosomal material rather than by the usual ' +
-      'partial-trisomy rules.</p>' +
-      '<p class="oal-body">In a female carrier, skewed inactivation decides the phenotype. A male ' +
-      'carrier of an X;autosome translocation usually has impaired spermatogenesis, because the ' +
-      'rearrangement disrupts the XY body at meiosis; a Y;autosome carrier\'s meiosis is different ' +
-      'again. Neither is modeled here.</p>';
+      '<p class="oal-head">No outcomes table for this spelling of ' + esc(T) + '</p>' +
+      '<p class="oal-body">The meiotic model needs a balanced carrier, and the sex chromosomes ' +
+      'written here do not leave the free complement such a carrier has: the translocation itself ' +
+      'supplies the derivative, and the letters before it list only the free, normal sex ' +
+      'chromosomes. The carriers the model draws:</p>' +
+      '<div class="oal-chips">' + chips + '</div>';
   }
 
   // ---- shared helpers -------------------------------------------------------
@@ -309,6 +309,536 @@
       type: "homologous", valent: "univalent", valentN: 1,
       A: A, B: A, bandA: bandA, bandB: bandB, sex: sex, carrier: "45," + sex + "," + F,
       bodies: robertsonianBodies(A, A),
+      modes: modes
+    };
+  }
+
+  // ---- gonosomal reciprocal: the same quadrivalent, sexed --------------------
+  // A reciprocal translocation touching a sex chromosome forms the same
+  // quadrivalent and divides by the same modes; what the autosomal table cannot
+  // carry is everything downstream of the division. Which conceptus arises
+  // depends on the sex chromosomes in play (for a female carrier every gamete
+  // forks on whether the sperm brings an X or a Y), the fate of the unbalanced
+  // products is governed by X-inactivation rather than by the raw
+  // partial-trisomy rules (an extra X segment is a different thing with and
+  // without the X-inactivation centre on board), and a male carrier's meiosis
+  // is dominated by the XY body, which the rearrangement disrupts. So the
+  // gonosomal carriers get their own compute path, reusing the mode and scene
+  // machinery, with the sex logic written into every outcome.
+  //
+  // Locus positions in hg38, the ideogram's own coordinate system. XIST marks
+  // the X-inactivation centre: an X segment that carries it can be silenced,
+  // one that does not stays active forever. SRY decides gonadal sex, so which
+  // piece of a broken Y it rides on decides who develops as male. The
+  // pseudoautosomal regions sit at the Xp/Yp tips (PAR1) and Xq/Yq tips
+  // (PAR2), the only stretches where X and Y can pair at male meiosis.
+  var XIST_BP = 73820000;   // chrX q13.2
+  var SRY_BP = 2787000;     // chrY p11.31
+  var SLATE = "#7d88ad";    // the free gonosome: present at the meiosis, no exchanged material
+
+  function isGonoChrom(c) { return c === "X" || c === "Y"; }
+
+  // Shape gate shared by the model and the fallback card: a two-chromosome,
+  // one-breakpoint-each reciprocal t naming at least one sex chromosome.
+  function gonosomalShape(ab) {
+    return !!ab && ab.kind === "t" && ab.chroms && ab.chroms.length === 2 &&
+      String(ab.chroms[0]) !== String(ab.chroms[1]) &&
+      ab.breakpoints && ab.breakpoints.length === 2 &&
+      ab.breakpoints[0].length === 1 && ab.breakpoints[1].length === 1 &&
+      (isGonoChrom(String(ab.chroms[0])) || isGonoChrom(String(ab.chroms[1])));
+  }
+
+  // Which carrier this clone is. The sex tokens are the FREE sex chromosomes
+  // (the derivative is named by the t), so they pick the class: 46,X,t(X;4) is
+  // a woman, 46,Y,t(X;4) a man, 46,X,t(Y;7) a man, and 46,t(X;Y)(p22.3;q11.2)
+  // a man both of whose sex chromosomes are in the exchange (ISCN omits the
+  // sex field there because the rearrangement names them). Any other
+  // complement is not a balanced carrier this model can speak for, and falls
+  // through to the redirect card in gonosomalNote.
+  function gonoClass(clone, ab) {
+    if (!gonosomalShape(ab)) return null;
+    var a = String(ab.chroms[0]), b = String(ab.chroms[1]);
+    var toks = ((clone && clone.sex && clone.sex.tokens) || []).join("");
+    if (isGonoChrom(a) && isGonoChrom(b)) return toks === "" ? "XY" : null;
+    var g = isGonoChrom(a) ? a : b;
+    if (g === "X" && toks === "X") return "XA-f";
+    if (g === "X" && toks === "Y") return "XA-m";
+    if (g === "Y" && toks === "X") return "YA-m";
+    return null;
+  }
+
+  // Where the break falls on a gonosome, in the figure's own arithmetic (band
+  // midpoint; p10/q10 is the centromere). Returns null when the band cannot be
+  // resolved, and every claim built from it degrades to hedged wording.
+  function gonoBreak(chrom, band) {
+    var IDE = (typeof window !== "undefined") && window.IDEOGRAM;
+    var d = IDE && IDE.data && IDE.data[chrom];
+    if (!d) return null;
+    var mid = null;
+    if (/^[pq]10$/.test(String(band))) mid = d.centromere;
+    else {
+      var K = (typeof window !== "undefined") && window.Karyo;
+      var r = K && K.resolveBand && K.resolveBand(chrom, band);
+      if (r) mid = r.mid;
+    }
+    if (mid == null) return null;
+    var arm = armOf(band);
+    var lo = arm === "p" ? 0 : mid, hi = arm === "p" ? mid : d.length;
+    return { arm: arm, mid: mid, len: d.length,
+      // Is this locus on the DISTAL (exchanged) piece?
+      distHas: function (pos) { return pos >= lo && pos <= hi; } };
+  }
+
+  // Start of Yq12, the heterochromatin block: a break at or beyond it means
+  // the exchanged piece of the Y carries no genes.
+  function yq12Start() {
+    var IDE = (typeof window !== "undefined") && window.IDEOGRAM;
+    var bands = IDE && IDE.data && IDE.data.Y && IDE.data.Y.bands;
+    if (!bands) return null;
+    for (var i = 0; i < bands.length; i++) if (bands[i][0] === "q12") return bands[i][1];
+    return null;
+  }
+
+  // Three-way text pick for a flag that may be unresolvable (null).
+  function pick3(flag, yes, no, unsure) { return flag === true ? yes : (flag === false ? no : unsure); }
+
+  function vb(text) { return { tag: "viable", text: text }; }
+  function vu(text) { return { tag: "unbalanced", text: text }; }
+  function vl(text) { return { tag: "lethal", text: text }; }
+
+  // One conceptus outcome. `when` is stamped on at attach time: the same
+  // outcome object serves the female carrier's sperm-fork and the male
+  // carrier's single lane, which is what keeps the two models incapable of
+  // disagreeing about a conceptus they share.
+  function gOut(zygote, imbalance, viability, note) {
+    return { zygote: zygote, imbalance: imbalance, viability: viability, note: note || null };
+  }
+  function withWhen(o, when) {
+    return { zygote: o.zygote, imbalance: o.imbalance, viability: o.viability, note: o.note, when: when || null };
+  }
+
+  // Schematic bodies for a MALE gonosomal carrier: the corner the female model
+  // gives to the normal X is held by the FREE gonosome, which contributed no
+  // material to the exchange. It draws in its own muted slate so the key can
+  // say exactly that; peri stays the exchanged gonosome's material and amber
+  // the autosome's, matching the female model and the autosomal panel.
+  function gonosomalMaleBodies(cls, AUT) {
+    var b = reciprocalBodies(cls === "YA-m" ? "Y" : "X", AUT, null, null);
+    if (cls === "XA-m") {
+      b.A = { id: "A", name: "Y", cen: SLATE, blocks: [{ c: SLATE, h: 5, arm: "p" }, { cen: true }, { c: SLATE, h: 11, arm: "q" }] };
+    } else {
+      b.A = { id: "A", name: "X", cen: SLATE, blocks: [{ c: SLATE, h: 12, arm: "p" }, { cen: true }, { c: SLATE, h: 22, arm: "q" }] };
+      b.dA.blocks = [{ c: PERI, h: 5, arm: "p" }, { cen: true }, { c: PERI, h: 7, arm: "q" }, { c: AMBER, h: 14, arm: "q" }];
+    }
+    return b;
+  }
+  function gonosomalXYBodies() {
+    return {
+      dX: { id: "dX", name: "der(X)", cen: PERI, blocks: [{ c: PERI, h: 9, arm: "p" }, { cen: true }, { c: PERI, h: 20, arm: "q" }, { c: AMBER, h: 7, arm: "q" }] },
+      dY: { id: "dY", name: "der(Y)", cen: AMBER, blocks: [{ c: AMBER, h: 4, arm: "p" }, { cen: true }, { c: AMBER, h: 6, arm: "q" }, { c: PERI, h: 7, arm: "q" }] }
+    };
+  }
+
+  function computeGonosomal(clone, ab) {
+    var cls = gonoClass(clone, ab);
+    if (!cls) return null;
+    var A0 = String(ab.chroms[0]), B0 = String(ab.chroms[1]);
+    var T = "t(" + A0 + ";" + B0 + ")(" + ab.breakpoints[0][0] + ";" + ab.breakpoints[1][0] + ")";
+    if (cls === "XY") return computeGonosomalXY(ab, T);
+    var gi = isGonoChrom(A0) ? 0 : 1;
+    var AUT = gi === 0 ? B0 : A0;
+    var bandG = ab.breakpoints[gi][0], bandAut = ab.breakpoints[1 - gi][0];
+    if (cls === "YA-m") return computeYA(AUT, bandG, bandAut, T);
+    return computeXA(cls, AUT, bandG, bandAut, T);
+  }
+
+  // ---- X;autosome, both carrier sexes ---------------------------------------
+  // One outcome table serves both: a conceptus does not know which parent
+  // carried the translocation, so the female carrier's fork outcomes and the
+  // male carrier's single-lane outcomes are drawn from the same objects.
+  function computeXA(cls, AUT, bandX, bandAut, T) {
+    var male = cls === "XA-m";
+    var free = male ? "Y" : "X";
+    var carrier = "46," + free + "," + T;
+    var Xd = distal("X", bandX), Xp = proximal("X", bandX);
+    var Ad = distal(AUT, bandAut), Ap = proximal(AUT, bandAut);
+    var DA = "der(" + AUT + ")";
+    var bi = gonoBreak("X", bandX);
+    var xicDist = bi ? bi.distHas(XIST_BP) : null;   // XIST travels with the exchanged piece
+    var xicProx = bi ? !bi.distHas(XIST_BP) : null;  // XIST stays on the der(X)
+    var poi = /^q(13|2[1-6])/.test(String(bandX));
+
+    var VU = vu("Unbalanced: survival depends on the segments and on what X-inactivation can silence");
+    var V31 = vu("Unbalanced (3:1): usually liveborn only when the extra derivative is small or can be silenced");
+
+    var noteBalF = "A balanced daughter usually keeps the NORMAL X as her inactive X: cells that silence the der(X) spread the silencing into its chromosome " + AUT +
+      " material and are selected against. The translocated X therefore stays active everywhere, so a gene disrupted at X" + bandX + " is expressed, the way X-linked conditions have surfaced in balanced carrier females" +
+      (poi ? "; and a break between Xq13 and Xq26 carries a risk of premature ovarian insufficiency" : "") + ".";
+    var noteBalM = "A balanced son is usually infertile: the quadrivalent ties chromosome " + AUT + " into the XY body at meiosis, the unsynapsed chromatin is silenced (MSCI), and spermatogenesis stalls.";
+    var noteXd = pick3(xicDist,
+      "The extra " + Xd + " on the " + DA + " carries the X-inactivation centre, so most cells silence it, and the silencing can spread into the attached chromosome " + AUT + " material; the result is milder and more variable than the raw imbalance suggests.",
+      "The extra " + Xd + " on the " + DA + " has no X-inactivation centre, so it cannot be silenced and stays active in every cell.",
+      "Whether the extra " + Xd + " can be silenced depends on whether it carries the X-inactivation centre (Xq13).");
+    var noteDerXF = pick3(xicProx,
+      "Beside a normal X, the der(X) is preferentially inactivated; that silences its X material and part of the attached " + Ad + ". This partial rescue is why these are the unbalanced conceptions most often carried to term, with a variable phenotype.",
+      "This der(X) has no X-inactivation centre, so it can never be the inactive X; with only one silencing centre in the cell, no X is inactivated at all and the imbalance is fully expressed.",
+      "How much is rescued depends on whether the der(X) kept the X-inactivation centre (Xq13) and can be the inactive X.");
+    var noteSupX = pick3(xicProx,
+      "A supernumerary der(X) that carries the X-inactivation centre is usually silenced, which is why some of these conceptions survive, with a variable phenotype.",
+      "A supernumerary der(X) without the X-inactivation centre cannot be silenced and stays fully active: the severe pattern of XIST-negative extra X material.",
+      "The fate of a supernumerary der(X) turns on whether it carries the X-inactivation centre and can be silenced.");
+
+    var O = {
+      girl: gOut("46,XX", "balanced", vb("Viable: chromosomally normal daughter"), null),
+      boy: gOut("46,XY", "balanced", vb("Viable: chromosomally normal son"), null),
+      carrierF: gOut("46,X," + T, "balanced", vb("Viable: balanced carrier daughter"), noteBalF),
+      carrierM: gOut("46,Y," + T, "balanced", vb("Viable: balanced carrier son, usually infertile"), noteBalM),
+      derAutXX: gOut("46,XX,der(" + AUT + ")" + T, "partial trisomy " + Xd + ", partial monosomy " + Ad, VU, noteXd),
+      derAutXY: gOut("46,XY,der(" + AUT + ")" + T, "partial trisomy " + Xd + ", partial monosomy " + Ad, VU, noteXd),
+      derXF: gOut("46,X,der(X)" + T, "partial monosomy " + Xd + ", partial trisomy " + Ad, VU, noteDerXF),
+      derXM: gOut("46,Y,der(X)" + T, "no copy of " + Xd + " at all, partial trisomy " + Ad,
+        vl("Usually lost very early: part of the only X is missing outright"),
+        "With a Y instead of a second X, the der(X) is the only X material, so " + Xd + " is missing from every cell."),
+      a2xXX: gOut("46,XX,+der(X)" + T + ",-" + AUT, "partial trisomy " + Xp + ", partial monosomy " + Ap, VU,
+        "Cells keep one X active and silence the rest, so the extra " + Xp + " material is largely quieted, the way a whole extra X is; the missing " + Ap + " has no such rescue and drives the outcome."),
+      a2xXY: gOut("46,XY,+der(X)" + T + ",-" + AUT, "partial trisomy " + Xp + ", partial monosomy " + Ap, VU,
+        "With two X-inactivation centres in a male cell, one X is silenced, usually the der(X); the missing " + Ap + " has no rescue and drives the outcome."),
+      a2aX: gOut("46,X,+der(" + AUT + ")" + T, "a single free X; partial trisomy " + Ap, VU,
+        "One sex-chromosome slot holds a normal X and the other is empty; the " + Xd + " on the " + DA + " stands in for part of the missing second X. The proximal chromosome " + AUT + " trisomy has no inactivation rescue."),
+      a2aY: gOut("46,Y,+der(" + AUT + ")" + T, "no free X; partial trisomy " + Ap,
+        vl("Never viable: no proper X, only the X segment on the " + DA), null),
+      supXXX: gOut("47,XX,+der(X)" + T, "an extra der(X): partial trisomy " + Xp + " and " + Ad, V31, noteSupX),
+      supXXY: gOut("47,XY,+der(X)" + T, "an extra der(X): partial trisomy " + Xp + " and " + Ad, V31, noteSupX),
+      supAXX: gOut("47,XX,+der(" + AUT + ")" + T, "an extra " + DA + ": partial trisomy " + Ap + " and " + Xd, V31, noteXd),
+      supAXY: gOut("47,XY,+der(" + AUT + ")" + T, "an extra " + DA + ": partial trisomy " + Ap + " and " + Xd, V31, noteXd),
+      tmDerAX: gOut("45,X,der(" + AUT + ")" + T, "a single free X; partial monosomy " + Ad,
+        vl("Usually lost in early pregnancy (tertiary monosomy)"), null),
+      tmDerAY: gOut("45,Y,der(" + AUT + ")" + T, "no proper X, only the " + Xd + " on the " + DA,
+        vl("Never viable: no proper X"), null),
+      tmDerXX: gOut("45,X,der(X)" + T + ",-" + AUT, "partial monosomy " + Xd + ", partial monosomy " + Ap,
+        vl("Usually lost in early pregnancy (tertiary monosomy)"), null),
+      tmDerXY: gOut("45,Y,der(X)" + T + ",-" + AUT, "no copy of " + Xd + "; partial monosomy " + Ap,
+        vl("Usually lost very early: part of the only X is missing"), null),
+      intXXX: gOut("47,XX," + T, "a whole extra X beside the balanced translocation",
+        vb("Usually mild: the extra X is silenced, the pattern of triple X"),
+        "Cells keep the der(X) active, because silencing it would spread into its chromosome " + AUT + " material, and silence the two free X chromosomes."),
+      intXXY: gOut("47,XY," + T, "a whole extra X beside the balanced translocation and the Y",
+        vb("Usually mild: the Klinefelter pattern, an extra silenced X beside the Y"),
+        "The two derivatives supply a complete X between them; with the free X and the Y this is the 47,XXY pattern riding on the parental translocation."),
+      turner: gOut("45,X", "a single X and no second sex chromosome",
+        vu("Turner syndrome (45,X): most are lost in pregnancy, some are liveborn"),
+        "Interchange monosomy: the carrier gamete brought no sex chromosome at all, so the partner's X stands alone."),
+      no45Y: gOut("45,Y", "a Y and no X at all", vl("Never viable: a conceptus without any X is lost"), null),
+      intAX: gOut("47,X,+" + AUT + "," + T, "three full copies of chromosome " + AUT, trisomyViability(AUT),
+        "Interchange trisomy: the two derivatives travel together as a balanced pair, and the free chromosome " + AUT + " rides along as a third copy."),
+      intAY: gOut("47,Y,+" + AUT + "," + T, "three full copies of chromosome " + AUT + "; the only X material is on the derivatives", trisomyViability(AUT),
+        "The two derivatives supply a complete X between them, so with the Y this is a balanced-carrier-like male on top of the trisomy."),
+      imAX: gOut("45,XX,-" + AUT, "monosomy " + AUT, monosomyViability(AUT), null),
+      imAY: gOut("45,XY,-" + AUT, "monosomy " + AUT, monosomyViability(AUT), null),
+      d40XX: gOut("48,XX,+der(X)" + T + ",+der(" + AUT + ")" + T, "trisomy for the exchanged X and chromosome " + AUT + " material",
+        vl("Usually lost in early pregnancy (trisomy for both chromosomes of the exchange)"), null),
+      d40XY: gOut("48,XY,+der(X)" + T + ",+der(" + AUT + ")" + T, "trisomy for the exchanged X and chromosome " + AUT + " material",
+        vl("Usually lost in early pregnancy (trisomy for both chromosomes of the exchange)"), null),
+      d40nX: gOut("44,X,-" + AUT, "a single X; monosomy " + AUT, vl("Usually lost in early pregnancy (monosomy for both)"), null),
+      d40nY: gOut("44,Y,-" + AUT, "no X at all; monosomy " + AUT, vl("Never viable: no X at all"), null)
+    };
+
+    var WX = "if the sperm brings an X", WY = "if the sperm brings a Y";
+    // A female carrier's gamete forks on the sperm; a male carrier's gamete IS
+    // the sperm, the egg always brings an X, and each lane lands on one of the
+    // same outcomes.
+    function gf(bodies, label, oX, oY, division) {
+      return { bodies: bodies, label: label, division: division || null,
+        outcomes: [withWhen(oX, WX), withWhen(oY, WY)] };
+    }
+    function gm(bodies, label, o, division) {
+      return { bodies: bodies, label: label, division: division || null, outcomes: [withWhen(o, null)] };
+    }
+
+    var modes;
+    if (!male) {
+      modes = [
+        { name: "Alternate", sub: "2:2", balanced: true,
+          blurb: "Homologous and derivative centromeres go to opposite poles. The only mode that yields balanced gametes.",
+          gametes: [gf(["A", "B"], "normal", O.girl, O.boy), gf(["dA", "dB"], "balanced carrier", O.carrierF, O.carrierM)] },
+        { name: "Adjacent-1", sub: "2:2", balanced: false,
+          blurb: "Homologous centromeres separate; each gamete keeps one normal chromosome and the non-homologous derivative. One exchanged segment is duplicated, the other deleted, and X-inactivation decides how much of that is felt.",
+          gametes: [gf(["A", "dB"], "", O.derAutXX, O.derAutXY), gf(["B", "dA"], "", O.derXF, O.derXM)] },
+        { name: "Adjacent-2", sub: "2:2", balanced: false,
+          blurb: "Homologous centromeres travel to the same pole, a meiosis I nondisjunction (rarer). The imbalance falls on the proximal, centromere-bearing segments.",
+          gametes: [gf(["A", "dA"], "", O.a2xXX, O.a2xXY), gf(["B", "dB"], "", O.a2aX, O.a2aY)] },
+        { name: "3:1", sub: "3:1", balanced: false,
+          blurb: "Three chromosomes to one pole, one to the other: 47- or 45-chromosome conceptions. This is where the classic whole-chromosome outcomes live: interchange loss of the X is Turner syndrome, interchange gain is the triple X or Klinefelter pattern, and a 45,Y conception without any X is never viable.",
+          gametes: [
+            gf(["A", "B", "dA"], "tertiary trisomy", O.supXXX, O.supXXY, "dB"),
+            gf(["dB"], "tertiary monosomy", O.tmDerAX, O.tmDerAY, "dB"),
+            gf(["A", "B", "dB"], "tertiary trisomy", O.supAXX, O.supAXY, "dA"),
+            gf(["dA"], "tertiary monosomy", O.tmDerXX, O.tmDerXY, "dA"),
+            gf(["A", "dA", "dB"], "interchange trisomy", O.intXXX, O.intXXY, "B"),
+            gf(["B"], "interchange monosomy", O.turner, O.no45Y, "B"),
+            gf(["B", "dA", "dB"], "interchange trisomy", O.intAX, O.intAY, "A"),
+            gf(["A"], "interchange monosomy", O.imAX, O.imAY, "A")] },
+        { name: "4:0", sub: "4:0", balanced: false,
+          blurb: "All four chromosomes to one pole, the rarest pattern. One gamete is disomic for the whole quadrivalent, the other nullisomic; both conceptions are grossly imbalanced.",
+          gametes: [gf(["A", "dA", "B", "dB"], "double trisomy", O.d40XX, O.d40XY), gf([], "double monosomy", O.d40nX, O.d40nY)] }
+      ];
+    } else {
+      modes = [
+        { name: "Alternate", sub: "2:2", balanced: true,
+          blurb: "The Y and the normal autosome to one pole, the two derivatives to the other. The only balanced pattern: a normal son, or a balanced carrier daughter.",
+          gametes: [gm(["A", "B"], "normal son", O.boy), gm(["dA", "dB"], "balanced carrier daughter", O.carrierF)] },
+        { name: "Adjacent-1", sub: "2:2", balanced: false,
+          blurb: "Neighbouring chromosomes with non-matching centromeres travel together. Because each sperm carries its own sex chromosome, the sperm decides the child's sex here, not a fork on the partner.",
+          gametes: [gm(["A", "dB"], "", O.derAutXY), gm(["B", "dA"], "", O.derXF)] },
+        { name: "Adjacent-2", sub: "2:2", balanced: false,
+          blurb: "Matching centromeres to the same pole, a meiosis I nondisjunction (rarer). The imbalance falls on the proximal segments.",
+          gametes: [gm(["A", "dA"], "", O.a2xXY), gm(["B", "dB"], "", O.a2aX)] },
+        { name: "3:1", sub: "3:1", balanced: false,
+          blurb: "Three chromosomes to one pole, one to the other. The whole-chromosome outcomes surface here: a sperm with no sex chromosome gives Turner syndrome, and the crowded gametes give the Klinefelter pattern or a full translocation trisomy.",
+          gametes: [
+            gm(["A", "B", "dA"], "tertiary trisomy", O.supXXY, "dB"),
+            gm(["dB"], "tertiary monosomy", O.tmDerAX, "dB"),
+            gm(["A", "B", "dB"], "tertiary trisomy", O.supAXY, "dA"),
+            gm(["dA"], "tertiary monosomy", O.tmDerXX, "dA"),
+            gm(["A", "dA", "dB"], "interchange trisomy", O.intXXY, "B"),
+            gm(["B"], "interchange monosomy", O.turner, "B"),
+            gm(["B", "dA", "dB"], "interchange trisomy", O.intAX, "A"),
+            gm(["A"], "interchange monosomy", O.imAY, "A")] },
+        { name: "4:0", sub: "4:0", balanced: false,
+          blurb: "All four to one pole, the rarest pattern; both conceptions are grossly imbalanced.",
+          gametes: [gm(["A", "dA", "B", "dB"], "double trisomy", O.d40XY), gm([], "double monosomy", O.d40nX)] }
+      ];
+    }
+
+    var fertility = male
+      ? { head: "Fertility of this carrier",
+          body: "A balanced X;autosome male is usually infertile (azoospermia or severe oligospermia). At meiosis the X and Y condense into the XY body and silence themselves (MSCI); this quadrivalent drags chromosome " + AUT +
+            " material into that body, and the " + Xd + " on the " + DA + " has no pairing partner at all. Unsynapsed chromatin at pachytene triggers silencing and arrest, so most spermatocytes never finish. The outcomes below describe the sperm that do form." }
+      : (poi ? { head: "Fertility of this carrier",
+          body: "Most balanced X;autosome women are healthy and fertile, but this break falls between Xq13 and Xq26, the region where interrupting the X carries a recognised risk of premature ovarian insufficiency." } : null);
+
+    return {
+      type: "gonosomal", cls: cls, valent: "quadrivalent", valentN: 4,
+      A: "X", B: AUT, bandA: bandX, bandB: bandAut, free: free, fork: !male,
+      sex: free, carrier: carrier,
+      bodies: male ? gonosomalMaleBodies(cls, AUT) : reciprocalBodies("X", AUT, bandX, bandAut),
+      flags: { xicDist: xicDist, xicProx: xicProx, poi: poi },
+      fertility: fertility,
+      modes: modes
+    };
+  }
+
+  // ---- Y;autosome, male carrier ---------------------------------------------
+  // The Y question is WHERE the break falls: a break in the Yq12
+  // heterochromatin block exchanges inert material (the classic familial
+  // Y;acrocentric variants), a break in euchromatic Yq sits in the AZF
+  // spermatogenesis region, and a break on Yp can put SRY on the derivative
+  // autosome, after which the karyotype's sex letters stop predicting the
+  // gonads.
+  function computeYA(AUT, bandY, bandAut, T) {
+    var carrier = "46,X," + T;
+    var Yd = distal("Y", bandY), Yp = proximal("Y", bandY);
+    var Ad = distal(AUT, bandAut), Ap = proximal(AUT, bandAut);
+    var DA = "der(" + AUT + ")", DY = "der(Y)";
+    var bi = gonoBreak("Y", bandY);
+    var q12 = yq12Start();
+    var sryDist = bi ? bi.distHas(SRY_BP) : null;                       // SRY moved to the der(AUT)
+    var inert = (bi && q12 != null) ? (bi.arm === "q" && bi.mid >= q12) : null;   // exchanged piece is Yq12 heterochromatin
+    var azf = bi ? (bi.arm === "q" && inert === false) : null;          // euchromatic Yq break
+    var acroP = !!ACRO[AUT] && armOf(bandAut) === "p";
+
+    var VU = vu("Unbalanced: survival depends on the segments involved");
+    var inertLine = pick3(inert,
+      "The exchanged piece of the Y is the inert Yq12 heterochromatin block, which adds nothing to a phenotype on its own.",
+      "",
+      "");
+    var benignDaughter = inert === true && acroP && sryDist !== true;
+    var benignSon = inert === true && acroP;
+
+    var noteCarrier = pick3(inert,
+      "With the break in the inert Yq12 block" + (acroP ? " and the autosomal break in an acrocentric short arm" : "") + ", carriers of this familial type are usually healthy and fertile, and the variant can ride through generations unnoticed.",
+      (bi && bi.arm === "q"
+        ? "The break falls in euchromatic Yq, the AZF spermatogenesis region, so carrier sons are often infertile even though they are otherwise well."
+        : "The break falls on Yp" + pick3(sryDist, ", and it separates SRY from the Y centromere: SRY now rides on the " + DA + ", so sex follows that derivative, not the Y letters.", ".", ".")),
+      "Carrier fertility depends on where the Y break falls: inert Yq12 variants transmit freely, euchromatic Yq breaks often cost fertility (AZF).");
+
+    var O = {
+      girl: gOut("46,XX", "balanced", vb("Viable: chromosomally normal daughter"), null),
+      carrier: gOut("46,X," + T, "balanced",
+        vb(inert === true ? "Viable: balanced carrier son, usually fertile" : "Viable: balanced carrier son"), noteCarrier),
+      derAut: gOut("46,XX,der(" + AUT + ")" + T,
+        "partial monosomy " + Ad + "; the " + Yd + " rides on the " + DA,
+        sryDist === true
+          ? vb("Viable: a 46,XX conceptus that develops as male, because SRY rides on the " + DA)
+          : (benignDaughter ? vb("Essentially normal daughter: the " + DA + " trades a satellite short arm for inert Yq heterochromatin") : VU),
+        sryDist === true
+          ? "SRY travelled with the exchanged Y piece, so this XX conceptus develops as male (46,XX testicular difference of sex development); such males are infertile."
+          : (benignDaughter
+            ? "This is how the familial Y;acrocentric variants pass through mothers and daughters unnoticed: the lost " + Ad + " is satellite material and the gained piece is inert."
+            : inertLine || null)),
+      derY: gOut("46,X,der(Y)" + T,
+        "partial trisomy " + Ad + "; " + Yd + " is missing",
+        benignSon ? vb("Essentially normal son: extra satellite material and a missing inert Yq block")
+          : (sryDist === true
+            ? vu("A conceptus with Y material but no SRY: develops as female, with a gonadal tumour risk")
+            : (azf === true ? vu("Viable son, but the missing euchromatic Yq (AZF) costs fertility") : VU)),
+        sryDist === true
+          ? "The der(Y) here has lost SRY to the other derivative, so this conceptus develops as female despite the Y material; Y sequences in a female gonad carry a gonadoblastoma risk, which is why such gonads are usually removed."
+          : (benignSon ? "The familial variant transmitted whole: the extra piece is an acrocentric satellite arm and the missing piece is inert heterochromatin." : (inertLine || null))),
+      a2y: gOut("46,XX,+der(Y)" + T + ",-" + AUT,
+        "partial monosomy " + Ap + "; two X chromosomes plus the " + DY, VU,
+        "The proximal chromosome " + AUT + " monosomy drives the outcome" + (sryDist === true ? "; with SRY on the other derivative absent here, the " + DY + " keeps SRY and this XX-plus-der(Y) conceptus develops as male." : ".")),
+      a2a: gOut("46,X,+der(" + AUT + ")" + T,
+        "a single free X; partial trisomy " + Ap, VU,
+        "The proximal trisomy has no rescue, and only one free X is present" + (sryDist === true ? "; SRY on the " + DA + " makes the gonads testicular despite the single X." : ".")),
+      supY: gOut("47,XX,+der(Y)" + T, "an extra " + DY + ": " + Yp + " and " + Ad + " in an extra copy",
+        vu("Unbalanced (3:1): the Klinefelter-like pattern plus the extra autosomal segment"),
+        "Two X chromosomes plus the " + DY + (sryDist === true ? " (SRY is on the exchanged piece, not here)" : ", which carries SRY") + "; the extra " + Ad + " decides how much this costs."),
+      supA: gOut("47,XX,+der(" + AUT + ")" + T, "an extra " + DA + ": partial trisomy " + Ap + "; the " + Yd + " rides along",
+        vu("Unbalanced (3:1): usually liveborn only when the extra derivative is small"),
+        sryDist === true ? "SRY rides on the extra " + DA + ", so this otherwise XX conceptus develops as male." : (inertLine || null)),
+      tmA: gOut("45,X,der(" + AUT + ")" + T, "a single free X; partial monosomy " + Ad + "; the " + Yd + " rides on the " + DA,
+        (inert === true && acroP) ? vu("Effectively 45,X (Turner): the derivative only trades inert material") : vl("Usually lost in early pregnancy (tertiary monosomy)"),
+        sryDist === true ? "With SRY on the " + DA + " beside a single X, gonadal development is testicular or mixed: the 45,X/46,XY family of outcomes without the mosaicism." : null),
+      tmY: gOut("45,X,der(Y)" + T + ",-" + AUT, "partial monosomy " + Ap + "; the sex slot holds the " + DY,
+        vl("Usually lost in early pregnancy (tertiary monosomy)"), null),
+      intY: gOut("47,XX," + T, "a whole extra Y-worth of material beside the balanced exchange",
+        vb("Usually mild: the Klinefelter pattern (47,XXY) riding on the parental translocation"),
+        "The two derivatives supply a complete Y between them, on top of two X chromosomes."),
+      turner: gOut("45,X", "a single X and no second sex chromosome",
+        vu("Turner syndrome (45,X): most are lost in pregnancy, some are liveborn"),
+        "Interchange monosomy: the sperm brought no sex chromosome, so the egg's X stands alone."),
+      intA: gOut("47,X,+" + AUT + "," + T, "three full copies of chromosome " + AUT, trisomyViability(AUT),
+        "Interchange trisomy: the derivatives travel as a balanced pair and the free chromosome " + AUT + " rides along; the derivatives make this a son."),
+      imA: gOut("45,XX,-" + AUT, "monosomy " + AUT, monosomyViability(AUT), null),
+      d40: gOut("48,XX,+der(Y)" + T + ",+der(" + AUT + ")" + T, "an extra Y-worth and an extra chromosome " + AUT + "-worth of material",
+        vl("Usually lost in early pregnancy (trisomy for both chromosomes of the exchange)"), null),
+      d40n: gOut("44,X,-" + AUT, "a single X; monosomy " + AUT, vl("Usually lost in early pregnancy (monosomy for both)"), null)
+    };
+
+    function gm(bodies, label, o, division) {
+      return { bodies: bodies, label: label, division: division || null, outcomes: [withWhen(o, null)] };
+    }
+    var modes = [
+      { name: "Alternate", sub: "2:2", balanced: true,
+        blurb: "The X and the normal autosome to one pole, the two derivatives to the other. The only balanced pattern: a normal daughter, or a carrier son like his father.",
+        gametes: [gm(["A", "B"], "normal daughter", O.girl), gm(["dA", "dB"], "balanced carrier son", O.carrier)] },
+      { name: "Adjacent-1", sub: "2:2", balanced: false,
+        blurb: "Neighbours with non-matching centromeres travel together. These are the outcomes that carry the familial Y;acrocentric story: when the exchanged pieces are inert, both are compatible with a normal life.",
+        gametes: [gm(["A", "dB"], "", O.derAut), gm(["B", "dA"], "", O.derY)] },
+      { name: "Adjacent-2", sub: "2:2", balanced: false,
+        blurb: "Matching centromeres to the same pole, a meiosis I nondisjunction (rarer). The imbalance falls on the proximal segments.",
+        gametes: [gm(["A", "dA"], "", O.a2y), gm(["B", "dB"], "", O.a2a)] },
+      { name: "3:1", sub: "3:1", balanced: false,
+        blurb: "Three chromosomes to one pole, one to the other. A sperm with no sex chromosome gives Turner syndrome; the crowded gametes give the Klinefelter pattern or a full translocation trisomy.",
+        gametes: [
+          gm(["A", "B", "dA"], "tertiary trisomy", O.supY, "dB"),
+          gm(["dB"], "tertiary monosomy", O.tmA, "dB"),
+          gm(["A", "B", "dB"], "tertiary trisomy", O.supA, "dA"),
+          gm(["dA"], "tertiary monosomy", O.tmY, "dA"),
+          gm(["A", "dA", "dB"], "interchange trisomy", O.intY, "B"),
+          gm(["B"], "interchange monosomy", O.turner, "B"),
+          gm(["B", "dA", "dB"], "interchange trisomy", O.intA, "A"),
+          gm(["A"], "interchange monosomy", O.imA, "A")] },
+      { name: "4:0", sub: "4:0", balanced: false,
+        blurb: "All four to one pole, the rarest pattern; both conceptions are grossly imbalanced.",
+        gametes: [gm(["A", "dA", "B", "dB"], "double trisomy", O.d40), gm([], "double monosomy", O.d40n)] }
+    ];
+
+    var euOrP = (bi && bi.arm === "q")
+      ? "The break interrupts euchromatic Yq, where the AZF spermatogenesis genes live, so many carriers have impaired sperm production from the breakpoint alone, on top of the autosomal material tethered into the XY body."
+      : "A break on Yp disturbs the region the X uses to pair with the Y" +
+        pick3(sryDist, ", and it moves SRY onto the " + DA + ", so the derivatives, not the sex letters, decide each child's development.", ".", ".");
+    var fertility = {
+      head: "Fertility of this carrier",
+      body: pick3(inert,
+        "With the break in the inert Yq12 block the meiotic disturbance is small: the X still pairs with the der(Y) at the pseudoautosomal tip, and carriers of the classic Y;acrocentric variants are usually fertile. These variants are found by accident and run in families.",
+        euOrP,
+        "Where the Y break falls decides most of this carrier's story: inert Yq12 variants transmit freely, euchromatic Yq breaks often cost fertility (AZF).")
+    };
+
+    return {
+      type: "gonosomal", cls: "YA-m", valent: "quadrivalent", valentN: 4,
+      A: "Y", B: AUT, bandA: bandY, bandB: bandAut, free: "X", fork: false,
+      sex: "X", carrier: carrier,
+      bodies: gonosomalMaleBodies("YA-m", AUT),
+      flags: { sryDist: sryDist, inert: inert, azf: azf, acroP: acroP },
+      fertility: fertility,
+      modes: modes
+    };
+  }
+
+  // ---- X;Y: the failed bivalent ---------------------------------------------
+  // A balanced t(X;Y) male has no free sex chromosome: both are derivatives.
+  // What his meiosis can do is set by the pseudoautosomal tips. In the
+  // recurrent form, t(X;Y)(p22.3;q11.2), the exchange puts BOTH PAR1 copies on
+  // the der(Y) and BOTH PAR2 copies on the der(X), so the two derivatives
+  // share no region at all, the sex body cannot form, and carriers are usually
+  // azoospermic; the entity persists in families as the unbalanced der(X)
+  // instead, transmitted by women. Other breakpoint pairs leave a shared PAR
+  // and a working, ring-shaped sex bivalent.
+  function computeGonosomalXY(ab, T) {
+    var xi = String(ab.chroms[0]) === "X" ? 0 : 1;
+    var bandX = ab.breakpoints[xi][0], bandY = ab.breakpoints[1 - xi][0];
+    var Xd = distal("X", bandX), Yd = distal("Y", bandY);
+    var bx = gonoBreak("X", bandX), by = gonoBreak("Y", bandY);
+    var q12 = yq12Start();
+    var sryDist = by ? by.distHas(SRY_BP) : null;      // SRY moved to the der(X)
+    var inert = (by && q12 != null) ? (by.arm === "q" && by.mid >= q12) : null;
+    // Do the derivatives still share a pseudoautosomal class? Work it through
+    // the telomeres: each derivative ends in its own chromosome's telomere
+    // OPPOSITE the break plus the exchanged partner tip. Breaks on the SAME
+    // arm (both p, or both q) leave each derivative with one PAR1 and one
+    // PAR2, so a class is shared on both and a sex bivalent can still form.
+    // Breaks on OPPOSITE arms (the recurrent Xp;Yq form) stack both PAR2
+    // copies on the der(X) and both PAR1 copies on the der(Y): nothing is
+    // shared, and pairing fails.
+    var parShared = (bx && by) ? (bx.arm === by.arm) : null;
+    var recurrent = /^p22\.?3/.test(String(bandX)) && /^q11/.test(String(bandY));
+
+    var derXChild = sryDist === true;   // SRY rides the der(X): that child develops as male
+    var noteDerX = recurrent
+      ? "The der(X) daughter is the form these families are found by: the missing " + Xd + " holds genes that ESCAPE X-inactivation, among them <i>SHOX</i>, so losing one copy shows even though the der(X) is preferentially silenced; short stature is the common finding, and when the break also removes <i>STS</i>, her sons with the der(X) have X-linked ichthyosis. The attached Yq heterochromatin is inert."
+      : "In a daughter the der(X) is preferentially inactivated, but any missing distal X genes that escape inactivation are felt with one copy" + pick3(inert, "; the attached Yq12 material is inert.", ".", ".");
+    var noteDerY = pick3(sryDist,
+      "This der(Y) has LOST SRY to the der(X), so despite the Y material the conceptus develops as female, and the Y sequences in her gonads carry a gonadoblastoma risk.",
+      "SRY stays on the der(Y), so this conceptus develops as male, carrying an extra copy of the exchanged " + Xd + pick3(inert, " and missing only the inert Yq12 block.", " and missing " + Yd + ".", "."),
+      "Which way this conceptus develops depends on whether SRY stayed with the Y centromere.");
+
+    var outDerX = withWhen(gOut("46,X,der(X)" + T,
+      "partial monosomy " + Xd + "; the " + Yd + " rides on the der(X)",
+      derXChild ? vb("Viable: develops as male despite the X plus der(X) complement (SRY on the der(X))")
+        : vb("Viable: daughter carrying the der(X)" + (recurrent ? ", short stature is typical" : "")),
+      noteDerX), null);
+    var outDerY = withWhen(gOut("46,X,der(Y)" + T,
+      "an extra copy of " + Xd + "; " + Yd + " is missing",
+      sryDist === true ? vu("Develops as female with Y material present: gonadal surveillance matters")
+        : vb("Viable: son carrying the der(Y)"),
+      noteDerY), null);
+
+    var modes = [
+      { name: "1:1", sub: "1:1", balanced: false,
+        blurb: "The two derivatives separate, one to each sperm, so every child inherits exactly one of them: no gamete is normal and none is balanced in the parental sense. Pairing failure also raises the rate of sperm with both derivatives or neither, giving 47- and 45-chromosome conceptions on top of these two.",
+        gametes: [
+          { bodies: ["dX"], label: "the der(X) sperm", division: null, outcomes: [outDerX] },
+          { bodies: ["dY"], label: "the der(Y) sperm", division: null, outcomes: [outDerY] }] }
+    ];
+
+    var fertility = {
+      head: "Fertility of this carrier",
+      body: pick3(parShared,
+        "These breakpoints leave the two derivatives with a shared pseudoautosomal tip, so a sex bivalent can still form and some carriers father children.",
+        "The exchange separates the pseudoautosomal tips: both PAR1 copies end up on one derivative and both PAR2 copies on the other, so the derivatives have no region left to pair with each other. The sex body fails, unsynapsed chromatin is silenced (MSCI), and most balanced X;Y males are azoospermic. The recurrent clinical entity therefore travels through families as the unbalanced der(X), carried and transmitted by women.",
+        "Whether this carrier can pair his two derivatives, and so make sperm, depends on which pseudoautosomal tips the exchange left together.")
+    };
+
+    return {
+      type: "gonosomal", cls: "XY", valent: "bivalent", valentN: 2,
+      A: "X", B: "Y", bandA: bandX, bandB: bandY, free: null, fork: false,
+      sex: "", carrier: "46," + T,
+      bodies: gonosomalXYBodies(),
+      flags: { sryDist: sryDist, inert: inert, parShared: parShared, recurrent: recurrent },
+      fertility: fertility,
       modes: modes
     };
   }
@@ -506,8 +1036,13 @@
     for (var i = 0; i < model.modes.length; i++) {
       for (var j = 0; j < model.modes[i].gametes.length; j++) {
         var g = model.modes[i].gametes[j];
-        if (canonKeyNoSex(g.zygote) !== want) continue;
-        model.hereZygote = g.zygote;
+        // Gonosomal gametes carry a list of outcomes (the sperm fork); the
+        // autosomal shape is a single zygote. Match against whichever exists.
+        var zys = g.outcomes ? g.outcomes.map(function (o) { return o.zygote; }) : [g.zygote];
+        var hit = null;
+        for (var z = 0; z < zys.length; z++) if (canonKeyNoSex(zys[z]) === want) { hit = zys[z]; break; }
+        if (hit == null) continue;
+        model.hereZygote = hit;
         model.hereLabel = "the karyotype you traced";
         // Domain words, not navigation words ("the karyotype you came from"
         // narrated the click, not the genetics; Dan, 2026-09-04): the page IS
@@ -529,6 +1064,7 @@
     if (isReciprocal(ab)) return computeReciprocal(clone, ab);
     if (isRobertsonian(ab)) return computeRobertsonian(clone, ab);
     if (isHomologousRob(ab)) return computeHomologous(clone, ab);
+    if (gonoClass(clone, ab)) return computeGonosomal(clone, ab);
     return null;
   }
 
@@ -675,7 +1211,10 @@
   }
   function pairingSvg(model) {
     var b = model.bodies;
-    if (model.type === "reciprocal") {
+    // Anything with four A/dA/B/dB corners takes the ring; only the
+    // Robertsonian trivalent is the three-body figure below. The gonosomal
+    // female carrier lands here when the to-scale cross is unavailable.
+    if (model.type !== "robertsonian") {
       var P = { A: [56, 62], dA: [156, 62], B: [156, 138], dB: [56, 138] };
       var ribbons = '<g opacity="0.28">' +
         ribbon(P.A, P.dA, PERI) +   // top edge: shared A-proximal
@@ -803,6 +1342,7 @@
 
   // The plain-language reason each mode carries its name (this is the teaching point).
   function whyCaption(model, modeName) {
+    if (model.type === "gonosomal") return gonoWhy(model, modeName);
     if (model.type === "robertsonian") {
       if (modeName === "Alternate") return "The fusion travels to one pole and both normal homologues to the other, so each gamete carries one full dose of every long arm. Both are balanced: one is chromosomally normal, the other a balanced carrier like the parent.";
       // Two ways to fold one mode: the reader picks which plane is drawn, and
@@ -892,24 +1432,155 @@
     return head + upd + hint + '<div class="seg-modes seg-modes-one">' + mode + '</div>' + note;
   }
 
+  // ---- gonosomal rendering ---------------------------------------------------
+  // The fertility card wears the app's notice amber (the .oal-warn palette:
+  // important information, not an action item).
+  function fertilityCard(model) {
+    if (!model.fertility) return "";
+    return '<div class="seg-fert"><p class="oal-head">' + esc(model.fertility.head) + '</p>' +
+      '<p class="oal-body">' + model.fertility.body + '</p></div>';
+  }
+
+  // Class-specific head. The female X;autosome carrier is a true ring
+  // quadrivalent, so her lead reads like the autosomal one plus the fork; the
+  // male carriers pair as a CHAIN held at the pseudoautosomal tips, and their
+  // leads say so, because that geometry is the fertility story.
+  function gonoHead(model) {
+    var A = esc(model.A), B = esc(model.B);
+    var lead;
+    if (model.cls === "XA-f") {
+      lead = "At meiosis, this balanced X;" + B + " carrier pairs her normal X, the der(X), chromosome " + B +
+        " and the der(" + B + ") into a <b>quadrivalent</b>, and the same alternate, adjacent and 3:1 modes divide it as for any reciprocal translocation. Two things change downstream: every gamete <b>forks on the sperm</b> (an X makes each outcome a daughter, a Y a son), and the fate of the unbalanced products is set by <b>X-inactivation</b>, not by segment size alone.";
+    } else if (model.cls === "XA-m") {
+      lead = "At meiosis this carrier's chromosomes pair into a <b>chain</b> rather than a ring: the Y holds on to the quadrivalent only at its <b>pseudoautosomal tips</b>, chromosome " + B +
+        " and the derivatives pair along their shared material, and the exchanged X segment on the der(" + B + ") has <b>no partner at all</b>. That unsynapsed chromatin is why spermatogenesis usually fails (the note below); the outcomes describe the sperm that do form. Each sperm carries its own sex chromosome, so <b>the sperm decides each child's sex</b>.";
+    } else {
+      lead = "At meiosis this carrier's free X holds on to the der(Y) at the <b>pseudoautosomal tip</b>, and chromosome " + B +
+        " pairs with the derivatives along the exchanged material, a <b>chain</b> quadrivalent. Where the Y break falls decides most of what follows: an inert Yq12 exchange is the classic harmless familial variant, a euchromatic Yq break sits in the AZF spermatogenesis region, and a break beyond <i>SRY</i> makes the sex letters stop predicting development. Each sperm carries its own sex-chromosome content, so <b>the sperm decides each child's sex</b>.";
+    }
+    return '<div class="seg-head"><h2>Meiotic segregation</h2><p class="seg-lead">' + lead + '</p></div>' + fertilityCard(model);
+  }
+
+  // Pairing figure for the male carriers: the same square, but the free
+  // gonosome's two edges are pseudoautosomal contacts, drawn as thin dashed
+  // slate instead of full synapsis ribbons. The autosomal edges pair fully.
+  function pairingGonosomal(model) {
+    var b = model.bodies;
+    var P = { A: [56, 62], dA: [156, 62], B: [156, 138], dB: [56, 138] };
+    var full = '<g opacity="0.28">' +
+      ribbon(P.dA, P.B, AMBER) +   // der(gonosome) with the normal autosome: exchanged autosomal material
+      ribbon(P.B, P.dB, AMBER) +   // autosome with its own derivative
+      '</g>';
+    var par = '<g opacity="0.6">' +
+      line(P.A[0], P.A[1], P.dA[0], P.dA[1], SLATE, 2.2, "3 5") +
+      line(P.dB[0], P.dB[1], P.A[0], P.A[1], SLATE, 2.2, "3 5") +
+      '</g>';
+    var acc = { stroke: "#c7ccdd", bg: "#fbfbfe" };
+    var glyphs = ["A", "dA", "B", "dB"].map(function (id) {
+      return miniGlyph(b[id], P[id][0], P[id][1], P[id], acc, true).svg;
+    }).join("");
+    return svgScene(full + par + glyphs, 212, 196,
+      "chain quadrivalent: the free " + (model.free || "gonosome") + " held only by pseudoautosomal contact (dashed)");
+  }
+
+  // Mode captions for the gonosomal quadrivalents. The geometry sentences stay
+  // close to the autosomal ones; what is added is who decides the child's sex,
+  // and the ring word is dropped for the male carriers' chain.
+  function gonoWhy(model, modeName) {
+    var male = model.cls !== "XA-f";
+    var B = esc(model.B);
+    if (modeName === "Alternate") {
+      var base = "Both chromosomes bound for one pole sit at <b>opposite corners</b>, so the spindle fibers cross and each pole receives a complete set. This is the only balanced pattern. ";
+      if (model.cls === "XA-f") return base + "Whether each balanced gamete becomes a normal or a carrier child, and of which sex, is decided by the sperm.";
+      if (model.cls === "XA-m") return base + "The pole with the <b>Y</b> makes the chromosomally normal son; the pole with the <b>two derivatives</b> makes the balanced carrier daughter.";
+      return base + "The pole with the <b>free X</b> makes the chromosomally normal daughter; the pole with the <b>two derivatives</b> makes the balanced carrier son.";
+    }
+    if (modeName === "Adjacent-1") {
+      return "The two that travel together are <b>neighbors</b> whose centromeres come from different pairs, so the matching centromeres are pulled apart. Each gamete keeps one intact chromosome and one derivative: one exchanged segment is duplicated and the other deleted" +
+        (male ? ", and the sperm's own sex-chromosome content decides the child's sex." : ", and the sperm then decides which sex chromosome joins the imbalance.");
+    }
+    if (modeName === "Adjacent-2") return whyCaption({ type: "reciprocal", bodies: model.bodies }, modeName);
+    if (modeName === "4:0") return whyCaption({ type: "reciprocal", bodies: model.bodies }, modeName);
+    // 3:1 keeps the plane-picking machinery and its swap-with-the-scene spans.
+    return "Here the quadrivalent splits three-to-one: the odd chromosome may be a <b>derivative</b> (tertiary trisomy or monosomy) or a <b>whole chromosome</b> (interchange trisomy or monosomy). This is where the whole-chromosome sex outcomes live: losing the gonosome gives <b>Turner syndrome</b>, gaining one gives the <b>triple X or Klinefelter</b> pattern, and a conceptus with no X at all is never viable. " +
+      ["dB", "dA", "B", "A"].map(function (d) {
+        return '<span class="seg-why-div" data-div="' + d + '">Drawn above: <b>' + esc(model.bodies[d].name) +
+          "</b> travels alone to the far pole, the other three together.</span>";
+      }).join("") +
+      " Each boxed pair below is one division plane: its two gametes are complements. Click another pair to change the plane.";
+  }
+
+  // The t(X;Y) carrier: a two-derivative sex complement with no free gonosome.
+  // There is no quadrivalent to draw and the panel is text-first, like the
+  // homologous fusion: the pseudoautosomal geometry, the two sperm, and (for
+  // the recurrent form) the unbalanced der(X) family the entity is usually
+  // found as.
+  function renderGonosomalXY(model) {
+    var T = model.carrier.replace(/^46,/, "");
+    var head = '<div class="seg-head"><h2>Meiotic segregation</h2>' +
+      '<p class="seg-lead">This carrier has <b>no free sex chromosome</b>: his X and Y are both derivatives of the exchange. ' +
+      'At male meiosis the X and Y normally pair only at their <b>pseudoautosomal tips</b> and fold into the silenced XY body; whether these two derivatives can still do that is set by which tips the exchange left together, and it decides his fertility before any segregation table applies.</p></div>' +
+      fertilityCard(model);
+    var entity = "";
+    if (model.flags && model.flags.recurrent) {
+      entity = '<div class="seg-fert"><p class="oal-head">The recurrent X;Y translocation</p>' +
+        '<p class="oal-body">t(X;Y)(p22.3;q11.2) is the most common X;Y translocation, born of exchange near the pseudoautosomal region. Because the balanced male is usually infertile, families carry it as the <b>unbalanced der(X)</b> instead, passed by women: daughters carry it the way their mothers do, and sons who inherit it lose the distal Xp genes outright (short stature, and X-linked ichthyosis when <i>STS</i> is in the deleted span).</p>' +
+        '<div class="oal-chips"><span class="orig-who">the familial forms</span>' +
+        ktButton("46,X,der(X)" + T) + ktButton("46,Y,der(X)" + T) + '</div>' +
+        '<p class="oal-body">The other recurrent X;Y event, exchange between Xp and Yp that moves <i>SRY</i> onto the X, arises de novo in paternal meiosis (46,XX testicular DSD, 46,XY gonadal dysgenesis); it is a mispairing accident, not something a balanced carrier transmits.</p></div>';
+    }
+    var hint = '<div class="seg-controls"><span class="seg-hint">Click either conceptus karyotype below to draw and decode that outcome.</span></div>';
+    var md = model.modes[0];
+    var cards = md.gametes.map(function (gm) {
+      var o = gm.outcomes[0];
+      var here = (model.hereZygote && o.zygote === model.hereZygote)
+        ? '<span class="seg-here">' + esc(model.hereLabel || "the karyotype you typed") + '</span>' : "";
+      return '<div class="seg-gamete' + (here ? " seg-is-here" : "") + '">' +
+        '<div class="seg-gpoles">' + glyphRow(model.bodies, gm.bodies) + '</div>' +
+        '<div class="seg-gout">' + ktButton(o.zygote) + '<span class="seg-glabel">' + esc(gm.label) + '</span>' + here +
+        '<div class="seg-imb">' + esc(o.imbalance) + '</div>' +
+        '<div class="seg-viab">' + viabChip(o.viability) + '</div>' +
+        (o.note ? '<p class="seg-gnote">' + o.note + '</p>' : '') + '</div></div>';
+    }).join("");
+    var mode = '<div class="seg-mode">' +
+      '<div class="seg-mode-h"><b>' + esc(md.name) + '</b> <span class="seg-sub">' + esc(md.sub) + '</span>' +
+      '<span class="seg-bad">unbalanced</span></div>' +
+      '<p class="seg-why">' + md.blurb + '</p>' +
+      '<div class="seg-gametes">' + cards + '</div></div>';
+    var note = '<p class="seg-note">This is a teaching model of segregation, not a recurrence-risk estimate. The conceptus karyotypes assume the partner contributes a normal X-bearing egg.</p>';
+    return head + entity + hint + '<div class="seg-modes seg-modes-one">' + mode + '</div>' + note;
+  }
+
   // Only shown for a constitutional (germline) balanced carrier. The caller suppresses
   // the panel for a recognized acquired/somatic cancer translocation, where meiotic
   // segregation does not apply, so no somatic caveat is needed here.
   function render(model) {
     if (!model) return "";
     if (model.type === "homologous") return renderHomologous(model);
+    if (model.type === "gonosomal" && model.cls === "XY") return renderGonosomalXY(model);
+    var gono = model.type === "gonosomal";
     var b = model.bodies;
     var typeLabel = model.type === "robertsonian" ? "Robertsonian" : "reciprocal";
     // Prefer the to-scale pachytene figures (real breakpoint geometry) when the ideogram has
     // both chromosomes; otherwise keep the schematic figures below as a second system. The
     // shape word in the lead follows suit: a "cross"/"trivalent" to scale, else a schematic ring.
-    var toScale = !!(typeof window !== "undefined" && window.Pachytene && window.Pachytene.available(model));
-    var pairingFig = toScale ? window.Pachytene.pairing(model) : pairingSvg(model);
+    //
+    // A gonosomal model is drawn to scale only for the FEMALE X;autosome
+    // carrier, whose quadrivalent is a true ring of X, der(X), autosome and
+    // der(autosome), exactly what the cross draws. The male carriers hold the
+    // FREE gonosome in that corner, a chromosome the cross would misdraw as a
+    // normal homolog of the exchange, so they keep the schematic chain figure.
+    var toScale = !!(typeof window !== "undefined" && window.Pachytene && window.Pachytene.available(model)) &&
+      (!gono || model.cls === "XA-f");
+    var pairingFig = toScale ? window.Pachytene.pairing(model)
+      : (gono && model.cls !== "XA-f" ? pairingGonosomal(model) : pairingSvg(model));
     var sceneOf = toScale
       ? function (n) { return window.Pachytene.scene(model, n); }
       : function (n) { return scene(model, n); };
     var shapeWord = toScale ? (model.type === "robertsonian" ? "trivalent" : "cross") : "ring";
-    var head = '<div class="seg-head"><h2>Meiotic segregation</h2>' +
+    var head;
+    if (gono) head = gonoHead(model);
+    else head = '<div class="seg-head"><h2>Meiotic segregation</h2>' +
       '<p class="seg-lead">At meiosis, the chromosomes of this <b>constitutional</b> balanced ' + typeLabel + ' translocation carrier pair into a <b>' + model.valent +
       '</b> (' + model.valentN + ' chromosomes) as the homologs line up in <b>prophase I</b>. How that ' + model.valent +
       ' separates at <b>anaphase I</b> (meiosis I) is shown below, one column per pattern. Each panel draws the ' + shapeWord + ' and the plane it divides along, so the reason for the names alternate and adjacent is visible. Only <b>alternate</b> segregation gives balanced gametes. This panel assumes a germline carrier; an acquired, somatic rearrangement does not segregate at meiosis.</p></div>';
@@ -920,6 +1591,9 @@
       '<div class="seg-key-row"><span class="seg-key-h">Chromosome of origin</span>' +
       '<span><i style="background:' + PERI + '"></i>chromosome ' + esc(model.A) + ' material</span>' +
       '<span><i style="background:' + AMBER + '"></i>chromosome ' + esc(model.B) + ' material</span>' +
+      (gono && model.free && model.cls !== "XA-f"
+        ? '<span><i style="background:' + SLATE + '"></i>the free ' + esc(model.free) + ', outside the exchange (dashed pseudoautosomal contact)</span>'
+        : '') +
       '<span class="seg-key-sub">Centromere dots take the color of the chromosome they belong to, so a chromosome and its own derivative (homologous centromeres) share a dot color.</span></div>' +
       '<div class="seg-key-row"><span class="seg-key-h">Destination at anaphase I</span>' +
       '<span><i class="seg-swatch" style="background:' + TEAL.bg + ';border-color:' + TEAL.stroke + '"></i>travels to pole 1</span>' +
@@ -941,11 +1615,14 @@
     var pairedMode = null, divisions = [], sceneNameFor = null;
     model.modes.forEach(function (m) {
       if (model.type === "robertsonian" && m.name === "Adjacent") { pairedMode = m; divisions = ["A", "B"]; sceneNameFor = function (d) { return "Adjacent-" + d; }; }
-      if (model.type === "reciprocal" && m.name === "3:1") { pairedMode = m; divisions = ["dB", "dA", "B", "A"]; sceneNameFor = function (d) { return "3:1-" + d; }; }
+      if ((model.type === "reciprocal" || gono) && m.name === "3:1") { pairedMode = m; divisions = ["dB", "dA", "B", "A"]; sceneNameFor = function (d) { return "3:1-" + d; }; }
     });
     var hereDiv = divisions[0] || null;
     if (pairedMode && model.hereZygote) {
-      pairedMode.gametes.forEach(function (gm) { if (gm.zygote === model.hereZygote && gm.division) hereDiv = gm.division; });
+      pairedMode.gametes.forEach(function (gm) {
+        var zys = gm.outcomes ? gm.outcomes.map(function (o) { return o.zygote; }) : [gm.zygote];
+        if (zys.indexOf(model.hereZygote) >= 0 && gm.division) hereDiv = gm.division;
+      });
     }
     var radios = !pairedMode ? "" : divisions.map(function (d) {
       var aria = model.type === "robertsonian"
@@ -960,6 +1637,29 @@
 
     function gameteCard(gm, acc) {
       var lab = gm.label ? '<span class="seg-glabel">' + esc(gm.label) + '</span>' : "";
+      // A gonosomal gamete carries one or two OUTCOMES instead of a single
+      // zygote: the female carrier's fork on the sperm renders as two lanes
+      // side by side, the male carrier's single lane fills the card. The
+      // autosomal and Robertsonian gametes keep their original one-zygote
+      // shape below, untouched.
+      if (gm.outcomes) {
+        var hereAny = false;
+        var lanes = gm.outcomes.map(function (o) {
+          var here = (model.hereZygote && o.zygote === model.hereZygote)
+            ? '<span class="seg-here">' + esc(model.hereLabel || "the karyotype you typed") + '</span>' : "";
+          if (here) hereAny = true;
+          var when = o.when ? '<span class="seg-fork-when">' + esc(o.when) + '</span>' : "";
+          var imb0 = (o.imbalance && o.imbalance !== "balanced")
+            ? '<div class="seg-imb">' + esc(o.imbalance) + '</div>' : "";
+          var note = o.note ? '<p class="seg-gnote">' + o.note + '</p>' : "";
+          return '<div class="seg-fork-one">' + when + ktButton(o.zygote) + here + imb0 +
+            '<div class="seg-viab">' + viabChip(o.viability) + '</div>' + note + '</div>';
+        }).join("");
+        return '<div class="seg-gamete' + (acc ? " seg-g-" + acc : "") + (hereAny ? " seg-is-here" : "") + '">' +
+          '<div class="seg-gpoles">' + glyphRow(b, gm.bodies) + '</div>' +
+          '<div class="seg-gout">' + lab +
+          '<div class="seg-fork' + (gm.outcomes.length === 1 ? " seg-fork-one-lane" : "") + '">' + lanes + '</div></div></div>';
+      }
       var here = (model.hereZygote && gm.zygote === model.hereZygote)
         ? '<span class="seg-here">' + esc(model.hereLabel || "the karyotype you typed") + '</span>' : "";
       var imb = (gm.imbalance && gm.imbalance !== "balanced")
@@ -1010,9 +1710,11 @@
         '<div class="seg-gametes">' + gametes + '</div></div>';
     }).join("");
 
-    var note = '<p class="seg-note">The diagrams are schematic, and the fiber paths illustrate which chromosomes co-segregate, not the physical spindle. This is a teaching model of segregation, not a recurrence-risk estimate: real risks depend on the specific chromosomes and segment sizes.</p>';
+    var note = '<p class="seg-note">The diagrams are schematic, and the fiber paths illustrate which chromosomes co-segregate, not the physical spindle. This is a teaching model of segregation, not a recurrence-risk estimate: real risks depend on the specific chromosomes and segment sizes.' +
+      (gono ? ' The conceptus karyotypes assume the partner contributes a chromosomally normal gamete.' : '') + '</p>';
 
-    return head + config + controls + '<div class="seg-modes">' + modes + '</div>' + note;
+    return head + config + controls +
+      '<div class="seg-modes' + (gono ? ' seg-modes-gono' : '') + '">' + modes + '</div>' + note;
   }
 
   window.Segregation = {
