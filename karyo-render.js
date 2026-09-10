@@ -1639,13 +1639,66 @@
       return sector(a0, a1, "url(#" + hatch(heteroColor(stain), base + (a0 + a1) / 2 * DEG - 90) + ")", attr);
     }
 
+    // The centromere wears the SAME three-part device as the linear body:
+    // the waist in the outline, the hatched acen texture (here the acen band
+    // sectors themselves) and a thin dashed line at the exact p/q boundary,
+    // with the linear constants (half-height 4.5 and depth 5.4, dash 2.5 2)
+    // translated to arc length at the midline radius. Dan compared the two
+    // figures side by side (2026-09-09) after #295 left the ring hatch-only:
+    // the ring was missing the constriction, and the earlier dashed radial
+    // had sat at the last acen band's midpoint rather than the boundary the
+    // linear midline marks. One structure, one depiction, both themes.
+    var cenAngle = (d.centromere > from && d.centromere < to)
+      ? (d.centromere - from) / total * TAU : null;
+    // One angular window for both boundaries, so the pinch is a wedge the way
+    // a linear waist is a band of height CEN_H; the inner boundary rises less
+    // than the outer dips, because the hole is small and a full-depth bulge
+    // there read as a blob swallowing the annulus (preview rounds,
+    // 2026-09-09).
+    // Linear proportions exactly: depth 5.4 on a 28-wide body (19%), waist
+    // half-height 4.5px of arc at the midline. A deeper ratio was tried and
+    // small rings lost 40% of their annulus to the bite.
+    var dep = Math.min(5.4, thick * 0.19);
+    var ah = Math.min(Math.max(4.5 / Rm, 0.12), Math.PI / 4);
+    function bump(a) {
+      if (cenAngle == null) return 0;
+      var dd = Math.abs(a - cenAngle); dd = Math.min(dd, TAU - dd);
+      if (dd >= ah) return 0;
+      var t = Math.cos(Math.PI / 2 * dd / ah);
+      return t * t;
+    }
+    var Rw = function (a) { return R - dep * bump(a); };
+    var r0w = function (a) { return r0 + dep * 0.45 * bump(a); };
+    // A boundary loop: the untouched part of the circle as one arc, the waist
+    // as a sampled dip. Null when there is no centromere in the retained span
+    // (the circles below cover that ring).
+    function loopD(radFn, base) {
+      if (cenAngle == null) return null;
+      var dpath = "M" + pt(cenAngle + ah, base) + " A" + base.toFixed(2) + " " + base.toFixed(2) +
+        " 0 1 1 " + pt(cenAngle - ah, base);
+      for (var i = 1; i <= 16; i++) {
+        var a = cenAngle - ah + (2 * ah) * i / 16;
+        dpath += " L" + pt(a, radFn(a));
+      }
+      return dpath + " Z";
+    }
+    var outerD = loopD(Rw, R), innerD = loopD(r0w, r0);
+    // Bands clip to the waisted annulus for the same reason the linear bands
+    // clip to the waisted body: clip and outline must agree on where the body
+    // is, or the paint overhangs the constriction.
+    var clipRef = "";
+    if (outerD) {
+      defs.push('<clipPath id="' + uid + 'c"><path d="' + outerD + " " + innerD + '" clip-rule="evenodd"/></clipPath>');
+      clipRef = ' clip-path="url(#' + uid + 'c)"';
+    }
+
     var body = [];
     getBands(chrom, ctx.level == null ? 99 : ctx.level).forEach(function (b) {
       var bs = Math.max(b[1], from), be = Math.min(b[2], to);
       if (be <= bs) return;
       var st = b[3];
       var a0 = (bs - from) / total * TAU, a1 = (be - from) / total * TAU;
-      var attr = ' class="band" data-chrom="' + esc(chrom) + '" data-band="' + esc(b[0]) + '" data-stain="' + st + '"';
+      var attr = ' class="band" data-chrom="' + esc(chrom) + '" data-band="' + esc(b[0]) + '" data-stain="' + st + '"' + clipRef;
       var parts = (a1 - a0 > Math.PI) ? [[a0, (a0 + a1) / 2], [(a0 + a1) / 2, a1]] : [[a0, a1]];
       parts.forEach(function (p) {
         if (st === "acen") body.push(hatchSector(p[0], p[1], "acen", 45, attr));
@@ -1654,19 +1707,29 @@
       });
     });
     var ocol = outlineFor(ctx, chrom);
-    body.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + R.toFixed(2) + '" fill="none" stroke="' + ocol + '" stroke-width="1.4"/>');
-    body.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + r0.toFixed(2) + '" fill="none" stroke="' + ocol + '" stroke-width="1.1"/>');
-    // The hatched acen sector alone marks the centromere. The dashed radial
-    // line that used to echo the linear ideogram's midline is gone (Dan,
-    // 2026-09-09): on a ring a second radial across the annulus reads as a
-    // second closure point competing with the clasp, dashes mean "junction"
-    // everywhere else in the app, and the legend never keyed it, which broke
-    // the rule that the legend lists exactly what the figure draws (#213).
+    if (outerD) {
+      // The acen band sectors already hatch this zone (a dedicated overlay
+      // was tried and erased the band colors under a wide white-tiled wedge,
+      // preview rounds 2026-09-09). The dashed p/q boundary line sits inside
+      // the waist like the linear midline, pointer-transparent so the band
+      // sectors stay the honest tooltip.
+      var ccol = heteroColor("acen");
+      body.push('<line x1="' + px(cenAngle, r0w(cenAngle)).toFixed(2) + '" y1="' + py(cenAngle, r0w(cenAngle)).toFixed(2) +
+        '" x2="' + px(cenAngle, Rw(cenAngle)).toFixed(2) + '" y2="' + py(cenAngle, Rw(cenAngle)).toFixed(2) +
+        '" stroke="' + ccol + '" stroke-width="1" stroke-dasharray="2.5 2" pointer-events="none"/>');
+      body.push('<path d="' + outerD + '" fill="none" stroke="' + ocol + '" stroke-width="1.4"/>');
+      body.push('<path d="' + innerD + '" fill="none" stroke="' + ocol + '" stroke-width="1.1"/>');
+    } else {
+      body.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + R.toFixed(2) + '" fill="none" stroke="' + ocol + '" stroke-width="1.4"/>');
+      body.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + r0.toFixed(2) + '" fill="none" stroke="' + ocol + '" stroke-width="1.1"/>');
+    }
     // Fusion point: the two broken ends meet at 12 o'clock (angle 0, the seam of
     // the wrap). Mark it like a clasp — a short seam plus a haloed node — so it
-    // reads as the join where the ends fused into a ring.
+    // reads as the join where the ends fused into a ring. On the waisted radii,
+    // so a centromere near the seam (an acrocentric ring) cannot leave the
+    // clasp overhanging the constriction.
     var fcol = AMBER;
-    var yO = py(0, R), yI = py(0, r0);   // outer-top and inner-top at 12 o'clock (x = cx)
+    var yO = py(0, Rw(0)), yI = py(0, r0w(0));   // outer-top and inner-top at 12 o'clock (x = cx)
     body.push('<g style="cursor:default"><title>Ring fusion point: the broken chromosome ends joined here</title>' +
       '<line x1="' + cx.toFixed(2) + '" y1="' + yO.toFixed(2) + '" x2="' + cx.toFixed(2) + '" y2="' + yI.toFixed(2) +
       '" stroke="' + fcol + '" stroke-width="1.7"/>' +
