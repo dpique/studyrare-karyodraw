@@ -1816,9 +1816,10 @@
         if (org) { cardHtml = window.Segregation.renderOriginCard(org); warn = true; }
         // A gonosomal reciprocal carrier is refused by the table on purpose;
         // the refusal is said out loud instead of leaving a blank (see
-        // gonosomalNote in segregation.js). Quiet card, not the amber one:
-        // it explains, it does not ask anything of the reader.
-        else if (window.Segregation.gonosomalNote) cardHtml = window.Segregation.gonosomalNote(clone);
+        // gonosomalNote in segregation.js). It renders in the SEGREGATION
+        // card, whose heading the note carries itself: a first cut used the
+        // parental-origin slot and sat under a banner that mislabeled it.
+        if (!html && window.Segregation.gonosomalNote) html = window.Segregation.gonosomalNote(clone);
       }
     } else if (FROM) { FROM = null; setHash(input.value, false); }
     alertCard.classList.toggle("oal-warn", warn);

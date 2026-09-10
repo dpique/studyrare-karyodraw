@@ -115,7 +115,8 @@
       ((ab.chroms[0] in { X: 1, Y: 1 }) || (ab.chroms[1] in { X: 1, Y: 1 }));
     if (!gono) return "";
     var T = "t(" + ab.chroms[0] + ";" + ab.chroms[1] + ")";
-    return '<p class="oal-head">Why there is no outcomes table for ' + T + '</p>' +
+    return '<div class="seg-head"><h2>Meiotic segregation</h2></div>' +
+      '<p class="oal-head">Why there is no outcomes table for ' + T + '</p>' +
       '<p class="oal-body">At meiosis this carrier forms the same quadrivalent as an autosomal ' +
       'translocation, and the same alternate, adjacent and 3:1 modes exist. One table would still be ' +
       'wrong here: every conceptus depends on whether the partner\'s gamete brings an X or a Y, so each ' +
