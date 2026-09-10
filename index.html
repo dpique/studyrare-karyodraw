@@ -1989,6 +1989,32 @@
       pill;
   }
 
+  // The figure never hides a band the notation names (Dan, 2026-09-10):
+  // idic(Y)(q11.23) at the ~550 default merged q11.21 through q11.23 into one
+  // q11.2 stripe, so the very band the karyotype names was nowhere in the
+  // drawing. A two-decimal sub-band exists as its own stripe only in the ~850
+  // set, so when the typed karyotype names one, the Bands control follows the
+  // notation up to High; a karyotype without one falls back to the Std
+  // default. Explicit choices win and end the following: arriving with
+  // bands= in the link (shared links keep their meaning) or clicking the
+  // control (BANDS_EXPLICIT, set at both places).
+  var BANDS_EXPLICIT = false;
+  function notationNeedsFull(model) {
+    var need = false;
+    ((model && model.clones) || []).forEach(function (clone) {
+      (clone.aberrations || []).forEach(function (ab) {
+        var groups = (ab.breakpoints || []).slice();
+        (ab.subOps || []).forEach(function (s) { (s.breakpoints || []).forEach(function (g) { groups.push(g); }); });
+        groups.forEach(function (g) {
+          (g || []).forEach(function (b) {
+            if (/^[pq]\d+\.\d\d/.test(String(b))) need = true;
+          });
+        });
+      });
+    });
+    return need;
+  }
+
   function renderKaryogram(model) {
     var host = $("#karyo");
     host.innerHTML = "";
@@ -2387,6 +2413,9 @@
     // Show the canonical, whitespace-normalized form so a stray space (typed or
     // pasted) does not linger in the input box, the drawing, or the share URL.
     if (model.normalized && model.normalized !== val) { val = model.normalized; input.value = val; }
+    // Before the URL is written and anything renders: the level follows the
+    // notation unless the reader has chosen one (see notationNeedsFull).
+    if (!BANDS_EXPLICIT) LEVEL = notationNeedsFull(model) ? 99 : 1;
     // Skip the URL rewrite on the auto-loaded demo so a bare visit keeps a clean
     // landing URL; the first real interaction (type, toggle, pick an example) writes it.
     var push = run.pushNext; run.pushNext = false;
@@ -3086,6 +3115,10 @@
     var v = b.getAttribute("data-mode"); if (v === MODE) return false; MODE = v; return true;
   });
   wireSeg("#levelseg", function (b) {
+    // A click on the Bands control is an explicit choice, even a click on the
+    // already-active button: from here on the level stops following the
+    // notation (see notationNeedsFull).
+    BANDS_EXPLICIT = true;
     var v = parseInt(b.getAttribute("data-level"), 10); if (v === LEVEL) return false; LEVEL = v; return true;
   });
   wireSeg("#showseg", function (b) {
@@ -3375,6 +3408,11 @@
   })();
 
   applyUrlView();
+  // A bands= in the ARRIVING link is an explicit choice too: shared links keep
+  // their meaning, so a view someone copied at Std stays Std. Only the initial
+  // URL counts; the bands= that setHash writes on every draw must not flip
+  // this switch through popstate, or the first Back would end the following.
+  BANDS_EXPLICIT = getParam("bands") !== null;
   var hasK = getKaryotypeParam() != null;
   var initial = getKaryotypeParam() || DEMO_K;
   input.value = initial;
