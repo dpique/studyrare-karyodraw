@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-09 (the ring gets the real centromere, constriction and all)
+
+- **The ring's centromere now matches the linear one.** Side by side, the
+  linear chromosome drew its centromere as a constriction with hatching and a
+  thin dashed line at the exact p/q boundary, while the ring showed hatching
+  alone. The ring now wears the same three-part device: the annulus pinches to
+  a waist at the centromere, the bands clip to the waisted outline exactly as
+  linear bands do, and the dashed boundary line sits inside the waist at the
+  true p/q boundary, in the same dash pattern as the linear midline. The
+  earlier dashed radial (removed this morning) had sat at the wrong angle,
+  the midpoint of the last centromeric band; the boundary line replaces it in
+  the right place. The amber clasp stays the only solid radial mark, so the
+  two devices read apart at a glance.
+
 ## 2026-09-09 (the ring keeps one centromere mark and quiets its cursor)
 
 - **One centromere device on the ring.** The ring drew its centromere twice:

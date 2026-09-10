@@ -1,12 +1,13 @@
 'use strict';
-// The ring figure's marks, pinned after Dan read one closely (2026-09-09).
-// One centromere device, the hatched acen sector: the dashed radial line that
-// used to echo the linear ideogram's midline drew a second radial across the
-// annulus, unkeyed in the legend, in the dash vocabulary the app reserves for
-// junctions, so it read as a second closure point competing with the clasp.
-// The clasp itself (solid amber seam, two arrowheads meeting at 12 o'clock)
-// stays, in both themes: a real ring closed somewhere, and its legend row is
-// gated on the figure (see the legend browser test).
+// The ring's centromere wears the SAME three-part device as the linear body
+// (Dan, 2026-09-09, comparing the two figures side by side): the waist in the
+// outline, the hatched acen texture, and a thin dashed line at the exact p/q
+// boundary in the linear midline's own dash. History in two steps that day:
+// #295 removed a dashed radial that sat at the last acen band's midpoint
+// (wrong place, unkeyed), and this test then pinned a hatch-only ring; Dan
+// pointed out the linear figure draws a constriction plus a dashed boundary
+// line, so hatch-only was the inconsistency, not the fix. The clasp stays the
+// only SOLID radial mark, so the two devices cannot be confused.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -24,18 +25,23 @@ const { Karyo, ISCN } = win;
 const instOf = (k, chrom) => (ISCN.parse(k).clones[0].slots[chrom] || []).find((i) => i.kind !== 'normal');
 const ring = (theme) => Karyo.drawInstance(instOf('46,XY,r(13)(p11q34)', '13'), { theme, level: 99, affected: {} }).svg;
 
-test('the ring marks its centromere with the hatch alone, in both themes', () => {
+test('the ring wears the linear centromere device: waist, hatch, dashed boundary', () => {
   for (const theme of ['simple', 'detailed']) {
     const svg = ring(theme);
     assert.match(svg, /class="ideo ideo-ring"/, `${theme}: the ring svg`);
     assert.match(svg, /data-stain="acen"/, `${theme}: the hatched centromere sector is a real band`);
-    assert.ok(!/stroke-dasharray="3 2"/.test(svg), `${theme}: no dashed radial beside the hatch`);
+    const dashes = svg.match(/stroke-dasharray="2\.5 2"/g) || [];
+    assert.equal(dashes.length, 1,
+      `${theme}: exactly one dashed mark, the p/q boundary line, in the linear midline's own dash`);
+    assert.ok(!/stroke-dasharray="3 2"/.test(svg), `${theme}: the old mid-band radial stays gone`);
+    assert.ok(!/<circle/.test(svg), `${theme}: the outline is the waisted path, not a circle`);
+    assert.match(svg, /clip-rule="evenodd"/, `${theme}: bands clip to the waisted annulus`);
   }
 });
 
-test('the clasp is the only radial device crossing the annulus', () => {
+test('the clasp is the only solid radial device, and it carries its tooltip', () => {
   const svg = ring('simple');
-  assert.match(svg, /Ring fusion point/, 'the clasp carries its tooltip');
-  assert.equal((svg.match(/stroke-dasharray/g) || []).length, 0,
-    'nothing on the ring is dashed, so the clasp cannot be mistaken for one junction among several');
+  assert.match(svg, /Ring fusion point/, 'the clasp names itself');
+  // One dasharray total (asserted above), so the clasp line stays solid and
+  // cannot be read as one junction among several.
 });
