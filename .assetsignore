@@ -29,3 +29,6 @@ package-lock.json
 content/karyogram-images.json
 test/
 paper/
+review/
+karyotype-stress-test.html
+content/k-index.mjs

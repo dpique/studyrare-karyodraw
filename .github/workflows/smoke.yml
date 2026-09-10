@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  actions: read   # the freshness check reads the last successful deploy run
 
 jobs:
   smoke:
@@ -49,6 +50,21 @@ jobs:
       - name: The API answers
         run: |
           curl -fsS -A "$UA" --max-time 20 'https://karyodraw.com/api/top' | grep -q '"items"'
+      # Liveness is not freshness: the deploy step used to be able to skip while
+      # its run stayed green, and three content curls cannot tell a current site
+      # from a week-old one. The Worker stamps every deploy with its commit
+      # (deploy.yml passes GITHUB_SHA), so compare the live stamp against the
+      # last successful deploy. Comparing against main HEAD instead would race
+      # any merge whose deploy is still in flight.
+      - name: The live site is the last successful deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          live="$(curl -fsS -A "$UA" --max-time 20 'https://karyodraw.com/api/version' | sed -E 's/.*"sha"[:] *"([^"]*)".*/\1/')"
+          want="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy.yml --status success --limit 1 --json headSha --jq '.[0].headSha')"
+          echo "live $live / last deployed $want"
+          test -n "$want"
+          test "$live" = "$want"
       # A failed check above reports only "exited 22", which cannot tell the
       # site being down from Cloudflare turning the runner away. Those two want
       # opposite responses from whoever opens the failure email, so name the

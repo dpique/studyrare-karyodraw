@@ -385,3 +385,20 @@ test('the trivalent margin is fitted to its fusion label, not set by a constant'
   assert.ok(margin >= width + 6, `a ${width.toFixed(1)}px label needs more than a ${margin}px margin`);
   assert.ok(margin <= width + 20, `${margin}px for a ${width.toFixed(1)}px label is padding, not fitting`);
 });
+
+test('the cross margins are fitted to the real side labels, not to a ghost', () => {
+  // crossFigure computed its margins from A and B two lines before
+  // `var A = model.A, B = model.B`: hoisting made every margin measure the
+  // strings "undefined" and "der(undefined)", so each side carried the padding
+  // of a 14-character ghost label whatever the karyotype said, and the fitting
+  // the margins were written for (see the labelMargin comment) never ran.
+  // Same both-directions pin as the trivalent test above: fits, and not padded.
+  const svg = P.pairing(model('46,XY,t(21;22)(q22;q11.2)'));
+  const left = [];
+  const re = /<text x="([\d.]+)" y="[\d.-]+" text-anchor="end" font-size="(9(?:\.5)?)"[^>]*>(21|der\(22\))</g;
+  let m; while ((m = re.exec(svg))) left.push({ x: +m[1], size: +m[2], label: m[3] });
+  assert.equal(left.length, 2, 'both left-side labels are drawn end-anchored');
+  const clearance = Math.min(...left.map((l) => l.x - win.Karyo.textWidth(l.label, l.size)));
+  assert.ok(clearance >= 4, `the widest label overruns its margin (clearance ${clearance.toFixed(1)}px)`);
+  assert.ok(clearance <= 20, `${clearance.toFixed(1)}px of clearance is a ghost margin, not a fitted one`);
+});

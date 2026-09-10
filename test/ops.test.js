@@ -50,15 +50,20 @@ test('the weekly D1 backup exports, encrypts, and retains', () => {
   assert.equal(upload.with['if-no-files-found'], 'error', 'an empty backup is a failed backup');
 });
 
-test('the daily smoke asserts content on all three surfaces', () => {
+test('the daily smoke asserts content on all three surfaces, plus freshness', () => {
   const doc = parse('smoke.yml');
   assert.equal(triggers(doc).schedule[0].cron, '30 13 * * *', 'daily, after the feedback digest');
   const checks = steps(doc, 'smoke').filter((s) => (s.run || '').includes('curl') && !s.if);
-  assert.equal(checks.length, 3, 'three surfaces, each its own named step');
+  assert.equal(checks.length, 4, 'three content surfaces plus the freshness check, each its own named step');
   const run = checks.map((s) => s.run).join('\n');
   assert.match(run, /karyodraw\.com\/'\s*\|\s*grep -q 'Karyotype diagram maker'/, 'the app, by its h1');
   assert.match(run, /karyotype\/down-syndrome\/'\s*\|\s*grep -q 'Down syndrome'/, 'a generated page, by its content');
   assert.match(run, /api\/top'\s*\|\s*grep -q '"items"'/, 'the Worker API, by its shape');
+  // Liveness is not freshness. The live commit stamp must equal the LAST
+  // SUCCESSFUL deploy's head, not main HEAD, which races an in-flight deploy.
+  assert.match(run, /api\/version/, 'the freshness check reads the live commit stamp');
+  assert.match(run, /--workflow deploy\.yml --status success/, 'and compares it to the last successful deploy');
+  assert.equal(doc.permissions.actions, 'read', 'reading deploy runs needs actions: read');
   // The checks carried a bypass header for two days, for a WAF skip rule that
   // could never have applied to what was actually challenging them (Bot Fight
   // Mode does not run on the Ruleset Engine). Turning that off at the zone was
@@ -75,6 +80,26 @@ test('a failing smoke says what blocked it', () => {
   const diagnostic = steps(doc, 'smoke').find((s) => s.if === 'failure()');
   assert.ok(diagnostic, 'a failure() step reports the edge response');
   assert.match(diagnostic.run, /cf-mitigated|cf-ray/i, 'it surfaces the Cloudflare headers that name the mitigation');
+});
+
+test('the deploy fails loudly without its token and stamps the commit', () => {
+  const doc = parse('deploy.yml');
+  const run = commands(doc, 'deploy');
+  // The skip-gracefully version of this step was the trap the freshness smoke
+  // exists for: an expired token would have shipped nothing behind green runs.
+  assert.match(run, /if \[ -z "\$CLOUDFLARE_API_TOKEN" \][\s\S]*?exit 1/, 'a missing token fails the run');
+  assert.doesNotMatch(run, /skipping deploy/, 'no graceful-skip path back');
+  assert.match(run, /--var DEPLOY_SHA:"\$GITHUB_SHA"/, 'every deploy stamps its commit for /api/version');
+  const paths = triggers(doc).push.paths;
+  assert.ok(paths.includes('package.json') && paths.includes('package-lock.json'),
+    'a dependency-only merge still deploys');
+});
+
+test('the brand-sync PR does not instruct a manual deploy', () => {
+  // wrangler.jsonc's own header: ONE deploy path, the Deploy workflow on merge.
+  // This PR body used to end "then deploy with `npx wrangler deploy`".
+  const raw = read('.github/workflows/sync-brand.yml');
+  assert.doesNotMatch(raw, /npx wrangler deploy/, 'merging is shipping; nothing tells a maintainer otherwise');
 });
 
 test('the worker sends the weekly usage digest on Mondays', () => {

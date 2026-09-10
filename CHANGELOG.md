@@ -3,6 +3,34 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (every cell line exports, and the site wears its security headers)
+
+- **A mosaic's PNG now shows all of its cell lines.** The export drew the first
+  clone and stopped, so mos 45,X[12]/46,XX[18] saved as a single 45,X karyogram
+  captioned with the full mosaic notation. The print sheet had the same fault
+  and fixed it; the PNG path now matches: every cell line draws, each captioned
+  with its own notation and cell count, under the one full title.
+- **A mangled /k/ link lands in the tool instead of on an error.** A short link
+  whose percent-encoding does not decode returned a bare server error; it now
+  opens the app with the link text as written, where the parse guidance can
+  meet whatever it says.
+- **The pachytene cross fits its margins to its labels.** The side margins were
+  measured before the chromosome names were read, so every reciprocal cross
+  carried the padding of a 14-character ghost label. The margins now hug the
+  real labels, the way the trivalent figure already did.
+- **Every page ships standard security headers**: a content-security policy
+  that keeps scripts first-party, strict transport security, framing
+  protection, and no-sniff content types. Nothing changes on screen; the
+  browser simply gets the guarantees it should have had.
+- **The feedback and analytics endpoints got stricter about the truth.** A
+  flag submitted while the database was unreachable used to answer ok while
+  storing nothing anywhere; it now says so. Oversized payloads are refused
+  before they are read, and a database hiccup can no longer blank the
+  most-studied list for a day. On the operations side, a deploy without its
+  Cloudflare token now fails loudly instead of green-skipping, and the daily
+  smoke check compares the live site's commit stamp against the last
+  successful deploy, so "green" and "current" can no longer drift apart.
+
 ## 2026-09-10 (the Bands control follows the notation)
 
 - **The figure no longer hides a band the karyotype names.** Typing
