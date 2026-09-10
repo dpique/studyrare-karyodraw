@@ -597,10 +597,44 @@
     // pointer-events none, or the hatch and midline swallow the pointer and
     // the tooltip goes silent over the centromere: the acen band rects beneath
     // are the honest answer, so the decoration must let the pointer reach them.
+    // Which segment owns the material at a composite y, for coloring the
+    // waist. Sampled a hair to each side of the boundary, so a seam
+    // centromere reads its two neighbours.
+    function segAtY(yy) {
+      var off = pad;
+      for (var si = 0; si < segments.length; si++) {
+        var sh = h(segments[si].to - segments[si].from);
+        if (yy >= off && yy < off + sh) return segments[si];
+        off += sh;
+      }
+      return null;
+    }
     cenList.forEach(function (c) {
       var col = heteroColor(c.chrom, "acen");
-      body.push('<rect x="' + pad + '" y="' + (c.y - CEN_H / 2).toFixed(2) + '" width="' + W + '" height="' + CEN_H +
-        '" fill="url(#' + hatch(col, c.reversed ? mirrorHatch(CEN_HATCH) : CEN_HATCH) + ')" clip-path="url(#' + uid + ')" pointer-events="none"/>');
+      var up = segAtY(c.y - 0.6), dn = segAtY(c.y + 0.6);
+      if (simple && up && dn && up.chrom !== dn.chrom) {
+        // A whole-arm fusion's waist is two half-centromeres, one from each
+        // source chromosome (that is what the q10;p10 breakpoints say), and
+        // pieces take the color of the chromosome they came from. The
+        // one-color hatch claimed the whole centromere for the derivative's
+        // namesake, all blue on der(1;7) (Dan, 2026-09-10); each half now
+        // wears its own source's hue, exactly as the acen band rects beneath
+        // already did. Highlight theme only: a real slide's centromere does
+        // not disclose its origin, and in Realistic both halves would paint
+        // the same neutral anyway.
+        [{ seg: up, y0: c.y - CEN_H / 2 }, { seg: dn, y0: c.y }].forEach(function (hf) {
+          var hcol = heteroColor(hf.seg.chrom, "acen");
+          body.push('<rect x="' + pad + '" y="' + hf.y0.toFixed(2) + '" width="' + W + '" height="' + (CEN_H / 2) +
+            '" fill="url(#' + hatch(hcol, hf.seg.reversed ? mirrorHatch(CEN_HATCH) : CEN_HATCH) + ')" clip-path="url(#' + uid + ')" pointer-events="none"/>');
+        });
+        // The boundary line between two sources belongs to neither, so it
+        // takes the neutral acen ink (the dark seam overlay paints across
+        // the same y in this theme regardless).
+        col = "#3c4463";
+      } else {
+        body.push('<rect x="' + pad + '" y="' + (c.y - CEN_H / 2).toFixed(2) + '" width="' + W + '" height="' + CEN_H +
+          '" fill="url(#' + hatch(col, c.reversed ? mirrorHatch(CEN_HATCH) : CEN_HATCH) + ')" clip-path="url(#' + uid + ')" pointer-events="none"/>');
+      }
       // Clipped to the body, like the fra hairlines and for the same reason: the
       // midline used to end exactly at the body edge because the body was a rect,
       // and on a waisted body an unclipped line overhangs the constriction it is

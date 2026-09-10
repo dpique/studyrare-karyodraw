@@ -543,6 +543,8 @@
     display: grid; grid-template-columns: max-content 1fr; column-gap: 10px; align-items: baseline; }
   .dtitle { grid-column: 1 / -1; font: 700 10.5px var(--font-sans); letter-spacing: .06em; text-transform: uppercase;
     color: var(--ink-2); margin-bottom: 5px; }
+  .dtitle .dcopy { margin-left: 10px; font-size: 11px; padding: 1px 8px; text-transform: none;
+    letter-spacing: normal; vertical-align: baseline; }
   .dline { display: contents; }
   .dline .dlab { font: 600 11px var(--font-mono); color: #a2302c; padding: 2px 0; }
   .dline code { font: 12px var(--font-mono); color: var(--ink); word-break: break-word; padding: 2px 0; min-width: 0; }
@@ -1425,8 +1427,13 @@
         });
       });
     });
+    // The rows read well but select badly (a drag across a CSS grid), so the
+    // title carries a copy button that hands the block over as plain text
+    // (Dan, 2026-09-10). The click handler lives on #detailed, which
+    // persists, because this innerHTML write would orphan a listener here.
     box.innerHTML = lines.length
-      ? '<div class="dtitle">ISCN detailed form</div>' + lines.join("")
+      ? '<div class="dtitle">ISCN detailed form<button class="pbtn dcopy" id="copydetail" type="button"' +
+        ' title="Copies every line of this block as plain text, label and form, one line per row.">⧉ Copy</button></div>' + lines.join("")
       : "";
   }
 
@@ -2919,6 +2926,22 @@
   $("#printbtn").addEventListener("click", function () { window.print(); });
   $("#copyhint").addEventListener("click", function () { copyLink($("#copyhint")); });
   $("#copyimg").addEventListener("click", copyImage);
+  // Delegated: the detailed form block is rebuilt on every draw, its button
+  // with it, and #detailed persists. The text is read off the rendered rows,
+  // so what is copied is exactly what is on screen.
+  $("#detailed").addEventListener("click", function (ev) {
+    var btn = ev.target.closest ? ev.target.closest("#copydetail") : null;
+    if (!btn) return;
+    var text = Array.prototype.map.call($("#detailed").querySelectorAll(".dline"), function (row) {
+      var lab = row.querySelector(".dlab"), form = row.querySelector("code");
+      return (lab ? lab.textContent : "") + "  " + (form ? form.textContent : "");
+    }).join("\n");
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { flash(btn, "✓ Copied!"); })
+        .catch(function () { legacyCopy(text, btn); });
+    } else { legacyCopy(text, btn); }
+  });
   $("#dlimg").addEventListener("click", function () {
     var btn = this; pngBlob().then(function (b) { downloadBlob(b); flash(btn, "✓ Saved"); }).catch(function () { flash(btn, "✕ Failed"); });
   });
