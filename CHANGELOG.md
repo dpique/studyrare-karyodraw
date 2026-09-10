@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the tip stacks its rows)
+
+- **The hover tip stacks instead of stretching.** Band name on the first
+  line, the places count under it, and the split-band note on its own line,
+  with the tip hugging its longest row. In a karyogram the neighbours sit
+  left and right, so a narrow tall tip covers one column where the old wide
+  one striped across the next chromosome, and the long split note no longer
+  wraps mid-phrase.
+
 ## 2026-09-10 (the tip becomes white glass)
 
 - **The hover tip flips from dark glass to white glass, and the blur is
