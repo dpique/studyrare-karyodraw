@@ -246,6 +246,32 @@
   // Copy TOTALS are deliberately not stated. They are right for an autosome and wrong
   // for 46,X,idic(Y)(q12), where there is no second Y to count against, which is
   // presumably why ISCN words its own general statement as gain and loss instead.
+  // The drawn length of the mirror, in the figure's own arithmetic (band midpoint,
+  // same ideogram). A reader who knows the mirror DOUBLES a piece expects a big
+  // chromosome, and the honest to-scale drawing can read as an error: a real
+  // visitor said so of 46,X,idic(Y)(q11.23) ("the idic Y looks quite small",
+  // 2026-09-09), where two copies of Ypter→Yq11.23 come to about 50 Mb against
+  // 57 Mb for a normal Y, because the Yq12 heterochromatin block the mirror
+  // trades away is nearly as long as the piece it doubles. Nothing on a karyogram
+  // anchors that comparison, so the decode states it in numbers.
+  function mirrorLength(c, band) {
+    var d = IDEO && IDEO.data && IDEO.data[c];
+    var r = d && window.Karyo && window.Karyo.resolveBand && window.Karyo.resolveBand(c, band);
+    if (!r) return null;
+    var kept = /^p/.test(String(band)) ? d.length - r.mid : r.mid;
+    return { mb: Math.round(2 * kept / 1e6), norm: Math.round(d.length / 1e6), ratio: 2 * kept / d.length };
+  }
+  function lengthVs(ratio) {
+    if (ratio >= 1.85) return "nearly twice the length of";
+    if (ratio >= 1.35) return "about half again as long as";
+    if (ratio >= 1.08) return "a little longer than";
+    if (ratio >= 0.92) return "close to the length of";
+    if (ratio >= 0.7) return "a little shorter than";
+    if (ratio >= 0.55) return "about two-thirds the length of";
+    if (ratio >= 0.42) return "about half the length of";
+    if (ratio >= 0.29) return "about a third the length of";
+    return "about a quarter the length of";
+  }
   function idicText(c, band, ab) {
     var head = "an ISODICENTRIC chromosome idic(" + c + "): ";
     if (!band || atCentromere(band)) {
@@ -274,10 +300,14 @@
       "and fused into it, standing in place of both. And why not i(" + c + ")? An isochromosome mirrors about the " +
       "centromere itself (breakpoint p10 or q10) and carries one centromere; this mirror breaks out on the arm, " +
       "so both centromeres ride along, one usually inactivated.";
+    var ml = mirrorLength(c, band);
+    var size = !ml ? "" : (ab && ab.sign === "+"
+      ? " Drawn to scale the extra chromosome comes to about " + ml.mb + " Mb, " + lengthVs(ml.ratio) + " a normal " + c + " (" + ml.norm + " Mb)."
+      : " Drawn to scale it comes to about " + ml.mb + " Mb, " + lengthVs(ml.ratio) + " the normal " + c + " it replaces (" + ml.norm + " Mb).");
     return head + body + (ab && ab.sign === "+"
       ? "It is supernumerary, sitting on top of an intact pair, so nothing is lost: " + kept +
         " simply arrives in two further copies, and " + lost + " is not on it."
-      : "It replaces one copy of chromosome " + c + ", trading everything past the break, " + lost + ", for a second copy of " + kept + ".") + idicWhy;
+      : "It replaces one copy of chromosome " + c + ", trading everything past the break, " + lost + ", for a second copy of " + kept + ".") + size + idicWhy;
   }
 
   // A dicentric of two chromosomes. Same gap as the isodicentric above: naming the two

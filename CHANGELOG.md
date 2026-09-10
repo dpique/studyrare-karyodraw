@@ -3,6 +3,16 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the isodicentric decode states its drawn length)
+
+- **An isodicentric's decode now says how long the mirror comes to.** A
+  reader who knows the mirror doubles a piece expects a big chromosome, and
+  the to-scale drawing can read as an error: idic(Y)(q11.23) trades away the
+  long Yq12 block for a second copy of a piece almost as long, so it draws a
+  little shorter than a normal Y. The decode now states the drawn length in
+  Mb and compares it with a normal homologue, for replacing and for
+  supernumerary isodicentrics alike.
+
 ## 2026-09-10 (no printed box splits)
 
 - **On paper, no gamete box or plane box is ever split by a page break.**
