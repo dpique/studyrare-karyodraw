@@ -122,6 +122,18 @@ test('a hovered band lights every other place its material is drawn', async (t) 
       }
     });
 
+    await t.test('the tip stays quiet about a plain shade, and names a special texture', async () => {
+      // A plain Giemsa band's shade is visible under the cursor and narrated
+      // in the band map the same hover opens, so the tip no longer repeats
+      // it; the centromeric hatch keeps its name, which explains a texture
+      // the shade vocabulary cannot.
+      const plain = await hover('1', 'q25');
+      assert.ok(plain.tip.indexOf('G-negative') < 0 && plain.tip.indexOf('G-positive') < 0,
+        `a visible shade is not narrated (got "${plain.tip}")`);
+      const cen = await hover('7', 'p11.1');
+      assert.match(cen.tip, /Centromeric band/, `the hatch keeps its explanation (got "${cen.tip}")`);
+    });
+
     await t.test('the tip sits on the side away from the middle of the karyogram', async () => {
       // The normal 1 is the leftmost cell, so its tip must open to the LEFT
       // of the cursor and leave the neighbours readable; the lone 7 is the
