@@ -3,6 +3,14 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (no printed box splits)
+
+- **On paper, no gamete box or plane box is ever split by a page break.**
+  The gamete pairs now sit side by side inside every card, the 3:1 card's
+  division planes sit two-up and the card breaks only between those rows,
+  and the small 4:0 card keeps itself whole. A carrier summary now closes
+  in four dense pages.
+
 ## 2026-09-10 (the printed segregation panel packs, and the caption slims)
 
 - **The printed segregation section stops sprawling.** The first printed

@@ -811,12 +811,28 @@
     #printsheet .ps-seg .seg-modes { display: block; }
     #printsheet .ps-seg .seg-mode { display: block; break-inside: avoid; padding: 6px 8px; margin: 0 0 8px; }
     #printsheet .ps-seg .seg-mode::after { content: ""; display: block; clear: both; }
-    #printsheet .ps-seg .seg-modes > .seg-mode:nth-child(n+4) { break-inside: auto; }
+    /* "Not split" (Dan, 2026-09-10) is enforced at the box level: the 3:1
+       card is taller than a page however it is squeezed, so avoid on the
+       card is a no-op there; instead its plane boxes sit two-up (their
+       gametes stack again at that width) and the card breaks only between
+       plane rows. The small 4:0 does keep itself whole. */
+    #printsheet .ps-seg .seg-modes > .seg-mode:nth-child(4) { break-inside: auto; }
+    #printsheet .ps-seg .seg-modes > .seg-mode:nth-child(n+5) { break-inside: avoid; }
+    #printsheet .ps-seg .seg-mode .seg-pair { display: inline-block; vertical-align: top;
+      width: 49.3%; box-sizing: border-box; }
+    #printsheet .ps-seg .seg-pair .seg-gametes { flex-direction: column; }
+    #printsheet .ps-seg .seg-imb, #printsheet .ps-seg .seg-viab { font-size: 8pt; }
     #printsheet .ps-seg .seg-scene { float: left; width: 132px; margin: 2px 10px 2px 0; }
     #printsheet .ps-seg .seg-scene-svg { max-width: 128px; }
     #printsheet .ps-seg .seg-config-fig .seg-scene-svg { width: 150px; }
-    #printsheet .ps-seg .seg-gout { display: inline-block; vertical-align: top; width: 49.3%;
-      box-sizing: border-box; margin: 2px 0; break-inside: avoid; }
+    /* The gamete boxes pair up. On screen .seg-gametes is a flex COLUMN of
+       .seg-gamete wrappers (the accent-bordered boxes; .seg-gout is only
+       the text inside, which is why sizing it did nothing). On paper the
+       wrapper becomes a wrapped row, halving every card and letting the
+       3:1 fit a single page whole. */
+    #printsheet .ps-seg .seg-gametes { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+    #printsheet .ps-seg .seg-gamete { flex: 1 1 47%; min-width: 0; box-sizing: border-box; break-inside: avoid; }
+    #printsheet .ps-seg .seg-pair { break-inside: avoid; }
     #printsheet .ps-seg .seg-mode-h { font-size: 10.5pt; break-after: avoid; }
     #printsheet .ps-seg .seg-why, #printsheet .ps-seg .seg-viab, #printsheet .ps-seg .seg-imb,
     #printsheet .ps-seg .seg-lead, #printsheet .ps-seg .seg-note,
