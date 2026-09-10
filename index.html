@@ -2019,12 +2019,13 @@
       ECHOES.forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); });
       HI = null; ECHOES = []; hiBand = null; hiPlaces = 0;
     }
-    // One builder for the solid mark and its echoes, so a twin can never
-    // drift from the mark it repeats. Same amber for both on purpose: every
-    // copy is the same material, and hue already means identity elsewhere
-    // (the involved-chromosome colors), so only the weight may say which copy
-    // the cursor is on. Solid is under the pointer; dashed is the same band
-    // drawn somewhere else.
+    // One builder for the mark and its echoes, so a twin can never drift
+    // from the mark it repeats. Same amber for both on purpose: every copy
+    // is the same material, and hue already means identity elsewhere (the
+    // involved-chromosome colors). All copies draw the SAME solid box: a
+    // dashed echo shipped for a few hours and read too faint at band size
+    // (Dan, 2026-09-10), and the cursor position already says which copy is
+    // under the pointer.
     function bandMark(band, echo) {
       var r;
       if (band.hasAttribute("width")) {
@@ -2045,8 +2046,7 @@
         r.setAttribute("stroke-linejoin", "round");
       }
       r.setAttribute("fill", "none");
-      r.setAttribute("stroke", "#ec9b27"); r.setAttribute("stroke-width", echo ? "1.5" : "2.4");
-      if (echo) r.setAttribute("stroke-dasharray", "3 2.2");
+      r.setAttribute("stroke", "#ec9b27"); r.setAttribute("stroke-width", "2.4");
       r.setAttribute("pointer-events", "none"); r.setAttribute("class", echo ? "band-echo" : "band-hi");
       return r;
     }
@@ -2104,8 +2104,19 @@
         // splits it, both pieces keep the name, and "3 copies" could be a
         // dosage lie where "in 3 places" is exact.
         if (band !== hiBand) { highlight(band); renderDetail(c, b); markSel(c); }
+        // The tip sits on the side of the cursor that points AWAY from the
+        // middle of the karyogram, so on a left-half chromosome it does not
+        // lie across the neighbours to the right (Dan, 2026-09-10). The cell
+        // decides, not the cursor, so the side cannot flicker while scrubbing
+        // bands within one chromosome.
+        var tipCell = band.closest ? band.closest(".kchrom") : null;
+        var tipLeft = false;
+        if (tipCell) {
+          var kr = karyo.getBoundingClientRect(), cr = tipCell.getBoundingClientRect();
+          tipLeft = (cr.left + cr.right) / 2 < (kr.left + kr.right) / 2;
+        }
         showTip(ev, "<b>" + c + b + "</b>  " + prettyStain(s) +
-          (hiPlaces ? ' <span class="tpl">· in ' + hiPlaces + " place" + (hiPlaces === 1 ? "" : "s") + "</span>" : ""));
+          (hiPlaces ? ' <span class="tpl">· in ' + hiPlaces + " place" + (hiPlaces === 1 ? "" : "s") + "</span>" : ""), tipLeft);
         return;
       }
       hideTip(); if (hiBand) clearHi();
@@ -2148,11 +2159,16 @@
       }
     });
   }
-  function showTip(ev, html) {
+  function showTip(ev, html, sideLeft) {
     tooltip.innerHTML = html; tooltip.style.display = "block";
-    var x = ev.clientX + 14, y = ev.clientY + 14;
-    if (x + 250 > window.innerWidth) x = ev.clientX - 250;
-    tooltip.style.left = x + "px"; tooltip.style.top = y + "px";
+    // Measured, not assumed: the old right-edge flip guessed 250px and a
+    // short tip jumped further than it needed to. The window edges still
+    // win over the requested side, so the tip never leaves the screen.
+    var w = tooltip.offsetWidth || 250;
+    var x = sideLeft ? ev.clientX - w - 14 : ev.clientX + 14;
+    if (x + w > window.innerWidth - 4) x = window.innerWidth - w - 4;
+    if (x < 4) x = 4;
+    tooltip.style.left = x + "px"; tooltip.style.top = (ev.clientY + 14) + "px";
   }
   function hideTip() { tooltip.style.display = "none"; }
   function prettyStain(s) {
