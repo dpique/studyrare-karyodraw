@@ -3,6 +3,13 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the hover tip turns to glass)
+
+- **The hover tip is now translucent.** It sits on the figure by necessity, so
+  it no longer fully hides what is beneath it: the navy goes to 86% with a
+  slight blur behind the text, which keeps the label readable while the bands
+  underneath stay visible.
+
 ## 2026-09-10 (the fused waist wears both colors, and the detailed form copies)
 
 - **A whole-arm derivative's centromere now shows both of its sources.** The
