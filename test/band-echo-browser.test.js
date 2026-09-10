@@ -186,7 +186,8 @@ test('a band cut through by a breakpoint says so on the tooltip', async (t) => {
 
     await t.test('the split band names the breakpoint', async () => {
       const tip = await tipFor('p13');
-      assert.match(tip, /in 3 places \(a breakpoint splits this band\)/, tip);
+      assert.match(tip, /in 3 places/, tip);
+      assert.match(tip, /a breakpoint splits this band/, tip);
     });
 
     await t.test('a neighbouring intact band stays plain', async () => {

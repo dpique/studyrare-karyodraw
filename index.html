@@ -676,10 +676,12 @@
     border: 1px solid color-mix(in srgb, var(--navy) 32%, transparent);
     color: var(--navy); font: 12px var(--font-mono);
     text-shadow: 0 0 3px #fff, 0 0 6px rgba(255,255,255,.85);
-    padding: 5px 8px; border-radius: 7px; box-shadow: 0 6px 20px rgba(26,31,54,.18); max-width: 240px;
+    padding: 5px 8px; border-radius: 7px; box-shadow: 0 6px 20px rgba(26,31,54,.18);
+    width: max-content; max-width: 240px;   /* hug the longest row; rows stack narrow */
   }
   #tooltip b { color: var(--peri-700); }
   #tooltip .tpl { color: #5f698a; }
+  #tooltip div + div { margin-top: 1px; }
   details.anatomy summary { cursor: pointer; font-weight: 600; color: var(--periwinkle); }
 
   /* Feedback dialog (on-site, no account needed) */
@@ -2181,9 +2183,17 @@
         // "Centromeric band" or "fragile site" is the explanation of the
         // hatch, not a restatement of a shade.
         var stainTxt = /^g(neg|pos)/.test(s || "") ? "" : "  " + prettyStain(s);
-        showTip(ev, "<b>" + c + b + "</b>" + stainTxt +
-          (hiPlaces ? ' <span class="tpl">· in ' + hiPlaces + " place" + (hiPlaces === 1 ? "" : "s") +
-            (hiSplit ? " (a breakpoint splits this band)" : "") + "</span>" : ""), tipLeft);
+        // Stacked rows, not one long line (Dan, 2026-09-10): in a karyogram
+        // the neighbours sit left and right, so the tip's WIDTH is the
+        // expensive dimension while height is nearly free. Name on top,
+        // count under it, the split note on its own line, and the tip hugs
+        // its longest row instead of striping across the next chromosome.
+        var tipRows = ["<div><b>" + c + b + "</b>" + stainTxt + "</div>"];
+        if (hiPlaces) {
+          tipRows.push('<div class="tpl">in ' + hiPlaces + " place" + (hiPlaces === 1 ? "" : "s") + "</div>");
+          if (hiSplit) tipRows.push('<div class="tpl">a breakpoint splits this band</div>');
+        }
+        showTip(ev, tipRows.join(""), tipLeft);
         return;
       }
       hideTip(); if (hiBand) clearHi();
