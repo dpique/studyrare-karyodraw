@@ -3,6 +3,19 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the printed segregation panel packs, and the caption slims)
+
+- **The printed segregation section stops sprawling.** The first printed
+  proof scattered the outcome cards across pages with half-page blanks. On
+  paper every card now runs full width and short: the anaphase scene sits
+  beside its explanation, the gamete boxes tuck in two-up, the 3:1 and 4:0
+  cards flow across page breaks between their boxed units, and the
+  screen-only "Drawn above" plane text no longer piles up in print.
+- **The segregation caption says less.** "Segregants follow ISCN 2024,
+  Table 5" and "chromosome lengths and pole positions are not to scale" are
+  gone; the caption now simply says the diagrams are schematic and that the
+  fiber paths illustrate which chromosomes co-segregate.
+
 ## 2026-09-10 (the missing X;autosome table explains itself)
 
 - **A sex-chromosome translocation carrier now learns why there is no
