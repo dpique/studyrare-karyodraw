@@ -18,14 +18,13 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
   printed examples were misspelled. The two corpus entries #327 edited are
   back to the standard's strings and are pinned, and the note now reads "Two
   breakpoints in the same arm run from pter to qter, so the one closer to pter
-  is written first". For a short-arm pair the note adds what the literature
-  does: published karyotypes often write such pairs from the centromere
-  outward, and the EML4::ALK inversion is printed inv(2)(p21p23) almost
-  everywhere (Soda 2007, the Atlas of Genetics and Cytogenetics in Oncology,
-  LOINC 79206-9), so that spelling draws, is named as the familiar one, and is
-  shown beside ISCN's inv(2)(p23p21) rather than called wrong. The evidence
-  for every row of this rule, ISCN citation and literature citation side by
-  side, is test/order-rule-evidence.test.js.
+  is written first". For a short-arm pair the note adds one general sentence:
+  published karyotypes often write such pairs from the centromere outward. It
+  names no example, because it shows for every short-arm pair; the evidence
+  behind it (the EML4::ALK inversion is printed inv(2)(p21p23) almost
+  everywhere: Soda 2007, the Atlas of Genetics and Cytogenetics in Oncology,
+  LOINC 79206-9) lives in test/order-rule-evidence.test.js, ISCN citation and
+  literature citation side by side for every row of the rule.
 - **The detailed system converts to the spelling ISCN prints beside it.**
   inv(2)(pter→p23::p13→p23::p13→qter) reads as inv(2)(p23p13), the short form
   printed on the line above it in 5.5.10.

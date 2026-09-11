@@ -1308,10 +1308,10 @@
           ? "ISCN writes two breakpoints in the same arm from pter to qter, so the one closer to pter is written first: “"
           : "With a breakpoint in each arm, the short-arm breakpoint is written first, so “") +
           typedForm + "” is “" + iscnForm + "”." +
+          // General on purpose: the sentence names no example, because it shows for
+          // every short-arm pair, not only the one it was validated on (Dan, 2026-09-11).
           (sameArm && k0.arm === "p"
-            ? " Published karyotypes often write short-arm pairs the other way round, from the centromere outward" +
-              " (the EML4::ALK inversion is almost always printed inv(2)(p21p23)), so the typed spelling is the" +
-              " familiar one; both bound the same segment."
+            ? " Published karyotypes often write short-arm pairs the other way round, from the centromere outward."
             : ""));
       }
     }
