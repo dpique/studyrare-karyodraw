@@ -11,6 +11,15 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
 - **The beacon comment in the page source now says only what it is.** "Usage
   beacon; recorded by worker.js", without describing what the worker keeps.
 
+## 2026-09-11 (no section numbers in what a reader sees)
+
+- **ISCN section references are gone from the app's copy (#341).** The colon
+  tooltips in the detailed form cited "ISCN 4.4.4", the inheritance-suffix
+  notes cited "ISCN 4.2.1 g", and the Robertsonian refusal cited "the rule
+  (5.5.18.3 b)". The sentences say the same thing without the citations. A
+  test now scans every reader-facing file for section numbers in strings;
+  comments keep their citations, which is where the next reader checks a claim.
+
 ## 2026-09-11 (the raw address is kept)
 
 - **Usage events now store the visitor's address.** The switch the previous
