@@ -293,12 +293,13 @@
   //
   //     pter  p15.3 ... p11  cen  q11 ... q33  qter
   //
-  // So del(5)(p15.3p15.2) is correct and del(5)(p15.2p15.3) is not, while on the long
-  // arm del(5)(q13q33) is correct. ISCN 4.2.1 j.iii settles it with an example that
-  // names the parts: dup(1)(p34~32p22), "the distal breakpoint is in 1p34 ... and the
-  // proximal breakpoint is in band 1p22". Distal first, on the p arm.
-  //
-  // Signing the position by arm turns both arms into one ascending axis.
+  // The signed axis serves CROSS-ARM ordering (a pericentric pair writes its
+  // p breakpoint first). It is NOT the same-arm ordering rule: there ISCN's
+  // short system writes the breakpoint closer to the centromere first, which
+  // is ascending band number in BOTH arms; inv(2)(p13p23) is the standard's
+  // own example, and it is why the EML4::ALK literature's inv(2)(p21p23) is
+  // conformant. This distinction has been gotten wrong in both directions;
+  // the whole story lives at bandPairReversed and in test/band-order.test.js.
   function bandKey(b) {
     var m = /^([pq])(\d+)(?:\.(\d+))?$/.exec(String(b || ""));
     if (!m) return null;
@@ -307,13 +308,25 @@
     // which comparing 23 against 3 as integers would get backwards.
     return { arm: m[1], axis: m[1] === "p" ? -pos : pos };
   }
+  // True when a two-breakpoint pair on one chromosome is written against the
+  // short system's order. Same arm: the breakpoint closer to the centromere
+  // comes first (inv(2)(p13p23)), which is ascending band number in both arms.
+  // Cross-arm: the p breakpoint comes first. Applied to del and inv ONLY: for
+  // dup and ins the order is not spelling, it encodes the orientation of the
+  // segment (ins(2)(q13p13p23) direct vs ins(2)(q13p23p13) inverted), and
+  // reordering would silently change the rearrangement. This rule has been
+  // flipped twice; the history is pinned in test/band-order.test.js.
+  function bandPairReversed(a, b) {
+    var ka = bandKey(a), kb = bandKey(b);
+    if (!ka || !kb) return false;
+    if (ka.arm === kb.arm) return Math.abs(kb.axis) < Math.abs(ka.axis);
+    return kb.axis < ka.axis;
+  }
   function bandOrderReversed(chrom, a, b) {
     // An uncertain band (q?, q?2, q21~24) has no single position on that axis, and
     // ISCN writes plenty of them (5.5.2 b.v, 4.2.1 j). Say nothing rather than guess.
     if (/[?~]/.test(String(a)) || /[?~]/.test(String(b))) return false;
-    var ka = bandKey(a), kb = bandKey(b);
-    if (!ka || !kb) return false;
-    return kb.axis < ka.axis;
+    return bandPairReversed(a, b);
   }
 
   // Returns the sentence to show, or "" when the operation has what it needs.
@@ -1250,22 +1263,25 @@
       }
     }
 
-    // Interstitial breakpoints written from the telomere inward. ISCN orders the two
-    // bands of an interstitial segment from the centromere outward, so del(5)(p15.3p15.2)
-    // is del(5)(p15.2p15.3). This one changes how the karyotype is written and NOT
-    // what is drawn, since the same segment is bounded either way, so it takes a
-    // warning and a repair rather than a refusal, like listing order.
+    // Breakpoint pairs written against the short system's order. Same arm, the
+    // one closer to the centromere comes first (inv(2)(p13p23)); cross-arm, the
+    // p breakpoint leads. This changes how the karyotype is written and NOT
+    // what is drawn, since the same segment is bounded either way, so it takes
+    // a note rather than a refusal.
     //
-    // del and inv only. dup is deliberately excluded: there the order is meaningful,
-    // distinguishing a direct duplication from an inverted one, and the renderer
-    // reads it (see the two dup order tests).
+    // del and inv only, deliberately: for dup and ins the order encodes the
+    // orientation of the segment (direct versus inverted) and the renderer
+    // reads it (see the dup order tests and test/band-order.test.js).
     if ((op === "del" || op === "inv") && !ab.badBands.length && !ab.arity) {
       var g0 = ab.breakpoints[0] || [];
       if (g0.length === 2 && bandOrderReversed(ab.chroms[0], g0[0], g0[1])) {
-        ab.reversedBands = [g0[0], g0[1]];
-        warnings.push("Breakpoints are written in the order they occur along the chromosome, from the tip of " +
-          "the short arm to the tip of the long arm, so “" + op + "(" + ab.chroms[0] + ")(" +
-          g0[0] + g0[1] + ")” is “" + op + "(" + ab.chroms[0] + ")(" + g0[1] + g0[0] + ")”.");
+        var k0 = bandKey(g0[0]), k1 = bandKey(g0[1]);
+        var sameArm = k0 && k1 && k0.arm === k1.arm;
+        warnings.push((sameArm
+          ? "For two breakpoints in the same arm, the one closer to the centromere is written first, so “"
+          : "With a breakpoint in each arm, the short-arm breakpoint is written first, so “") +
+          op + "(" + ab.chroms[0] + ")(" + g0[0] + g0[1] + ")” is “" +
+          op + "(" + ab.chroms[0] + ")(" + g0[1] + g0[0] + ")”.");
       }
     }
     return finish(ab);
@@ -2320,6 +2336,13 @@
     } else {
       if (!plain.length && groups[0] && groups[0].length) plain = groups[0];
       if (!plain.length) return "";
+      // The detailed composition reads pter to qter, so a p-arm pair arrives
+      // distal-first; the short spelling for del and inv orders it the way the
+      // draw gate teaches. dup and ins keep encounter order: theirs encodes
+      // orientation.
+      if ((op === "del" || op === "inv") && plain.length === 2 && bandPairReversed(plain[0], plain[1])) {
+        plain = [plain[1], plain[0]];
+      }
       body = plain.join("");
     }
     return head + sign + op + "(" + chromGroup + ")(" + body + ")" + tail;

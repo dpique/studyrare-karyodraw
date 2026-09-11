@@ -1717,7 +1717,7 @@
     { chroms: ["2", "2"], bands: [["p21", "p23"]],
       kind: "fusion", genes: ["EML4", "ALK"],
       name: "inv(2)(p21p23), EML4::ALK lung adenocarcinoma",
-      note: "This inversion means ALK-positive non-small cell lung cancer, typically adenocarcinoma in younger patients and never or light smokers, and it is treatable with crizotinib and the ALK inhibitors after it. The rearrangement is a short paracentric inversion within 2p, far too small to see on banding, so it is a FISH, immunohistochemistry or sequencing finding, and the notation is taught rather than observed. The same <i>ALK</i> is the t(2;5) partner in anaplastic large cell lymphoma." },
+      note: "When found in tumor tissue, this inversion means ALK-positive non-small cell lung cancer, typically adenocarcinoma in younger patients and never or light smokers, and it is treatable with crizotinib and the ALK inhibitors after it. The inversion hides in a normal-looking chromosome 2 not because of its size, since <i>EML4</i> and <i>ALK</i> sit about 12 Mb apart, but because the flipped segment is mostly the dark band 2p22 with thin pale edges from 2p23 and 2p21, so it reads light, dark, light in either orientation. In practice it is a FISH, immunohistochemistry or sequencing finding, and the notation is taught rather than observed. The same <i>ALK</i> is the t(2;5) partner in anaplastic large cell lymphoma." },
     { chroms: ["10", "10"], bands: [["q11.2", "q21"], ["q11", "q21"]],
       kind: "fusion", genes: ["CCDC6", "RET"],
       name: "inv(10)(q11.2q21), RET-rearranged papillary thyroid carcinoma",
