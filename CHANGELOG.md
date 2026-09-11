@@ -3,6 +3,32 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the breakpoint-order rule rights itself, and mosaic columns align)
+
+- **inv(2)(p21p23) draws without comment, because it was right all along.** For
+  two breakpoints in the same arm, ISCN's short system writes the one closer
+  to the centromere first; inv(2)(p13p23) is the standard's own example, and
+  the EML4::ALK literature's inv(2)(p21p23) follows it. The app taught the
+  reverse, generalized from ISCN's dup(1)(p34~32p22) worked example, whose
+  band order encodes the duplication's orientation rather than any ordering
+  rule. The rule has now been gotten wrong in both directions, so the full
+  history is pinned in the suite; dup and ins keep whatever order they were
+  written in, since theirs means direct versus inverted.
+- **The spelling banner stops overclaiming.** An order note used to arrive
+  under "already applied" while the header, the chips and the notes all kept
+  the typed spelling. It now says what is true: the same figure draws either
+  way, because the same two bands bound the same segment.
+- **The EML4::ALK note tells the truth about why the inversion is cryptic.**
+  Not size: EML4 and ALK sit about 12 Mb apart. The flipped segment is mostly
+  the dark band 2p22 with pale edges from 2p21 and 2p23, so it reads light,
+  dark, light in either orientation. The note also opens with tumor-tissue
+  framing, so a constitutional-looking string cannot read as a germline
+  cancer diagnosis.
+- **A mosaic's Involved-segments table aligns its columns across cell lines.**
+  Each clone rendered its own table, so the Copies, Call and size columns
+  started at different positions per clone; one shared table now carries every
+  cell line, each named on its own row.
+
 ## 2026-09-10 (one Chrome finder, one escaper, and the dead code leaves)
 
 - **Stale figures can no longer ship silently.** The committed karyogram PNGs

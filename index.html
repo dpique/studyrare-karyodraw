@@ -610,7 +610,11 @@
   #imbalance .imb-genes i { font-style: italic; }
   #imbalance td.call i { font-style: italic; }
   #imbalance .imb-note { margin-top: 6px; font-size: 12px; color: var(--muted); }
-  #imbalance .imb-clone { font: 600 11.5px var(--font-mono); color: var(--ink-2); margin: 8px 0 3px; }
+  /* Clone-name and note rows span the shared table (one table per card, so
+     the columns align across cell lines); they carry the same look the old
+     between-table divs had. */
+  #imbalance tr.imb-clone-row td { font: 600 11.5px var(--font-mono); color: var(--ink-2); padding: 9px 0 3px; }
+  #imbalance tr.imb-note-row td.imb-note { border-top: none; padding: 5px 0 6px; }
   .bandlabel { font: 9px var(--font-mono); fill: var(--ink-2); cursor: pointer; }
   .bandlabel:hover, .bandlabel.hot { fill: var(--periwinkle); font-weight: 700; }
   .ideo-detail .band { cursor: crosshair; }
@@ -1607,7 +1611,8 @@
       });
       return out;
     }
-    var out = [], any = false, anyDev = false, bpAny = false;
+    var sections = [], any = false, anyDev = false, bpAny = false;
+    var multi = (clones || []).length > 1;
     (clones || []).forEach(function (clone, ci) {
       var d = window.Karyo.computeDosage(clone);
       // A chromosome earns rows when it deviates OR when the notation names
@@ -1662,13 +1667,25 @@
         bpLines = bpLines.concat(bpGenes(c));
         if (bpLines.length) bpAny = true;
       });
-      out.push((clones.length > 1 ? '<div class="imb-clone">' + escapeHtml(clone.raw || ("clone " + (ci + 1))) + "</div>" : "") +
-        "<table><thead><tr><th>Segment</th><th>Copies</th><th>Call</th><th>≈ size</th></tr></thead><tbody>" +
-        rows.join("") + "</tbody></table>" +
-        (SHOW_GENES && bpLines.length
-          ? '<div class="imb-note">At the breakpoints: ' + bpLines.join(" &middot; ") + "</div>" : "") +
-        (d.unknownExcluded ? '<div class="imb-note">A marker or dmin is present; material banding cannot assign to a chromosome is not counted in these rows.</div>' : ""));
+      var notes = [];
+      if (SHOW_GENES && bpLines.length) notes.push("At the breakpoints: " + bpLines.join(" &middot; "));
+      if (d.unknownExcluded) notes.push("A marker or dmin is present; material banding cannot assign to a chromosome is not counted in these rows.");
+      sections.push({ head: clone.raw || ("clone " + (ci + 1)), rows: rows, notes: notes });
     });
+    // ONE table across every cell line. Each clone used to get its own table,
+    // so the Copies/Call/size columns auto-sized apart and a mosaic read as
+    // two misaligned grids (Dan's screenshot, 2026-09-10). The clone names ride
+    // as full-width rows inside the shared table; per-clone notes ride the same
+    // way so they stay beside their clone.
+    var body = sections.map(function (sec) {
+      return (multi ? '<tr class="imb-clone-row"><td colspan="4">' + escapeHtml(sec.head) + "</td></tr>" : "") +
+        sec.rows.join("") +
+        sec.notes.map(function (n) { return '<tr class="imb-note-row"><td colspan="4" class="imb-note">' + n + "</td></tr>"; }).join("");
+    }).join("");
+    var out = sections.length
+      ? ["<table><thead><tr><th>Segment</th><th>Copies</th><th>Call</th><th>≈ size</th></tr></thead><tbody>" +
+         body + "</tbody></table>"]
+      : [];
     // The gene checkbox opens the body when there is anything to mark: a gained or
     // lost segment with a gene inside it, OR a breakpoint a gene sits on. It used
     // to require the first alone, which switched the gene layer off for exactly the
@@ -2724,6 +2741,18 @@
     if (w.length === 1 && !fix && w[0].indexOf("DETAILED system") >= 0 && w[0].indexOf("Drawn here from") >= 0) {
       box.innerHTML = '<div class="notebox"><div class="note-title">Read as the detailed system, and drawn:</div>' +
         '<ul><li>' + escapeHtml(w[0]) + '</li></ul></div>';
+      return;
+    }
+    // Order notes are so-X-is-Y shaped like the repairs below, but nothing was
+    // applied anywhere: the header, the chips and the notes keep the typed
+    // spelling, and the drawing is the same either way because the same two
+    // bands bound the same segment. "Already applied" was a lie for them
+    // (Dan, 2026-09-10, on the banner disagreeing with everything under it).
+    var allOrder = w.length && !fix && w.every(function (x) { return x.indexOf("is written first") >= 0; });
+    if (allOrder) {
+      box.innerHTML = '<div class="notebox"><div class="note-title">' +
+        (w.length === 1 ? "One spelling note (the same figure either way):" : "Spelling notes (the same figure either way):") + '</div>' +
+        '<ul>' + w.map(function (x) { return "<li>" + escapeHtml(x) + "</li>"; }).join("") + '</ul></div>';
       return;
     }
     var allRepairs = w.length && !fix && w.every(function (x) { return x.indexOf("” is “") >= 0; });

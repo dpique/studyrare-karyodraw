@@ -228,3 +228,36 @@ test('the net-imbalance table appears, toggles genes, and obeys the gate', async
     server.close();
   }
 });
+
+test('a mosaic aligns its columns across cell lines', async (t) => {
+  if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
+  // Each clone used to render its own <table>, so Copies/Call/size auto-sized
+  // apart and started at different x per clone (Dan's screenshot, 2026-09-10,
+  // on exactly this karyotype). One shared table aligns them; the clone names
+  // ride as full-width rows inside it.
+  const server = await serveSite();
+  const port = server.address().port;
+  const browser = await launchBrowser();
+  try {
+    const page = await browser.newPage();
+    await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent('46,X,idic(Y)(q11.23)[39]/45,X[11]')}&style=highlight&show=involved`,
+      { waitUntil: 'load' });
+    await page.waitForSelector('#imbalance table');
+    const m = await page.evaluate(() => ({
+      tables: document.querySelectorAll('#imbalance table').length,
+      heads: document.querySelectorAll('#imbalance thead').length,
+      clones: document.querySelectorAll('#imbalance .imb-clone-row').length,
+      copiesX: [...document.querySelectorAll('#imbalance td.n')]
+        .map((td) => Math.round(td.getBoundingClientRect().left)),
+    }));
+    assert.equal(m.tables, 1, 'one table for the whole card');
+    assert.equal(m.heads, 1, 'one header row, not one per clone');
+    assert.equal(m.clones, 2, 'both cell lines are named');
+    assert.ok(m.copiesX.length >= 3, 'rows from both clones are present');
+    assert.ok(m.copiesX.every((x) => x === m.copiesX[0]),
+      'the Copies column starts at one x for every clone: ' + m.copiesX.join(','));
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});

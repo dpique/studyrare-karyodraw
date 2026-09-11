@@ -76,7 +76,7 @@ module.exports = [
     generated: true,
   },
   {
-    short: "46,XY,der(9)inv(9)(p23p13)del(9)(q22q33)",
+    short: "46,XY,der(9)inv(9)(p13p23)del(9)(q22q33)",
     detailed: "46,XY,der(9)(pter→p23::p13→p23::p13→q22::q33→qter)",
     generated: true,
   },
@@ -391,7 +391,7 @@ module.exports = [
     needs: "a multi-chromosome or reciprocal insertion",
   },
   {
-    short: "46,XX,inv(2)(p23p13)",
+    short: "46,XX,inv(2)(p13p23)",
     detailed: "46,XX,inv(2)(pter→p23::p13→p23::p13→qter)",
     generated: true,
   },

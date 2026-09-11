@@ -58,24 +58,25 @@ test('the unsupported list is a coverage gap, and is reported when it closes', (
     nowOk.map((e) => `${e.k}   (${e.needs})`).join('\n  '));
 });
 
-// ---- the rules that were got wrong, pinned against their citations ------------
-test('breakpoints are ordered pter to qter, not centromere-outward', () => {
-  // ISCN Table 3: "Breakpoint band designations from pter to qter of the rearranged
-  // chromosome". 5.5.2 b repeats it for interstitial deletions. Travelling pter to
-  // qter, p-arm band numbers DESCEND and then q-arm numbers ASCEND, so the short arm
-  // reads the opposite way round from the long arm. This was shipped backwards.
+// ---- the rule that has now been got wrong in both directions ------------------
+test('same-arm breakpoints are ordered centromere-outward, cross-arm p first', () => {
+  // The short system writes the breakpoint closer to the centromere first;
+  // inv(2)(p13p23) is the standard's own example. A previous version of this
+  // very test pinned pter-to-qter instead, generalized from the
+  // dup(1)(p34~32p22) worked example, whose order encodes ORIENTATION (a
+  // direct dup), not the ordering rule. test/band-order.test.js carries the
+  // full history so the rule cannot flip a third time unremarked.
   const warns = (k) => ISCN.parse(k).warnings.join(' ');
-  assert.doesNotMatch(warns('46,XX,del(4)(p15.3p15.2)'), /along the chromosome/,
-    'distal band first on the p arm is correct');
-  assert.match(warns('46,XX,del(4)(p15.2p15.3)'), /along the chromosome/,
-    'proximal band first on the p arm is not');
-  assert.doesNotMatch(warns('46,XX,del(5)(q13q33)'), /along the chromosome/,
+  assert.doesNotMatch(warns('46,XX,del(4)(p15.2p15.3)'), /written first/,
+    'proximal band first on the p arm is correct');
+  assert.match(warns('46,XX,del(4)(p15.3p15.2)'), /written first/,
+    'distal band first on the p arm is not');
+  assert.doesNotMatch(warns('46,XX,del(5)(q13q33)'), /written first/,
     'proximal band first on the q arm is correct');
-  assert.match(warns('46,XX,del(5)(q33q13)'), /along the chromosome/,
+  assert.match(warns('46,XX,del(5)(q33q13)'), /written first/,
     'distal band first on the q arm is not');
-  // 4.2.1 j.iii, verbatim, with the book's own gloss: "the distal breakpoint is in
-  // 1p34 ... and the proximal breakpoint is in band 1p22".
-  assert.doesNotMatch(warns('46,XY,dup(1)(p34~32p22)'), /along the chromosome/);
+  // dup keeps whatever order it was written in: orientation, never respelled.
+  assert.doesNotMatch(warns('46,XY,dup(1)(p34~32p22)'), /written first/);
 });
 
 test('a ploidy level is a reporting baseline, never checked against the count', () => {
