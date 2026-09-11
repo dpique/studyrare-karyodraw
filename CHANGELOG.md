@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-11 (a drawing flip is not an inversion)
+
+- **The Involved segments table no longer calls a Robertsonian arm "inverted".**
+  The renderer flips one arm of a whole-arm body, and mirrors an isochromosome's
+  arm, so the pieces meet at the centromere; the table read that flip as an
+  inversion (der(13;14)(q10;q10) showed 14q10→14qter "balanced, inverted").
+  A piece is inverted only when the rearrangement that built it can turn a
+  segment end for end; real inversions and inverted duplications keep the flag.
+
 ## 2026-09-11 (a segment size is a range)
 
 - **The Involved segments row states its size as a range.** A breakpoint is

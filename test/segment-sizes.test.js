@@ -122,3 +122,18 @@ test('a run bounded by typed breakpoints carries the band-resolution range', () 
   // Whole-arm breakpoints (q10) have no width either.
   assert.ok(runsOf('45,XX,der(13;14)(q10;q10)', '13').every((r) => !r.range || r.range.max - r.range.min === 0));
 });
+
+// "inverted" in the table means a segment turned end for end by the rearrangement,
+// never a piece the renderer flipped so a whole-arm body or an isochromosome could be
+// drawn (found 2026-09-11 in the live table: der(13;14)(q10;q10) read "inverted").
+test('a drawing flip is not an inversion; a real one still is', () => {
+  // Array.from into THIS realm: the parser and renderer arrays come from the vm context,
+  // and deepEqual compares prototypes (see the note in test/band-order.test.js).
+  const inverted = (k) => Array.from(dosage(k).chroms).flatMap((c) => Array.from(c.runs).filter((r) => r.inverted).map((r) => c.chrom + ':' + r.fromLabel + '→' + r.toLabel));
+  assert.deepEqual(inverted('45,XY,der(13;14)(q10;q10)'), [], 'a Robertsonian fusion inverts nothing');
+  assert.deepEqual(inverted('46,XX,i(17)(q10)'), [], 'an isochromosome mirrors, it does not invert');
+  assert.deepEqual(inverted('45,XX,der(1;3)(p10;q10)'), []);
+  assert.deepEqual(inverted('46,XX,inv(2)(p23p13)'), ['2:p23→p13'], 'an inversion is inverted');
+  assert.deepEqual(inverted('46,XY,dup(1)(q25q22)').length, 1, 'an inverted duplication keeps its flag');
+  assert.equal(inverted('46,XX,rec(2)dup(2p)inv(2)(p21q31)dmat').length, 1, 'the recombinant inverted copy keeps its flag');
+});
