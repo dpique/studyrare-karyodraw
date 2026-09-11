@@ -495,7 +495,6 @@
   .affected-only .klabel { margin-top: auto; padding-top: 3px; }
   .kchrom { position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 2px; border-radius: 6px; }
   .kchrom:hover { background: #f0f2f7; }
-  .kchrom.abn { }
   /* The selection ring wears the selected chromosome's own figure color (set
      as --sel-ring/--sel-bg by markSel), because the band map the click opens
      is drawn in that same hue: a fixed periwinkle ring around the amber
@@ -736,7 +735,6 @@
 
   .pbtn { border: 1px solid #cdd2e1; background: #fff; color: var(--ink-2); border-radius: 9px; padding: 6px 12px; font-size: 13px; cursor: pointer; font-family: inherit; }
   .pbtn:hover { background: #f0f2f7; border-color: var(--periwinkle); color: var(--peri-700); }
-  .pbtn:disabled { opacity: .7; cursor: default; }
   .kactions { display: flex; align-items: center; gap: 8px; padding: 2px 16px 12px; flex-wrap: wrap; }
   .kactions .spacer { flex: 1 1 auto; }
   /* Same .pbtn shape as its neighbors, amber where they are neutral: the flag reads
@@ -805,7 +803,6 @@
     #printsheet .ps-pic .ps-clone { display: inline-block; vertical-align: top; margin: 0 10px; }
     #printsheet .ps-pic .ps-clone-head { font-family: var(--font-mono); font-size: 9pt; color: var(--ink-2); margin-bottom: 2px; }
     #printsheet .ps-clone-label { font-family: var(--font-mono); font-size: 9.5pt; font-weight: 600; margin: 6px 0 2px; }
-    #printsheet .ps-pic svg.ideo { }
     #printsheet .ps-h2 { font-family: var(--font-display); font-size: 10.5pt; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid #ccc; margin: 11px 0 4px; padding-bottom: 2px; }
     #printsheet p { margin: 3px 0; font-size: 10.5pt; line-height: 1.42; }
     #printsheet .ps-talk { font-style: italic; color: var(--ink-2); margin-top: 5px; }
@@ -857,7 +854,7 @@
        cross (an X beside a small exchanged tip) otherwise stretches its card
        across most of a page. Square autosomal crosses fit the width first and
        never reach the cap. */
-    #printsheet .ps-seg .seg-scene-svg { max-width: 128px; max-height: 250px; width: auto; }
+    #printsheet .ps-seg .seg-scene-svg { max-width: 150px; max-height: 250px; width: auto; }
     #printsheet .ps-seg .seg-config-fig .seg-scene-svg { max-width: 150px; max-height: 280px; width: auto; }
     /* The gamete boxes pair up. On screen .seg-gametes is a flex COLUMN of
        .seg-gamete wrappers (the accent-bordered boxes; .seg-gout is only
@@ -884,11 +881,7 @@
        every plane prints below with its own label anyway. */
     #printsheet .ps-seg .seg-why-div { display: none; }
     #printsheet .ps-seg .seg-key-row { break-inside: avoid; }
-    #printsheet .ps-seg .seg-scene-svg { max-width: 150px; }
     #printsheet .ps-seg .seg-config-fig .seg-scene-svg { width: 150px; }
-    #printsheet .ps-seg .seg-lead, #printsheet .ps-seg .seg-why, #printsheet .ps-seg .seg-note,
-    #printsheet .ps-seg .seg-imb, #printsheet .ps-seg .seg-viab, #printsheet .ps-seg .seg-key-sub,
-    #printsheet .ps-seg .seg-key-row { font-size: 8.5pt; }
   }
 </style>
 </head>
@@ -1942,7 +1935,6 @@
     var html = "";
     clones.forEach(function (clone, i) {
       if (clones.length > 1) {
-        var pct = "";
         html += '<div class="clone-head" style="padding-left:0"><span class="cn">Clone ' + (i + 1) + '</span>' +
           (clone.cellCount != null ? '<span class="cc">' + clone.cellCount + ' cells</span>' : "") + '</div>';
       }
@@ -2758,7 +2750,10 @@
     box.innerHTML = parts.join("");
   }
 
-  function escapeHtml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  // Both names alias the app-wide escaper (karyo-render.js). They were two
+  // divergent local copies; the split names survive because escapeHtml is
+  // what the page code says and escXml is what the SVG export says.
+  function escapeHtml(s) { return window.Karyo.esc(s); }
   function cssEsc(s) { return String(s).replace(/["\\]/g, "\\$&"); }
   // Keep punctuation that is legal in a query value readable (46,XY,t(9;22)…)
   // instead of a wall of %2C/%3B, so the shared URL mirrors the input box.
@@ -2913,7 +2908,7 @@
   }
 
   // ---- image export + share -------------------------------------------------
-  function escXml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function escXml(s) { return window.Karyo.esc(s); }
 
   function flash(btn, msg) {
     if (!btn) return;

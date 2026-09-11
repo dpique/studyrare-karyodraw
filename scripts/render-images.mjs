@@ -14,9 +14,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import puppeteer from 'puppeteer-core';
 import { renderKaryogram, ROOT } from './lib/render.mjs';
 import { appCss, fontLinks, settleFonts } from './lib/page-assets.mjs';
+import { launchBrowser } from './lib/browser.js';
 
 const require = createRequire(import.meta.url);
 const { CONTENT } = require(path.join(ROOT, 'content/karyotypes.js'));
@@ -25,8 +25,6 @@ const { CONTENT } = require(path.join(ROOT, 'content/karyotypes.js'));
 // what ships on the page (same band colors, label fonts, spacing), and refuse to
 // screenshot a figure whose webfonts never arrived (see lib/page-assets.mjs).
 
-const CHROME = process.env.CHROME_PATH
-  || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 // The karyogram's intrinsic CSS size is modest (a few chromosomes on the
 // affected-only pages). Render at 3x so the stored PNG is high-resolution for image
@@ -111,9 +109,7 @@ async function main() {
     console.error(only ? `No karyotype with slug "${only}".` : 'No content.');
     process.exit(1);
   }
-  const browser = await puppeteer.launch({
-    executablePath: CHROME,
-    headless: 'new',
+  const browser = await launchBrowser({
     args: ['--no-sandbox', '--hide-scrollbars', '--force-color-profile=srgb'],
   });
   try {
@@ -149,6 +145,11 @@ async function main() {
       await (await page.$('#card')).screenshot({ path: path.join(dir, 'card.png') });
 
       manifest[e.slug] = {
+        // The notation these PNGs were rendered from. test/seo.test.js compares
+        // it against content/karyotypes.js, so editing a notation without
+        // rerunning `npm run images` fails the suite instead of shipping a
+        // figure that no longer matches its page.
+        k: e.k,
         w, h, pw: w * SCALE, ph: h * SCALE,
         cw: 1200 * CARD_SCALE, ch: 630 * CARD_SCALE,
       };

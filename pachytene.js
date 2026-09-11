@@ -37,7 +37,7 @@
 
   // Colors mirror segregation.js (periwinkle = chromosome A, amber = chromosome B; teal /
   // rose = the two spindle poles). Kept local so the two modules stay independent.
-  var PERI = "#5e72e4", AMBER = "#ec9b27", INK = "#1a1f36", LINE = "#3c4463", STALK = "#c2caf6";
+  var PERI = "#5e72e4", AMBER = "#ec9b27", INK = "#1a1f36", LINE = "#3c4463";
   var TEAL = { stroke: "#1f9e8f", bg: "#e2f3f0", ink: "#116d62" };
   var ROSE = { stroke: "#c0568a", bg: "#f8e7ef", ink: "#8f3466" };
   var PLATE = "#aeb6d6";
@@ -45,7 +45,9 @@
   var O = 5;            // half-gap between the two synapsed bars sharing an arm
 
   function ideo() { return typeof window !== "undefined" ? window.IDEOGRAM : null; }
-  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  // The shared escaper (karyo-render.js loads first everywhere this runs).
+  // The local copy omitted quotes while feeding quoted aria-label attributes.
+  function esc(s) { return window.Karyo.esc(s); }
   function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
   function num(x) { return (Math.round(x * 10) / 10); }
   function lerp(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
@@ -379,14 +381,11 @@
       assign = { B: [right, ROSE], F: [left, TEAL], A: [left, TEAL] };
       badges = badge(left[0], left[1] - 14, "2", TEAL.ink) + badge(right[0] - 14, right[1] - 1, "1", ROSE.ink);
     } else {
-      // 3:0 — a single 45-degree plane above all three centromeres; all three travel lower-left,
-      // the upper-right pole gets nothing. Clipped to the frame.
-      var ax = Cx, ay = Cy - 16, tlo = Math.max(2 - ax, 2 - ay), thi = Math.min((w - 2) - ax, (h - 2) - ay);
-      planeSvg = plate(ax + tlo, ay + tlo, ax + thi, ay + thi);
-      var p3 = [Math.max(mL * 0.3, 9), h - 9], p0 = [w - 9, mT - 2];
-      assign = { A: [p3, TEAL], F: [p3, TEAL], B: [p3, TEAL] };
-      badges = badge(p3[0] + 15, p3[1] - 1, "3", TEAL.ink) + badge(p0[0] - 14, p0[1] + 1, "0", ROSE.ink) +
-        aster(p0[0], p0[1], ROSE.stroke);
+      // Exactly three Robertsonian modes exist, and scene() maps every caller
+      // onto them. A new mode must be drawn here deliberately, not inherit a
+      // leftover figure: an unreachable 3:0 branch sat in this slot for months
+      // because nothing ever passed "3:0".
+      throw new Error("triFigure: unknown mode " + modeName);
     }
 
     var fibers = "", units = "", poleSet = {};
@@ -419,7 +418,11 @@
   function scene(model, modeName) {
     if (model.type === "robertsonian") {
       if (modeName === "Alternate") return triFigure(model, "Alternate");
-      return triFigure(model, modeName === "Adjacent-B" ? "Adjacent-B" : "Adjacent-A");
+      if (modeName === "Adjacent" || modeName === "Adjacent-A") return triFigure(model, "Adjacent-A");
+      if (modeName === "Adjacent-B") return triFigure(model, "Adjacent-B");
+      // Refuse rather than guess: the old fallthrough would have drawn any
+      // future mode (a 3:1, a 3:0) as Adjacent-A with every check green.
+      throw new Error("Pachytene.scene: unknown Robertsonian mode " + modeName);
     }
     return crossFigure(model, modeName);
   }

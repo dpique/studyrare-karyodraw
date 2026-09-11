@@ -92,15 +92,6 @@
     return out;
   }
 
-  var KIND_LABEL = {
-    gain: "whole-chromosome gain", loss: "whole-chromosome loss",
-    del: "deletion", dup: "duplication", inv: "inversion",
-    t: "reciprocal translocation", ins: "insertion", iso: "isochromosome",
-    ring: "ring chromosome", der: "derivative chromosome", add: "additional material",
-    dic: "dicentric", fra: "fragile site", mar: "marker chromosome",
-    trp: "triplication", unknown: "unrecognized"
-  };
-
   // Constitutional / inheritance qualifiers trail an aberration: they say where it
   // came from, they are not part of the rearrangement itself. Strip and remember
   // them so they do not break the token they follow (e.g. +21c, del(22)(q11.2)mat).
@@ -3288,10 +3279,7 @@
 
   window.ISCN = {
     parse: parse,
-    splitBands: splitBands,
-    KIND_LABEL: KIND_LABEL,
     QUAL: QUAL,
-    AUTOSOMES: AUTOSOMES,
     ALL: ALL
   };
 })();

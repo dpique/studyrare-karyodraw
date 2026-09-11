@@ -752,7 +752,7 @@ stages, each a script, so a session picks it up instead of rebuilding it:
    changed bundles of the 2026-08 pilot cost ~390k subagent tokens and returned
    verdicts precise enough to act on unreviewed.
 
-3a. **The message audit**: `scripts/review-messages.mjs failures.json [--slices=N]`
+3a. **The message audit**: `npm run review-messages -- failures.json [--slices=N]`
    is the failure-TAIL counterpart: it renders every unique production failure
    through the page, records what the box says (`review/messages/audit.jsonl`),
    dedupes the refusals into message TEMPLATES (quoted tokens, numbers, and sex

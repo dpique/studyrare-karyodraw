@@ -16,39 +16,18 @@
 // The agent rubric lives in docs/VALIDATION.md ("The agent review pipeline",
 // stage 3a) — hand each agent one slice file and that rubric, nothing else.
 import fs from 'node:fs';
-import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
+import { findChrome, launchBrowser, serveSite } from './lib/browser.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const require = createRequire(import.meta.url);
-const puppeteer = require('puppeteer-core');
-const CHROME = [process.env.CHROME_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/usr/bin/google-chrome', '/usr/bin/chromium'].filter(Boolean).find((p) => fs.existsSync(p));
-if (!CHROME) { console.error('no Chrome found; set CHROME_PATH'); process.exit(1); }
+if (!findChrome()) { console.error('no Chrome found; set CHROME_PATH'); process.exit(1); }
 
 const args = process.argv.slice(2);
 const failuresPath = args.filter((a) => !a.startsWith('--'))[0];
 const slices = Number((args.find((a) => a.startsWith('--slices=')) || '--slices=3').split('=')[1]);
 if (!failuresPath) { console.error('usage: node scripts/review-messages.mjs failures.json [--slices=3]'); process.exit(1); }
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-  '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' };
-function serve() {
-  const server = http.createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    if (url.pathname.startsWith('/api/')) { res.writeHead(204).end(); return; }
-    let file = path.join(ROOT, decodeURIComponent(url.pathname));
-    if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
-    if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-    if (!fs.existsSync(file)) { res.writeHead(404).end(); return; }
-    res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream' });
-    fs.createReadStream(file).pipe(res);
-  });
-  return new Promise((res) => server.listen(0, '127.0.0.1', () => res(server)));
-}
 
 // Message shape: quoted tokens, numbers, and lone sex letters normalized away,
 // so one lesson worded around ten different inputs is ONE template.
@@ -63,9 +42,9 @@ const norm = (k) => String(k || '').replace(/\s+/g, ' ').trim();
 const outDir = path.join(ROOT, 'review', 'messages');
 fs.mkdirSync(outDir, { recursive: true });
 
-const server = await serve();
+const server = await serveSite();
 const port = server.address().port;
-const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+const browser = await launchBrowser();
 const page = await browser.newPage();
 await page.setViewport({ width: 1100, height: 800 });
 

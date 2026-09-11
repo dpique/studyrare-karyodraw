@@ -97,6 +97,23 @@ test('each karyotype page serves an indexable karyogram image with descriptive a
   }
 });
 
+test('the committed karyogram PNGs match the notations they were rendered from', () => {
+  // The PNGs are the one generated output that is committed (CI has no
+  // browser), which makes them the one output that can silently go stale: edit
+  // a notation in content/karyotypes.js, skip `npm run images`, and every
+  // check stays green while the page shows a figure of the OLD karyotype.
+  // render-images.mjs stamps each slug's manifest entry with the notation it
+  // drew; this compares that stamp against the source of truth.
+  const manifest = JSON.parse(read(path.join('content', 'karyogram-images.json')));
+  const { CONTENT } = require('../content/karyotypes.js');
+  for (const e of CONTENT) {
+    const m = manifest[e.slug];
+    assert.ok(m, `${e.slug} has no rendered images (run "npm run images -- ${e.slug}")`);
+    assert.equal(m.k, e.k,
+      `${e.slug}: notation changed since its PNGs were rendered (run "npm run images -- ${e.slug}" and commit the PNGs)`);
+  }
+});
+
 test('each karyotype page has its own condition-specific social card, not the shared preview', () => {
   const dir = path.join(root, 'karyotype');
   const slugs = fs.readdirSync(dir, { withFileTypes: true })

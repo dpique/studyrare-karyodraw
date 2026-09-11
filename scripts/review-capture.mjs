@@ -17,33 +17,13 @@
 // (hash check), so an incremental re-run after a renderer change re-captures and
 // re-spends analysis only where the app's output actually moved.
 import fs from 'node:fs';
-import http from 'node:http';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { createRequire } from 'node:module';
 import { ISCN, Karyo, ROOT } from './lib/render.mjs';
+import { findChrome, launchBrowser, serveSite } from './lib/browser.js';
 
-const require = createRequire(import.meta.url);
-const CHROME = [process.env.CHROME_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/usr/bin/google-chrome', '/usr/bin/chromium'].filter(Boolean).find((p) => fs.existsSync(p));
-if (!CHROME) { console.error('no Chrome found; set CHROME_PATH'); process.exit(1); }
+if (!findChrome()) { console.error('no Chrome found; set CHROME_PATH'); process.exit(1); }
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-  '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' };
-function serve() {
-  const server = http.createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    if (url.pathname.startsWith('/api/')) { res.writeHead(204).end(); return; }
-    let file = path.join(ROOT, decodeURIComponent(url.pathname));
-    if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
-    if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-    if (!fs.existsSync(file)) { res.writeHead(404).end(); return; }
-    res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream' });
-    fs.createReadStream(file).pipe(res);
-  });
-  return new Promise((res) => server.listen(0, '127.0.0.1', () => res(server)));
-}
 
 // The model's own account of each abnormal chromosome, the refutation oracle.
 function modelData(k) {
@@ -85,10 +65,9 @@ function modelData(k) {
 }
 
 const manifest = JSON.parse(fs.readFileSync(path.join('review', 'manifest.json'), 'utf8'));
-const puppeteer = require('puppeteer-core');
-const server = await serve();
+const server = await serveSite();
 const port = server.address().port;
-const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+const browser = await launchBrowser();
 const page = await browser.newPage();
 await page.setViewport({ width: 1400, height: 1100, deviceScaleFactor: 2 });
 
