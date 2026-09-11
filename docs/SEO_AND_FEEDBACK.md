@@ -117,8 +117,8 @@ on insert as a safety net, so feedback is never lost even mid-migration.
 
 ## Usage analytics + rate limiting
 
-- `/api/collect` writes a cookieless usage row (no address stored; a one-way daily
-  visitor code, see worker.js) to
+- `/api/collect` writes a cookieless usage row (a one-way daily visitor code and, with
+  STORE_RAW_IP set in wrangler.jsonc, the raw address; see worker.js) to
   the D1 `usage` table; `/api/top` returns the ranked "Most-studied" list (edge-cached
   a day). See the privacy note atop `worker.js`.
 - Both write endpoints are per-IP rate limited via the Workers Rate Limiting binding

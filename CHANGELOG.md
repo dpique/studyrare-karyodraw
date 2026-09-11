@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-11 (the raw address is kept)
+
+- **Usage events now store the visitor's address.** The switch the previous
+  entry left off is on in wrangler.jsonc, so each event carries the address
+  beside the one-way daily visitor code. The About page keeps its shorter
+  paragraph: no account, nothing to install, and a note that karyotypes drawn
+  and features used are recorded; the privacy notes in the worker, the schema
+  and the docs say the address is kept.
+
 ## 2026-09-11 (visitors are counted with a one-way daily code)
 
 - **Visitor counts, without storing anyone's address.** Each usage event now

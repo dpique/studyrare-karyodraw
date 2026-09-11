@@ -18,7 +18,8 @@
  * after two days, so distinct codes per day count visitors, no code can be
  * reversed once its salt is gone, and nothing joins one day's codes to the
  * next (added 2026-09-11 at Dan's request, for visitor counts). The raw address
- * is stored only when the STORE_RAW_IP var is "1"; it is not set. Feedback is a separate,
+ * is stored as well when the STORE_RAW_IP var is "1", and wrangler.jsonc sets it
+ * (Dan's decision, 2026-09-11). Feedback is a separate,
  * voluntary channel: it stores what the person typed, a coarse country, and, if
  * they choose to give it, an email for a reply. No user-agent, IP, or cookie is
  * stored on feedback either. Feedback is kept private and never shown.

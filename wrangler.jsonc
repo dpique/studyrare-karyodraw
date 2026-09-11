@@ -46,6 +46,9 @@
       "database_id": "a3ffb445-1e1c-47a9-9004-4d1ed257f58e"
     }
   ],
+  // Dan's decision, 2026-09-11: store the raw address on every usage event
+  // (worker.js record). The About page and the privacy notes describe this.
+  "vars": { "STORE_RAW_IP": "1" },
   // Daily feedback digest. 13:00 UTC is ~08:00 US Eastern. The scheduled handler
   // no-ops until RESEND_API_KEY and FEEDBACK_EMAIL_TO are set as secrets.
   "triggers": {

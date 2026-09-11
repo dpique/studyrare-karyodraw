@@ -3131,8 +3131,8 @@
     }
   }
 
-  // Cookieless usage beacon (no cookie, no account; the worker adds a one-way daily
-  // visitor code and stores no address); recorded by worker.js.
+  // Cookieless usage beacon (no cookie, no account); the worker adds a one-way daily
+  // visitor code and, since 2026-09-11, the raw address. Recorded by worker.js.
   var lastBeaconSig = "";
   function beacon(payload) { try { navigator.sendBeacon("/api/collect", JSON.stringify(payload)); } catch (e) {} }
   function beaconDraw(k, ok) {

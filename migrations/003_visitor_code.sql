@@ -1,7 +1,7 @@
 -- Visitor counting without identifiers (2026-09-11). `visitor` is a one-way code
 -- of address + browser + a random per-day salt kept in `salts` and deleted after
 -- two days; distinct codes per day count visitors, and nothing links days. `ip`
--- stays NULL unless the worker's STORE_RAW_IP var is "1" (it is not set).
+-- is written when the worker's STORE_RAW_IP var is "1" (wrangler.jsonc sets it).
 -- Apply BEFORE deploying the worker that writes these columns:
 --
 --   npx wrangler d1 execute karyodraw-usage --remote --file=migrations/003_visitor_code.sql
