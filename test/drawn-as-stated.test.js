@@ -55,7 +55,11 @@ test('the drawn fusion carries the teaching note with the der() respelling', () 
   // 2026-08-29, revising the same day's neutral framing: drawing stays, the
   // box goes amber and says plainly that the spelling is not valid.
   assert.equal(m.note.tone, 'correction', 'the note declares itself a correction');
-  assert.match(m.note.text, /5\.5\.18\.3/, 'the rule is cited, not just asserted');
+  // The note names the preferred spelling in words, with no section number: Dan,
+  // 2026-09-11, wants no ISCN section references anywhere a reader sees
+  // (test/no-section-references.test.js); the citation lives in the code comment.
+  assert.match(m.note.text, /is the preferred spelling/, 'the rule is stated in words');
+  assert.doesNotMatch(m.note.text, /\d\.\d\.\d/, 'and not by section number');
 });
 
 test('a non-acrocentric whole-arm t() at the fused count keeps the refusal', () => {
