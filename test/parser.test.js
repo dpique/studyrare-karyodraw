@@ -1608,6 +1608,59 @@ test('a derivative in the detailed system is explained, not guessed at', () => {
   assert.equal(m.suggestion, null, 'and no invented repair is offered');
 });
 
+test('the inversions ISCN 5.5.10 prints in the detailed system draw, from the short form beside them', () => {
+  // ISCN 2024 5.5.10 b ii-iv, verbatim, each printed "or" beside its short form. (b i,
+  // the paracentric p-arm inv(2), is left out on purpose: ISCN prints inv(2)(p23p13)
+  // and the current same-arm order rule respells that, so pinning either output here
+  // would take a side in test/band-order.test.js by the back door.)
+  const shortOf = (k) => (/“([^”]*)”\.$/.exec(ISCN.parse(k).warnings.find((w) => /DETAILED/.test(w))) || [])[1];
+  assert.equal(shortOf('46,XX,inv(3)(pter→q21::q26.2→q21::q26.2→qter)'), '46,XX,inv(3)(q21q26.2)', 'paracentric, q arm');
+  assert.equal(shortOf('46,XY,inv(3)(pter→p13::q21→p13::q21→qter)'), '46,XY,inv(3)(p13q21)', 'pericentric');
+  assert.equal(shortOf('46,Y,inv(X)(pter→p21::q24→p21::q24→qter)'), '46,Y,inv(X)(p21q24)', 'pericentric, X');
+});
+
+test('a detailed composition typed outside its parentheses is taught the shape and handed the fix', () => {
+  // ISCN 5.5.10 b iii writes inv(3)(pter→p13::q21→p13::q21→qter): the composition
+  // sits in a second pair of parentheses, exactly where the short form puts its
+  // breakpoints. Typed with a space instead, the app used to answer with the der()
+  // explanation, that it "cannot work back to it from a derivative's band
+  // composition", about an inversion, and offered nothing (Dan, 2026-09-11).
+  const m = ISCN.parse('46,XY,inv(16) pter→p13.1::q22→p13.1::q22→qter');
+  assert.equal(m.ok, false, 'not drawn as typed');
+  const w = m.warnings.join(' ');
+  assert.match(w, /parentheses/, 'the rule is the parentheses');
+  assert.match(w, /inv\(16\)\(pter→p13\.1::q22→p13\.1::q22→qter\)/, 'shown on the typed input');
+  assert.ok(!/derivative/.test(w), 'and nothing about derivatives');
+  assert.equal(m.fixes[0], '46,XY,inv(16)(pter→p13.1::q22→p13.1::q22→qter)', 'the chip is the parenthesized form');
+  const re = ISCN.parse(m.fixes[0]);
+  assert.equal(re.clones[0].unreadable, false, 'and the chip draws');
+  assert.match(re.warnings.join(' '), /46,XY,inv\(16\)\(p13\.1q22\)/, 'from the short form');
+  // A cell count after the composition stays outside the parentheses.
+  const c = ISCN.parse('46,XY,inv(16) pter→p13.1::q22→p13.1::q22→qter[20]');
+  assert.equal(c.fixes[0], '46,XY,inv(16)(pter→p13.1::q22→p13.1::q22→qter)[20]');
+});
+
+test('a space between the chromosome and its composition is not a fault', () => {
+  // The short system already tolerates inv(16) (p13.1q22); whitespace inside a
+  // designation is never meaningful.
+  const m = ISCN.parse('46,XY,inv(16) (pter→p13.1::q22→p13.1::q22→qter)');
+  assert.equal(m.clones[0].unreadable, false);
+  assert.match(m.warnings.join(' '), /46,XY,inv\(16\)\(p13\.1q22\)/);
+});
+
+test('a composition the reader cannot reduce is refused without calling it a derivative', () => {
+  // ISCN 5.5.17 tas(12;13)(12pter→12qter→13qter→13pter): no "::" at all, so no
+  // breakpoint to recover. Correct ISCN and not a der, so the message must not say der.
+  const m = ISCN.parse('46,XX,tas(12;13)(12pter→12qter→13qter→13pter)');
+  const w = m.warnings.join(' ');
+  assert.match(w, /DETAILED system/);
+  assert.match(w, /correct ISCN/);
+  assert.ok(!/derivative/.test(w), 'tas is not a derivative');
+  assert.equal(m.suggestion, null);
+  // The der() wording stays for a der().
+  assert.match(ISCN.parse('46,XY,der(9)(9pter→9q34::22q11.2→22qter)').warnings.join(' '), /derivative/);
+});
+
 // A der(A;B) is assembled by walking its translocations as one chain from A to B
 // (ISCN 5.5.3 c). Three inputs used to walk PART of that chain and draw the rest
 // with no warning: joins that never reach the second named chromosome drew a
