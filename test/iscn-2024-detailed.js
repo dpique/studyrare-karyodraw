@@ -266,14 +266,12 @@ module.exports = [
   {
     short: "45,XX,psudic(15;13)(q12;q12)",
     detailed: "45,XX,psudic(15;13)(15pter→15q12::13q12→13pter)",
-    generated: false,
-    needs: "the app does not draw this karyotype yet, so there is no model to serialise",
+    generated: true,
   },
   {
     short: "46,XX,psuidic(20)(q11.2)",
     detailed: "46,XX,psuidic(20)(pter→q11.2::q11.2→pter)",
-    generated: false,
-    needs: "the app does not draw this karyotype yet, so there is no model to serialise",
+    generated: true,
   },
   {
     short: "46,XX,dup(1)(p34p31)",

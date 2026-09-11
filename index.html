@@ -678,6 +678,8 @@
   .kdp-list a:hover { color: var(--peri-700); }
   .kdp-list code { font: 600 12.5px var(--font-mono); color: var(--peri-700); }
   .kdp-list b { font-weight: 600; }
+  #mostudied h3 { font: 700 15px var(--font-display); margin: 20px 0 0; }
+  #mostudied .msd-sub { margin: 2px 0 0; }
   .about-body { max-width: 760px; }
   .about-body p { margin: 0 0 12px; font-size: 14.5px; line-height: 1.65; color: var(--ink-2); }
   .about-body p:last-child { margin-bottom: 0; }
@@ -1124,6 +1126,15 @@
           </ul>
           <p class="muted"><a href="/karyotype/">See all 45 karyotypes, with pictures &rarr;</a></p>
           <!-- KD:PAGES:END -->
+          <!-- The Most-studied list the About page promises. Client-rendered
+               from /api/top: every item is re-parsed and rendered as
+               textContent, so nothing typed by strangers reaches innerHTML;
+               fails closed (stays hidden) on error or thin data. -->
+          <div id="mostudied" hidden>
+            <h3>Most studied</h3>
+            <p class="muted msd-sub">The karyotypes people draw most in the visualizer, refreshed about daily.</p>
+            <ul class="kdp-list" id="msdlist"></ul>
+          </div>
         </div>
       </div>
     </section>
@@ -3418,7 +3429,7 @@
       // Fire-and-forget quick flag so the click alone is recorded.
       fetch("/api/feedback", {
         method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ quick: true, category: "banding",
+        body: JSON.stringify({ quick: true, category: null,
           karyotype: input.value.trim(), url: location.href, hp: $("#fbhp").value })
       }).then(function (r) { return r.ok ? r.json().catch(function () { return null; }) : null; })
         .then(function (d) { if (d && d.id) flagRef = { id: d.id, token: d.token }; })
@@ -3511,6 +3522,33 @@
   })();
   if (wantsTour) startTour();
   if (wantsFeedback) { var _fb = $("#fbopen"); if (_fb) _fb.click(); }
+
+  // The Most-studied list the About page promises. Deferred to idle: it is
+  // below the fold and must never cost the first draw anything. Every item is
+  // re-parsed with the app's own parser and rendered via textContent, so only
+  // well-formed ISCN ever appears and nothing typed by strangers reaches
+  // innerHTML. Fails closed: on error, thin data (under 3 items), or an
+  // ancient browser, the block simply stays hidden.
+  function loadMostStudied() {
+    var box = $("#mostudied"), list = $("#msdlist");
+    if (!box || !list || !window.fetch) return;
+    fetch("/api/top").then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      var items = ((d && d.items) || []).filter(function (k) {
+        if (typeof k !== "string" || !k.length || k.length > 120) return false;
+        var m = window.ISCN.parse(k);
+        return !m.error && m.clones && m.clones.length && !m.clones[0].unreadable;
+      }).slice(0, 8);
+      if (items.length < 3) return;
+      items.forEach(function (k) {
+        var li = document.createElement("li"), a = document.createElement("a"), code = document.createElement("code");
+        a.href = "/k/" + encodeURIComponent(k);
+        code.textContent = k;
+        a.appendChild(code); li.appendChild(a); list.appendChild(li);
+      });
+      box.hidden = false;
+    }).catch(function () {});
+  }
+  if (window.requestIdleCallback) requestIdleCallback(loadMostStudied); else setTimeout(loadMostStudied, 800);
   try { var _ref = ""; if (document.referrer) { try { _ref = new URL(document.referrer).host; } catch (e) {} } beacon({ type: "pageview", ref: _ref }); } catch (e) {}
 })();
 </script>

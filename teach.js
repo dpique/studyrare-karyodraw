@@ -450,8 +450,17 @@
       var ders = chroms.map(function (cc) { return "der(" + cc + ")"; });
       var nWord = DIGIT_WORDS[n] || String(n);
       if (k === "dic") {
-        if (n < 2) return { text: idicText(chroms[0], (bp[0] || [])[0], ab), tag: "t" };
-        return { text: dicText(chroms, bp, breaks), tag: "t" };
+        // psu dic / psu idic: the drawing is the dicentric's, because both
+        // primary constrictions exist on the chromosome; activity is
+        // invisible to banding and belongs to this sentence. The first-listed
+        // convention is ISCN's own, and it only means something when two
+        // chromosomes are listed.
+        var psu = ab.psu
+          ? " Written psu " + (n < 2 ? "idic" : "dic") + ", only one of the two centromeres is active; the other is suppressed, so the chromosome moves through cell division like a monocentric" +
+            (n < 2 ? "." : ", and by convention the first-listed chromosome keeps the active one.")
+          : "";
+        if (n < 2) return { text: idicText(chroms[0], (bp[0] || [])[0], ab) + psu, tag: "t" };
+        return { text: dicText(chroms, bp, breaks) + psu, tag: "t" };
       }
       if (n >= 3) {
         var cycle = chroms.join("→") + "→" + chroms[0];   // e.g. 2→7→5→2

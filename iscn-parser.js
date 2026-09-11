@@ -860,6 +860,17 @@
     var signM = /^([+\-−–])/.exec(tok);
     if (signM) { ab.sign = (signM[1] === "+") ? "+" : "-"; tok = tok.slice(1); }
 
+    // Uppercase arm letters, straight from ALL-CAPS lab reports (the live
+    // failing-inputs stream: ADD(X)(P22.1)). An arm letter is a P or Q followed
+    // by a digit or "ter", which nothing else in a designation is, so the
+    // chromosome names X and Y are untouched. Lowered and noted, like the
+    // other applied repairs.
+    if (/[PQ](?=\d|ter\b)/.test(tok)) {
+      var lowered = tok.replace(/[PQ](?=\d|ter\b)/g, function (c) { return c.toLowerCase(); });
+      warnings.push("Arm letters are written in lowercase, so “" + tok + "” is “" + lowered + "”.");
+      tok = lowered;
+    }
+
     // ISCN 4.2.1 k: a question mark marks the identification as uncertain, and it is
     // "placed either before the uncertain item, or it may replace a chromosome, region,
     // band or subband designation". The two placements mean different things to a
@@ -1031,6 +1042,13 @@
       case "add": ab.kind = "add"; break;
       case "dic": ab.kind = "dic"; break;
       case "idic": ab.kind = "dic"; ab.note = "isodicentric"; break;
+      // psu dic / psu idic (spaces are stripped upstream): a pseudodicentric
+      // physically carries both primary constrictions, so it draws exactly as
+      // its dic/idic twin; only one centromere is ACTIVE, which is the
+      // decode's job to say (teach.js reads ab.psu). ab.op keeps the spaced
+      // spelling so captions name the object the way ISCN writes it.
+      case "psudic": ab.kind = "dic"; ab.psu = true; ab.op = "psu dic"; break;
+      case "psuidic": ab.kind = "dic"; ab.note = "isodicentric"; ab.psu = true; ab.op = "psu idic"; break;
       // rob (Robertsonian) is the preferred ISCN spelling of a whole-arm fusion of
       // two acrocentrics; it behaves exactly like der(13;14)(q10;q10).
       case "rob": ab.kind = "der"; ab.note = "Robertsonian translocation"; break;

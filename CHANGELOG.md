@@ -3,6 +3,28 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (the most-studied board arrives, and two real-world spellings draw)
+
+- **The homepage now shows the most-studied karyotypes**, the list the About
+  page has promised since the analytics shipped: what people actually draw in
+  the visualizer, ranked, refreshed about daily, each linking to its page or
+  view. Every entry is re-checked by the app's own parser before it renders,
+  so only well-formed ISCN ever appears.
+- **ALL-CAPS breakpoints draw.** Reports pasted from uppercase lab systems
+  (ADD(X)(P22.1)) used to be told P22.1 was not a breakpoint. Arm letters are
+  now lowered with a note, like the other applied spellings.
+- **psu dic and psu idic draw.** The pseudodicentric is correct ISCN and used
+  to be refused as "not an ISCN abbreviation", the exact error class the
+  parser promises never to make. It now draws as the dicentric it physically
+  is, both constrictions on the chromosome, and the decode says the part
+  banding cannot show: only one centromere is active, the other suppressed,
+  and by convention the first-listed chromosome keeps the active one.
+- **The one-click flag stops guessing.** A bare "Not right?" click used to be
+  recorded under the "banding" category whether or not banding was the
+  problem, which made the category column noise (39 of 40 rows). A click now
+  records no category; the category arrives only when the person picks one in
+  the dialog.
+
 ## 2026-09-10 (the breakpoint-order rule rights itself, and mosaic columns align)
 
 - **inv(2)(p21p23) draws without comment, because it was right all along.** For
