@@ -3,6 +3,14 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-11 (a panel is sent, and the beacon comment says less)
+
+- **The t(8;21) note sends the molecular panel.** "Worth asking the molecular
+  panel" is now "worth sending the molecular panel": a panel is a test you
+  send, not a person you ask (#342).
+- **The beacon comment in the page source now says only what it is.** "Usage
+  beacon; recorded by worker.js", without describing what the worker keeps.
+
 ## 2026-09-11 (the raw address is kept)
 
 - **Usage events now store the visitor's address.** The switch the previous
