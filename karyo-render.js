@@ -1986,10 +1986,24 @@
         // drawn and not a second rearrangement. Read on grafts it labelled both
         // exchanged tips of t(16;16)(p13.1;q22) "inverted", which would teach a
         // reciprocal translocation as an inversion.
+        //
+        // And reversed is drawing orientation on a whole-arm body or an
+        // isochromosome: wholeArmSegments flips one arm so both meet at the
+        // centromere, and i(17)(q10) mirrors its arm. Neither is an inversion,
+        // yet the 14q of der(13;14)(q10;q10) read "inverted" in the table until
+        // 2026-09-11. A piece counts as inverted only when the rearrangement that
+        // built it can invert a segment (inv, rec, dup, trp, qdp, ins), anywhere
+        // in its sub-operations.
+        var canInvert = function (ab) {
+          if (!ab) return false;
+          if (/^(inv|rec|dup|trp|qdp|ins)$/.test(String(ab.op || ab.kind))) return true;
+          return (ab.subOps || []).some(canInvert);
+        };
+        var invertible = canInvert(inst.aberration);
         (d.segments || []).forEach(function (s) {
           if (!IDEO.data[s.chrom] || s.to <= s.from) return;
           (cover[s.chrom] = cover[s.chrom] || [])
-            .push([s.from, s.to, s.graft ? 1 : 0, (s.reversed && !s.graft) ? 1 : 0]);
+            .push([s.from, s.to, s.graft ? 1 : 0, (s.reversed && !s.graft && invertible) ? 1 : 0]);
         });
       });
     });
