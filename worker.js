@@ -49,11 +49,15 @@ const TOP_LIMIT = 15;
 // in production, but the CSP must not depend on that toggle.
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  // static.cloudflareinsights.com is the zone's Web Analytics beacon, injected
+  // at the edge; it reports to cloudflareinsights.com. Blocking it (the first
+  // CSP deploy did, found by a live headless check) silently kills analytics
+  // that predate the CSP.
+  "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data:",       // the PNG export loads its stitched SVG via a data: image
-  "connect-src 'self'",
+  "connect-src 'self' https://cloudflareinsights.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
