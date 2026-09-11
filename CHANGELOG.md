@@ -3,6 +3,15 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-11 (the most-studied board leaves the homepage again)
+
+- **The most-studied board is gone from the homepage, again.** It was removed
+  on 2026-07-22 as the redundant third way to pick a karyotype (bare ISCN
+  strings beside the named example row and the named catalog), and #328
+  brought it back on 2026-09-10 because the About page mentioned it. The
+  About sentence now describes the analytics without promising a list, and
+  /api/top stays for the ranking behind the scenes.
+
 ## 2026-09-11 (Back keeps every step, a dropped digit is not a ploidy, bare breakpoints draw)
 
 - **Back returns to what was on screen before you typed.** The Draw button and
