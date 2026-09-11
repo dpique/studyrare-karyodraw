@@ -2330,54 +2330,161 @@
   // they are stripped back off here and the groups are rebuilt in the order the symbol
   // names its chromosomes. Returns "" when the reading would be a guess.
   function shortFromDetailed(str) {
-    var m = /^([^,]*,[^,]*,)?\s*([+-]?)\s*([a-z]+)\(([^)]*)\)\s*\(([^)]*)\)(.*)$/i.exec(String(str).trim());
+    // The first aberration whose second group is a band composition (an arrow or a
+    // "::"); anything before it, count and sex field included or not, is the head
+    // and is kept as typed. The tail keeps whatever follows, so a second detailed
+    // aberration in the same clone is converted by the next pass.
+    var m = /^((?:[^,]*,)*?)\s*([+-]?)\s*([a-z]+)\(([^)]*)\)\s*\(([^)]*(?:→|–>|->|::)[^)]*)\)(.*)$/i.exec(String(str).trim());
     if (!m) return "";
     var head = m[1] || "", sign = m[2] || "", op = m[3].toLowerCase(), chromGroup = m[4], detail = m[5], tail = m[6] || "";
-    // der() states an operation in its short form, not just bands, so it cannot be
-    // rebuilt from the band composition alone.
-    if (op === "der" || op === "ider" || !/^[0-9XY;?]+$/i.test(chromGroup)) return "";
-    var chroms = chromGroup.split(";");
-    var norm = detail.replace(/–>|->/g, "→");
-    var bands = [];
-    norm.split("::").forEach(function (piece, i, all) {
-      var ends = piece.split("→");
-      // A band at an internal junction, or beside a lone colon at either outer end.
-      if (i > 0 || /^:/.test(piece)) bands.push(ends[0].replace(/^:/, ""));
-      if (i < all.length - 1 || /:$/.test(piece)) bands.push(ends[ends.length - 1].replace(/:$/, ""));
-    });
-    bands = bands.map(function (b) { return String(b).trim(); })
-      .filter(function (b) { return /^[0-9XY]*[pq](ter)?[\d.]*$/i.test(b) && !/ter$/i.test(b); });
-    if (!bands.length) return "";
-    // Group by chromosome when the numbers are written on the bands, else all on one.
-    var groups = chroms.map(function () { return []; });
-    var plain = [];
-    bands.forEach(function (b) {
-      var bm = /^([0-9XY]+)?([pq][\d.]*)$/i.exec(b);
-      if (!bm) return;
-      if (bm[1]) {
-        var gi = chroms.indexOf(bm[1]);
-        if (gi < 0) return;
-        if (groups[gi].indexOf(bm[2]) < 0) groups[gi].push(bm[2]);
-      } else if (plain.indexOf(bm[2]) < 0) plain.push(bm[2]);
-    });
+    if (!/^[0-9XY;?]+$/i.test(chromGroup)) return "";
+    var chroms = chromGroup.split(";").map(function (c) { return c.trim(); });
+    var compositions = detail.replace(/–>|->/g, "→").split(";");
+    // The bands that meet a "::", and the band beside a lone ":" (a break with nothing
+    // rejoined, as in del(5)(pter→q13:)), in reading order, chromosome prefix kept.
+    function junctionBands(comp) {
+      var out = [];
+      comp.split("::").forEach(function (piece, i, all) {
+        var ends = piece.split("→");
+        if (i > 0 || /^:/.test(piece)) out.push(ends[0].replace(/^:/, "").trim());
+        if (i < all.length - 1 || /:$/.test(piece)) out.push(ends[ends.length - 1].replace(/:$/, "").trim());
+      });
+      return out.filter(function (b) { return /^[0-9XY]*[pq][\d.]*$/i.test(b) && !/ter$/i.test(b); });
+    }
+    function splitBand(b) { var bm = /^([0-9XY]+)?([pq][\d.]*)$/i.exec(b); return bm ? { chrom: bm[1] || null, band: bm[2] } : null; }
     var body;
-    if (chroms.length > 1) {
-      if (!groups.every(function (g) { return g.length; })) return "";
-      body = groups.map(function (g) { return g.join(""); }).join(";");
-    } else {
-      if (!plain.length && groups[0] && groups[0].length) plain = groups[0];
+    if (op === "der" && chroms.length === 1 && compositions.length === 1) {
+      body = derShortBody(chroms[0], compositions[0]);
+      return body ? head + sign + "der(" + chroms[0] + ")" + body + tail : "";
+    }
+    if (op === "ider" || op === "der" && compositions.length !== 1) return "";
+    if (chroms.length === 1) {
+      var plain = [];
+      var bands1 = junctionBands(compositions[0]);
+      for (var i1 = 0; i1 < bands1.length; i1++) {
+        var s1 = splitBand(bands1[i1]);
+        if (!s1 || (s1.chrom && s1.chrom !== chroms[0])) return "";
+        if (plain.indexOf(s1.band) < 0) plain.push(s1.band);
+      }
       if (!plain.length) return "";
       // The detailed composition reads pter to qter, which is also the short
       // system's order (ISCN 5.5.2 b, 5.5.10 a), so a del or inv pair arrives in
       // order already; the check stays as a guard so this converter and the draw
       // gate can never disagree. dup and ins keep encounter order: theirs encodes
       // orientation.
-      if ((op === "del" || op === "inv") && plain.length === 2 && bandPairReversed(plain[0], plain[1])) {
-        plain = [plain[1], plain[0]];
+      if ((op === "del" || op === "inv") && plain.length === 2 && bandPairReversed(plain[0], plain[1])) plain = [plain[1], plain[0]];
+      // A duplication's orientation is in the composition's STRUCTURE, not in the
+      // order its junctions are met: direct is two pieces, both reading pter to qter
+      // (dup(1)(q22q25) is pter→q25::q22→qter), inverted has a middle piece running
+      // backwards (dup(1)(q25q22) is pter→q25::q25→q22::q22→qter), ISCN 5.5.5. The
+      // short form writes direct in pter-to-qter order and inverted the other way.
+      // Encounter order got every direct dup backwards (found by the copy round
+      // trip, 2026-09-11).
+      if ((op === "dup" || op === "trp" || op === "qdp") && plain.length === 2) {
+        var backwards = compositions[0].split("::").some(function (piece) {
+          var e = piece.replace(/^:|:$/g, "").split("→").map(function (t) { return t.trim(); });
+          return e.length === 2 && !/ter$/i.test(e[0]) && !/ter$/i.test(e[1]) && bandPairReversed(e[0], e[1]);
+        });
+        if (bandPairReversed(plain[0], plain[1])) plain = [plain[1], plain[0]];
+        if (backwards) plain = [plain[1], plain[0]];
       }
       body = plain.join("");
+    } else {
+      var groups = chroms.map(function () { return []; });
+      var repeated = chroms.some(function (c, i) { return chroms.indexOf(c) !== i; });
+      if (compositions.length === chroms.length && repeated) {
+        // Composition k is the derivative of chroms[k], and its own breakpoint is
+        // the junction band on chroms[k]; where a homologue is named twice, the
+        // band no other occurrence has claimed (ISCN 5.5.18.3, t(3;9;9;22)).
+        var claimed = {}, pending = [];
+        compositions.forEach(function (comp, k) {
+          var own = chroms[k], uniq = [];
+          junctionBands(comp).map(splitBand).forEach(function (sb) {
+            if (sb && sb.chrom === own && uniq.indexOf(sb.band) < 0) uniq.push(sb.band);
+          });
+          if (uniq.length === 1) { groups[k] = uniq; claimed[own + "@" + uniq[0]] = 1; }
+          else pending.push({ k: k, own: own, cands: uniq });
+        });
+        pending.forEach(function (p) {
+          var free = p.cands.filter(function (b) { return !claimed[p.own + "@" + b]; });
+          if (free.length === 1) { groups[p.k] = free; claimed[p.own + "@" + free[0]] = 1; }
+        });
+      } else if (compositions.length === chroms.length || compositions.length === 1) {
+        // One derivative per named chromosome (t, ins), or one chromosome built from
+        // several (dic, der(A;B)): each chromosome's bands in encounter order over
+        // the whole composition, since an inserted piece's direction in the
+        // RECIPIENT is what orders the donor's pair (ins(5;2)(q31;p23p13)); a
+        // homologue named twice takes its mentions in turn (dic(13;13)(q14;q32)).
+        var occ = {};
+        for (var c0 = 0; c0 < compositions.length; c0++) {
+          var bandsN = junctionBands(compositions[c0]);
+          for (var i2 = 0; i2 < bandsN.length; i2++) {
+            var s2 = splitBand(bandsN[i2]);
+            if (!s2 || !s2.chrom) return "";
+            var idxs = [];
+            chroms.forEach(function (c, j) { if (c === s2.chrom) idxs.push(j); });
+            if (!idxs.length) return "";
+            var j2;
+            if (idxs.length === 1) j2 = idxs[0];
+            else { var n = occ[s2.chrom] || 0; j2 = idxs[Math.min(n, idxs.length - 1)]; occ[s2.chrom] = n + 1; }
+            if (groups[j2].indexOf(s2.band) < 0 || idxs.length > 1) {
+              if (groups[j2].indexOf(s2.band) < 0) groups[j2].push(s2.band);
+            }
+          }
+        }
+      } else return "";
+      if (!groups.every(function (g) { return g.length; })) return "";
+      body = groups.map(function (g) { return g.join(""); }).join(";");
     }
     return head + sign + op + "(" + chromGroup + ")(" + body + ")" + tail;
+  }
+
+  // ISCN 4.2.1 i: a sex chromosome is listed first, X before Y, else the lower number.
+  function chromRank(c) { return c === "X" ? -2 : c === "Y" ? -1 : parseInt(c, 10); }
+
+  // The short form of a der() whose composition fixes it. ISCN 5.5.3 prints both
+  // forms of these side by side, so the reading is the standard's own, not a guess:
+  //   der(9)t(9;22)(q34;q11.2)      9pter→9q34::22q11.2→22qter   (one junction, two
+  //                                 chromosomes, each piece keeping its telomere)
+  //   der(9)del(9)(p12)del(9)(q31)  :p12→q31:                    (nothing rejoined)
+  // Anything else (a second junction, an insertion, a homologue) is left alone: the
+  // operations that built it are not determined by the bands, and the app must not
+  // invent them.
+  function derShortBody(own, comp) {
+    var END = /^([0-9XY]+)?(pter|qter|[pq][\d.]+)$/i;
+    var pieces = comp.split("::").map(function (p) {
+      p = p.trim();
+      var open0 = /^:/.test(p), open1 = /:$/.test(p);
+      var ends = p.replace(/^:|:$/g, "").split("→").map(function (e) { return e.trim(); });
+      if (ends.length !== 2) return null;
+      var e0 = END.exec(ends[0]), e1 = END.exec(ends[1]);
+      if (!e0 || !e1) return null;
+      var c0 = e0[1] || own, c1 = e1[1] || own;
+      if (c0 !== c1) return null;
+      return { chrom: c0, a: e0[2], b: e1[2], open0: open0, open1: open1 };
+    });
+    if (pieces.some(function (p) { return !p; })) return null;
+    var isTer = function (x) { return /ter$/i.test(x); };
+    if (pieces.length === 1) {
+      var p = pieces[0];
+      if (p.chrom === own && p.open0 && p.open1 && !isTer(p.a) && !isTer(p.b) && /^p/i.test(p.a) && /^q/i.test(p.b)) {
+        return "del(" + own + ")(" + p.a + ")del(" + own + ")(" + p.b + ")";
+      }
+      return null;
+    }
+    if (pieces.length === 2) {
+      var x = pieces[0], y = pieces[1];
+      if (x.chrom !== y.chrom && (x.chrom === own || y.chrom === own) && !x.open0 && !y.open1 &&
+          isTer(x.a) && isTer(y.b) && !isTer(x.b) && !isTer(y.a)) {
+        var ownBand = x.chrom === own ? x.b : y.a;
+        var other = x.chrom === own ? y.chrom : x.chrom;
+        var otherBand = x.chrom === own ? y.a : x.b;
+        return chromRank(own) <= chromRank(other)
+          ? "t(" + own + ";" + other + ")(" + ownBand + ";" + otherBand + ")"
+          : "t(" + other + ";" + own + ")(" + otherBand + ";" + ownBand + ")";
+      }
+    }
+    return null;
   }
 
   function diagnose(raw, result, warnings) {
@@ -2807,7 +2914,17 @@
     // arrows. A der() is not recoverable this way, because its short form has to name
     // the operation that built it, so it gets the explanation and no drawing.
     if (/→|–>|->|::/.test(raw)) {
-      var asShort = depth < 2 ? shortFromDetailed(raw) : "";
+      // Every detailed aberration in the string converts in turn (a clone can carry
+      // two); each pass removes one composition, so the loop is bounded by their count.
+      var asShort = "";
+      if (depth < 2) {
+        asShort = raw;
+        for (var dg = 0; dg < 16 && /→|–>|->|::/.test(asShort); dg++) {
+          var nextShort = shortFromDetailed(asShort);
+          if (!nextShort || nextShort === asShort) { asShort = ""; break; }
+          asShort = nextShort;
+        }
+      }
       if (asShort) {
         var reparsed = parse(asShort, (depth || 0) + 1);
         reparsed.raw = raw;

@@ -2480,6 +2480,13 @@
     // writes del(5)(q13) as (pter->q13:) and del(4)(p15.2) as (:p15.2->qter). Only the
     // OUTER ends can be unjoined; every internal boundary is a reunion by construction.
     var first = merged[0], last = merged[merged.length - 1];
+    // A ring's two broken ends are joined to each other, so both are reunions:
+    // ISCN 5.5.16 prints r(7)(p15q31) as (::p15→q31::). A ring with no stated
+    // breakpoints has no composition to claim.
+    if (built.ring) {
+      var ringOpen = first.from > 0 && last.to < IDEO.data[last.chrom].length;
+      return ringOpen ? "::" + parts.join("::") + "::" : "";
+    }
     var openTop = (first.reversed ? first.to : first.from) > 0 &&
       (first.reversed ? first.to : first.from) < IDEO.data[first.chrom].length;
     var openBot = (last.reversed ? last.from : last.to) < IDEO.data[last.chrom].length &&
@@ -2487,11 +2494,73 @@
     return (openTop ? ":" : "") + parts.join("::") + (openBot ? ":" : "");
   }
 
+  // The whole karyotype in the detailed system, one line, pasteable. Each clone's
+  // own text is kept and every structural aberration is rewritten in the shell ISCN
+  // prints beside its examples: op(chroms)(composition;composition), the
+  // compositions in the order the chromosomes are named, sub-operations dropped
+  // (der(9)t(9;22)(q34;q11.2) becomes der(9)(9pter→9q34::22q11.2→22qter), 5.5.3),
+  // qualifiers and cell counts kept as written. An aberration with nothing to
+  // serialise (a marker, an hsr, an add with a "?") keeps its short form; ISCN 4.x c
+  // allows the two systems to mix. The copy button used to hand over the block's
+  // rows as "label  composition" lines, which is not notation at all: pasted back,
+  // the app itself refused it (Dan's inv(16) screenshot, 2026-09-11).
+  function detailedKaryotype(model) {
+    var clones = (model && model.clones) || [];
+    var strip = function (t) { return String(t || "").replace(/\s+/g, ""); };
+    var lines = clones.map(function (clone) {
+      var text = strip(clone.raw);
+      (clone.aberrations || []).forEach(function (ab) {
+        if (!ab || !ab.raw) return;
+        // Structural: breakpoints on the aberration itself or on a sub-operation
+        // (a der names its chromosome and keeps its breakpoints in the sub-ops).
+        var hasBps = function (o) { return (o && o.breakpoints || []).some(function (g) { return g && g.length; }); };
+        if (!hasBps(ab) && !(ab.subOps || []).some(hasBps)) return;
+        var shell = /^([+-]?)([a-z]+)\(([^)]*)\)/i.exec(strip(ab.raw));
+        if (!shell) return;
+        // Compositions per chromosome, in slot order; a multiplied aberration draws
+        // identical copies and is written once, so identical compositions on one
+        // chromosome collapse (t(3;9;9;22) keeps its two DIFFERENT 9s).
+        var byChrom = {}, total = 0;
+        Object.keys(clone.slots || {}).forEach(function (ch) {
+          (clone.slots[ch] || []).forEach(function (inst) {
+            if (inst.aberration !== ab || inst.kind === "normal") return;
+            var d = "";
+            try { d = detailedForm(inst); } catch (e) { d = ""; }
+            if (!d) { total = -1; return; }
+            if (total < 0) return;
+            var list = byChrom[ch] || (byChrom[ch] = []);
+            if (list.indexOf(d) < 0) { list.push(d); total++; }
+          });
+        });
+        if (total <= 0) return;
+        // ISCN orders the compositions by the chromosomes as named in the symbol,
+        // the derivative of the first-named chromosome first (5.5.18, ins 5.5.9).
+        var comps = [], used = {};
+        shell[3].split(";").forEach(function (c) {
+          c = c.trim();
+          var list = byChrom[c] || [];
+          var i = used[c] || 0;
+          if (i < list.length) { comps.push(list[i]); used[c] = i + 1; }
+        });
+        Object.keys(byChrom).forEach(function (ch) {
+          (byChrom[ch] || []).forEach(function (d) { if (comps.indexOf(d) < 0) comps.push(d); });
+        });
+        var raw = strip(ab.raw);
+        var suffix = raw.slice(raw.lastIndexOf(")") + 1);
+        var token = shell[1] + shell[2] + "(" + shell[3] + ")(" + comps.join(";") + ")" + suffix;
+        if (text.indexOf(raw) >= 0) text = text.replace(raw, token);
+      });
+      return text;
+    });
+    var prefix = /^(mos|chi)\b/i.exec(String((model && model.raw) || "").trim());
+    return (prefix ? prefix[1].toLowerCase() + " " : "") + lines.join("/");
+  }
+
   window.Karyo = {
     esc: esc,
     render: render, drawInstance: drawInstance, drawDetail: drawDetail, buildInstance: buildInstance,
     computeAffected: computeAffected, computeDosage: computeDosage, resolveBand: resolveBand, textWidth: textWidth,
-    armExtent: armExtent, nearestBand: nearestBand, bandAncestor: bandAncestor, invalidBands: invalidBands, bandSnap: bandSnap, detailedForm: detailedForm,
+    armExtent: armExtent, nearestBand: nearestBand, bandAncestor: bandAncestor, invalidBands: invalidBands, bandSnap: bandSnap, detailedForm: detailedForm, detailedKaryotype: detailedKaryotype,
     STAIN: STAIN, OP_COLORS: OP_COLORS, AFFECTED_PALETTE: AFFECTED_PALETTE, BASELINE: BASELINE, textInk: textInk, PX_PER_BP: PX
   };
 })();

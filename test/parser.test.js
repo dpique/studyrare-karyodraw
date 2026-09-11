@@ -1595,16 +1595,52 @@ test('the breakpoints are recovered from where the pieces rejoin', () => {
     '45,XX,dic(13;15)(q22;q24)', 'grouped back onto the right chromosome');
 });
 
-test('a derivative in the detailed system is explained, not guessed at', () => {
-  // der() states the OPERATION that built it in its short form, so the band
-  // composition alone does not determine it: 9pter→9q34::22q11.2→22qter could be
-  // written der(9)t(9;22)(q34;q11.2) and the app must not invent that.
-  const m = ISCN.parse('46,XY,der(9)(9pter→9q34::22q11.2→22qter)');
+test('a derivative whose composition fixes its short form is read (ISCN 5.5.3 prints both)', () => {
+  // One junction between two chromosomes, each piece keeping its telomere, IS the
+  // derivative of a reciprocal translocation: 5.5.3 prints der(9)t(9;22)(q34;q11.2)
+  // beside 9pter→9q34::22q11.2→22qter as the same chromosome. And the app's own
+  // copy button emits this form, so refusing it would refuse our own notation.
+  const shortOf = (k) => (/“([^”]*)”\.$/.exec(ISCN.parse(k).warnings.find((w) => /DETAILED/.test(w)) || '') || [])[1];
+  assert.equal(shortOf('46,XY,der(9)(9pter→9q34::22q11.2→22qter)'), '46,XY,der(9)t(9;22)(q34;q11.2)');
+  assert.equal(shortOf('47,XY,+der(22)(22pter→22q11.2::9q34→9qter)'), '47,XY,+der(22)t(9;22)(q34;q11.2)', 'the sign stays');
+  assert.equal(shortOf('46,Y,der(X)(8qter→8q24.1::Xp22.3→Xqter)'), '46,Y,der(X)t(X;8)(p22.3;q24.1)', 'sex chromosome first (4.2.1 i)');
+  assert.equal(shortOf('46,XY,der(9)(:p12→q31:)'), '46,XY,der(9)del(9)(p12)del(9)(q31)', 'nothing rejoined: two terminal deletions');
+  assert.equal(shortOf('45,XX,der(1;3)(1pter→1p10::3q10→3qter)'), '45,XX,der(1;3)(p10;q10)', 'whole-arm der(A;B)');
+});
+
+test('a derivative the composition does not determine is explained, not guessed at', () => {
+  // Two junctions: the operations that built it (which translocation first, an
+  // insertion or two translocations) are not fixed by the bands, so no short form.
+  const m = ISCN.parse('46,XX,der(1)(3qter→3q21::1p32→1q25::11q13→11qter)');
   const w = m.warnings.join(' ');
   assert.match(w, /DETAILED system/);
   assert.match(w, /correct ISCN/, 'it is not the reader who is wrong');
+  assert.match(w, /derivative/);
   assert.ok(!/is not a character/.test(w));
   assert.equal(m.suggestion, null, 'and no invented repair is offered');
+});
+
+test('homologues, a missing sex field, and two detailed changes in one clone all read', () => {
+  const shortOf = (k) => (/“([^”]*)”\.$/.exec(ISCN.parse(k).warnings.find((w) => /DETAILED/.test(w)) || '') || [])[1];
+  assert.equal(shortOf('45,XX,dic(13;13)(13pter→13q14::13q32→13pter)'), '45,XX,dic(13;13)(q14;q32)', '5.5.4 f i');
+  assert.equal(shortOf('46,XX,t(2;7;7)(2pter→2q21::7p13→7pter;7pter→7q22::2q21→2qter;7qter→7q22::7p13→7qter)'),
+    '46,XX,t(2;7;7)(q21;q22;p13)', 'each homologue takes the junction band its own derivative shows');
+  assert.equal(shortOf('46,t(X;Y)(Xpter→Xq22::Yq11.23→Yqter;Ypter→Yq11.23::Xq22→Xqter)'), '46,t(X;Y)(q22;q11.23)', 'no sex field before the change');
+  assert.equal(shortOf('46,XX,del(5)(q13q33),inv(2)(pter→p23::p13→p23::p13→qter)'), '46,XX,del(5)(q13q33),inv(2)(p23p13)', 'a short change ahead of it');
+  assert.equal(shortOf('46,t(X;18)(18qter→18q11.2::Xp11.2→Xqter;18pter→18q11.2::Xp11.2→Xpter),t(Y;1)(Ypter→Yq11.23::1p31→1pter;Yqter→Yq11.23::1p31→1qter)'),
+    '46,t(X;18)(p11.2;q11.2),t(Y;1)(q11.23;p31)', 'both convert');
+});
+
+test('a detailed duplication reads back with its orientation, not its junction order', () => {
+  // ISCN 5.5.5: direct is pter→q25::q22→qter and is written dup(1)(q22q25); inverted
+  // is pter→q25::q25→q22::q22→qter, written dup(1)(q25q22). Encounter order used to
+  // read every direct dup as the inverted one (found by the copy round trip).
+  const shortOf = (k) => (/“([^”]*)”\.$/.exec(ISCN.parse(k).warnings.find((w) => /DETAILED/.test(w)) || '') || [])[1];
+  assert.equal(shortOf('46,XX,dup(1)(pter→q25::q22→qter)'), '46,XX,dup(1)(q22q25)', 'direct, q arm');
+  assert.equal(shortOf('46,XY,dup(1)(pter→q25::q25→q22::q22→qter)'), '46,XY,dup(1)(q25q22)', 'inverted, q arm');
+  assert.equal(shortOf('46,XX,dup(1)(pter→p31::p34→qter)'), '46,XX,dup(1)(p34p31)', 'direct, p arm');
+  assert.equal(shortOf('46,XX,dup(1)(pter→p31::p31→p34::p31→qter)'), '46,XX,dup(1)(p31p34)', 'inverted, p arm');
+  assert.equal(shortOf('46,XX,trp(1)(pter→q32::q21→q32::q21→qter)'), '46,XX,trp(1)(q21q32)', 'direct triplication');
 });
 
 test('the inversions ISCN 5.5.10 prints in the detailed system draw, from the short form beside them', () => {
@@ -1655,7 +1691,7 @@ test('a composition the reader cannot reduce is refused without calling it a der
   assert.ok(!/derivative/.test(w), 'tas is not a derivative');
   assert.equal(m.suggestion, null);
   // The der() wording stays for a der().
-  assert.match(ISCN.parse('46,XY,der(9)(9pter→9q34::22q11.2→22qter)').warnings.join(' '), /derivative/);
+  assert.match(ISCN.parse('46,XX,der(1)(3qter→3q21::1p32→1q25::11q13→11qter)').warnings.join(' '), /derivative/);
 });
 
 // A der(A;B) is assembled by walking its translocations as one chain from A to B

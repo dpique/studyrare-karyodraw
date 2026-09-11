@@ -581,6 +581,7 @@
      each carries its ISCN 4.4.4 meaning as a title, one hover away. */
   .dline .dj { color: #9aa3bd; }
   .dline .dj[title] { cursor: help; }
+  .dline.dfull .dlab, .dline.dfull code { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); }
   /* The net-imbalance table, its own card below the legend (owner order,
      2026-08-30). Same quiet register as the detailed form: a second reading of
      the figure, not a second finding. Call colors follow the decode chips
@@ -1534,7 +1535,8 @@
       (closeT ? endColon : "");
   }
 
-  function renderDetailedForms(clones) {
+  function renderDetailedForms(model) {
+    var clones = model && model.clones;
     var box = $("#detailed");
     if (!box) return;
     var colors = MODE === "simple" ? window.Karyo.computeAffected(clones) : {};
@@ -1552,12 +1554,21 @@
       });
     });
     // The rows read well but select badly (a drag across a CSS grid), so the
-    // title carries a copy button that hands the block over as plain text
-    // (Dan, 2026-09-10). The click handler lives on #detailed, which
-    // persists, because this innerHTML write would orphan a listener here.
+    // title carries a copy button (Dan, 2026-09-10). What it copies is the last
+    // row: the whole karyotype in the detailed system as ONE line, in the shell
+    // ISCN prints beside its examples, which pastes straight back into the box.
+    // The rows used to be copied as "label  composition" lines, which is not
+    // notation: pasted back, the app itself refused it (Dan, 2026-09-11). The
+    // click handler lives on #detailed, which persists, because this innerHTML
+    // write would orphan a listener here.
+    var full = "";
+    if (lines.length) { try { full = window.Karyo.detailedKaryotype(model); } catch (e) { full = ""; } }
+    if (full) {
+      lines.push('<div class="dline dfull"><span class="dlab">as one karyotype</span><code id="dfull">' + escapeHtml(full) + '</code></div>');
+    }
     box.innerHTML = lines.length
       ? '<div class="dtitle">ISCN detailed form<button class="pbtn dcopy" id="copydetail" type="button"' +
-        ' title="Copies every line of this block as plain text, label and form, one line per row.">⧉ Copy</button></div>' + lines.join("")
+        ' title="Copies the karyotype in the detailed system as one line, which pastes straight back into KaryoDraw.">⧉ Copy</button></div>' + lines.join("")
       : "";
   }
 
@@ -2574,7 +2585,7 @@
     renderSummary(model);
     renderKaryogram(model);
     $("#karyo").setAttribute("aria-label", "Karyogram of " + (model.normalized || model.raw || val));
-    renderDetailedForms(model.clones);
+    renderDetailedForms(model);
     renderImbalance(model.clones);
     renderDecode(model.clones);
     renderClinical(model.clones);
@@ -3211,7 +3222,9 @@
   $("#detailed").addEventListener("click", function (ev) {
     var btn = ev.target.closest ? ev.target.closest("#copydetail") : null;
     if (!btn) return;
-    var text = Array.prototype.map.call($("#detailed").querySelectorAll(".dline"), function (row) {
+    // The one-line karyotype when the block has it; the rows only as a fallback.
+    var fullRow = $("#detailed").querySelector("#dfull");
+    var text = fullRow ? fullRow.textContent : Array.prototype.map.call($("#detailed").querySelectorAll(".dline"), function (row) {
       var lab = row.querySelector(".dlab"), form = row.querySelector("code");
       return (lab ? lab.textContent : "") + "  " + (form ? form.textContent : "");
     }).join("\n");

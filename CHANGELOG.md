@@ -3,6 +3,35 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-11 (the detailed form copies as one pasteable karyotype)
+
+- **The copy button hands over proper ISCN.** The ISCN detailed form block
+  used to copy its rows as "label  composition" lines (inv(16)  pter→p13.1::…),
+  which is not notation: pasted back, the app itself refused it, and that is
+  where this morning's screenshot came from. The block now ends with the whole
+  karyotype as one line in the detailed system, in the shell ISCN prints
+  beside its own examples (op(chroms)(composition;composition), sub-operations
+  dropped, qualifiers and cell counts kept), and that line is what the button
+  copies. Checked against every pair ISCN 2024 prints both ways: all 61
+  whole lines match the standard's.
+- **The copied line reads back.** Pasted into the box, 47 of those 61 draw
+  and read as the very short form they came from; the 14 that do not are
+  derivatives with more than one junction, a homologous der, and rec, whose
+  short form names operations the composition alone does not fix. They are
+  listed by name in test/detailed-karyotype.test.js so that closing one is a
+  deliberate act. To get there the reader learned four things it could not
+  do: a derivative whose composition fixes its short form (one junction, two
+  chromosomes: der(9)(9pter→9q34::22q11.2→22qter) is der(9)t(9;22)(q34;q11.2),
+  printed both ways in ISCN 5.5.3; and :p12→q31: is two terminal deletions),
+  a whole-arm der(A;B), a homologue named twice (dic(13;13), t(2;7;7)), and a
+  karyotype with no sex field or with two detailed changes in one clone.
+- **A detailed duplication reads with its orientation.** Direct is two pieces
+  reading pter to qter (dup(1)(pter→q25::q22→qter) is dup(1)(q22q25)) and
+  inverted has a middle piece running backwards; the reader took the junctions
+  in the order met and so read every direct dup as the inverted one. Found by
+  the round trip. Rings now close on both ends, r(7)(::p15→q31::), as ISCN
+  5.5.16 prints them.
+
 ## 2026-09-11 (the breakpoint-order rule goes back to the text)
 
 - **Same-arm breakpoints run from pter to qter again.** Yesterday's entry
