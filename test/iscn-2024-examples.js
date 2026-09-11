@@ -1,19 +1,18 @@
 // Verbatim karyotype-format examples from ISCN 2024 (Cytogenet Genome Res 2024;
 // 164(suppl 1):1-224), extracted from the published text.
 //
-// This file exists because the same-arm breakpoint-order rule has now been
-// gotten wrong in BOTH directions, each time with confidence. The short
-// system writes the breakpoint closer to the centromere first: inv(2)(p13p23)
-// is the standard's own example, and del(5)(p15.2p15.3) follows it. A session
-// once "corrected" that to pter-to-qter by generalizing from the
-// dup(1)(p34~32p22) worked example (4.2.1 j.iii), but a dup's band order is
-// not spelling at all: it encodes the segment's orientation, direct versus
-// inverted, which is why dup and ins must never be reordered and prove
-// nothing about del and inv. The backwards rule survived because the two
-// orders coincide on the q arm; it only misfires on p-arm pairs. Two entries
-// below were normalized through the backwards rule when this file was
-// written and have been corrected (Dan re-derived the rule from the ISCN
-// text, 2026-09-10). The full pin is test/band-order.test.js.
+// This file exists because the same-arm breakpoint-order rule has been gotten
+// wrong three times, each time with confidence. ISCN 2024 writes breakpoints
+// from pter to qter (Table 3; 5.5.2 b for deletions; 5.5.10 a for inversions,
+// "the breakpoint closer to pter ... is specified first"), so on the short arm
+// the distal band comes first: inv(2)(p23p13) and del(X)(p21p11.4), both
+// printed. A dup's band order is not spelling at all: it encodes the segment's
+// orientation, so dup and ins are never reordered and prove nothing about del
+// and inv. On 2026-09-10 (#327) two entries here were edited to inv(2)(p13p23)
+// and der(9)inv(9)(p13p23) to fit a centromere-first rule, on the claim that
+// inv(2)(p13p23) was the standard's own example; that string is not in the
+// text. They are back to what ISCN prints, and test/band-order.test.js pins
+// the strings so the corpus cannot be edited to fit a rule again.
 //
 // `supported: false` marks notation this app does not model. That is a coverage gap,
 // not a judgment: every string in here is correct ISCN, and refusing correct ISCN is
@@ -122,7 +121,7 @@ module.exports = [
   { k: '46,Y,del(X)(p21p11.4)', supported: true },
   { k: '46,XY,del(20)(q11.2-13.1q13.3)', supported: true },
   { k: '46,XY,der(9)del(9)(p12)del(9)(q31)', supported: true },
-  { k: '46,XY,der(9)inv(9)(p13p23)del(9)(q22q33)', supported: true },
+  { k: '46,XY,der(9)inv(9)(p23p13)del(9)(q22q33)', supported: true },
   { k: '46,Y,der(X)t(X;8)(p22.3;q24.1)', supported: true },
   { k: '46,XX,der(1)t(1;3)(p22;q13.1)', supported: true },
   { k: '45,XY,der(1)t(1;3)(p22;q13.1),-3', supported: true },
@@ -192,7 +191,7 @@ module.exports = [
   { k: '46,X,der(X)ins(X;7)(p21;q22q21)', supported: true },
   { k: '46,XY,ins(5;6)(q13q23;q15q23)', supported: true },
   { k: '46,XX,ins(5;14;9)(q13q23;q24q21;p12p23)', supported: true },
-  { k: '46,XX,inv(2)(p13p23)', supported: true },
+  { k: '46,XX,inv(2)(p23p13)', supported: true },
   { k: '46,XX,inv(3)(q21q26.2)', supported: true },
   { k: '46,XY,inv(3)(p13q21)', supported: true },
   { k: '46,Y,inv(X)(p21q24)', supported: true },

@@ -578,7 +578,7 @@ correct picture over a spelling.
 | --- | --- |
 | `43,XY,rob(14;21)(q10;q10),-21,-20` | gains and losses are listed in chromosome order |
 | `46,XY,del(5)(p15.2),inv(2)(p13q24)` | plain rearrangements are listed in chromosome order too, sex chromosomes first |
-| `46,XY,del(5)(p15.3p15.2)` | interstitial bands are written centromere-outward |
+| `46,XY,del(5)(p15.2p15.3)` | same-arm breakpoints run pter to qter, so on the short arm the distal band comes first (5.5.2 b, 5.5.10 a) |
 | `46,XY,del(5)(p15.2),del(5)(p15.2)` | a change on both homologs is written `x2` |
 | `46c,XY` | `c` goes on the change it describes, not on the count |
 | `46-49,XY` | ISCN spells a range with a tilde (a note, not a warning) |
