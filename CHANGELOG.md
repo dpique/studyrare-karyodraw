@@ -3,6 +3,24 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-11 (a detailed composition outside its parentheses is taught the shape)
+
+- **inv(16) pter→p13.1::q22→p13.1::q22→qter now teaches where the parentheses
+  go.** ISCN writes the detailed system's band composition in a second pair of
+  parentheses right after the chromosome, where the short system puts its
+  breakpoints (5.5.10 b). Typed with a space instead, the app answered with the
+  derivative explanation, that it could not work back from a derivative's band
+  composition, about an inversion, and offered nothing. It now names the rule,
+  hands the parenthesized form back as a chip, and the chip draws. A space
+  between the two groups is accepted outright, as it already is in the short
+  system.
+- **A composition the reader cannot reduce is refused in its own terms.** A
+  telomeric association or a three-way exchange written in the detailed system
+  got the der() sentence; the word derivative is now reserved for a der().
+  The three inversions ISCN 5.5.10 prints in the detailed system that the
+  same-arm order rule leaves alone are pinned as drawing from the short form
+  beside them.
+
 ## 2026-09-10 (the most-studied board arrives, and two real-world spellings draw)
 
 - **The homepage now shows the most-studied karyotypes**, the list the About

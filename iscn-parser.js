@@ -2317,7 +2317,7 @@
   // they are stripped back off here and the groups are rebuilt in the order the symbol
   // names its chromosomes. Returns "" when the reading would be a guess.
   function shortFromDetailed(str) {
-    var m = /^([^,]*,[^,]*,)?\s*([+-]?)\s*([a-z]+)\(([^)]*)\)\(([^)]*)\)(.*)$/i.exec(String(str).trim());
+    var m = /^([^,]*,[^,]*,)?\s*([+-]?)\s*([a-z]+)\(([^)]*)\)\s*\(([^)]*)\)(.*)$/i.exec(String(str).trim());
     if (!m) return "";
     var head = m[1] || "", sign = m[2] || "", op = m[3].toLowerCase(), chromGroup = m[4], detail = m[5], tail = m[6] || "";
     // der() states an operation in its short form, not just bands, so it cannot be
@@ -2803,10 +2803,32 @@
           "“from ... to”. Drawn here from the short form of the same karyotype, “" + asShort + "”.");
         return reparsed;
       }
-      warnings.push("That is ISCN’s DETAILED system, which spells out the band composition " +
-        "of the rearranged chromosome: “::” is a break and reunion, and the arrow means “from ... to”. " +
-        "It is correct ISCN. KaryoDraw reads the short system, the one that names the breakpoints, and " +
-        "cannot work back to it from a derivative's band composition alone.");
+      var detailedIntro = "That is ISCN’s DETAILED system, which spells out the band composition " +
+        "of the rearranged chromosome: “::” is a break and reunion, and the arrow means “from ... to”. ";
+      // The composition typed after the chromosome with no parentheses of its own:
+      // 46,XY,inv(16) pter→p13.1::q22→p13.1::q22→qter. ISCN 5.5.10 b iii writes
+      // inv(3)(pter→p13::q21→p13::q21→qter), the composition in a second pair of
+      // parentheses exactly where the short form puts its breakpoints. This used to
+      // fall through to the der() sentence below and tell a reader that an inversion
+      // "cannot be worked back from a derivative's band composition" (2026-09-11).
+      // The parenthesized form is the chip, vetted by re-parsing it; a cell count or
+      // a following change stays outside the parentheses.
+      var bare = /^([^,]*,[^,]*,)?\s*([+-]?)\s*([a-z]+)\(([0-9XY;?]+)\)\s*([^\s\[\](),]*(?:→|–>|->|::)[^\s\[\](),]*)(.*)$/i.exec(raw);
+      if (bare) {
+        var bareOp = bare[3].toLowerCase() + "(" + bare[4] + ")(" + bare[5] + ")";
+        var wrapped = (bare[1] || "") + (bare[2] || "") + bareOp + (bare[6] || "");
+        warnings.push(detailedIntro + "The composition sits in its own parentheses right after the chromosome, " +
+          "where the short system puts its breakpoints: " + bareOp + ".");
+        if (depth < 2 && parse(wrapped, depth + 1).ok) result.fixes = [wrapped];
+        return result;
+      }
+      // A der() states the operation that built it in its short form, so its
+      // composition alone does not fix that form; anything else that reaches here
+      // (a telomeric association, a three-way exchange) is refused in its own terms.
+      var isDer = /(?:^|,)\s*[+-]?\s*i?der\(/i.test(raw);
+      warnings.push(detailedIntro + "It is correct ISCN. KaryoDraw reads the short system, the one that names the breakpoints, and " +
+        (isDer ? "cannot work back to it from a derivative's band composition alone."
+          : "cannot work back to it from this band composition alone."));
       return result;
     }
     diagnose(raw, result, warnings);

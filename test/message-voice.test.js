@@ -51,6 +51,9 @@ const BAD_INPUTS = [
   // make-up was not written out.
   '46,XX,rec(2)dup(2q)inv(2)(q21q31)dmat', '46,XX,rec(21)del(21)ins(21)(p13q22.2q22.3)dpat',
   '46,XX,rec(2)dmat',
+  // The detailed system typed without its own parentheses, and one whose composition
+  // names no breakpoint to recover (a telomeric association).
+  '46,XY,inv(16) pter→p13.1::q22→p13.1::q22→qter', '46,XX,tas(12;13)(12pter→12qter→13qter→13pter)',
 ];
 
 const allWarnings = () => {
@@ -169,7 +172,7 @@ test('no message uses a contraction', () => {
   // preparing for a board exam, alongside a standard that does not use them either.
   // Possessives are not contractions and are left alone.
   const CONTRACTION = /\b[A-Za-z]+[’'](s|t|re|ll|ve|d|m)\b/;
-  const POSSESSIVE = /\b(cell|clone|chromosome|karyotype|parent|carrier|app|reader|writer|it)[’']s\b/i;
+  const POSSESSIVE = /\b(cell|clone|chromosome|karyotype|parent|carrier|app|reader|writer|it|ISCN|derivative)[’']s\b/i;
   allWarnings().forEach(function (x) {
     const hit = CONTRACTION.exec(x.w);
     if (hit && !POSSESSIVE.test(hit[0])) {
