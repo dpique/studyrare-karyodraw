@@ -870,6 +870,20 @@
       tok = lowered;
     }
 
+    // Breakpoints typed straight after the chromosome with no parentheses of their
+    // own: inv(2)p21p23, del(5)p15.2, t(9;22)q34;q11.2. ISCN puts them in a second
+    // pair right after the chromosome. Wrapped and noted, like the other applied
+    // spellings; before this the reader was told that p21p23 "is not one KaryoDraw
+    // can place" and that an inversion needs two bands, neither of which was the
+    // mistake (Dan, 2026-09-11).
+    var BAND = "[pq](?:ter|\\d+(?:\\.\\d+)?)";
+    var bareBp = new RegExp("^([a-z]+\\([0-9XY?;]+\\))((?:" + BAND + ")+(?:;(?:" + BAND + ")+)*)$", "i").exec(tok);
+    if (bareBp) {
+      var wrappedBp = bareBp[1] + "(" + bareBp[2] + ")";
+      warnings.push("The breakpoints are written in their own parentheses right after the chromosome, so “" + tok + "” is “" + wrappedBp + "”.");
+      tok = wrappedBp;
+    }
+
     // ISCN 4.2.1 k: a question mark marks the identification as uncertain, and it is
     // "placed either before the uncertain item, or it may replace a chromosome, region,
     // band or subband designation". The two placements mean different things to a
@@ -1791,7 +1805,10 @@
         return;
       }
     }
-    if (!forcePloidy && !stated && !clone.counts.ok && clone.modalNumber != null &&
+    // A count below ISCN's near-haploid band (20) is a mistyped count, never a
+    // ploidy: 5,XY,rob(14;21)(q10;q10) is 45 with its 4 dropped, and the search
+    // below used to answer it with the haploid reading, 23 (Dan, 2026-09-11).
+    if (!forcePloidy && !stated && !clone.counts.ok && clone.modalNumber != null && clone.modalNumber >= 20 &&
         !clone.aberrations.some(function (ab) { return ab.unread || ab.kind === "unknown"; })) {
       // When no base reconciles EXACTLY, keep the nearest one instead of
       // falling back to diploid: 96,xxxxxx is 2 away from the tetraploid

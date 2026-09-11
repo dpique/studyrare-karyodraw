@@ -3,6 +3,25 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-11 (Back keeps every step, a dropped digit is not a ploidy, bare breakpoints draw)
+
+- **Back returns to what was on screen before you typed.** The Draw button and
+  Enter used to replace the current history entry, so the karyotype on screen
+  before typing was overwritten: type over it, submit, click a did-you-mean
+  chip, press Back twice, and the site was gone. A submitted karyotype that
+  differs from the one in the URL now earns its own entry, like a chip or a
+  toggle already did; submitting the same one again re-renders in place.
+- **5,XY,rob(14;21)(q10;q10) is offered 45, not 23.** A count below 20 is a
+  mistyped count, never a ploidy (ISCN's near-haploid band starts at 20), so
+  the ploidy search no longer answers a dropped digit with the haploid reading.
+- **inv(2)p21p23 draws, with the note that says what was missing.** Breakpoints
+  typed straight after the chromosome are wrapped in their own parentheses and
+  noted, like the other applied spellings; the reader used to be told that
+  p21p23 "is not one KaryoDraw can place" and that an inversion needs two
+  bands, neither of which was the mistake. When an order note sits beside an
+  applied repair, the box is titled "Spelling notes:" rather than claiming
+  both were applied.
+
 ## 2026-09-11 (the detailed form copies as one pasteable karyotype)
 
 - **The copy button hands over proper ISCN.** The ISCN detailed form block

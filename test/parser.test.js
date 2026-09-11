@@ -2023,3 +2023,40 @@ test('a gonosomal dicentric does not eat the free sex chromosome: 46,X,dic(X;Y)'
   const c = ISCN.parse('46,X,dic(X;Y)(p22.33;p11.32)').clones[0];
   assert.deepEqual(Array.from(slotKinds(c, 'X')).sort(), ['dic', 'normal']);
 });
+
+// Dan's two screenshots of 2026-09-11.
+test('a count below the near-haploid band is a mistyped count, not a ploidy', () => {
+  // 5,XY,rob(14;21)(q10;q10) is 45 with the 4 dropped. The ploidy search used to
+  // answer with the haploid reading, 23, which no student typed. ISCN's
+  // near-haploid band starts at 20 (26,X,+4,+6,+21 is the standard's own example).
+  const m = ISCN.parse('5,XY,rob(14;21)(q10;q10)');
+  assert.equal(m.countFix, '45,XY,rob(14;21)(q10;q10)');
+  assert.equal(m.fixes[0], '45,XY,rob(14;21)(q10;q10)');
+  assert.match(m.warnings.join(' '), /add up to 45 chromosomes/);
+  assert.equal(ISCN.parse('5,XY,t(9;22)(q34;q11.2)').countFix, '46,XY,t(9;22)(q34;q11.2)');
+  // The near-haploid rescue itself is untouched.
+  assert.equal(ISCN.parse('27,X,+10,+14,+18,+21').clones[0].ploidy, 1, 'near-haploid ALL still reads haploid');
+});
+
+test('breakpoints typed without their own parentheses are wrapped and noted', () => {
+  // inv(2)p21p23 used to be told that p21p23 "is not one KaryoDraw can place" and
+  // that an inversion needs two bands, neither of which was the mistake. Like the
+  // other applied spellings (ALL-CAPS arms), it now draws with one note.
+  [['46,XY,inv(2)p23p21', 'inv(2)p23p21', 'inv(2)(p23p21)'],
+   ['46,XY,del(5)p15.2', 'del(5)p15.2', 'del(5)(p15.2)'],
+   ['46,XY,t(9;22)q34;q11.2', 't(9;22)q34;q11.2', 't(9;22)(q34;q11.2)']].forEach(([k, typed, fixed]) => {
+    const m = ISCN.parse(k);
+    assert.equal(m.clones[0].unreadable, false, k + ' draws');
+    const w = m.warnings.join(' ');
+    assert.ok(w.indexOf('own parentheses right after the chromosome, so “' + typed + '” is “' + fixed + '”') >= 0, w);
+    assert.ok(!/not one KaryoDraw can place/.test(w), 'the old symptom message is gone');
+    assert.equal(m.warnings.length, 1, 'one mistake, one message: ' + w);
+  });
+  // Dan's exact screenshot: the parentheses note AND the short-arm order note, two
+  // real notes, and it draws.
+  const two = ISCN.parse('46,XY,inv(2)p21p23');
+  assert.equal(two.clones[0].unreadable, false);
+  assert.equal(two.warnings.length, 2, two.warnings.join(' | '));
+  assert.match(two.warnings[0], /own parentheses/);
+  assert.match(two.warnings[1], /closer to pter is written first/);
+});

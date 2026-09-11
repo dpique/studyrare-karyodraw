@@ -54,6 +54,8 @@ const BAD_INPUTS = [
   // The detailed system typed without its own parentheses, and one whose composition
   // names no breakpoint to recover (a telomeric association).
   '46,XY,inv(16) pter→p13.1::q22→p13.1::q22→qter', '46,XX,tas(12;13)(12pter→12qter→13qter→13pter)',
+  // Breakpoints with no parentheses of their own, and a count with a digit dropped.
+  '46,XY,inv(2)p21p23', '5,XY,rob(14;21)(q10;q10)',
 ];
 
 const allWarnings = () => {
