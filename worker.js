@@ -11,9 +11,14 @@
  * the most-drawn karyotypes for the on-page "Most-studied" panel, and POST
  * /api/feedback receives a message from the on-site feedback form.
  *
- * Privacy: the usage analytics store no cookie, account, IP, user-agent, or
- * identifier — only the karyotype drawn (capped), whether it parsed, the view
- * settings, a coarse country, and the referring host. Feedback is a separate,
+ * Privacy: the usage analytics store no cookie, no account and no user-agent:
+ * the karyotype drawn (capped), whether it parsed, the view settings, a coarse
+ * country, the referring host, and a VISITOR CODE, a one-way hash of the address
+ * and the browser with a random per-day salt (the salts table) that is deleted
+ * after two days, so distinct codes per day count visitors, no code can be
+ * reversed once its salt is gone, and nothing joins one day's codes to the
+ * next (added 2026-09-11 at Dan's request, for visitor counts). The raw address
+ * is stored only when the STORE_RAW_IP var is "1"; it is not set. Feedback is a separate,
  * voluntary channel: it stores what the person typed, a coarse country, and, if
  * they choose to give it, an email for a reply. No user-agent, IP, or cookie is
  * stored on feedback either. Feedback is kept private and never shown.
@@ -115,7 +120,10 @@ export default {
       let body = null;
       try { body = await request.json(); } catch (_) { body = null; }
       const country = (request.cf && request.cf.country) || null;
-      ctx.waitUntil(record(body, country, env));
+      // The address and the browser are read here and hashed in record(); neither
+      // is stored unless STORE_RAW_IP says so (see the privacy note at the top).
+      const who = { ip: request.headers.get("cf-connecting-ip") || "", ua: request.headers.get("user-agent") || "" };
+      ctx.waitUntil(record(body, country, env, who));
       return new Response(null, { status: 204 });
     }
     if (url.pathname === "/api/top") {
@@ -504,16 +512,18 @@ async function topKaryotypes(env) {
   return (rs.results || []).map((r) => r.k).filter(Boolean);
 }
 
-async function record(b, country, env) {
+async function record(b, country, env, who) {
   if (!b) return;
   const type = b.type === "pageview" ? "pageview" : "draw";
   // Keep the karyotype capped for storage, but record the full length so we can
   // see whether the cap is ever hit (SELECT count(*) WHERE len > 512).
   const len = type === "draw" && typeof b.k === "string" ? b.k.length : null;
+  const visitor = await visitorCode(env.DB, who);
+  const rawIp = env && env.STORE_RAW_IP === "1" && who && who.ip ? cap(who.ip, 45) : null;
   try {
     await env.DB.prepare(
-      "INSERT INTO usage (ts, type, karyotype, parsed, style, bands, show_mode, country, referer, len) " +
-      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      "INSERT INTO usage (ts, type, karyotype, parsed, style, bands, show_mode, country, referer, len, visitor, ip) " +
+      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     ).bind(
       Date.now(),
       type,
@@ -524,9 +534,42 @@ async function record(b, country, env) {
       cap(b.show, 16),
       country,
       cap(b.ref, 80),
-      len
+      len,
+      visitor,
+      rawIp
     ).run();
   } catch (e) {
     console.error("usage insert failed:", e && e.message);
   }
+}
+
+// The visitor code: SHA-256 of a random per-day salt, the address and the browser,
+// cut to 24 hex characters. Distinct codes per day count visitors. The salt lives
+// in the salts table for the day it serves and one day more (the UTC boundary),
+// then is deleted, after which no code can be reversed even by someone holding
+// the database, and no day's codes can be joined to another day's. Any failure
+// yields null: a lost visitor count must never lose the event.
+async function visitorCode(db, who) {
+  if (!db || !who || !who.ip) return null;
+  try {
+    const day = new Date().toISOString().slice(0, 10);
+    const salt = await dailySalt(db, day);
+    if (!salt) return null;
+    const bytes = new TextEncoder().encode(salt + "|" + who.ip + "|" + who.ua);
+    const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+    return Array.from(digest.slice(0, 12), (x) => x.toString(16).padStart(2, "0")).join("");
+  } catch (e) {
+    console.error("visitor code failed:", e && e.message);
+    return null;
+  }
+}
+async function dailySalt(db, day) {
+  const row = await db.prepare("SELECT salt FROM salts WHERE day = ?").bind(day).first();
+  if (row && row.salt) return row.salt;
+  const fresh = Array.from(crypto.getRandomValues(new Uint8Array(16)), (x) => x.toString(16).padStart(2, "0")).join("");
+  // OR IGNORE: two isolates racing at midnight both keep whichever landed first.
+  await db.prepare("INSERT OR IGNORE INTO salts (day, salt) VALUES (?, ?)").bind(day, fresh).run();
+  await db.prepare("DELETE FROM salts WHERE day < date(?, '-1 day')").bind(day).run();
+  const again = await db.prepare("SELECT salt FROM salts WHERE day = ?").bind(day).first();
+  return (again && again.salt) || null;
 }
