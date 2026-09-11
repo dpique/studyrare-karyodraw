@@ -3,6 +3,14 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-11 (a usage report script)
+
+- **`npm run usage` answers "how much is it used".** Totals and a by-day table of
+  draws, parsed draws, distinct karyotypes and pageviews, straight from the D1
+  analytics; `--since` narrows it and `--csv` saves the table under the
+  gitignored review/ directory. Documented in docs/VALIDATION.md beside the
+  other D1 queries. Counts include Dan's own use and headless verification loads.
+
 ## 2026-09-11 (the most-studied board leaves the homepage again)
 
 - **The most-studied board is gone from the homepage, again.** It was removed
