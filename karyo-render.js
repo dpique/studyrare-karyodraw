@@ -2050,6 +2050,26 @@
         return "?";
       };
       runs.forEach(function (r) { r.fromLabel = label(r.from); r.toLabel = label(r.to); });
+      // A breakpoint is located to a band, not a point: a break "at 5q13" lies
+      // somewhere in 5q13, and the figure cuts at the band's midpoint. Each run
+      // edge that is a typed breakpoint carries the written band's full extent,
+      // and the run's length becomes a range, from the nearest edges of the two
+      // bands to their farthest. Telomeres and centromeric p10/q10 edges have no
+      // width. Dan chose to keep the figure as it is and put the range on the
+      // size cell only (2026-09-11; review/previews/breakpoint-marks.html, A).
+      var spanAt = function (pos) {
+        var band = named[pos];
+        if (!band) return null;
+        var rb = resolveBand(c, band);
+        return rb && rb.end > rb.start ? { start: rb.start, end: rb.end } : null;
+      };
+      runs.forEach(function (r) {
+        var fs = spanAt(r.from), ts = spanAt(r.to);
+        if (!fs && !ts) return;
+        var min = Math.max(0, (ts ? ts.start : r.to) - (fs ? fs.end : r.from));
+        var max = (ts ? ts.end : r.to) - (fs ? fs.start : r.from);
+        r.range = { min: min, max: max };
+      });
       var baseline = (c === "X" || c === "Y")
         ? (ploidy === 2 ? (yPresent ? 1 : (c === "X" ? 2 : 0)) : null)
         : ploidy;

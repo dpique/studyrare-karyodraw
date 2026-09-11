@@ -3,6 +3,16 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-11 (a segment size is a range)
+
+- **The Involved segments row states its size as a range.** A breakpoint is
+  located to a band, not a point, and the figure cuts each band at its
+  midpoint; the row now reads "~83 Mb (73 to 93)" for del(5)(q13q33), from the
+  nearest edges of the two breakpoint bands to their farthest, with the reason
+  on hover. Telomeres and whole-arm breakpoints have no width, so a
+  whole-chromosome gain or a Robertsonian fusion keeps its single number. Dan
+  chose this over marking the uncertainty on the figure itself.
+
 ## 2026-09-11 (the usage report counts addresses across days)
 
 - **`npm run usage` reports distinct addresses across the whole range**, the

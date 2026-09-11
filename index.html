@@ -1584,10 +1584,16 @@
       ? { cls: "gain", text: "gain (" + copies + " copies)" }
       : { cls: "loss", text: "loss (" + copies + (copies === 1 ? " copy)" : " copies)") };
   }
+  function imbMb(bp) { var mb = bp / 1e6; return mb >= 10 ? String(Math.round(mb)) : mb.toFixed(1); }
   function imbSize(r) {
-    var mb = (r.to - r.from) / 1e6;
-    return "~" + (mb >= 10 ? Math.round(mb) : mb.toFixed(1)) + " Mb";
+    var text = "~" + imbMb(r.to - r.from) + " Mb";
+    // The range from the breakpoint bands' nearest edges to their farthest,
+    // since a break is located to a band and the figure cuts at its midpoint
+    // (Dan, 2026-09-11: the figure stays as it is, the size states the range).
+    if (r.range && imbMb(r.range.max) !== imbMb(r.range.min)) text += " (" + imbMb(r.range.min) + " to " + imbMb(r.range.max) + ")";
+    return text;
   }
+  var IMB_RANGE_TITLE = "A break is located to a band, not a point, so the size is a range: from the nearest edges of the breakpoint bands to their farthest. The figure cuts each band at its midpoint.";
   function renderImbalance(clones) {
     var box = $("#imbalance");
     if (!box) return;
@@ -1673,7 +1679,7 @@
             (hue ? '<span class="imb-dot" style="background:' + hue + '"></span>' : "") +
             escapeHtml(c.chrom + r.fromLabel + "→" + c.chrom + r.toLabel) +
             '</td><td class="n">' + r.copies + '</td><td class="call">' + call.text + moved + genes +
-            '</td><td class="size">' + imbSize(r) + "</td></tr>");
+            '</td><td class="size"' + (r.range ? ' title="' + IMB_RANGE_TITLE + '"' : "") + '>' + imbSize(r) + "</td></tr>");
         });
         bpLines = bpLines.concat(bpGenes(c));
         if (bpLines.length) bpAny = true;

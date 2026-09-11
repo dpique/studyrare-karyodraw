@@ -98,3 +98,27 @@ test('the method is stated once, on the how-to-read card', () => {
   assert.match(arm, /band midpoints/, 'sizes are estimates from band midpoints');
   assert.match(arm, /GRCh38/, 'on the named assembly');
 });
+
+// A breakpoint is located to a band, not a point (ISCN locates a break to the band
+// it fell in), and the figure cuts at the band's midpoint. The table's size is
+// therefore a range: from the nearest edges of the two breakpoint bands to their
+// farthest. Dan, 2026-09-11, choosing between three marks: keep the figure as it
+// is, and put the range on the Involved segments row.
+test('a run bounded by typed breakpoints carries the band-resolution range', () => {
+  const lost = runsOf('46,XX,del(5)(q13q33)', '5').find((r) => r.copies === 1);
+  const [q13s, q13e] = bandSpan('5', 'q13'), [q33s, q33e] = bandSpan('5', 'q33');
+  assert.ok(lost.range, 'the lost run has a range');
+  assert.equal(lost.range.min, q33s - q13e, 'nearest edges');
+  assert.equal(lost.range.max, q33e - q13s, 'farthest edges');
+  const drawn = lost.to - lost.from;
+  assert.ok(lost.range.min < drawn && drawn < lost.range.max, 'the drawn length sits inside it');
+  // A terminal deletion: the telomere end has no width.
+  const term = runsOf('46,XX,del(5)(p15.2)', '5').find((r) => r.copies === 1);
+  const [ps, pe] = bandSpan('5', 'p15.2');
+  assert.equal(term.range.min, ps);
+  assert.equal(term.range.max, pe);
+  // A whole-chromosome gain names no breakpoint and has no range.
+  assert.ok(runsOf('47,XX,+21', '21').every((r) => !r.range));
+  // Whole-arm breakpoints (q10) have no width either.
+  assert.ok(runsOf('45,XX,der(13;14)(q10;q10)', '13').every((r) => !r.range || r.range.max - r.range.min === 0));
+});
