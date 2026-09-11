@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Usage report from the D1 analytics (the `usage` table in schema.sql): totals,
-// then one row per day of draws, draws that parsed, distinct karyotypes and
-// pageviews. Written 2026-09-11 when Dan asked for the count and the by-day
+// then one row per day of draws, draws that parsed, distinct karyotypes,
+// pageviews and visitors (distinct one-way daily visitor codes, from
+// 2026-09-11 on; a person returning on another day counts again). Written 2026-09-11 when Dan asked for the count and the by-day
 // distribution; the two queries here are the ones that answered him.
 //
 //   npm run usage                      totals and the by-day table
@@ -53,7 +54,8 @@ try {
     FROM usage WHERE type='draw' AND karyotype IS NOT NULL${where}`)[0];
   days = d1(`SELECT date(ts/1000,'unixepoch') AS day,
     SUM(type='draw' AND karyotype IS NOT NULL) AS draws, SUM(type='draw' AND parsed=1) AS drew,
-    COUNT(DISTINCT CASE WHEN type='draw' THEN karyotype END) AS distinct_k, SUM(type='pageview') AS views
+    COUNT(DISTINCT CASE WHEN type='draw' THEN karyotype END) AS distinct_k, SUM(type='pageview') AS views,
+    COUNT(DISTINCT visitor) AS visitors
     FROM usage WHERE 1=1${where} GROUP BY day ORDER BY day`);
 } catch (e) {
   const msg = String(e.stderr || e.message || e);
@@ -81,22 +83,22 @@ if (edgeByDay) {
   console.log(`edge: ${u} daily unique addresses summed over ${edgeByDay.size} days (an address seen on two days counts twice)`);
 }
 console.log('');
-console.log('day         draws  drew  distinct  views' + (edgeByDay ? '  edge_uniques  edge_views  edge_requests' : ''));
+console.log('day         draws  drew  distinct  views  visitors' + (edgeByDay ? '  edge_uniques  edge_views  edge_requests' : ''));
 const seen = new Set();
 const allDays = edgeByDay ? [...new Set(days.map((r) => r.day).concat([...edgeByDay.keys()]))].sort() : days.map((r) => r.day);
 const byDay = new Map(days.map((r) => [r.day, r]));
 const rows = allDays.map((day) => {
-  const r = byDay.get(day) || { day, draws: 0, drew: 0, distinct_k: 0, views: 0 };
+  const r = byDay.get(day) || { day, draws: 0, drew: 0, distinct_k: 0, views: 0, visitors: 0 };
   const e = edgeByDay ? (edgeByDay.get(day) || { uniques: '', pageViews: '', requests: '' }) : null;
   return { ...r, edge: e };
 });
 for (const r of rows) {
-  console.log(`${r.day}  ${String(r.draws).padStart(5)} ${String(r.drew).padStart(5)} ${String(r.distinct_k).padStart(9)} ${String(r.views).padStart(6)}` +
+  console.log(`${r.day}  ${String(r.draws).padStart(5)} ${String(r.drew).padStart(5)} ${String(r.distinct_k).padStart(9)} ${String(r.views).padStart(6)} ${String(r.visitors).padStart(9)}` +
     (r.edge ? `  ${String(r.edge.uniques).padStart(12)}  ${String(r.edge.pageViews).padStart(10)}  ${String(r.edge.requests).padStart(13)}` : ''));
 }
 if (csv) {
-  const head = 'day,draws,drew,distinct_karyotypes,pageviews' + (edgeByDay ? ',edge_uniques,edge_pageviews,edge_requests' : '');
-  const lines = [head].concat(rows.map((r) => [r.day, r.draws, r.drew, r.distinct_k, r.views].concat(r.edge ? [r.edge.uniques, r.edge.pageViews, r.edge.requests] : []).join(',')));
+  const head = 'day,draws,drew,distinct_karyotypes,pageviews,visitors' + (edgeByDay ? ',edge_uniques,edge_pageviews,edge_requests' : '');
+  const lines = [head].concat(rows.map((r) => [r.day, r.draws, r.drew, r.distinct_k, r.views, r.visitors].concat(r.edge ? [r.edge.uniques, r.edge.pageViews, r.edge.requests] : []).join(',')));
   writeFileSync(csv, lines.join('\n') + '\n');
   console.log(`\nwrote ${csv}`);
 }

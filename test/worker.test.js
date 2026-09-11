@@ -178,3 +178,71 @@ test('an oversized body is refused before it is read', async () => {
   assert.equal((await worker.fetch(req('/api/feedback'), { DB: okDB }, ctx)).status, 413);
   assert.equal((await worker.fetch(req('/api/collect'), { DB: okDB }, ctx)).status, 413);
 });
+
+// Visitor codes (2026-09-11, Dan asked for visitor counts): a one-way daily code
+// from the address and the browser with a random per-day salt, so distinct codes
+// per day count visitors and neither the address nor the browser is stored.
+function memDB() {
+  const salts = new Map();
+  const inserts = [];
+  return {
+    inserts,
+    prepare: (sql) => ({
+      bind: (...args) => ({
+        run: async () => {
+          if (/INSERT OR IGNORE INTO salts/.test(sql)) { if (!salts.has(args[0])) salts.set(args[0], args[1]); }
+          else if (/INSERT INTO usage/.test(sql)) inserts.push({ sql, args });
+          return { meta: {} };
+        },
+        first: async () => (/FROM salts/.test(sql) && salts.has(args[0]) ? { salt: salts.get(args[0]) } : null),
+        all: async () => ({ results: [] }),
+      }),
+      all: async () => ({ results: [] }),
+      run: async () => ({}),
+    }),
+  };
+}
+const collect = (worker, env, ip, ua) => {
+  const c = { promises: [], waitUntil(p) { this.promises.push(p); } };
+  const body = JSON.stringify({ type: 'pageview' });
+  const headers = { 'content-type': 'application/json', 'content-length': String(body.length), 'user-agent': ua };
+  if (ip) headers['cf-connecting-ip'] = ip;
+  return worker.fetch(new Request('https://karyodraw.com/api/collect', { method: 'POST', headers, body }), env, c)
+    .then(async (res) => { await Promise.all(c.promises); return res; });
+};
+const colsOf = (row) => /INSERT INTO usage \(([^)]*)\)/.exec(row.sql)[1].split(',').map((s) => s.trim());
+
+test('a collect row carries a visitor code, never the address', async () => {
+  const worker = await load();
+  const db = memDB();
+  assert.equal((await collect(worker, { DB: db }, '203.0.113.5', 'UA one')).status, 204);
+  await collect(worker, { DB: db }, '203.0.113.5', 'UA one');
+  await collect(worker, { DB: db }, '203.0.113.9', 'UA one');
+  await collect(worker, { DB: db }, '203.0.113.5', 'UA two');
+  assert.equal(db.inserts.length, 4);
+  const cols = colsOf(db.inserts[0]);
+  const vi = cols.indexOf('visitor'), ii = cols.indexOf('ip');
+  assert.ok(vi >= 0 && ii >= 0, 'visitor and ip columns are written: ' + cols.join(','));
+  const codes = db.inserts.map((r) => r.args[vi]);
+  assert.match(codes[0], /^[0-9a-f]{24}$/, 'a 24-hex one-way code');
+  assert.equal(codes[0], codes[1], 'same address and browser, same day: one visitor');
+  assert.notEqual(codes[0], codes[2], 'another address is another visitor');
+  assert.notEqual(codes[0], codes[3], 'another browser on the same address is another visitor');
+  assert.ok(db.inserts.every((r) => r.args[ii] === null), 'the raw address is not stored');
+  assert.ok(!JSON.stringify(db.inserts).includes('203.0.113'), 'nor does it appear anywhere in the row');
+});
+
+test('the raw address is stored only when STORE_RAW_IP is "1"', async () => {
+  const worker = await load();
+  const db = memDB();
+  await collect(worker, { DB: db, STORE_RAW_IP: '1' }, '203.0.113.5', 'UA');
+  assert.equal(db.inserts[0].args[colsOf(db.inserts[0]).indexOf('ip')], '203.0.113.5');
+});
+
+test('a request with no address still records the event, with no code', async () => {
+  const worker = await load();
+  const db = memDB();
+  await collect(worker, { DB: db }, '', 'UA');
+  assert.equal(db.inserts.length, 1);
+  assert.equal(db.inserts[0].args[colsOf(db.inserts[0]).indexOf('visitor')], null);
+});

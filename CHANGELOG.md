@@ -3,6 +3,20 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-11 (visitors are counted with a one-way daily code)
+
+- **Visitor counts, without storing anyone's address.** Each usage event now
+  carries a visitor code: a one-way hash of the address and the browser with a
+  random key that changes every day and is deleted after two days, so distinct
+  codes per day count visitors, no code can be reversed once its key is gone,
+  and nothing links one day's codes to the next. The raw address is stored only
+  if the worker's STORE_RAW_IP var is set to "1"; it is not set. Migration 003
+  adds the columns and the key table. `npm run usage` gains a visitors column.
+- **The About page says what is kept.** "There are no cookies, no IP addresses
+  stored, and no accounts" is now "There are no cookies and no accounts" plus a
+  plain description of the visitor code. The sentence claiming the site is a set
+  of static files that keeps working without the site is gone.
+
 ## 2026-09-11 (a usage report script)
 
 - **`npm run usage` answers "how much is it used".** Totals and a by-day table of

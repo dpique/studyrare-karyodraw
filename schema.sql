@@ -1,5 +1,6 @@
--- KaryoDraw usage analytics (D1). One row per anonymous event.
--- No IP address, no cookie, no account, no identifier. See worker.js.
+-- KaryoDraw usage analytics (D1). One row per event.
+-- No cookie, no account, no user-agent. The visitor column is a one-way daily code
+-- (see worker.js visitorCode); ip is NULL unless STORE_RAW_IP is set. See worker.js.
 CREATE TABLE IF NOT EXISTS usage (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   ts        INTEGER NOT NULL,   -- epoch ms, set server-side
@@ -11,7 +12,16 @@ CREATE TABLE IF NOT EXISTS usage (
   show_mode TEXT,               -- 'all' | 'affected'
   country   TEXT,               -- coarse geo from Cloudflare (request.cf.country)
   referer   TEXT,               -- referring host only, client-supplied
-  len       INTEGER             -- full karyotype length before the 512-char cap
+  len       INTEGER,            -- full karyotype length before the 512-char cap
+  visitor   TEXT,               -- one-way daily code of address+browser (migration 003)
+  ip        TEXT                -- NULL unless the worker's STORE_RAW_IP var is "1"
+);
+CREATE INDEX IF NOT EXISTS idx_usage_visitor ON usage(ts, visitor);
+-- The per-day salt behind the visitor code; rows older than a day are deleted by
+-- the worker, which is what makes old codes irreversible.
+CREATE TABLE IF NOT EXISTS salts (
+  day  TEXT PRIMARY KEY,        -- YYYY-MM-DD, UTC
+  salt TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_usage_ts   ON usage(ts);
 CREATE INDEX IF NOT EXISTS idx_usage_type ON usage(type);
