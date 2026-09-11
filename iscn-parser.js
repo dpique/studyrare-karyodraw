@@ -3197,8 +3197,8 @@
           tone: "correction",
           text: "An exchange written t(…) keeps both derivative products, which would make the count " +
             (rrCl.modalNumber + 1) + ". The " + rrCl.modalNumber + " you wrote describes the Robertsonian translocation: the long arms of " +
-            rrAb.chroms[0] + " and " + rrAb.chroms[1] + " fused into one chromosome, the short arms lost. That fusion is what is drawn here, and ISCN does not write it with t(): the rule (5.5.18.3 b) names " +
-            rrTok + " as the preferred spelling, and rob(" + rrPair + ")(q10;q10) also names it in constitutional cases.",
+            rrAb.chroms[0] + " and " + rrAb.chroms[1] + " fused into one chromosome, the short arms lost. That fusion is what is drawn here, and ISCN does not write it with t(): " +
+            rrTok + " is the preferred spelling, and rob(" + rrPair + ")(q10;q10) also names it in constitutional cases.",
           fixLabel: "Write it as the derivative:",
           fix: (result.normalized || raw).replace(rrAb.raw, rrTok)
         };

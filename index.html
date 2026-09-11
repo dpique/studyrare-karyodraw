@@ -1509,9 +1509,9 @@
     // colon before a deleted arm belonged there; it does (del(4)(:p15.2→qter)
     // is printed ISCN), and now the string says so instead of leaving the
     // question open.
-    var endTitle = "a single colon marks a break without reunion: this end is broken, not a telomere (ISCN 4.4.4)";
+    var endTitle = "a single colon marks a break without reunion: this end is broken, not a telomere";
     var endColon = '<span class="dj" title="' + endTitle + '">:</span>';
-    var J = '<span class="dj" title="a double colon marks break and reunion: two pieces joined here (ISCN 4.4.4)">::</span>';
+    var J = '<span class="dj" title="a double colon marks break and reunion: two pieces joined here">::</span>';
     var parts = core.split("::").map(function (t) {
       // The leading chromosome of the piece; bare bands are the one-chromosome
       // form (5.4.2.2 b), where the instance's own chromosome is the source.

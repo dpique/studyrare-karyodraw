@@ -946,7 +946,7 @@
     "15": "chromosome 15 (Prader-Willi and Angelman syndromes)"
   };
 
-  // Which parent an inheritance qualifier names (ISCN 4.2.1 g). dn is absent on
+  // Which parent an inheritance qualifier names. dn is absent on
   // purpose: it records that both parents were karyotyped and are normal
   // (4.2.1 h), so there is no carrier to point at and the candidate is dropped.
   var QUAL_PARENT = { mat: "mother", dmat: "mother", pat: "father", dpat: "father", inh: "inherited", dinh: "inherited" };
@@ -997,12 +997,12 @@
   // rearrangement was inherited, which for a derivative means the parent
   // carries the balanced complement).
   var QUAL_LINE = {
-    mat: "The mat suffix records maternal origin; a balanced parental form is written dmat (ISCN 4.2.1 g).",
-    pat: "The pat suffix records paternal origin; a balanced parental form is written dpat (ISCN 4.2.1 g).",
-    dmat: "The dmat suffix marks this chromosome as one product of her balanced rearrangement (ISCN 4.2.1 g).",
-    dpat: "The dpat suffix marks this chromosome as one product of his balanced rearrangement (ISCN 4.2.1 g).",
+    mat: "The mat suffix records maternal origin; a balanced parental form is written dmat.",
+    pat: "The pat suffix records paternal origin; a balanced parental form is written dpat.",
+    dmat: "The dmat suffix marks this chromosome as one product of her balanced rearrangement.",
+    dpat: "The dpat suffix marks this chromosome as one product of his balanced rearrangement.",
     inh: "The inh suffix says a parent carries it without saying which.",
-    dinh: "The dinh suffix marks one product of a parental rearrangement without naming the parent (ISCN 4.2.1 g)."
+    dinh: "The dinh suffix marks one product of a parental rearrangement without naming the parent."
   };
 
   // The compact parental-origin card (the card leads the tool column; see
