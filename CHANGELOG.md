@@ -8,7 +8,9 @@ Notable changes to KaryoDraw. The site is continuously deployed (every change to
 - **`npm run usage` answers "how much is it used".** Totals and a by-day table of
   draws, parsed draws, distinct karyotypes and pageviews, straight from the D1
   analytics; `--since` narrows it and `--csv` saves the table under the
-  gitignored review/ directory. Documented in docs/VALIDATION.md beside the
+  gitignored review/ directory. `--edge` adds Cloudflare's per-day unique addresses, page
+  views and requests from the zone analytics, the nearest thing to unique
+  visitors this site can report: the beacon stores no identifier, on purpose. Documented in docs/VALIDATION.md beside the
   other D1 queries. Counts include Dan's own use and headless verification loads.
 
 ## 2026-09-11 (the most-studied board leaves the homepage again)
