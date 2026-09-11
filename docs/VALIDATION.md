@@ -712,6 +712,13 @@ stages, each a script, so a session picks it up instead of rebuilding it:
      "SELECT karyotype, COUNT(*) AS n FROM usage WHERE type='draw' AND parsed=1 AND karyotype IS NOT NULL GROUP BY karyotype ORDER BY n DESC" > drawn.json
    ```
 
+   For the plain question "how much is it used", `npm run usage` (`scripts/usage-report.mjs`)
+   prints the totals and a by-day table of draws, parsed draws, distinct karyotypes and
+   pageviews; `-- --since YYYY-MM-DD` narrows it and `-- --csv <path>` saves the table
+   (under `review/`, which is gitignored; the repo is public). The counts include Dan's
+   own use and headless verification loads. A 7403 error means the wrangler login lacks
+   the d1 scope: `npx wrangler login`.
+
 2. **Capture** — `scripts/review-capture.mjs` renders every manifest entry through the
    real page and writes one directory per karyotype under `review/` (gitignored):
    the karyogram PNG, the decode, detailed form, legend and warning texts exactly as
