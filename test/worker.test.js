@@ -83,7 +83,10 @@ test('the CSP is one Cloudflare and the app can both live with', async () => {
   // in the live page), so script hashes/nonces would break the zone's own bot
   // detection. 'unsafe-inline' is the ceiling on this stack; the value of this
   // CSP is everything else, and remote script injection stays blocked.
-  assert.match(csp, /script-src 'self' 'unsafe-inline'/);
+  assert.match(csp, /script-src 'self' 'unsafe-inline' https:\/\/static\.cloudflareinsights\.com/);
+  // The zone's Web Analytics beacon and its collector: both edge-injected,
+  // both broken by the first CSP deploy until this pin.
+  assert.match(csp, /connect-src[^;]*https:\/\/cloudflareinsights\.com/);
   // The PNG export loads the stitched SVG through a data: image.
   assert.match(csp, /img-src[^;]*data:/);
   // The committed head loads Google Fonts (Cloudflare Fonts rewrites it to
