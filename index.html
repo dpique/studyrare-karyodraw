@@ -2779,8 +2779,12 @@
     }
     var allRepairs = w.length && !fix && w.every(function (x) { return x.indexOf("” is “") >= 0; });
     if (allRepairs) {
+      // An order note beside applied repairs (inv(2)p21p23: the parentheses were
+      // applied, the order was not, the figure is the same either way) gets a
+      // title that claims neither for both.
+      var mixedOrder = w.some(function (x) { return x.indexOf("is written first") >= 0; });
       box.innerHTML = '<div class="notebox"><div class="note-title">' +
-        (w.length === 1 ? "One spelling note, already applied:" : "Spelling notes, already applied:") + '</div>' +
+        (mixedOrder ? "Spelling notes:" : w.length === 1 ? "One spelling note, already applied:" : "Spelling notes, already applied:") + '</div>' +
         '<ul>' + w.map(function (x) { return "<li>" + escapeHtml(x) + "</li>"; }).join("") + '</ul></div>';
       return;
     }
@@ -3165,8 +3169,22 @@
   $("#tour-next").addEventListener("click", function () {
     if (tourIdx === TOUR.length - 1) exitTour(); else loadTourStep(tourIdx + 1);
   });
-  $("#draw").addEventListener("click", function () { leaveTourIfActive(); run(); });
-  input.addEventListener("keydown", function (e) { if (e.key === "Enter") { leaveTourIfActive(); run(); } });
+  // A submitted karyotype that differs from the one in the URL is a discrete step
+  // and earns a history entry, exactly like a chip or a toggle; submitting the same
+  // one again re-renders in place. Typing itself never touches history (nothing
+  // re-renders on a keystroke). Every submit used to replaceState, so the karyotype
+  // on screen BEFORE typing was overwritten: type, submit, click a "did you mean"
+  // chip, press Back twice, and the site was gone (Dan, 2026-09-11, seen as Back
+  // skipping a step after the chips).
+  function submitTyped() {
+    leaveTourIfActive();
+    var typed = String(input.value || "").replace(/\s+/g, "");
+    var inUrl = String(getKaryotypeParam() || "").replace(/\s+/g, "");
+    run.pushNext = typed !== inUrl;
+    run();
+  }
+  $("#draw").addEventListener("click", submitTyped);
+  input.addEventListener("keydown", function (e) { if (e.key === "Enter") submitTyped(); });
   // Style / Bands / Show each earn a history entry, so Back undoes a toggle. They
   // were left on replaceState when Back was fixed for the example chips and the fix
   // button, which meant three toggle clicks added zero entries and one Back left the
