@@ -3,6 +3,30 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-10 (one Chrome finder, one escaper, and the dead code leaves)
+
+- **Stale figures can no longer ship silently.** The committed karyogram PNGs
+  are the one generated output CI cannot rebuild (rendering needs a browser),
+  so editing a notation in content/karyotypes.js without rerunning
+  `npm run images` used to leave every check green while a page showed the
+  figure of the old karyotype. Each PNG's manifest entry now records the
+  notation it was rendered from, and the suite compares.
+- **One Chrome finder, one site server.** The launcher and static-server
+  boilerplate that lived in 27 near-copies across the browser tests and the
+  rendering scripts now lives once in scripts/lib/browser.js. The copies had
+  drifted three ways; the three rendering scripts that only knew the macOS
+  Chrome path now find Chrome on Linux the way the tests always did.
+- **One escaper.** Four per-module HTML escapers each escaped a different
+  subset of characters (one omitted ">", another omitted quotes while feeding
+  quoted attributes). Every module now shares one full escaper, Karyo.esc.
+- **The dead code leaves.** An unreachable 3:0 drawing in the pachytene
+  trivalent (the mode dispatcher now refuses unknown modes instead of quietly
+  drawing Adjacent-A), constants and exports nothing consumed, calls that were
+  provably constant zero, a duplicate print stylesheet block, and two empty
+  CSS rules. The teach-layer header now documents the API that actually
+  exists, and the heterochromatin color rule the three renderers each carried
+  a copy of lives in one place.
+
 ## 2026-09-10 (every cell line exports, and the site wears its security headers)
 
 - **A mosaic's PNG now shows all of its cell lines.** The export drew the first

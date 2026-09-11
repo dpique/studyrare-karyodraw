@@ -9,49 +9,18 @@
 // live karyogram; no unit harness renders that pipeline end to end.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const http = require('node:http');
-const path = require('node:path');
 
-const ROOT = path.join(__dirname, '..');
+const { findChrome, launchBrowser, serveSite } = require('../scripts/lib/browser.js');
+const CHROME = findChrome();
 
-const CHROME = [
-  process.env.CHROME_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/usr/bin/google-chrome',
-  '/usr/bin/google-chrome-stable',
-  '/usr/bin/chromium-browser',
-  '/usr/bin/chromium',
-].filter(Boolean).find((p) => fs.existsSync(p));
-
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-  '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon', '.txt': 'text/plain', '.xml': 'application/xml' };
-
-function serve() {
-  const server = http.createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    if (url.pathname.startsWith('/api/')) { res.writeHead(204).end(); return; }
-    let file = path.join(ROOT, decodeURIComponent(url.pathname));
-    if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
-    if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-    if (!fs.existsSync(file)) { res.writeHead(404).end('not found'); return; }
-    res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream' });
-    fs.createReadStream(file).pipe(res);
-  });
-  return new Promise((res) => server.listen(0, '127.0.0.1', () => res(server)));
-}
 
 const legendText = (page) => page.evaluate(() => document.getElementById('legend').textContent);
 
 test('the legend lists exactly the marks the figure draws', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
-  const puppeteer = require('puppeteer-core');
-  const server = await serve();
+  const server = await serveSite();
   const port = server.address().port;
-  const browser = await puppeteer.launch({
-    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
-  });
+  const browser = await launchBrowser();
   const open = async (page, k) => {
     await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent(k)}&style=highlight&show=affected`,
       { waitUntil: 'load' });
@@ -137,12 +106,9 @@ test('the legend lists exactly the marks the figure draws', async (t) => {
 // joined". A row that both draws a mark and spells the mark out says it twice.
 test('the mark rows draw their mark, not a colored block', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
-  const puppeteer = require('puppeteer-core');
-  const server = await serve();
+  const server = await serveSite();
   const port = server.address().port;
-  const browser = await puppeteer.launch({
-    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
-  });
+  const browser = await launchBrowser();
   // Every legend row as { label, sw } where sw is the swatch's outerHTML, so a test
   // can ask what a given row actually drew rather than trusting the label alone.
   const rows = (page) => page.evaluate(() =>
@@ -201,12 +167,9 @@ test('the mark rows draw their mark, not a colored block', async (t) => {
 // draws a dashed rule over the body instead of a block striped by CSS gradient.
 test('the fusion seam row draws the seam', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
-  const puppeteer = require('puppeteer-core');
-  const server = await serve();
+  const server = await serveSite();
   const port = server.address().port;
-  const browser = await puppeteer.launch({
-    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
-  });
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     await page.setCacheEnabled(false);
@@ -232,12 +195,9 @@ test('the fusion seam row draws the seam', async (t) => {
 // own rule (ISCN 5.5.9.1) rather than the generic two-breakpoint lesson.
 test('a repaired insertion reads as a note, and the figure shows the move', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
-  const puppeteer = require('puppeteer-core');
-  const server = await serve();
+  const server = await serveSite();
   const port = server.address().port;
-  const browser = await puppeteer.launch({
-    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
-  });
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     await page.setCacheEnabled(false);
@@ -270,12 +230,9 @@ test('a repaired insertion reads as a note, and the figure shows the move', asyn
 // involved chromosomes, so it keeps a row that the plain translocation loses.
 test('the stain rows appear only when the figure contains that stain', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
-  const puppeteer = require('puppeteer-core');
-  const server = await serve();
+  const server = await serveSite();
   const port = server.address().port;
-  const browser = await puppeteer.launch({
-    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
-  });
+  const browser = await launchBrowser();
   const rows = async (page, k, show) => {
     await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent(k)}&style=highlight&bands=550&show=${show}`,
       { waitUntil: 'load' });
@@ -333,12 +290,9 @@ test('the stain rows appear only when the figure contains that stain', async (t)
 // colour it names is the one thing it cannot afford to get wrong.
 test('the gray swatch is actually gray', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
-  const puppeteer = require('puppeteer-core');
-  const server = await serve();
+  const server = await serveSite();
   const port = server.address().port;
-  const browser = await puppeteer.launch({
-    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
-  });
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     await page.setCacheEnabled(false);
@@ -374,12 +328,9 @@ test('the gray swatch is actually gray', async (t) => {
 // line would have to either omit those silently or claim a completeness it does not have.
 test('the detailed form appears under the figure, per chromosome', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
-  const puppeteer = require('puppeteer-core');
-  const server = await serve();
+  const server = await serveSite();
   const port = server.address().port;
-  const browser = await puppeteer.launch({
-    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
-  });
+  const browser = await launchBrowser();
   const block = async (page, k) => {
     await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent(k)}&style=highlight&bands=550&show=involved`,
       { waitUntil: 'load' });
@@ -449,12 +400,9 @@ test('the detailed form appears under the figure, per chromosome', async (t) => 
 // list of operations having to be kept in step.
 test('the translocation colour note appears only when a piece came from elsewhere', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
-  const puppeteer = require('puppeteer-core');
-  const server = await serve();
+  const server = await serveSite();
   const port = server.address().port;
-  const browser = await puppeteer.launch({
-    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
-  });
+  const browser = await launchBrowser();
   const shown = async (page, k) => {
     await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent(k)}&style=highlight&bands=550&show=involved`,
       { waitUntil: 'load' });
@@ -490,12 +438,9 @@ test('the translocation colour note appears only when a piece came from elsewher
 // described the one element it does not apply to.
 test('the ring clasp is keyed, and the marker is not called uninvolved', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
-  const puppeteer = require('puppeteer-core');
-  const server = await serve();
+  const server = await serveSite();
   const port = server.address().port;
-  const browser = await puppeteer.launch({
-    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
-  });
+  const browser = await launchBrowser();
   const open = async (page, k) => {
     await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent(k)}&style=highlight&show=involved`,
       { waitUntil: 'load' });

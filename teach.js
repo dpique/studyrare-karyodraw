@@ -8,10 +8,16 @@
  *
  * All the "explain it to a newbie" content:
  *   Teach.decode(clone)          -> token-by-token plain-English breakdown
+ *   Teach.sexNote(clone)         -> the sex-complement sentence
+ *   Teach.plainSummary(clone)    -> the whole clone in running prose
  *   Teach.bandInfo(chrom, band)  -> how to read a band name + what its stain means
  *   Teach.stainInfo(stain)       -> Giemsa band biology
  *   Teach.syndromes(clone)       -> curated clinical/board-relevant notes
- *   Teach.armInfo()              -> anatomy-of-a-chromosome reference copy
+ *   Teach.pronounce(k)           -> how to say a karyotype out loud
+ *   Teach.glossFor(code) / Teach.glossForTerm(term) -> glossary hovers, backed
+ *     by Teach.GLOSSARY and Teach.GLOSS_PROSE_TERMS
+ *   Teach.CANCER_GENES / Teach.FUSIONS / Teach.SYNDROMES / Teach.ARM_INFO
+ *     -> the curated data the cards render from
  *
  * Content is written at the level of a genetic-counseling / medical-genetics
  * board candidate. It is educational context, not diagnostic advice.
@@ -1902,6 +1908,11 @@
     // "Turner syndrome" on a near-haploid clone that kept a single X. When a
     // pattern fires, entries marked aneuploidy are read as part of the pattern.
     var pattern = false;
+    // Every matcher below runs inside try/catch with an EMPTY handler, here and
+    // three more times: one throwing SYNDROMES/FUSIONS test must cost its own
+    // card, never the whole decode. The cost is that a broken matcher goes
+    // quiet; the per-entry pins in test/dosage-cards.test.js and
+    // test/cbf-mecom-notes.test.js are what keep that visible.
     SYNDROMES.forEach(function (s) { try { if (s.pattern && s.test(clone)) pattern = true; } catch (e) {} });
     // A clone built of derivative-type products is an acquired clone whatever
     // else it contains: dic, add and multiple der()s are how tumour karyotypes
@@ -2255,7 +2266,6 @@
     plainSummary: plainSummary,
     bandInfo: bandInfo,
     stainInfo: stainInfo,
-    describeAberration: describeAberration,
     syndromes: syndromes,
     pronounce: pronounce,
     GLOSSARY: GLOSSARY,

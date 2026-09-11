@@ -16,16 +16,12 @@
 //
 // Output defaults to karyotype-stress-test.html at the repo root (gitignored).
 import fs from 'node:fs';
-import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import puppeteer from 'puppeteer-core';
 import { CORPUS, GROUPS } from './stress-corpus.mjs';
 import { appCss, fontLinks } from './lib/page-assets.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CHROME = process.env.CHROME_PATH
-  || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 const argv = process.argv.slice(2);
 const argOf = (name) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : null; };
@@ -37,27 +33,7 @@ const OUT = argOf('--out') || path.join(ROOT, 'karyotype-stress-test.html');
 const FULL_VIEW = new Set(['48,XXYY', '49,XXXXY', '69,XXY', '92,XXYY',
   '50,XY,+8,+9,+19,+21,t(9;22)(q34;q11.2)', '46,XY']);
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-  '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon', '.txt': 'text/plain', '.xml': 'application/xml' };
 
-// A static server over the worktree. The app must be served over HTTP: the browser
-// refuses to load its <script src> modules from file://.
-function serve() {
-  const server = http.createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    // The page beacons draws to /api/collect. There is no worker here; answer so the
-    // request does not sit in the network log.
-    if (url.pathname.startsWith('/api/')) { res.writeHead(204).end(); return; }
-    let file = path.join(ROOT, decodeURIComponent(url.pathname));
-    if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
-    if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-    if (!fs.existsSync(file)) { res.writeHead(404).end('not found'); return; }
-    res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream' });
-    fs.createReadStream(file).pipe(res);
-  });
-  return new Promise((res) => server.listen(0, '127.0.0.1', () => res(server)));
-}
 
 // Type the karyotype and press Draw: the same path as a student, so the same code runs.
 // `run()` is synchronous, but the karyogram is scaled to its container by a debounced
@@ -467,10 +443,9 @@ async function main() {
   const items = FILTER ? CORPUS.filter((e) => e.group === FILTER) : CORPUS;
   if (!items.length) { console.error(`No cases for --filter ${FILTER}`); process.exit(1); }
 
-  const server = await serve();
+  const server = await serveSite();
   const port = server.address().port;
-  const browser = await puppeteer.launch({
-    executablePath: CHROME, headless: 'new',
+  const browser = await launchBrowser({
     args: ['--no-sandbox', '--hide-scrollbars', '--force-color-profile=srgb'],
   });
   const rows = [];

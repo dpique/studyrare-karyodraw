@@ -9,33 +9,9 @@
 // geometry on screen.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const http = require('node:http');
-const path = require('node:path');
 
-const ROOT = path.join(__dirname, '..');
-const CHROME = [
-  process.env.CHROME_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable',
-  '/usr/bin/chromium-browser', '/usr/bin/chromium',
-].filter(Boolean).find((p) => fs.existsSync(p));
-
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-  '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' };
-function serve() {
-  const server = http.createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    if (url.pathname.startsWith('/api/')) { res.writeHead(204).end(); return; }
-    let file = path.join(ROOT, decodeURIComponent(url.pathname));
-    if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
-    if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-    if (!fs.existsSync(file)) { res.writeHead(404).end(); return; }
-    res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream' });
-    fs.createReadStream(file).pipe(res);
-  });
-  return new Promise((res) => server.listen(0, '127.0.0.1', () => res(server)));
-}
+const { findChrome, launchBrowser, serveSite } = require('../scripts/lib/browser.js');
+const CHROME = findChrome();
 
 // A viewport point that actually lands on a band of the given figure: walk up
 // the figure's vertical midline from the bottom until hit-testing reaches a
@@ -64,10 +40,9 @@ const hiState = (page) => page.evaluate(() => {
 
 test('hovering a band draws the amber outline, on the ring as on the linear body', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
-  const puppeteer = require('puppeteer-core');
-  const server = await serve();
+  const server = await serveSite();
   const port = server.address().port;
-  const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 1400, height: 1000 });

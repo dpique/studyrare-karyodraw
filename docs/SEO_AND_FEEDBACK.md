@@ -98,10 +98,11 @@ external links. The footer's GitHub "Open source" link is gone by owner decision
 `[data-fb-open]` link whose href is only the no-JS fallback) and
 `feedback@karyodraw.com`.
 
-NOTE on the email address: it needs Cloudflare Email Routing on the karyodraw.com zone
-(dashboard: Email, Email Routing, enable, destination daniel@studyrare.com, custom
-address feedback@). As of 2026-08-10 the zone had NO MX records, so mail bounces until
-that is enabled; the on-site form is unaffected.
+NOTE on the email address: it runs on Cloudflare Email Routing (karyodraw.com zone,
+destination daniel@studyrare.com, custom address feedback@). Enabled 2026-08-11; the
+zone's MX records exist and mail delivers (verified 2026-09-10). If feedback@ ever
+bounces again, check Email Routing on the zone first; the on-site form is a separate
+path and unaffected.
 
 `test/layout.test.js` pins the footer, dialog, script, and the About-page channels;
 `test/feedback-inplace-browser.test.js` opens and submits the dialog on built pages in

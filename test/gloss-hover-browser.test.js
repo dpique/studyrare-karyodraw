@@ -6,33 +6,9 @@
 // must appear and disappear.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const http = require('node:http');
-const path = require('node:path');
 
-const ROOT = path.join(__dirname, '..');
-const CHROME = [
-  process.env.CHROME_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable',
-  '/usr/bin/chromium-browser', '/usr/bin/chromium',
-].filter(Boolean).find((p) => fs.existsSync(p));
-
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-  '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' };
-function serve() {
-  const server = http.createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    if (url.pathname.startsWith('/api/')) { res.writeHead(204).end(); return; }
-    let file = path.join(ROOT, decodeURIComponent(url.pathname));
-    if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
-    if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-    if (!fs.existsSync(file)) { res.writeHead(404).end(); return; }
-    res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream' });
-    fs.createReadStream(file).pipe(res);
-  });
-  return new Promise((res) => server.listen(0, '127.0.0.1', () => res(server)));
-}
+const { findChrome, launchBrowser, serveSite } = require('../scripts/lib/browser.js');
+const CHROME = findChrome();
 
 // The glossary hover lives on the PROSE terms alone. The symbol chips carried
 // it for a day (#247) and Dan had it removed on sight (2026-08-30): a dotted
@@ -40,10 +16,9 @@ function serve() {
 // word away in the sentence beside the chip.
 test('the glossary hovers on the prose, and the symbol chips stay plain', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
-  const puppeteer = require('puppeteer-core');
-  const server = await serve();
+  const server = await serveSite();
   const port = server.address().port;
-  const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent('46,XY,t(9;22)(q34;q11.2)')}`,
@@ -94,10 +69,9 @@ test('the glossary hovers on the prose, and the symbol chips stay plain', async 
 // alongside the chips (2026-08-30).
 test('decode prose glosses whole phrases; the figure caption stays plain', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
-  const puppeteer = require('puppeteer-core');
-  const server = await serve();
+  const server = await serveSite();
   const port = server.address().port;
-  const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     await page.goto(`http://127.0.0.1:${port}/index.html?k=${encodeURIComponent('45,XX,der(14;21)(q10;q10)')}`,

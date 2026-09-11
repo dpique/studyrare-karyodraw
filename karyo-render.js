@@ -82,6 +82,18 @@
     });
     return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
   }
+
+  // The heterochromatin color rule (centromere / variable region / stalk),
+  // shared by the composite, ring and detail renderers. Each keeps a local
+  // one-line wrapper because their hue comes from different scopes; the rule
+  // itself lives only here.
+  function heteroStain(simple, hue, stain) {
+    if (simple) {
+      if (hue) return stain === "acen" ? hexMix(hue, "#1a1f36", 0.22) : hexMix(hue, "#ffffff", 0.28);
+      return stain === "acen" ? "#3c4463" : "#808ba8";
+    }
+    return stain === "acen" ? "#3c4463" : "#7c8ae9";
+  }
   function contrastOnWhite(hex) { return 1.05 / (relLum(hex) + 0.05); }
   function textInk(hue) {
     var t = 0, c = hue;
@@ -96,7 +108,6 @@
     };
   }
   var BASELINE = tintRamp("#5f698a"); // navy-gray for unaffected chromosomes
-  var CEN_COLOR = "#3c4463";
   var OUTLINE = "#4a5375";
 
   // Hatch textures follow the ideogram convention: the centromere is a tight
@@ -344,7 +355,15 @@
     return hue ? hexMix(hue, "#000000", 0.12) : "#9aa7b4";
   }
 
-  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;"); }
+  // The one HTML/XML escaper for the whole app (exported as Karyo.esc).
+  // Four divergent per-module copies once existed, each escaping a
+  // different subset; the renderer's omitted ">", pachytene's omitted
+  // quotes yet fed quoted attributes. Escaping the full five is always
+  // safe in both text nodes and attributes, so every caller shares this.
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
 
   // Roughly how wide a label will draw, in the same units as the font size.
   //
@@ -432,10 +451,9 @@
     var simple = ctx.theme === "simple";
     var overlays = opts.overlays || [];
     // The chromosome this composite is filed and labelled as, used for the outline
-    // colour and for a seam centromere. drawInstance passes it; the fallback is the
-    // old positional guess, kept for the direct renderComposite calls in tests.
-    var idChrom = opts.idChrom != null ? String(opts.idChrom)
-      : ((segments.filter(function (s) { return s.hasCen; })[0] || segments[0] || {}).chrom);
+    // colour and for a seam centromere. drawInstance, the sole caller, always
+    // passes it.
+    var idChrom = String(opts.idChrom);
     var totalBp = segments.reduce(function (s, g) { return s + (g.to - g.from); }, 0);
     var H = h(totalBp);
     var pad = 3, cap = W * CAP_RATIO, CEN_H = 9;
@@ -495,14 +513,8 @@
         '<line x1="0" y1="0" x2="0" y2="' + gap + '" stroke="' + color + '" stroke-width="' + w + '"/></pattern>');
       return id;
     }
-    // Heterochromatin (centromere / variable / stalk) color: distinct, on-theme.
     function heteroColor(chrom, stain) {
-      if (simple) {
-        var hue = ctx.affected && ctx.affected[chrom];
-        if (hue) return stain === "acen" ? hexMix(hue, "#1a1f36", 0.22) : hexMix(hue, "#ffffff", 0.28);
-        return stain === "acen" ? "#3c4463" : "#808ba8";
-      }
-      return stain === "acen" ? "#3c4463" : "#7c8ae9";
+      return heteroStain(simple, ctx.affected && ctx.affected[chrom], stain);
     }
 
     var body = [];
@@ -1646,14 +1658,7 @@
     var R = Rm + thick / 2, r0 = Math.max(6, Rm - thick / 2);
     var pad = 11, size = (R + pad) * 2, cx = size / 2, cy = size / 2, TAU = Math.PI * 2;   // room for the fusion arrowhead above the ring
 
-    function heteroColor(stain) {
-      if (simple) {
-        var hue = ctx.affected && ctx.affected[chrom];
-        if (hue) return stain === "acen" ? hexMix(hue, "#1a1f36", 0.22) : hexMix(hue, "#ffffff", 0.28);
-        return stain === "acen" ? "#3c4463" : "#808ba8";
-      }
-      return stain === "acen" ? "#3c4463" : "#7c8ae9";
-    }
+    function heteroColor(stain) { return heteroStain(simple, ctx.affected && ctx.affected[chrom], stain); }
     var defs = [], patCache = {};
     function hatch(color, angle) {
       var key = color + "|" + angle;
@@ -1963,7 +1968,7 @@
     var cover = {}, unknownExcluded = false;
     Object.keys(clone.slots || {}).forEach(function (ch) {
       (clone.slots[ch] || []).forEach(function (inst) {
-        var d = buildInstance(inst, { theme: "simple", level: 99, affected: {} });
+        var d = buildInstance(inst);
         if (!d) return;
         if (d.marker || d.dmin) { unknownExcluded = true; return; }
         // Each covered interval carries how it got there as well as where it is.
@@ -2155,7 +2160,7 @@
         var insts = clone.slots[chrom] || [];
         if (!insts.length || !wanted(chrom)) return;
         specs.push({ row: grp.name, chrom: chrom, insts: insts, sexcell: true, opts: {
-          sexcell: true, missing: lostCount(clone, chrom) } });
+          sexcell: true } });
       });
       // An explicit sex-chromosome loss is a statement the figure must show, and
       // its identity is not a guess: the notation names it. 76~77,XX,-Y drew no
@@ -2189,8 +2194,7 @@
       ["mar", "dmin"].forEach(function (chrom) {
         var insts = clone.slots[chrom] || [];
         if (!insts.length) return;
-        specs.push({ row: grp.name, chrom: chrom, insts: insts, opts: {
-          missing: lostCount(clone, chrom) } });
+        specs.push({ row: grp.name, chrom: chrom, insts: insts, opts: {} });
       });
     });
     return specs;
@@ -2328,10 +2332,7 @@
       defs.push('<pattern id="' + id + '" width="' + gap + '" height="' + gap + '" patternTransform="rotate(' + angle + ')" patternUnits="userSpaceOnUse"><rect width="' + gap + '" height="' + gap + '" fill="#ffffff"/><line x1="0" y1="0" x2="0" y2="' + gap + '" stroke="' + color + '" stroke-width="' + w + '"/></pattern>');
       return id;
     }
-    function heteroColor(stain) {
-      if (simple) return hue ? (stain === "acen" ? hexMix(hue, "#1a1f36", 0.22) : hexMix(hue, "#ffffff", 0.28)) : (stain === "acen" ? "#3c4463" : "#808ba8");
-      return stain === "acen" ? "#3c4463" : "#7c8ae9";
-    }
+    function heteroColor(stain) { return heteroStain(simple, hue, stain); }
     var body = ['<rect x="' + pad + '" y="' + pad + '" width="' + w + '" height="' + H + '" fill="#fff" clip-path="url(#' + uid + ')"/>'];
     body.push('<g clip-path="url(#' + uid + ')">');
     var bands = getBands(chrom, opts.level == null ? 99 : opts.level);
@@ -2487,9 +2488,10 @@
   }
 
   window.Karyo = {
+    esc: esc,
     render: render, drawInstance: drawInstance, drawDetail: drawDetail, buildInstance: buildInstance,
-    computeAffected: computeAffected, computeDosage: computeDosage, resolveBand: resolveBand, getBands: getBands, textWidth: textWidth,
+    computeAffected: computeAffected, computeDosage: computeDosage, resolveBand: resolveBand, textWidth: textWidth,
     armExtent: armExtent, nearestBand: nearestBand, bandAncestor: bandAncestor, invalidBands: invalidBands, bandSnap: bandSnap, detailedForm: detailedForm,
-    STAIN: STAIN, OP_COLORS: OP_COLORS, AFFECTED_PALETTE: AFFECTED_PALETTE, tintRamp: tintRamp, BASELINE: BASELINE, textInk: textInk, PX_PER_BP: PX
+    STAIN: STAIN, OP_COLORS: OP_COLORS, AFFECTED_PALETTE: AFFECTED_PALETTE, BASELINE: BASELINE, textInk: textInk, PX_PER_BP: PX
   };
 })();

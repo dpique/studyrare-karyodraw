@@ -10,39 +10,15 @@
 // interplay of URL, control and redraws.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const http = require('node:http');
-const path = require('node:path');
 
-const ROOT = path.join(__dirname, '..');
-const CHROME = [
-  process.env.CHROME_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable',
-  '/usr/bin/chromium-browser', '/usr/bin/chromium',
-].filter(Boolean).find((p) => fs.existsSync(p));
+const { findChrome, launchBrowser, serveSite } = require('../scripts/lib/browser.js');
+const CHROME = findChrome();
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-  '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' };
-function serve() {
-  const server = http.createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    if (url.pathname.startsWith('/api/')) { res.writeHead(204).end(); return; }
-    let file = path.join(ROOT, decodeURIComponent(url.pathname));
-    if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
-    if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-    if (!fs.existsSync(file)) { res.writeHead(404).end(); return; }
-    res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream' });
-    fs.createReadStream(file).pipe(res);
-  });
-  return new Promise((r) => server.listen(0, '127.0.0.1', () => r(server)));
-}
 
 test('the Bands control follows the notation', { skip: !CHROME && 'no Chrome found' }, async (t) => {
-  const puppeteer = require('puppeteer-core');
-  const server = await serve();
+  const server = await serveSite();
   const port = server.address().port;
-  const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new' });
+  const browser = await launchBrowser();
   const page = await browser.newPage();
   await page.setViewport({ width: 1400, height: 1000 });
   const state = () => page.evaluate(() => ({

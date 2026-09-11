@@ -23,14 +23,11 @@
 //
 // Output: paper/fig1-interface.png, paper/fig2-gallery.png, paper/fig3-segregation.png
 import fs from 'node:fs';
-import http from 'node:http';
 import path from 'node:path';
-import puppeteer from 'puppeteer-core';
 import { renderKaryogram, ROOT } from './lib/render.mjs';
 import { appCss, fontLinks, settleFonts } from './lib/page-assets.mjs';
+import { launchBrowser, serveSite } from './lib/browser.js';
 
-const CHROME = process.env.CHROME_PATH
-  || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const OUT = path.join(ROOT, 'paper');
 const SCALE = 2;
 
@@ -110,18 +107,9 @@ async function fitGallery(page) {
   });
 }
 
-function serve() {
-  const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-    '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json', '.ico': 'image/x-icon' };
-  const server = http.createServer((req, res) => {
-    let f = decodeURIComponent(req.url.split('?')[0]);
-    if (f === '/') f = '/index.html';
-    const p = path.join(ROOT, f);
-    if (!p.startsWith(ROOT) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); return res.end(); }
-    res.writeHead(200, { 'content-type': MIME[path.extname(p)] || 'application/octet-stream' });
-    res.end(fs.readFileSync(p));
-  });
-  return new Promise((r) => server.listen(0, () => r({ server, base: `http://127.0.0.1:${server.address().port}` })));
+async function serve() {
+  const server = await serveSite();
+  return { server, base: `http://127.0.0.1:${server.address().port}` };
 }
 
 // Type into the real page and press Draw, exactly as a student would, so the figure
@@ -140,8 +128,7 @@ async function draw(page, base, k) {
 
 async function main() {
   const { server, base } = await serve();
-  const browser = await puppeteer.launch({
-    executablePath: CHROME, headless: 'new',
+  const browser = await launchBrowser({
     args: ['--no-sandbox', '--hide-scrollbars', '--force-color-profile=srgb'],
   });
   try {

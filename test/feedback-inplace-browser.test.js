@@ -7,53 +7,27 @@
 // the page, and a submission must post and show the success state.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const http = require('node:http');
-const path = require('node:path');
 
-const ROOT = path.join(__dirname, '..');
+const { findChrome, launchBrowser, serveSite } = require('../scripts/lib/browser.js');
+const CHROME = findChrome();
 
-const CHROME = [
-  process.env.CHROME_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/usr/bin/google-chrome',
-  '/usr/bin/google-chrome-stable',
-  '/usr/bin/chromium-browser',
-  '/usr/bin/chromium',
-].filter(Boolean).find((p) => fs.existsSync(p));
-
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-  '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon', '.txt': 'text/plain', '.xml': 'application/xml' };
-
+// This file's server variant: log every /api/* call so the submission
+// assertions can read what was posted, then answer 204 like the shared stub.
 function serve(apiLog) {
-  const server = http.createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    if (url.pathname.startsWith('/api/')) {
-      let body = '';
-      req.on('data', (c) => { body += c; });
-      req.on('end', () => { apiLog.push({ path: url.pathname, method: req.method, body }); res.writeHead(204).end(); });
-      return;
-    }
-    let file = path.join(ROOT, decodeURIComponent(url.pathname));
-    if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
-    if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-    if (!fs.existsSync(file)) { res.writeHead(404).end('not found'); return; }
-    res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream' });
-    fs.createReadStream(file).pipe(res);
-  });
-  return new Promise((res) => server.listen(0, '127.0.0.1', () => res(server)));
+  return serveSite({ api: (req, res, url) => {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', () => { apiLog.push({ path: url.pathname, method: req.method, body }); res.writeHead(204).end(); });
+    return true;
+  } });
 }
 
 test('generated-page feedback opens and submits in place', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
-  const puppeteer = require('puppeteer-core');
   const apiLog = [];
   const server = await serve(apiLog);
   const port = server.address().port;
-  const browser = await puppeteer.launch({
-    executablePath: CHROME, headless: 'new', args: ['--no-sandbox'],
-  });
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     await page.setCacheEnabled(false);
