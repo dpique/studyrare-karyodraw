@@ -1295,11 +1295,24 @@
       if (g0.length === 2 && bandOrderReversed(ab.chroms[0], g0[0], g0[1])) {
         var k0 = bandKey(g0[0]), k1 = bandKey(g0[1]);
         var sameArm = k0 && k1 && k0.arm === k1.arm;
+        var typedForm = op + "(" + ab.chroms[0] + ")(" + g0[0] + g0[1] + ")";
+        var iscnForm = op + "(" + ab.chroms[0] + ")(" + g0[1] + g0[0] + ")";
+        // The short arm is where ISCN's order and the published habit part company.
+        // The literature mostly writes p-arm pairs from the centromere outward: the
+        // EML4::ALK inversion is printed inv(2)(p21p23) by Soda et al. 2007, the Atlas
+        // of Genetics and Cytogenetics in Oncology and LOINC 79206-9, against ISCN
+        // 5.5.10 a, and inv(2)(p23p21) is essentially unused. A learner who types the
+        // familiar spelling is told both facts, not that they are wrong
+        // (test/order-rule-evidence.test.js holds the evidence, row by row).
         warnings.push((sameArm
-          ? "Two breakpoints in the same arm run from pter to qter, so the one closer to pter is written first: “"
+          ? "ISCN writes two breakpoints in the same arm from pter to qter, so the one closer to pter is written first: “"
           : "With a breakpoint in each arm, the short-arm breakpoint is written first, so “") +
-          op + "(" + ab.chroms[0] + ")(" + g0[0] + g0[1] + ")” is “" +
-          op + "(" + ab.chroms[0] + ")(" + g0[1] + g0[0] + ")”.");
+          typedForm + "” is “" + iscnForm + "”." +
+          (sameArm && k0.arm === "p"
+            ? " Published karyotypes often write short-arm pairs the other way round, from the centromere outward" +
+              " (the EML4::ALK inversion is almost always printed inv(2)(p21p23)), so the typed spelling is the" +
+              " familiar one; both bound the same segment."
+            : ""));
       }
     }
     return finish(ab);
