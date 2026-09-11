@@ -3,6 +3,28 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-11 (the breakpoint-order rule goes back to the text)
+
+- **Same-arm breakpoints run from pter to qter again.** Yesterday's entry
+  (#327) moved the app to "closer to the centromere first" on the claim that
+  inv(2)(p13p23) is ISCN's own example. That string is not in ISCN 2024.
+  5.5.10 b i prints inv(2)(p23p13); 5.5.10 a says "the breakpoint closer to
+  pter of the inverted chromosome is specified first"; 5.5.2 b says interstitial
+  deletion breakpoints "are specified from pter to qter"; Table 3 says the
+  same; and all thirteen del and inv p-arm pairs the book prints with two
+  distinct bands (del(X)(p21p11.4), del(1)(p34p22), inv(9)(p23p13) and ten
+  more) have the distal band first, against one stray del(4)(p15.3p16.1) in
+  an "e.g." list about semicolons. For a day the app told readers those
+  printed examples were misspelled. The two corpus entries #327 edited are
+  back to the standard's strings and are pinned, and the note now reads "Two
+  breakpoints in the same arm run from pter to qter, so the one closer to pter
+  is written first". The EML4::ALK literature's inv(2)(p21p23) draws as
+  before, with that note beside it, since the figure is the same either way;
+  ISCN's order for it is inv(2)(p23p21).
+- **The detailed system converts to the spelling ISCN prints beside it.**
+  inv(2)(pter→p23::p13→p23::p13→qter) reads as inv(2)(p23p13), the short form
+  printed on the line above it in 5.5.10.
+
 ## 2026-09-11 (a detailed composition outside its parentheses is taught the shape)
 
 - **inv(16) pter→p13.1::q22→p13.1::q22→qter now teaches where the parentheses

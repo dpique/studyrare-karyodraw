@@ -1189,7 +1189,7 @@ test('a written-form fault keeps its drawing and is told the rule', () => {
   // Nothing here changes what is drawn, so refusing would withhold a correct picture
   // over a spelling. This is the same call listing order gets.
   [
-    ['46,XY,del(5)(p15.3p15.2)', /written first/, /del\(5\)\(p15.2p15.3\)/],
+    ['46,XY,del(5)(p15.2p15.3)', /written first/, /del\(5\)\(p15.3p15.2\)/],
     ['46,XY,del(5)(q33q13)', /written first/, /del\(5\)\(q13q33\)/],
     ['46,XY,inv(9)(q13p11)', /written first/, /inv\(9\)\(p11q13\)/],
     ['46,XY,del(5)(p15.2),del(5)(p15.2)', /written once with a multiplier/, /del\(5\)\(p15.2\)x2/],
@@ -1210,11 +1210,10 @@ test('breakpoint order is only corrected where it carries no meaning', () => {
     'an inverted duplication is not a reversed deletion');
   ['46,XY,del(5)(q13q33)', '46,XY,inv(9)(p12q13)', '46,XX,del(11)(q23.1q23.3)',
     '46,XY,inv(3)(q21.3q26.2)', '46,XX,del(22)(q11.2q11.2)',
-    // Same-arm pairs run centromere-outward in BOTH arms (inv(2)(p13p23) is
-    // ISCN's own example). This list once pinned the p-arm reversed, derived
-    // from dup(1)(p34~32p22), whose order is orientation and proves nothing
-    // about del and inv; the history is pinned in test/band-order.test.js.
-    '46,XX,del(4)(p15.2p15.3)', '46,XY,dup(1)(p34p22)', '46,XY,del(5)(p15.2)']
+    // Same-arm pairs run pter to qter (ISCN 5.5.2 b, 5.5.10 a), so on the p arm
+    // the distal band comes first: del(X)(p21p11.4) and inv(2)(p23p13) are the
+    // standard's own printed examples. The history is in test/band-order.test.js.
+    '46,XX,del(4)(p15.3p15.2)', '46,XY,dup(1)(p34p22)', '46,XY,del(5)(p15.2)']
     .forEach((k) => assert.equal(ISCN.parse(k).warnings.length, 0, `${k} is already in order`));
   // Sub-bands compare as decimals: q11.23 sits inside q11.2 and before q11.3, which
   // comparing 23 against 3 as integers gets backwards.
@@ -1336,11 +1335,11 @@ test('a semicolon between breakpoints on one chromosome is named and repaired', 
 
 test('one mistake, one message', () => {
   // The repair alone leaves the operation to be parsed from the text as typed, where
-  // inv(2)(p13;p23) reads as two groups of one band each and is told an inversion needs
-  // two bands: a second message, about a rule the reader did not break. (p13 before
-  // p23, so the repaired spelling is also in order and the order note stays silent;
-  // a reversed pair WOULD earn its own second note, which is a second real mistake.)
-  const w = ISCN.parse('46,XX,inv(2)(p13;p23)').warnings;
+  // inv(2)(p23;p13) reads as two groups of one band each and is told an inversion needs
+  // two bands: a second message, about a rule the reader did not break. (p23 before
+  // p13 is pter to qter, so the repaired spelling is also in order and the order note
+  // stays silent; a reversed pair WOULD earn its own second note, a second real mistake.)
+  const w = ISCN.parse('46,XX,inv(2)(p23;p13)').warnings;
   assert.equal(w.length, 1, JSON.stringify(w));
   // Count alone would pass on the old behaviour, where the arity message was the one
   // message. It has to be the message that names the mistake.
@@ -1609,11 +1608,9 @@ test('a derivative in the detailed system is explained, not guessed at', () => {
 });
 
 test('the inversions ISCN 5.5.10 prints in the detailed system draw, from the short form beside them', () => {
-  // ISCN 2024 5.5.10 b ii-iv, verbatim, each printed "or" beside its short form. (b i,
-  // the paracentric p-arm inv(2), is left out on purpose: ISCN prints inv(2)(p23p13)
-  // and the current same-arm order rule respells that, so pinning either output here
-  // would take a side in test/band-order.test.js by the back door.)
+  // ISCN 2024 5.5.10 b i-iv, verbatim, each printed "or" beside its short form.
   const shortOf = (k) => (/“([^”]*)”\.$/.exec(ISCN.parse(k).warnings.find((w) => /DETAILED/.test(w))) || [])[1];
+  assert.equal(shortOf('46,XX,inv(2)(pter→p23::p13→p23::p13→qter)'), '46,XX,inv(2)(p23p13)', 'paracentric, p arm, distal band first');
   assert.equal(shortOf('46,XX,inv(3)(pter→q21::q26.2→q21::q26.2→qter)'), '46,XX,inv(3)(q21q26.2)', 'paracentric, q arm');
   assert.equal(shortOf('46,XY,inv(3)(pter→p13::q21→p13::q21→qter)'), '46,XY,inv(3)(p13q21)', 'pericentric');
   assert.equal(shortOf('46,Y,inv(X)(pter→p21::q24→p21::q24→qter)'), '46,Y,inv(X)(p21q24)', 'pericentric, X');

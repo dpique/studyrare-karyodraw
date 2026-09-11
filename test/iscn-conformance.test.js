@@ -58,19 +58,19 @@ test('the unsupported list is a coverage gap, and is reported when it closes', (
     nowOk.map((e) => `${e.k}   (${e.needs})`).join('\n  '));
 });
 
-// ---- the rule that has now been got wrong in both directions ------------------
-test('same-arm breakpoints are ordered centromere-outward, cross-arm p first', () => {
-  // The short system writes the breakpoint closer to the centromere first;
-  // inv(2)(p13p23) is the standard's own example. A previous version of this
-  // very test pinned pter-to-qter instead, generalized from the
-  // dup(1)(p34~32p22) worked example, whose order encodes ORIENTATION (a
-  // direct dup), not the ordering rule. test/band-order.test.js carries the
-  // full history so the rule cannot flip a third time unremarked.
+// ---- the rule that has now been got wrong three times ------------------------
+test('breakpoints are ordered pter to qter, in both arms', () => {
+  // ISCN 2024 5.5.2 b: interstitial deletion breakpoints "are specified from pter
+  // to qter"; 5.5.10 a: "the breakpoint closer to pter of the inverted chromosome
+  // is specified first"; Table 3; and every printed p-arm pair (del(X)(p21p11.4),
+  // inv(2)(p23p13), ...). Pinned this way in 2026-08, flipped by #327 on a claimed
+  // example (inv(2)(p13p23)) that does not occur in the text, and restored. The
+  // full account with citations is test/band-order.test.js.
   const warns = (k) => ISCN.parse(k).warnings.join(' ');
-  assert.doesNotMatch(warns('46,XX,del(4)(p15.2p15.3)'), /written first/,
-    'proximal band first on the p arm is correct');
-  assert.match(warns('46,XX,del(4)(p15.3p15.2)'), /written first/,
-    'distal band first on the p arm is not');
+  assert.doesNotMatch(warns('46,XX,del(4)(p15.3p15.2)'), /written first/,
+    'distal band first on the p arm is correct');
+  assert.match(warns('46,XX,del(4)(p15.2p15.3)'), /written first/,
+    'proximal band first on the p arm is not');
   assert.doesNotMatch(warns('46,XX,del(5)(q13q33)'), /written first/,
     'proximal band first on the q arm is correct');
   assert.match(warns('46,XX,del(5)(q33q13)'), /written first/,

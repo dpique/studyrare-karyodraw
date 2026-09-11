@@ -36,7 +36,7 @@ function serveWithTop(items, apiLog) {
 test('the most-studied panel renders only what the parser accepts', async (t) => {
   if (!CHROME) { t.skip('no Chrome executable found; set CHROME_PATH'); return; }
   const items = [
-    '46,XY,t(9;22)(q34;q11.2)', '47,XX,+21', '45,X', '46,XX,inv(2)(p13p23)',
+    '46,XY,t(9;22)(q34;q11.2)', '47,XX,+21', '45,X', '46,XX,inv(2)(p23p13)',
     '<img src=x onerror=alert(1)>',   // hostile junk: must never render
     'zz,42',                          // unparseable: must never render
   ];
