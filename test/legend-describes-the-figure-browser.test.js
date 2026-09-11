@@ -339,7 +339,8 @@ test('the detailed form appears under the figure, per chromosome', async (t) => 
       const el = document.getElementById('detailed');
       return {
         visible: !!el && getComputedStyle(el).display !== 'none',
-        lines: [...(el ? el.querySelectorAll('.dline') : [])].map((x) => ({
+        // Per-chromosome rows only; the last row is the whole karyotype as one line.
+        lines: [...(el ? el.querySelectorAll('.dline:not(.dfull)') : [])].map((x) => ({
           label: x.querySelector('.dlab').textContent.trim(),
           detail: x.querySelector('code').textContent.trim(),
         })),
