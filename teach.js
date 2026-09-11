@@ -1478,7 +1478,7 @@
     { chroms: ["8", "21"], bands: [["q22", "q22"], ["q22", "q22.1"]],
       kind: "fusion", genes: ["RUNX1", "RUNX1T1"],
       name: "t(8;21), core-binding-factor AML",
-      note: "WHO defines an AML by this translocation, whatever the blast count, and it sits in the favorable-risk group. It is one of the two core-binding-factor leukemias: <i>RUNX1</i> is the alpha subunit of that transcription factor and <i>CBFB</i> the beta, which is why this lesion and inv(16) share one risk category and one treatment path, high-dose cytarabine consolidation. Auer rods and a maturing myeloid picture are the classic morphology. A co-occurring <i>KIT</i> mutation worsens the outlook, so it is worth asking the molecular panel." },
+      note: "WHO defines an AML by this translocation, whatever the blast count, and it sits in the favorable-risk group. It is one of the two core-binding-factor leukemias: <i>RUNX1</i> is the alpha subunit of that transcription factor and <i>CBFB</i> the beta, which is why this lesion and inv(16) share one risk category and one treatment path, high-dose cytarabine consolidation. Auer rods and a maturing myeloid picture are the classic morphology. A co-occurring <i>KIT</i> mutation worsens the outlook, so it is worth sending the molecular panel." },
     { chroms: ["16", "16"], bands: [["p13.1", "q22"], ["p13.1", "q22.1"]],
       kind: "fusion", genes: ["CBFB", "MYH11"],
       name: "inv(16) / t(16;16), core-binding-factor AML",
