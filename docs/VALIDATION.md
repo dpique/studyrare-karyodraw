@@ -714,7 +714,11 @@ stages, each a script, so a session picks it up instead of rebuilding it:
 
    For the plain question "how much is it used", `npm run usage` (`scripts/usage-report.mjs`)
    prints the totals and a by-day table of draws, parsed draws, distinct karyotypes and
-   pageviews; `-- --since YYYY-MM-DD` narrows it and `-- --csv <path>` saves the table
+   pageviews; `-- --since YYYY-MM-DD` narrows it, `-- --csv <path>` saves the table, and
+   `-- --edge` adds Cloudflare's per-day unique addresses, page views and requests from the
+   zone analytics (read with the wrangler OAuth token; crawlers included, daily groups only
+   on the free plan). Human visitors sit between the edge uniques and the beacon pageviews;
+   the schema stores no identifier, so nothing here can count them exactly
    (under `review/`, which is gitignored; the repo is public). The counts include Dan's
    own use and headless verification loads. A 7403 error means the wrangler login lacks
    the d1 scope: `npx wrangler login`.
