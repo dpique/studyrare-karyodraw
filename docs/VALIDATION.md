@@ -715,6 +715,8 @@ stages, each a script, so a session picks it up instead of rebuilding it:
    For the plain question "how much is it used", `npm run usage` (`scripts/usage-report.mjs`)
    prints the totals and a by-day table of draws, parsed draws, distinct karyotypes and
    pageviews; `-- --since YYYY-MM-DD` narrows it, `-- --csv <path>` saves the table, and
+   the totals line counts distinct stored addresses across the range (the cross-day
+   unique figure, kept since 2026-09-11) and the table shows them per day;
    `-- --edge` adds Cloudflare's per-day unique addresses, page views and requests from the
    zone analytics (read with the wrangler OAuth token; crawlers included, daily groups only
    on the free plan). Human visitors sit between the edge uniques and the beacon pageviews;
