@@ -46,9 +46,10 @@ test('chromosome names stay uppercase; X and Y are not arm letters', () => {
 });
 
 test('psu dic parses as a dicentric with one active centromere', () => {
-  const p = ISCN.parse('46,XY,psu dic(5;4)(q15;q11)');
+  const p = ISCN.parse('45,XY,psu dic(5;4)(q15;q11)');
   const w = warningsOf(p);
   assert.ok(!w.some((x) => /not an ISCN abbreviation/.test(x)), 'psu dic is ISCN: ' + JSON.stringify(w));
+  assert.equal(p.clones[0].unreadable, false, 'and the correctly counted spelling draws');
   const ab = p.clones[0].aberrations[0];
   assert.equal(ab.kind, 'dic', 'drawn as a dicentric, which it physically is');
   assert.equal(ab.psu, true, 'flagged pseudodicentric');
@@ -60,7 +61,7 @@ test('psu dic parses as a dicentric with one active centromere', () => {
 });
 
 test('the psu dic decode explains the inactive centromere', () => {
-  const p = ISCN.parse('46,XY,psu dic(5;4)(q15;q11)');
+  const p = ISCN.parse('45,XY,psu dic(5;4)(q15;q11)');
   const text = Teach.decode(p.clones[0]).map((r) => r.text).join(' ');
   assert.match(text, /only one of the two centromeres is active/);
   assert.match(text, /first-listed/, 'names the convention: the first-listed chromosome keeps the active one');
