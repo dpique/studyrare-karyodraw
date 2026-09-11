@@ -247,7 +247,7 @@ test('a request with no address still records the event, with no code', async ()
   assert.equal(db.inserts[0].args[colsOf(db.inserts[0]).indexOf('visitor')], null);
 });
 
-test('the deployed config stores the raw address (Dan's decision, 2026-09-11)', () => {
+test('the deployed config stores the raw address (decided 2026-09-11)', () => {
   // The switch lives in wrangler.jsonc so a deploy carries it; the About page and
   // the privacy notes describe what is kept and must change with it.
   const cfg = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'wrangler.jsonc'), 'utf8');
