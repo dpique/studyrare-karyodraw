@@ -3,6 +3,12 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-11 (the usage report counts addresses across days)
+
+- **`npm run usage` reports distinct addresses across the whole range**, the
+  one cross-day unique figure the site has now that addresses are kept, plus
+  an addresses column per day beside the daily visitor codes.
+
 ## 2026-09-11 (a panel is sent, and the beacon comment says less)
 
 - **The t(8;21) note sends the molecular panel.** "Worth asking the molecular
