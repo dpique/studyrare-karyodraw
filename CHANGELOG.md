@@ -3,6 +3,14 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-14 (the copy line sweep is a script)
+
+- **`npm run roundtrip` sweeps every supported ISCN example through the copied
+  detailed line and back**, sorting the results into read back as itself, a
+  normalised twin, refused, or nothing to serialise. It is the sweep that found
+  the two fixes above, kept so the next serializer or reader change runs it
+  instead of rebuilding it. Documented in docs/VALIDATION.md.
+
 ## 2026-09-14 (the composition states what the segments do not)
 
 - **The ISCN detailed form now writes add, hsr and a within-band deletion the
