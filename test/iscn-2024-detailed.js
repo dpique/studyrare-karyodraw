@@ -28,20 +28,17 @@ module.exports = [
   {
     short: "46,XX,add(19)(p13.3)",
     detailed: "46,XX,add(19)(?::p13.3→qter)",
-    generated: false,
-    needs: "a \"?\" records something the laboratory did not determine (ISCN 4.2.1 k), so there is nothing to generate",
+    generated: true,
   },
   {
     short: "46,XY,add(12)(q13)",
     detailed: "46,XY,add(12)(pter→q13::?)",
-    generated: false,
-    needs: "a \"?\" records something the laboratory did not determine (ISCN 4.2.1 k), so there is nothing to generate",
+    generated: true,
   },
   {
     short: "46,XX,der(5)add(5)(p15.3)add(5)(q23)",
     detailed: "46,XX,der(5)(?::p15.3→q23::?)",
-    generated: false,
-    needs: "a \"?\" records something the laboratory did not determine (ISCN 4.2.1 k), so there is nothing to generate",
+    generated: true,
   },
   {
     short: "46,XX,der(5)ins(5;?)(q13;?)",
@@ -67,8 +64,7 @@ module.exports = [
   {
     short: "46,XX,del(5)(q13q13)",
     detailed: "46,XX,del(5)(pter→q13::q13→qter)",
-    generated: false,
-    needs: "breakpoints written in the reverse or degenerate order",
+    generated: true,
   },
   {
     short: "46,XY,der(9)del(9)(p12)del(9)(q31)",
@@ -302,44 +298,37 @@ module.exports = [
   {
     short: "46,XX,hsr(1)(p22)[10]",
     detailed: "46,XX,hsr(1)(pter→p22::hsr::p22→qter)[10]",
-    generated: false,
-    needs: "hsr is modelled as an overlay, not a segment, so the amplified block does not appear in the band composition (ISCN writes it inline: pter->p22::hsr::p22->qter)",
+    generated: true,
   },
   {
     short: "46,XY,hsr(21)(q22)[10]",
     detailed: "46,XY,hsr(21)(pter→q22::hsr::q22→qter)[10]",
-    generated: false,
-    needs: "hsr is modelled as an overlay, not a segment, so the amplified block does not appear in the band composition (ISCN writes it inline: pter->p22::hsr::p22->qter)",
+    generated: true,
   },
   {
     short: "46,XX,der(1)hsr(1)(p22)hsr(1)(q31)[10]",
     detailed: "46,XX,der(1)(pter→p22::hsr::p22→q31::hsr::q31→qter)[10]",
-    generated: false,
-    needs: "hsr is modelled as an overlay, not a segment, so the amplified block does not appear in the band composition (ISCN writes it inline: pter->p22::hsr::p22->qter)",
+    generated: true,
   },
   {
     short: "46,XY,der(1)del(1)(p33p21)hsr(1)(p33)[10]",
     detailed: "46,XY,der(1)(pter→p33::hsr::p21→qter)[10]",
-    generated: false,
-    needs: "hsr is modelled as an overlay, not a segment, so the amplified block does not appear in the band composition (ISCN writes it inline: pter->p22::hsr::p22->qter)",
+    generated: true,
   },
   {
     short: "46,XX,der(2)del(2)(q21q31)hsr(2)(q21)[10]",
     detailed: "46,XX,der(2)(pter→q21::hsr::q31→qter)[10]",
-    generated: false,
-    needs: "hsr is modelled as an overlay, not a segment, so the amplified block does not appear in the band composition (ISCN writes it inline: pter->p22::hsr::p22->qter)",
+    generated: true,
   },
   {
     short: "46,XX,der(1)ins(1;7)(q21;p21p11.2)hsr(1;7)(q21;p11.2)[10]",
     detailed: "46,XX,der(1)(1pter→1q21::7p21→7p11.2::hsr::1q21→1qter)[10]",
-    generated: false,
-    needs: "hsr is modelled as an overlay, not a segment, so the amplified block does not appear in the band composition (ISCN writes it inline: pter->p22::hsr::p22->qter)",
+    generated: true,
   },
   {
     short: "46,XX,der(1)ins(1;7)(q21;p11.2p21)hsr(1;7)(q21;p11.2)[10]",
     detailed: "46,XX,der(1)(1pter→1q21::hsr::7p11.2→7p21::1q21→1qter)[10]",
-    generated: false,
-    needs: "hsr is modelled as an overlay, not a segment, so the amplified block does not appear in the band composition (ISCN writes it inline: pter->p22::hsr::p22->qter)",
+    generated: true,
   },
   {
     short: "46,XX,ins(2)(p13q31q21)",

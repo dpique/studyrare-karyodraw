@@ -2396,7 +2396,11 @@
       for (var i1 = 0; i1 < bands1.length; i1++) {
         var s1 = splitBand(bands1[i1]);
         if (!s1 || (s1.chrom && s1.chrom !== chroms[0])) return "";
-        if (plain.indexOf(s1.band) < 0) plain.push(s1.band);
+        // A deletion within one band names that band twice, del(5)(q13q13) for
+        // del(5)(pter→q13::q13→qter) (ISCN 5.5.2); collapsing the pair read it as
+        // the terminal deletion del(5)(q13). Every other operation's repeated
+        // band is the same breakpoint met again (inv: p11, q13, p11, q13).
+        if (op === "del" || plain.indexOf(s1.band) < 0) plain.push(s1.band);
       }
       if (!plain.length) return "";
       // The detailed composition reads pter to qter, which is also the short

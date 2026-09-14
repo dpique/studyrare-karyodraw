@@ -1513,6 +1513,10 @@
     var endColon = '<span class="dj" title="' + endTitle + '">:</span>';
     var J = '<span class="dj" title="a double colon marks break and reunion: two pieces joined here">::</span>';
     var parts = core.split("::").map(function (t) {
+      // A "?" (material the laboratory could not identify) and an hsr block are
+      // not bands of any chromosome, so they take the junction ink, not a piece's.
+      if (t === "?") return '<span class="dj" title="material the laboratory could not identify">?</span>';
+      if (t === "hsr") return '<span class="dj" title="a homogeneously staining region: the amplified block">hsr</span>';
       // The leading chromosome of the piece; bare bands are the one-chromosome
       // form (5.4.2.2 b), where the instance's own chromosome is the source.
       var m = /^([0-9XY]+)[pq]/.exec(t);
