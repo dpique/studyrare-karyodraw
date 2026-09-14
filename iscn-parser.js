@@ -339,7 +339,24 @@
     if (rule.minTotal) {
       if (!groups.length) return rule.totalMsg;
       var tot = groups.reduce(function (s, g) { return s + g.length; }, 0);
-      return (tot >= rule.minTotal && groups.length === (ab.chroms.length || 1)) ? "" : rule.totalMsg;
+      if (tot < rule.minTotal || groups.length !== (ab.chroms.length || 1)) return rule.totalMsg;
+      // Between chromosomes the shapes the standard defines are the ordinary one, a
+      // site on the recipient and a pair on the donor, and the reciprocal one, a
+      // pair on every chromosome, each replacing the next-listed chromosome's
+      // (5.5.9.3). Anything else has no geometry: a three-chromosome insertion with
+      // a lone site used to reach the two-chromosome builder and draw a wrong
+      // chromosome under a right label.
+      if (ab.chroms.length >= 2) {
+        var allPairs = groups.every(function (g) { return g.length === 2; });
+        var ordinary = ab.chroms.length === 2 && groups[0].length === 1 && groups[1].length === 2;
+        if (!allPairs && !ordinary) {
+          return ab.chroms.length === 2 ? rule.totalMsg
+            : "An insertion between three or more chromosomes is a cycle: each chromosome's segment " +
+              "replaces the next one's, and the last replaces the first's, so every chromosome names the two bands " +
+              "that bound its own segment, like ins(5;14;9)(q13q23;q24q21;p12p23).";
+        }
+      }
+      return "";
     }
     if (rule.perChrom) {
       var n = ab.chroms.length;
@@ -2432,6 +2449,20 @@
     } else {
       var groups = chroms.map(function () { return []; });
       var repeated = chroms.some(function (c, i) { return chroms.indexOf(c) !== i; });
+      // A complex reciprocal insertion (5.5.9.3): each pair is the segment its
+      // chromosome donated, in the order it reads in the recipient (5.5.9 b), and
+      // the recipient is the next-listed chromosome, the first receiving from the
+      // last. So chromosome k's pair is the middle piece of composition k+1.
+      if (op === "ins" && compositions.length === chroms.length && chroms.length >= 2) {
+        var cycle = chroms.map(function (c, k) {
+          var mid = compositions[(k + 1) % chroms.length].split("::");
+          if (mid.length !== 3) return null;
+          var e = mid[1].split("→").map(function (x) { return splitBand(x.trim()); });
+          if (e.length !== 2 || !e[0] || !e[1] || e[0].chrom !== c || e[1].chrom !== c) return null;
+          return e[0].band + e[1].band;
+        });
+        if (cycle.every(Boolean)) return head + sign + "ins(" + chroms.join(";") + ")(" + cycle.join(";") + ")" + tail;
+      }
       if (compositions.length === chroms.length && repeated) {
         // Composition k is the derivative of chroms[k], and its own breakpoint is
         // the junction band on chroms[k]. Where a homologue is named twice the

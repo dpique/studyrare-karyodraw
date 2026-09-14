@@ -12,13 +12,14 @@
 //   refused  the reader could not work back to a short form: a centromere of
 //            unknown origin, a ring derivative, a lone change on one chromosome
 //            under a der() label (ISCN 5.5.3 d v says the composition does not
-//            settle it), a three-chromosome insertion
+//            settle it)
 //   plain    nothing structural to serialise, so the line IS the short form
 //   gated    the page's band gate (Karyo.invalidBands) refuses the short form, so
 //            the copy button never shows a line for it; listed, not swept
 // The sweeps of 2026-09-14 found #347 (a t(9;9) refused), #348 (add, hsr and
-// del(5)(q13q13) copied as an untouched chromosome) and the der() reader (#350).
-// After them: 328 supported, 196 same, 38 twin, 2 refused, 89 plain, 3 gated. A
+// del(5)(q13q13) copied as an untouched chromosome), the der() reader (#350) and
+// the reciprocal insertion drawn one-way (#351). After them: 328 supported, 198
+// same, 37 twin, 1 refused, 89 plain, 3 gated. A
 // "refused" line that names a whole chromosome (pter→qter) under an abnormal
 // label is the #348 bug class again.
 //

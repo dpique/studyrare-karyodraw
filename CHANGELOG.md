@@ -3,6 +3,26 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-14 (a reciprocal insertion moves every segment)
+
+- **A complex reciprocal insertion draws the chromosomes ISCN describes.** In
+  ins(5;6)(q13q23;q15q23) two segments change places, and in
+  ins(5;14;9)(q13q23;q24q21;p12p23) three move round a cycle, each replacing the
+  next-listed chromosome's and the last replacing the first's. Both were drawn
+  with the ordinary one-way builder: the first chromosome took the second's
+  segment, the second lost its segment and gained nothing, and in the
+  three-chromosome case der(9) was drawn as a chromosome 14 with a deletion
+  under a der(9) label, with the net-imbalance table reporting losses and gains
+  in a balanced karyotype. Every derivative now carries the segment the standard
+  gives it, in the orientation the band order says, the table reads balanced,
+  and the decode says leg by leg which segment moved where.
+- **An insertion between three or more chromosomes must pair every chromosome.**
+  Any other shape has no geometry and used to reach the two-chromosome builder;
+  it is now refused with the standard's own shape shown.
+- **The copied line of a reciprocal insertion pastes back and reads as itself**,
+  and the two corpus rows for these forms are now checked whole-line against
+  ISCN.
+
 ## 2026-09-14 (a derivative reads back from its composition)
 
 - **The detailed system of a derivative of any number of junctions now draws.**
