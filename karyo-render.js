@@ -1150,6 +1150,31 @@
         { type: "cut", chrom: chrom, at: hi + 1 }
       ] };
     }
+    // A complex reciprocal insertion (ISCN 5.5.9.3): every pair bounds the segment
+    // its chromosome donates, each segment replaces the NEXT-listed chromosome's,
+    // and the last donates to the first. ins(5;6)(q13q23;q15q23) swaps two
+    // segments; ins(5;14;9)(q13q23;q24q21;p12p23) is a balanced six-break cycle.
+    // A pair's written order is the order its bands read from pter to qter of the
+    // recipient (5.5.9 b): 14's q24q21 sits in 9 as 14q24→14q21. Before this the
+    // ordinary builder below took the first two chromosomes as recipient and donor,
+    // so der(9) was drawn as a chromosome 14 with a deletion (2026-09-14).
+    var cyclic = chroms.length >= 2 && bps.length === chroms.length && bps.every(function (g) { return g && g.length === 2; });
+    if (cyclic) {
+      var names = chroms.map(String), k = names.indexOf(chrom);
+      if (k < 0) return null;
+      var giver = names[(k + names.length - 1) % names.length];
+      var ownB = bps[k].map(function (x) { return resolveBand(chrom, x); });
+      var giftB = bps[(k + names.length - 1) % names.length].map(function (x) { return resolveBand(giver, x); });
+      if (!IDEO.data[chrom] || !IDEO.data[giver] || ownB.some(function (x) { return !x; }) || giftB.some(function (x) { return !x; })) return null;
+      var olo = Math.min(ownB[0].mid, ownB[1].mid), ohi = Math.max(ownB[0].mid, ownB[1].mid);
+      var glo = Math.min(giftB[0].mid, giftB[1].mid), ghi = Math.max(giftB[0].mid, giftB[1].mid), ginv = giftB[0].mid > giftB[1].mid;
+      var dc = IDEO.data[chrom], cs = [], cameIn;
+      if (olo > 0) cs.push(insSeg(chrom, 0, olo));
+      cs.push(cameIn = insSeg(giver, glo, ghi, ginv));
+      if (ohi < dc.length) cs.push(insSeg(chrom, ohi, dc.length));
+      return { segments: cs, overlays: [{ type: "mov", chrom: giver, segIndex: cs.indexOf(cameIn) }] };
+    }
+    if (chroms.length !== 2) return null;
     var recip = String(chroms[0]), donor = String(chroms[1]);
     var site2 = resolveBand(recip, (bps[0] || [])[0]);
     var sg = bps[1] || [], s1 = resolveBand(donor, sg[0]), s2 = resolveBand(donor, sg[1]);

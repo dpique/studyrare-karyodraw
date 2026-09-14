@@ -368,14 +368,12 @@ module.exports = [
   {
     short: "46,XY,ins(5;6)(q13q23;q15q23)",
     detailed: "46,XY,ins(5;6)(5pter→5q13::6q15→6q23::5q23→5qter;6pter→6q15::5q13→5q23::6q23→6qter)",
-    generated: false,
-    needs: "a multi-chromosome or reciprocal insertion",
+    generated: true,
   },
   {
     short: "46,XX,ins(5;14;9)(q13q23;q24q21;p12p23)",
     detailed: "\u000746,XX,ins(5;14;9)(5pter→5q13::9p12→9p23::5q23→5qter;14pter→14q21::5q13→5q23::14q24→14qter;9pter→9p23::14q24→14q21::9p12→9qter)",
-    generated: false,
-    needs: "a multi-chromosome or reciprocal insertion",
+    generated: true,
   },
   {
     short: "46,XX,inv(2)(p23p13)",

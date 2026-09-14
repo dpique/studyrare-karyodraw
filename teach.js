@@ -148,6 +148,23 @@
   // distal-first it sits end-for-end. Read off the band midpoints, the same
   // comparison the renderer uses, so the sentence and the drawing cannot
   // disagree. Silent when a band does not resolve.
+  // A complex reciprocal insertion (ISCN 5.5.9.3): a pair on every chromosome named,
+  // each segment replacing the next-listed chromosome's.
+  function insIsCycle(ab) {
+    return !!(ab && ab.op === "ins" && (ab.chroms || []).length >= 2 && (ab.breakpoints || []).length === ab.chroms.length &&
+      ab.breakpoints.every(function (g) { return g && g.length === 2; }));
+  }
+  // A pair in pter-to-qter order, for naming a segment whose orientation is not
+  // the point (the written order of a pair encodes orientation, 5.5.9 b).
+  function pairPterFirst(chrom, g) {
+    if (!g || g.length < 2 || !window.Karyo) return g || [];
+    var a = window.Karyo.resolveBand(chrom, g[0]), b = window.Karyo.resolveBand(chrom, g[1]);
+    return (a && b && a.mid > b.mid) ? [g[1], g[0]] : g;
+  }
+  function listInWords(items) {
+    var a = (items || []).map(String);
+    return a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+  }
   function insOrientPhrase(chrom, segBands) {
     if (!segBands || segBands.length < 2 || !window.Karyo) return "";
     var a = window.Karyo.resolveBand(chrom, segBands[0]), b = window.Karyo.resolveBand(chrom, segBands[1]);
@@ -812,6 +829,20 @@
     }
     if (k === "ins") {
       var ic = ab.chroms;
+      if (insIsCycle(ab)) {
+        // ISCN 5.5.9.3: each chromosome's segment replaces the next-listed
+        // chromosome's, the last replacing the first's. Said leg by leg, since the
+        // one-way sentence below ("moved into chromosome 5") was false for it.
+        var legs = ic.map(function (c0, i) {
+          var to = ic[(i + 1) % ic.length];
+          return (i ? "the" : "The") + " segment between " + bandsPhrase(c0, bp[i] || []) + " of chromosome " + c0 + " moves into chromosome " + to +
+            " in place of the segment between " + bandsPhrase(to, pairPterFirst(to, bp[(i + 1) % ic.length] || [])) + insOrientPhrase(c0, bp[i] || []);
+        });
+        return { text: (ic.length === 2
+          ? "a RECIPROCAL INSERTION: two segments change places. "
+          : "a COMPLEX INSERTION, a balanced " + (2 * ic.length) + "-break rearrangement in which " + ic.length + " segments move round a cycle. ") +
+          legs.join("; ") + ". Every segment is still present once, so nothing is gained or lost overall.", tag: "add" };
+      }
       if (ic.length >= 2) {
         return { text: "an INSERTION: the segment between " + bandsPhrase(ic[1], bp[1] || []) + " of chromosome " + ic[1] +
           " is moved into chromosome " + ic[0] + " at " + ic[0] + ((bp[0] || [])[0] || "?") + insOrientPhrase(ic[1], bp[1] || []) +
@@ -2001,7 +2032,8 @@
       case "iso": return "isochromosome " + c;
       case "ring": return "ring chromosome " + c + ((bp[0] || []).length ? ", breaks at " + bands(0, false) : "");
       case "der": return "derivative chromosome " + c;
-      case "ins": return "insertion" + (ab.chroms.length >= 2 ? " of chromosome " + ab.chroms[1] + " into chromosome " + ab.chroms[0] : " within chromosome " + c);
+      case "ins": return insIsCycle(ab) ? "reciprocal insertion between chromosomes " + listInWords(ab.chroms)
+        : "insertion" + (ab.chroms.length >= 2 ? " of chromosome " + ab.chroms[1] + " into chromosome " + ab.chroms[0] : " within chromosome " + c);
       case "add": return "additional material on chromosome " + c;
       case "mar": return "a marker chromosome";
       case "trp": return "triplication on chromosome " + c;
@@ -2050,7 +2082,9 @@
       case "iso": return "Chromosome " + c + " formed as a mirror image of one of its arms (an isochromosome), so there is extra of one part and less of another.";
       case "ring": return "The ends of chromosome " + c + " joined together into a ring shape (a ring chromosome).";
       case "der": return "Chromosome " + c + " is rearranged (doctors call it a 'derivative' chromosome).";
-      case "ins": return ab.chroms.length >= 2
+      case "ins": return insIsCycle(ab)
+        ? "Pieces of chromosomes " + listInWords(ab.chroms) + " have changed places (a reciprocal insertion). Usually no genetic material is gained or lost."
+        : ab.chroms.length >= 2
         ? "A piece of chromosome " + ab.chroms[1] + " has been moved into chromosome " + c + " (an insertion)."
         : "A piece of chromosome " + c + " has moved to a different place on the same chromosome (an insertion). Usually no genetic material is gained or lost.";
       case "add": return "Extra chromosome material of uncertain origin is attached to chromosome " + c + ".";
