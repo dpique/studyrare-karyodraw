@@ -99,3 +99,43 @@ test('the copied line pastes back and reads as the very short form it came from'
   assert.deepEqual(wrong, [], `read back as a DIFFERENT karyotype:\n${wrong.join('\n')}`);
   assert.deepEqual(closed, [], `these now round-trip; take them off KNOWN_GAP: ${closed.join(', ')}`);
 });
+
+// A translocation between the two homologues of one pair puts BOTH breakpoint bands at
+// the one junction of EACH derivative (t(9;9)(p21.2;q22.33) copies as
+// 9qter→9q22.33::9p21.2→9qter beside 9pter→9q22.33::9p21.2→9pter), so the chromosome
+// number cannot say which band is a derivative's own; the piece that carries the
+// centromere can. Dan pasted the app's own copied line for this t(9;9) back into the
+// box and was told the app "cannot work back to it" (2026-09-14). Both orders of the
+// short form, and both arms, since a rule with a p/q axis gets every corner tested.
+test('the copied line of a translocation between homologues pastes back and reads as itself', () => {
+  for (const k of [
+    '46,XY,t(9;9)(p21.2;q22.33)',
+    '46,XY,t(9;9)(q22.33;p21.2)',
+    '46,XX,t(16;16)(p13;q22)',
+    '46,XY,t(3;3)(q21.3;q26.2)',
+    '46,XX,t(1;1)(p31;q32)',
+  ]) {
+    const copied = line(k);
+    assert.match(copied, /::/, `${k} did not copy as a composition: ${copied}`);
+    const back = ISCN.parse(copied);
+    assert.ok(back.ok && back.clones.length && back.clones.every((c) => !c.unreadable) && !back.suggestion,
+      `${copied}\n  refused: ${back.warnings[0] || ''}`);
+    const readAs = (/“([^”]*)”\.$/.exec(back.warnings.find((w) => /DETAILED/.test(w)) || '') || [])[1];
+    assert.equal(readAs, k, `${copied} read back as a different karyotype`);
+  }
+});
+
+// ISCN 2024 prints one such exchange itself, sequencing example v:
+//   seq[GRCh38] t(9;9)(9qter→9q31.1::9p21.2→9qter;9pter→9q31.1::9p21.2→9qter)
+// with the prose "a translocation between homologous chromosomes with breakpoints at
+// 9p21.2 and 9q31.1". As printed, the second composition ends in 9qter, which would
+// give that derivative two centromeres; the HGVS line beside it
+// ([102425452_qterdelinspter_26393001inv]) and the prose end the grafted piece at
+// pter. The reader takes the line as printed and still lands on the stated
+// breakpoints: the first derivative claims p21.2, so the second keeps q31.1.
+test('ISCN 2024 sequencing example v, a translocation between homologues, reads as its stated breakpoints', () => {
+  const back = ISCN.parse('46,XY,t(9;9)(9qter→9q31.1::9p21.2→9qter;9pter→9q31.1::9p21.2→9qter)');
+  assert.ok(back.ok && back.clones.every((c) => !c.unreadable), back.warnings[0] || '');
+  const readAs = (/“([^”]*)”\.$/.exec(back.warnings.find((w) => /DETAILED/.test(w)) || '') || [])[1];
+  assert.equal(readAs, '46,XY,t(9;9)(p21.2;q31.1)');
+});
