@@ -712,6 +712,16 @@ stages, each a script, so a session picks it up instead of rebuilding it:
      "SELECT karyotype, COUNT(*) AS n FROM usage WHERE type='draw' AND parsed=1 AND karyotype IS NOT NULL GROUP BY karyotype ORDER BY n DESC" > drawn.json
    ```
 
+   For the copy line, `npm run roundtrip` (`scripts/detailed-roundtrip.mjs`) sweeps every
+   supported ISCN 2024 example through `Karyo.detailedKaryotype` and back through the
+   parser and sorts the results: read back as itself, read back as a normalised twin (a
+   back-reference expanded, a range dropped), refused (the der() gap), or nothing to
+   serialise. Run it after any change to the detailed-form serializer or reader; the
+   unit test pins the standard's own pairs, this is the wider net, and its two sweeps on
+   2026-09-14 found a refused t(9;9) (#347) and add, hsr and del(5)(q13q13) copied as an
+   untouched chromosome (#348). `-- --quiet` prints the counts only, `-- --filter <text>`
+   narrows the corpus.
+
    For the plain question "how much is it used", `npm run usage` (`scripts/usage-report.mjs`)
    prints the totals and a by-day table of draws, parsed draws, distinct karyotypes and
    pageviews; `-- --since YYYY-MM-DD` narrows it, `-- --csv <path>` saves the table, and

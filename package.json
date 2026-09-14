@@ -17,6 +17,7 @@
     "seo-check": "node scripts/check-seo-signals.mjs",
     "stress": "node scripts/stress-report.mjs",
     "review-harvest": "node scripts/review-harvest.mjs",
+    "roundtrip": "node scripts/detailed-roundtrip.mjs",
     "review-capture": "node scripts/review-capture.mjs",
     "review-messages": "node scripts/review-messages.mjs",
     "indexnow": "node scripts/indexnow.mjs",
