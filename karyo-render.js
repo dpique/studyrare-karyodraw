@@ -2588,6 +2588,11 @@
       var ringOpen = first && last && first.from > 0 && last.to < IDEO.data[last.chrom].length;
       return ringOpen ? "::" + parts.join("::") + "::" : "";
     }
+    // An abnormal chromosome never serialises as the untouched one: a builder that
+    // could not place its bands (a band the ideogram lacks, a fallback drawing the
+    // full chromosome under an abnormal caption) has nothing to claim, and
+    // del(17)(p11.3) copying as del(17)(pter→qter) pasted back as a normal 17.
+    if (items.length === 1 && first && first.from <= 0 && first.to >= IDEO.data[first.chrom].length) return "";
     var openTop = !!first && (first.reversed ? first.to : first.from) > 0 &&
       (first.reversed ? first.to : first.from) < IDEO.data[first.chrom].length;
     var openBot = !!last && (last.reversed ? last.from : last.to) < IDEO.data[last.chrom].length &&

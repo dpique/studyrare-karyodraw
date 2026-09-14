@@ -1609,9 +1609,11 @@ test('a derivative whose composition fixes its short form is read (ISCN 5.5.3 pr
 });
 
 test('a derivative the composition does not determine is explained, not guessed at', () => {
-  // Two junctions: the operations that built it (which translocation first, an
-  // insertion or two translocations) are not fixed by the bands, so no short form.
-  const m = ISCN.parse('46,XX,der(1)(3qter→3q21::1p32→1q25::11q13→11qter)');
+  // The composition of a derivative of two or more junctions is read back to the
+  // operations that built it since 2026-09-14 (test/detailed-karyotype.test.js);
+  // what stays undetermined is a centromere of unknown origin, and the message for
+  // it names the derivative and calls the notation correct.
+  const m = ISCN.parse('47,XY,+der(?)(?→cen→?::9q22→9qter)');
   const w = m.warnings.join(' ');
   assert.match(w, /DETAILED system/);
   assert.match(w, /correct ISCN/, 'it is not the reader who is wrong');
@@ -1690,8 +1692,9 @@ test('a composition the reader cannot reduce is refused without calling it a der
   assert.match(w, /correct ISCN/);
   assert.ok(!/derivative/.test(w), 'tas is not a derivative');
   assert.equal(m.suggestion, null);
-  // The der() wording stays for a der().
-  assert.match(ISCN.parse('46,XX,der(1)(3qter→3q21::1p32→1q25::11q13→11qter)').warnings.join(' '), /derivative/);
+  // The der() wording stays for a der() the reader cannot reduce (a centromere of
+  // unknown origin); a der of two junctions reads back since 2026-09-14.
+  assert.match(ISCN.parse('47,XY,+der(?)(?→cen→?::9q22→9qter)').warnings.join(' '), /derivative/);
 });
 
 // A der(A;B) is assembled by walking its translocations as one chain from A to B

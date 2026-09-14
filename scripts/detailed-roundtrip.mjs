@@ -9,13 +9,18 @@
 //   same     read back as the karyotype it came from
 //   twin     read back as a normalised twin: a back-reference expanded, a tilde or
 //            dash range dropped, "//" written "/", an "or" alternative dropped
-//   refused  the reader could not work back to a short form (the der() gap, and
-//            any derivative carrying a "?" or an hsr)
+//   refused  the reader could not work back to a short form: a centromere of
+//            unknown origin, a ring derivative, a lone change on one chromosome
+//            under a der() label (ISCN 5.5.3 d v says the composition does not
+//            settle it), a three-chromosome insertion
 //   plain    nothing structural to serialise, so the line IS the short form
-// The two sweeps of 2026-09-14 found #347 (a t(9;9) refused) and #348 (add, hsr and
-// del(5)(q13q13) copied as an untouched chromosome); after them: 328 supported,
-// 170 same, 36 twin, 33 refused, 89 plain. A "refused" line that names a whole
-// chromosome (pter→qter) under an abnormal label is the #348 bug class again.
+//   gated    the page's band gate (Karyo.invalidBands) refuses the short form, so
+//            the copy button never shows a line for it; listed, not swept
+// The sweeps of 2026-09-14 found #347 (a t(9;9) refused), #348 (add, hsr and
+// del(5)(q13q13) copied as an untouched chromosome) and the der() reader (#350).
+// After them: 328 supported, 196 same, 38 twin, 2 refused, 89 plain, 3 gated. A
+// "refused" line that names a whole chromosome (pter→qter) under an abnormal
+// label is the #348 bug class again.
 //
 //   npm run roundtrip                 # counts, then the refused and twin lists
 //   npm run roundtrip -- --quiet      # counts only
@@ -47,10 +52,11 @@ const draws = (m) => !!(m && m.ok && m.clones.length && m.clones.every((c) => !c
 const readBack = (m) => (/“([^”]*)”\.$/.exec((m.warnings || []).find((w) => /DETAILED/.test(w)) || '') || [])[1];
 
 const rows = EXAMPLES.filter((r) => r.supported && (!FILTER || r.k.includes(FILTER)));
-const same = [], twin = [], refused = [], plain = [], notDrawn = [];
+const same = [], twin = [], refused = [], plain = [], notDrawn = [], gated = [];
 for (const { k } of rows) {
   const model = ISCN.parse(k);
   if (!draws(model)) { notDrawn.push(k); continue; }
+  if (Karyo.invalidBands(model).length) { gated.push(k); continue; }
   let line = '';
   try { line = Karyo.detailedKaryotype(model); } catch (e) { line = ''; }
   if (!/→|::/.test(line)) { plain.push(k); continue; }
@@ -61,7 +67,7 @@ for (const { k } of rows) {
 }
 
 const pad = (n) => String(n).padStart(4);
-console.log(`supported ${pad(rows.length)}   same ${pad(same.length)}   twin ${pad(twin.length)}   refused ${pad(refused.length)}   plain ${pad(plain.length)}` +
+console.log(`supported ${pad(rows.length)}   same ${pad(same.length)}   twin ${pad(twin.length)}   refused ${pad(refused.length)}   plain ${pad(plain.length)}   gated ${pad(gated.length)}` +
   (notDrawn.length ? `   not drawn ${pad(notDrawn.length)}` : ''));
 if (QUIET) process.exit(0);
 if (refused.length) {
@@ -71,6 +77,10 @@ if (refused.length) {
 if (twin.length) {
   console.log('\nTWIN (pastes back as a normalised twin):');
   for (const t of twin) console.log(`  ${t.k}\n      ${t.line}\n      read as ${t.as}`);
+}
+if (gated.length) {
+  console.log('\nGATED (the page refuses the band, so no line is ever offered):');
+  for (const k of gated) console.log(`  ${k}`);
 }
 if (notDrawn.length) {
   console.log('\nNOT DRAWN (marked supported, but the app refuses the short form):');

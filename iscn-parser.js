@@ -2385,11 +2385,15 @@
       return out.filter(function (b) { return /^[0-9XY]*[pq][\d.]*$/i.test(b) && !/ter$/i.test(b); });
     }
     var body;
-    if (op === "der" && chroms.length === 1 && compositions.length === 1) {
-      body = derShortBody(chroms[0], compositions[0]);
-      return body ? head + sign + "der(" + chroms[0] + ")" + body + tail : "";
+    if (op === "der" && compositions.length === 1) {
+      body = derShortBody(chroms, compositions[0]);
+      return body ? head + sign + "der(" + chroms.join(";") + ")" + body + tail : "";
     }
-    if (op === "ider" || op === "der" && compositions.length !== 1) return "";
+    if (op === "rec" && chroms.length === 1 && compositions.length === 1) {
+      body = recShortBody(chroms[0], compositions[0]);
+      return body ? head + sign + "rec(" + chroms[0] + ")" + body + tail : "";
+    }
+    if (op === "ider" || op === "der" || op === "rec") return "";
     if (chroms.length === 1) {
       var plain = [];
       var bands1 = junctionBands(compositions[0]);
@@ -2490,49 +2494,211 @@
   // ISCN 4.2.1 i: a sex chromosome is listed first, X before Y, else the lower number.
   function chromRank(c) { return c === "X" ? -2 : c === "Y" ? -1 : parseInt(c, 10); }
 
-  // The short form of a der() whose composition fixes it. ISCN 5.5.3 prints both
-  // forms of these side by side, so the reading is the standard's own, not a guess:
-  //   der(9)t(9;22)(q34;q11.2)      9pter→9q34::22q11.2→22qter   (one junction, two
-  //                                 chromosomes, each piece keeping its telomere)
-  //   der(9)del(9)(p12)del(9)(q31)  :p12→q31:                    (nothing rejoined)
-  // Anything else (a second junction, an insertion, a homologue) is left alone: the
-  // operations that built it are not determined by the bands, and the app must not
-  // invent them.
-  function derShortBody(own, comp) {
-    var END = /^([0-9XY]+)?(pter|qter|[pq][\d.]+)$/i;
-    var pieces = comp.split("::").map(function (p) {
-      p = p.trim();
-      var open0 = /^:/.test(p), open1 = /:$/.test(p);
-      var ends = p.replace(/^:|:$/g, "").split("→").map(function (e) { return e.trim(); });
+  // The short form of a der() from its composition, ISCN 5.5.3. A derivative's short
+  // form names the operations that built it; its composition names the pieces. The
+  // pieces fix the operations: a piece of another chromosome joined at one end is a
+  // translocation (5.5.3 d, f), one joined at both ends to the same own chromosome an
+  // insertion (f vii), an own piece running backwards between its neighbours an
+  // inversion (c ii), a gap between own pieces a deletion, an own piece overlapping
+  // the one before it a duplication (f iii), a lone ":" a terminal deletion (c i), a
+  // "?" unknown material (add at an end, ins in the middle, f viii) and "hsr" an
+  // amplified block (5.5.8). The operations are then listed "from pter to qter of the
+  // derivative chromosome according to the rules governing the order of chromosome
+  // anomalies" (5.5.3 f): by the own chromosome each sits on (first-named first), by
+  // its band on that chromosome, a junction nearer the own chromosome before one
+  // hanging further out (f ii: der(1)t(1;3)(p32;q21)t(3;7)(q28;q11.2)), and ties
+  // alphabetical (f viii: ins before t at 7q22), an hsr after the insertion it sits
+  // on (5.5.8: ins(1;7)(q21;p21p11.2)hsr(1;7)(q21;p11.2)). Every rule here is pinned
+  // against a line the standard prints both ways (test/iscn-2024-detailed.js).
+  //
+  // What it refuses, returning null: a centromere of unknown origin (?→cen→?), a ring
+  // (5.5.16), a piece the rules above do not place, and a single change to the own
+  // chromosome alone, which is not a derivative (5.5.3 a) and which the composition
+  // does not settle (d v: der(3)ins(16;3)(p12;p21p13) reads exactly like del(3)).
+  // Until 2026-09-14 only the one-junction shapes were read.
+  function derShortBody(chroms, comp) {
+    var own = chroms.map(function (c) { return String(c).toUpperCase(); });
+    var END = /^([0-9XY]+)?(pter|qter|[pq]\d+(?:\.\d+)?)$/i;
+    var text = String(comp).replace(/\s+/g, "");
+    if (/^::/.test(text) || /::$/.test(text)) return null;
+    var openTop = /^:/.test(text), openBot = /:$/.test(text);
+    var pieces = text.replace(/^:|:$/g, "").split("::").map(function (piece) {
+      if (piece === "?" || piece === "hsr") return { token: piece };
+      var ends = piece.split("→");
       if (ends.length !== 2) return null;
       var e0 = END.exec(ends[0]), e1 = END.exec(ends[1]);
       if (!e0 || !e1) return null;
-      var c0 = e0[1] || own, c1 = e1[1] || own;
+      var c0 = (e0[1] || own[0]).toUpperCase(), c1 = (e1[1] || own[0]).toUpperCase();
       if (c0 !== c1) return null;
-      return { chrom: c0, a: e0[2], b: e1[2], open0: open0, open1: open1 };
+      return { chrom: c0, a: e0[2].toLowerCase(), b: e1[2].toLowerCase(), isOwn: own.indexOf(c0) >= 0 };
     });
-    if (pieces.some(function (p) { return !p; })) return null;
-    var isTer = function (x) { return /ter$/i.test(x); };
-    if (pieces.length === 1) {
-      var p = pieces[0];
-      if (p.chrom === own && p.open0 && p.open1 && !isTer(p.a) && !isTer(p.b) && /^p/i.test(p.a) && /^q/i.test(p.b)) {
-        return "del(" + own + ")(" + p.a + ")del(" + own + ")(" + p.b + ")";
+    if (!pieces.length || pieces.some(function (x) { return !x; })) return null;
+    // 5.4.2.2 e fixes the reading direction by the segment that carries the
+    // centromere, and a composition typed the other way round is the same
+    // chromosome; so is one whose only centric piece is a pericentric inversion
+    // running backwards between its flanks. Rather than guess which, read it as
+    // written and, failing that, read it end for end.
+    var flipped = pieces.slice().reverse().map(function (g) { return g.token ? g : { chrom: g.chrom, a: g.b, b: g.a, isOwn: g.isOwn }; });
+    return readDerPieces(own, pieces, openTop, openBot) || readDerPieces(own, flipped, openBot, openTop);
+  }
+  function readDerPieces(own, pieces, openTop, openBot) {
+    var axis = function (b) { return b === "pter" ? -Infinity : b === "qter" ? Infinity : bandKey(b).axis; };
+    var isTer = function (b) { return /ter$/.test(b); };
+    var rev = function (g) { return axis(g.a) > axis(g.b); };
+    var cmp = function (x, y) { return x < y ? -1 : x > y ? 1 : 0; };
+    var segIdx = [];
+    pieces.forEach(function (g, i) { if (!g.token) segIdx.push(i); });
+    if (!segIdx.length) return null;
+    var ownIdx = function (c) { return own.indexOf(c); };
+    var nOwnOf = function (c) { return own.filter(function (o) { return o === c; }).length; };
+    var ops = [], shell = "";
+    var push = function (name, out, idx, band, depth, tie) {
+      ops.push({ name: name, text: out, idx: idx, axis: axis(band), depth: depth || 0, tie: tie || name });
+    };
+    var tOf = function (c1, b1, c2, b2) {
+      if (c1 === c2) { if (axis(b1) > axis(b2)) { var tb = b1; b1 = b2; b2 = tb; } return "t(" + c1 + ";" + c2 + ")(" + b1 + ";" + b2 + ")"; }
+      return chromRank(c1) <= chromRank(c2)
+        ? "t(" + c1 + ";" + c2 + ")(" + b1 + ";" + b2 + ")"
+        : "t(" + c2 + ";" + c1 + ")(" + b2 + ";" + b1 + ")";
+    };
+    // The nearest own piece to a junction, and how many foreign pieces lie between.
+    var anchorOf = function (j) {
+      var L = pieces[segIdx[j]], R = pieces[segIdx[j + 1]];
+      if (L.isOwn && R.isOwn) return ownIdx(L.chrom) <= ownIdx(R.chrom) ? { idx: ownIdx(L.chrom), band: L.b, depth: 0 } : { idx: ownIdx(R.chrom), band: R.a, depth: 0 };
+      if (L.isOwn) return { idx: ownIdx(L.chrom), band: L.b, depth: 0 };
+      if (R.isOwn) return { idx: ownIdx(R.chrom), band: R.a, depth: 0 };
+      for (var d = 1; d <= segIdx.length; d++) {
+        var lo = j - d, hi = j + 1 + d;
+        var pl = lo >= 0 ? pieces[segIdx[lo]] : null, ph = hi < segIdx.length ? pieces[segIdx[hi]] : null;
+        if (pl && pl.isOwn) return { idx: ownIdx(pl.chrom), band: pl.b, depth: d };
+        if (ph && ph.isOwn) return { idx: ownIdx(ph.chrom), band: ph.a, depth: d };
       }
       return null;
-    }
-    if (pieces.length === 2) {
-      var x = pieces[0], y = pieces[1];
-      if (x.chrom !== y.chrom && (x.chrom === own || y.chrom === own) && !x.open0 && !y.open1 &&
-          isTer(x.a) && isTer(y.b) && !isTer(x.b) && !isTer(y.a)) {
-        var ownBand = x.chrom === own ? x.b : y.a;
-        var other = x.chrom === own ? y.chrom : x.chrom;
-        var otherBand = x.chrom === own ? y.a : x.b;
-        return chromRank(own) <= chromRank(other)
-          ? "t(" + own + ";" + other + ")(" + ownBand + ";" + otherBand + ")"
-          : "t(" + other + ";" + own + ")(" + otherBand + ";" + ownBand + ")";
+    };
+    // An exchange between homologues: the derivative's own piece carries the
+    // centromere, the homologue's piece is the reversed one at an outer end with its
+    // telomere outward (der(1)t(1;1)(p31;q32) is 1qter→1q32::1p31→1qter or
+    // 1pter→1q32::1p31→1pter, 5.5.3). Bands pter to qter, since the standard writes
+    // the same short form for both derivatives.
+    var homolog = {};
+    var first = pieces[segIdx[0]], last = pieces[segIdx[segIdx.length - 1]];
+    if (segIdx.length >= 2) {
+      var second = pieces[segIdx[1]], penult = pieces[segIdx[segIdx.length - 2]];
+      if (!openTop && first.isOwn && nOwnOf(first.chrom) === 1 && second.chrom === first.chrom && rev(first) && isTer(first.a) && !rev(second)) {
+        homolog[segIdx[0]] = true;
+        push("t", tOf(first.chrom, second.a, first.chrom, first.b), ownIdx(first.chrom), second.a, 0);
+      }
+      if (!openBot && last.isOwn && nOwnOf(last.chrom) === 1 && penult.chrom === last.chrom && rev(last) && isTer(last.b) && !rev(penult)) {
+        homolog[segIdx[segIdx.length - 1]] = true;
+        push("t", tOf(last.chrom, penult.b, last.chrom, last.a), ownIdx(last.chrom), penult.b, 0);
       }
     }
-    return null;
+    var consumed = {};
+    for (var j = 0; j + 1 < segIdx.length; j++) {
+      if (consumed[j] || homolog[segIdx[j]] || homolog[segIdx[j + 1]]) continue;
+      var L = pieces[segIdx[j]], R = pieces[segIdx[j + 1]];
+      var viaToken = segIdx[j + 1] - segIdx[j] > 1;
+      var cen10 = /^[pq]10$/;
+      if (L.chrom === R.chrom) {
+        if (!L.isOwn) return null;
+        // A chromosome named twice meeting itself at the centromere: the whole-arm
+        // join der(8;8)(q10;q10) writes in its own parentheses.
+        if (cen10.test(L.b) && cen10.test(R.a) && nOwnOf(L.chrom) > 1) {
+          if (shell) return null;
+          shell = "(" + L.b + ";" + R.a + ")";
+          continue;
+        }
+        if (rev(L)) return null;
+        if (!rev(R)) {
+          var ax = axis(L.b), ay = axis(R.a);
+          if (ay > ax) push("del", "del(" + L.chrom + ")(" + L.b + R.a + ")", ownIdx(L.chrom), L.b, 0);
+          else if (ay < ax) push("dup", "dup(" + L.chrom + ")(" + R.a + L.b + ")", ownIdx(L.chrom), R.a, 0);
+          else if (!viaToken) push("del", "del(" + L.chrom + ")(" + L.b + R.a + ")", ownIdx(L.chrom), L.b, 0);
+          continue;
+        }
+        // R runs backwards: an inversion when its ends meet both neighbours' bands
+        // (pter→p23::p13→p23::p13→qter), an inverted duplication when it starts where
+        // L ended and ends where the next piece begins (pter→q25::q25→q22::q22→qter).
+        if (viaToken || j + 2 >= segIdx.length || segIdx[j + 2] - segIdx[j + 1] > 1) return null;
+        var N = pieces[segIdx[j + 2]];
+        if (N.chrom !== R.chrom || rev(N)) return null;
+        if (L.b === R.b && R.a === N.a) push("inv", "inv(" + R.chrom + ")(" + R.b + R.a + ")", ownIdx(R.chrom), R.b, 0);
+        else if (L.b === R.a && R.b === N.a) push("dup", "dup(" + R.chrom + ")(" + R.a + R.b + ")", ownIdx(R.chrom), R.b, 0);
+        else return null;
+        consumed[j + 1] = true;
+        continue;
+      }
+      // Two own chromosomes meeting at their centromeric bands: the whole-arm join.
+      if (L.isOwn && R.isOwn && cen10.test(L.b) && cen10.test(R.a)) {
+        if (shell) return null;
+        shell = ownIdx(L.chrom) <= ownIdx(R.chrom) ? "(" + L.b + ";" + R.a + ")" : "(" + R.a + ";" + L.b + ")";
+        continue;
+      }
+      // A foreign piece between two pieces of one own chromosome is an insertion, the
+      // pter-most flanking band its point of insertion (f vii); a gap between the
+      // flanks is a deletion as well.
+      if (L.isOwn && !R.isOwn && j + 2 < segIdx.length) {
+        var N2 = pieces[segIdx[j + 2]];
+        if (N2.isOwn && N2.chrom === L.chrom) {
+          var at = axis(L.b) <= axis(N2.a) ? L.b : N2.a;
+          push("ins", "ins(" + L.chrom + ";" + R.chrom + ")(" + at + ";" + R.a + R.b + ")", ownIdx(L.chrom), at, 0);
+          if (axis(N2.a) > axis(L.b)) push("del", "del(" + L.chrom + ")(" + L.b + N2.a + ")", ownIdx(L.chrom), L.b, 0);
+          else if (axis(N2.a) < axis(L.b)) return null;
+          consumed[j + 1] = true;
+          continue;
+        }
+      }
+      var anchor = anchorOf(j);
+      if (!anchor) return null;
+      push("t", tOf(L.chrom, L.b, R.chrom, R.a), anchor.idx, anchor.band, anchor.depth);
+    }
+    // Unknown material and amplified blocks, each from its neighbours.
+    for (var ti = 0; ti < pieces.length; ti++) {
+      var tk = pieces[ti];
+      if (!tk.token) continue;
+      var Lp = ti > 0 ? pieces[ti - 1] : null, Rp = ti + 1 < pieces.length ? pieces[ti + 1] : null;
+      if ((Lp && Lp.token) || (Rp && Rp.token)) return null;
+      if (tk.token === "?") {
+        if (!Lp) { if (!Rp || !Rp.isOwn || openTop) return null; push("add", "add(" + Rp.chrom + ")(" + Rp.a + ")", ownIdx(Rp.chrom), Rp.a, 0); }
+        else if (!Rp) { if (!Lp.isOwn || openBot) return null; push("add", "add(" + Lp.chrom + ")(" + Lp.b + ")", ownIdx(Lp.chrom), Lp.b, 0); }
+        else if (Lp.isOwn) push("ins", "ins(" + Lp.chrom + ";?)(" + Lp.b + ";?)", ownIdx(Lp.chrom), Lp.b, 0);
+        else if (Rp.isOwn) push("ins", "ins(" + Rp.chrom + ";?)(" + Rp.a + ";?)", ownIdx(Rp.chrom), Rp.a, 0);
+        else return null;
+      } else {
+        if (!Lp || !Rp) return null;
+        if (Lp.isOwn && Rp.isOwn && Lp.chrom === Rp.chrom) {
+          var hb = axis(Lp.b) <= axis(Rp.a) ? Lp.b : Rp.a;
+          push("hsr", "hsr(" + Lp.chrom + ")(" + hb + ")", ownIdx(Lp.chrom), hb, 0, "zz");
+        } else if (Lp.isOwn && !Rp.isOwn) push("hsr", "hsr(" + Lp.chrom + ";" + Rp.chrom + ")(" + Lp.b + ";" + Rp.a + ")", ownIdx(Lp.chrom), Lp.b, 0, "zz");
+        else if (!Lp.isOwn && Rp.isOwn) push("hsr", "hsr(" + Rp.chrom + ";" + Lp.chrom + ")(" + Rp.a + ";" + Lp.b + ")", ownIdx(Rp.chrom), Rp.a, 0, "zz");
+        else return null;
+      }
+    }
+    if (openTop) { if (!first.isOwn) return null; push("del", "del(" + first.chrom + ")(" + first.a + ")", ownIdx(first.chrom), first.a, 0); }
+    if (openBot) { if (!last.isOwn) return null; push("del", "del(" + last.chrom + ")(" + last.b + ")", ownIdx(last.chrom), last.b, 0); }
+    if (!ops.length && !shell) return null;
+    if (!shell && ops.length === 1 && ["del", "dup", "inv", "add", "hsr"].indexOf(ops[0].name) >= 0) return null;
+    ops.sort(function (x, y) { return cmp(x.idx, y.idx) || cmp(x.axis, y.axis) || cmp(x.depth, y.depth) || cmp(x.tie, y.tie); });
+    return shell + ops.map(function (o) { return o.text; }).join("");
+  }
+
+  // The short form of a rec() from its composition, ISCN 5.5.15: the recombinant of a
+  // pericentric inversion carries one telomere at both ends, and that arm is the
+  // duplicated one; the two bands at the junction are the inversion's.
+  //   rec(2)dup(2p)inv(2)(p21q31)  pter→q31::p21→pter
+  //   rec(2)dup(2q)inv(2)(p21q31)  qter→q31::p21→qter
+  function recShortBody(own, comp) {
+    var END = /^([0-9XY]+)?(pter|qter|[pq]\d+(?:\.\d+)?)$/i;
+    var halves = String(comp).replace(/\s+/g, "").split("::");
+    if (halves.length !== 2) return null;
+    var ends = halves.map(function (h) { return h.split("→"); });
+    if (ends.some(function (e) { return e.length !== 2; })) return null;
+    var e = ends[0].concat(ends[1]).map(function (x) { return END.exec(x); });
+    if (e.some(function (x) { return !x || (x[1] && x[1].toUpperCase() !== String(own).toUpperCase()); })) return null;
+    var ter = e[0][2].toLowerCase(), b1 = e[1][2].toLowerCase(), b2 = e[2][2].toLowerCase();
+    if (!/ter$/.test(ter) || e[3][2].toLowerCase() !== ter || /ter$/.test(b1) || /ter$/.test(b2) || b1.charAt(0) === b2.charAt(0)) return null;
+    if (bandPairReversed(b1, b2)) { var tb = b1; b1 = b2; b2 = tb; }
+    return "dup(" + own + ter.charAt(0) + ")inv(" + own + ")(" + b1 + b2 + ")";
   }
 
   function diagnose(raw, result, warnings) {
@@ -2977,9 +3143,14 @@
         var reparsed = parse(asShort, (depth || 0) + 1);
         reparsed.raw = raw;
         reparsed.detailedInput = asShort;
+        // The short form may itself be one the app cannot draw yet (an ins(N;?)
+        // block); then the notes that follow are about that form, and the sentence
+        // must not claim a drawing.
+        var drewShort = reparsed.ok && reparsed.clones.length && reparsed.clones.every(function (c) { return !c.unreadable; });
         reparsed.warnings.unshift("That is ISCN’s DETAILED system, which spells out the band " +
           "composition of the rearranged chromosome: “::” is a break and reunion, and the arrow means " +
-          "“from ... to”. Drawn here from the short form of the same karyotype, “" + asShort + "”.");
+          "“from ... to”. " + (drewShort ? "Drawn here from the short form of the same karyotype, “" + asShort + "”."
+            : "The notes below are about the short form of the same karyotype, “" + asShort + "”."));
         return reparsed;
       }
       var detailedIntro = "That is ISCN’s DETAILED system, which spells out the band composition " +
