@@ -78,6 +78,14 @@ const KNOWN_GAP = new Set([
   '45,XX,der(8;8)(q10;q10)del(8)(q22)t(8;9)(q24.1;q12)',
   '46,XX,der(1)t(1;1)(p31;q32)',
   '46,XX,rec(6)dup(6p)inv(6)(p22.2q25.2)dmat',
+  // A derivative carrying a "?" or an hsr: the composition now states them, and
+  // the der reader refuses any piece that is not two band names.
+  '46,XX,der(5)add(5)(p15.3)add(5)(q23)',
+  '46,XX,der(1)hsr(1)(p22)hsr(1)(q31)[10]',
+  '46,XY,der(1)del(1)(p33p21)hsr(1)(p33)[10]',
+  '46,XX,der(2)del(2)(q21q31)hsr(2)(q21)[10]',
+  '46,XX,der(1)ins(1;7)(q21;p21p11.2)hsr(1;7)(q21;p11.2)[10]',
+  '46,XX,der(1)ins(1;7)(q21;p11.2p21)hsr(1;7)(q21;p11.2)[10]',
 ]);
 
 test('the copied line pastes back and reads as the very short form it came from', () => {
@@ -138,4 +146,42 @@ test('ISCN 2024 sequencing example v, a translocation between homologues, reads 
   assert.ok(back.ok && back.clones.every((c) => !c.unreadable), back.warnings[0] || '');
   const readAs = (/“([^”]*)”\.$/.exec(back.warnings.find((w) => /DETAILED/.test(w)) || '') || [])[1];
   assert.equal(readAs, '46,XY,t(9;9)(p21.2;q31.1)');
+});
+
+// The segments a figure is drawn from do not carry everything ISCN writes into a
+// composition: an add's unknown material, an hsr's amplified block, and a break the
+// model could give no length (a deletion within one band). The copied line used to
+// state a whole, untouched chromosome for each: 46,XX,add(19)(pter→qter), which
+// pasted back as a normal 19 and read "add" over a picture that claimed nothing was
+// added (corpus sweep, 2026-09-14). ISCN prints every one of these forms itself
+// (add 5.5.1, hsr 5.5.8, del 5.5.2), and they are in the corpus as the oracle; this
+// pins the shell and the paste-back for the plain cases, and that a fragile site,
+// for which the standard prints no composition, keeps its short form.
+test('add, hsr and a within-band deletion copy as ISCN writes them and paste back', () => {
+  const cases = {
+    '46,XX,add(19)(p13.3)': '46,XX,add(19)(?::p13.3→qter)',
+    '46,XY,add(12)(q13)': '46,XY,add(12)(pter→q13::?)',
+    '46,XX,hsr(1)(p22)[10]': '46,XX,hsr(1)(pter→p22::hsr::p22→qter)[10]',
+    '46,XY,hsr(21)(q22)[10]': '46,XY,hsr(21)(pter→q22::hsr::q22→qter)[10]',
+    '46,XX,del(5)(q13q13)': '46,XX,del(5)(pter→q13::q13→qter)',
+  };
+  for (const k of Object.keys(cases)) {
+    const copied = line(k);
+    assert.equal(copied, cases[k]);
+    const back = ISCN.parse(copied);
+    assert.ok(back.ok && back.clones.length && back.clones.every((c) => !c.unreadable) && !back.suggestion,
+      `${copied}\n  refused: ${back.warnings[0] || ''}`);
+    const readAs = (/“([^”]*)”\.$/.exec(back.warnings.find((w) => /DETAILED/.test(w)) || '') || [])[1];
+    assert.equal(readAs, k, `${copied} read back as a different karyotype`);
+  }
+});
+
+test('a fragile site has no composition to state, so the line keeps its short form', () => {
+  const model = ISCN.parse('46,X,fra(X)(q27.3)');
+  const forms = [];
+  for (const clone of model.clones) for (const ch of Object.keys(clone.slots || {})) for (const inst of clone.slots[ch] || []) {
+    if (inst.kind !== 'normal') forms.push(Karyo.detailedForm(inst));
+  }
+  assert.deepEqual(forms, [''], 'the fra(X) row must be silent, not "pter→qter"');
+  assert.equal(line('46,X,fra(X)(q27.3)'), '46,X,fra(X)(q27.3)');
 });

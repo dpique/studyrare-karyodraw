@@ -2450,6 +2450,10 @@
     var segs = built && built.segments;
     if (!segs || !segs.length || built.dmin || built.marker) return "";
     var ab = inst.aberration;
+    // A fragile site is a gap in an unbroken chromosome, not a rearrangement, and
+    // ISCN prints no composition for one; the short form stands. Before this it
+    // came out as pter→qter, a normal chromosome under a fra() label.
+    if ((ab && ab.op === "fra") || (built.overlays || []).some(function (o) { return o.type === "fra"; })) return "";
     var names = writtenBands(ab);
     // 5.4.2.2 b: the chromosome number rides on every band only when the rearrangement
     // involves more than one chromosome. An isodicentric from a single chromosome is
@@ -2478,14 +2482,23 @@
     // not (pter->q25::q22->q25::q25->qter). The model splits at every operation
     // boundary because the drawing needs the pieces separately (a duplicated span wears
     // its own mark); the notation only breaks where the chromosome broke.
+    //
+    // Except where the chromosome broke and the model could give the break no
+    // length: del(5)(q13q13) loses a piece inside one band, so both pieces meet at
+    // the same coordinate, and ISCN still writes the break, del(5)(pter→q13::q13→qter)
+    // (5.5.2). The deletion builder marks its break with a "cut" overlay; a boundary
+    // that carries one is never merged. (A deletion applied inside a derivative by
+    // applyOpToSeg leaves no cut, so a within-band loss there still merges.)
+    var cuts = {};
+    (built.overlays || []).forEach(function (o) { if (o.type === "cut") cuts[String(o.chrom) + "@" + o.at] = 1; });
     var merged = [];
     segs.forEach(function (g) {
       var prev = merged[merged.length - 1];
-      if (prev && String(prev.chrom) === String(g.chrom) && !prev.reversed && !g.reversed && prev.to === g.from) {
+      if (prev && String(prev.chrom) === String(g.chrom) && !prev.reversed && !g.reversed && prev.to === g.from && !cuts[String(g.chrom) + "@" + g.from]) {
         merged[merged.length - 1] = { chrom: g.chrom, from: prev.from, to: g.to, reversed: false };
         return;
       }
-      if (prev && String(prev.chrom) === String(g.chrom) && prev.reversed && g.reversed && prev.from === g.to) {
+      if (prev && String(prev.chrom) === String(g.chrom) && prev.reversed && g.reversed && prev.from === g.to && !cuts[String(g.chrom) + "@" + g.to]) {
         merged[merged.length - 1] = { chrom: g.chrom, from: g.from, to: prev.to, reversed: true };
         return;
       }
@@ -2506,24 +2519,78 @@
         merged.forEach(function (g) { g.reversed = !g.reversed; });
       }
     }
-    var parts = merged.map(function (g) {
-      var top = g.reversed ? g.to : g.from, bot = g.reversed ? g.from : g.to;
+    // What the segments do not carry, written where ISCN writes it. An add's
+    // unknown material is a "?" in place of the arm beyond its band, add(19)(?::p13.3→qter)
+    // and add(12)(pter→q13::?) (5.5.1). An hsr is the word at its band, the band
+    // named on both sides, hsr(1)(pter→p22::hsr::p22→qter) (5.5.8); a two-chromosome
+    // hsr(1;7)(q21;p11.2) sits at the interface its SECOND pair names, the 7p11.2 end
+    // of the inserted piece, der(1)(1pter→1q21::7p21→7p11.2::hsr::1q21→1qter), since
+    // 1q21 is at both ends of that piece. Both marks are read from the aberration and
+    // its sub-operations rather than from the drawing's overlays, which carry only the
+    // first pair. A mark that lands on no piece would be omitted in silence, so the
+    // chromosome claims nothing instead. Before this, every one of these came out as
+    // the untouched chromosome, pter→qter (corpus sweep, 2026-09-14).
+    var items = merged.map(function (g) { return { seg: g }; });
+    var marks = [];
+    var collectMark = function (o) {
+      if (!o || (o.op !== "add" && o.op !== "hsr")) return;
+      var cs = o.chroms || (ab && ab.chroms) || [], gs = o.breakpoints || [];
+      var i = o.op === "hsr" ? gs.length - 1 : 0;
+      var c = String(cs[i] != null ? cs[i] : cs[0]), b = (gs[i] || [])[0];
+      var r = b && IDEO.data[c] && resolveBand(c, b);
+      marks.push(r ? { op: o.op, chrom: c, mid: r.mid, arm: r.arm } : null);
+    };
+    collectMark(ab);
+    ((ab && ab.subOps) || []).forEach(collectMark);
+    for (var mi = 0; mi < marks.length; mi++) {
+      var mk = marks[mi], placed = false;
+      if (!mk) return "";
+      for (var ii = 0; ii < items.length && !placed; ii++) {
+        var it = items[ii].seg;
+        if (!it || String(it.chrom) !== mk.chrom) continue;
+        var rs = it.reversed ? it.to : it.from, re = it.reversed ? it.from : it.to;
+        if (mk.op === "add") {
+          // The arm beyond the band is unknown material: cut the piece there and
+          // put the "?" on the side that was dropped, in reading order.
+          if (mk.mid <= it.from || mk.mid >= it.to) continue;
+          var dropTop = (mk.arm === "p") !== !!it.reversed;
+          if (mk.arm === "p") it.from = mk.mid; else it.to = mk.mid;
+          items.splice(dropTop ? ii : ii + 1, 0, { token: "?" });
+          placed = true;
+        } else if (mk.mid === rs) {
+          items.splice(ii, 0, { token: "hsr" }); placed = true;
+        } else if (mk.mid === re) {
+          items.splice(ii + 1, 0, { token: "hsr" }); placed = true;
+        } else if (mk.mid > it.from && mk.mid < it.to) {
+          var lo = { chrom: it.chrom, from: it.from, to: mk.mid, reversed: it.reversed };
+          var hi = { chrom: it.chrom, from: mk.mid, to: it.to, reversed: it.reversed };
+          var trio = it.reversed ? [{ seg: hi }, { token: "hsr" }, { seg: lo }] : [{ seg: lo }, { token: "hsr" }, { seg: hi }];
+          items.splice.apply(items, [ii, 1].concat(trio));
+          placed = true;
+        }
+      }
+      if (!placed) return "";
+    }
+    var parts = items.map(function (it) {
+      if (it.token) return it.token;
+      var g = it.seg, top = g.reversed ? g.to : g.from, bot = g.reversed ? g.from : g.to;
       return endpointName(g.chrom, top, names, prefix) + "\u2192" + endpointName(g.chrom, bot, names, prefix);
     });
     // A broken end that was never rejoined takes a single colon on that side: ISCN
     // writes del(5)(q13) as (pter->q13:) and del(4)(p15.2) as (:p15.2->qter). Only the
-    // OUTER ends can be unjoined; every internal boundary is a reunion by construction.
-    var first = merged[0], last = merged[merged.length - 1];
+    // OUTER ends can be unjoined; every internal boundary is a reunion by construction,
+    // and a "?" at either end is joined material, not a break.
+    var first = items[0].seg, last = items[items.length - 1].seg;
     // A ring's two broken ends are joined to each other, so both are reunions:
     // ISCN 5.5.16 prints r(7)(p15q31) as (::p15→q31::). A ring with no stated
     // breakpoints has no composition to claim.
     if (built.ring) {
-      var ringOpen = first.from > 0 && last.to < IDEO.data[last.chrom].length;
+      var ringOpen = first && last && first.from > 0 && last.to < IDEO.data[last.chrom].length;
       return ringOpen ? "::" + parts.join("::") + "::" : "";
     }
-    var openTop = (first.reversed ? first.to : first.from) > 0 &&
+    var openTop = !!first && (first.reversed ? first.to : first.from) > 0 &&
       (first.reversed ? first.to : first.from) < IDEO.data[first.chrom].length;
-    var openBot = (last.reversed ? last.from : last.to) < IDEO.data[last.chrom].length &&
+    var openBot = !!last && (last.reversed ? last.from : last.to) < IDEO.data[last.chrom].length &&
       (last.reversed ? last.from : last.to) > 0;
     return (openTop ? ":" : "") + parts.join("::") + (openBot ? ":" : "");
   }

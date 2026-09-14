@@ -3,6 +3,22 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-14 (the composition states what the segments do not)
+
+- **The ISCN detailed form now writes add, hsr and a within-band deletion the
+  way the standard does.** The form is built from the segments the figure is
+  drawn from, and those carry neither an add's unknown material nor an hsr's
+  amplified block, so add(19)(p13.3), hsr(1)(p22) and del(5)(q13q13) all came
+  out as an untouched chromosome, pter→qter, and the copied line pasted back
+  as a normal chromosome. They now read add(19)(?::p13.3→qter),
+  hsr(1)(pter→p22::hsr::p22→qter) and del(5)(pter→q13::q13→qter), the forms
+  ISCN prints beside its own examples, including the six derivatives that
+  carry an hsr or two adds. A fragile site has no composition in the
+  standard, so its row is silent and the line keeps the short form.
+- **The reader keeps both bands of a within-band deletion**, so the copied
+  del(5)(pter→q13::q13→qter) reads back as del(5)(q13q13), not as the
+  terminal deletion del(5)(q13).
+
 ## 2026-09-14 (a translocation between homologues reads back from its composition)
 
 - **The detailed system of a translocation between homologues now draws.**
