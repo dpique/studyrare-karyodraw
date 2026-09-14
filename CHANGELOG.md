@@ -3,6 +3,28 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-14 (a derivative reads back from its composition)
+
+- **The detailed system of a derivative of any number of junctions now draws.**
+  Pasting der(1)(3qter→3q21::1p32→1q25::11q13→11qter), the line the copy
+  button hands over for der(1)t(1;3)(p32;q21)t(1;11)(q25;q13), used to be refused
+  as a composition the app "cannot work back" from. The reader now recovers the
+  operations from the pieces the way ISCN 5.5.3 lays them out: a piece of another
+  chromosome joined at one end is a translocation, one joined at both ends to the
+  same chromosome an insertion, a piece running backwards between its neighbours an
+  inversion, a gap a deletion, an overlap a duplication, a lone colon a terminal
+  deletion, "?" unknown material and "hsr" an amplified block; a whole-arm join
+  stays in the der(A;B) parentheses, and an exchange between homologues reads
+  from either derivative. The operations come out in the standard's order, from
+  pter to qter of the derivative, ties alphabetical, an hsr after the insertion
+  it sits on. A composition typed against the reading direction is read end for
+  end. Every derivative ISCN 2024 prints both ways now round-trips; what still
+  refuses is a centromere of unknown origin, a ring derivative, and a lone change
+  on one chromosome under a der() label, which the standard itself says the
+  composition does not settle. A recombinant chromosome reads back the same way.
+- **When the recovered short form is one the app cannot draw yet**, the note says
+  the notes below are about that short form, rather than claiming a drawing.
+
 ## 2026-09-14 (the copy line sweep is a script)
 
 - **`npm run roundtrip` sweeps every supported ISCN example through the copied
