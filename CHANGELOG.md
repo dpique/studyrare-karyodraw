@@ -3,6 +3,17 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-14 (a translocation between homologues reads back from its composition)
+
+- **The detailed system of a translocation between homologues now draws.**
+  Pasting the app's own copied line for t(9;9)(p21.2;q22.33), or the line ISCN
+  2024 prints for its sequencing example of a t(9;9), was refused with "cannot
+  work back to it from this band composition alone". Both derivatives of such
+  an exchange carry both breakpoint bands at their one junction, so the
+  chromosome number could not say which band was whose; the reader now takes
+  the junction on the piece that carries the centromere. Pinned for both arms
+  and both breakpoint orders, and for the standard's printed line.
+
 ## 2026-09-11 (a drawing flip is not an inversion)
 
 - **The Involved segments table no longer calls a Robertsonian arm "inverted".**

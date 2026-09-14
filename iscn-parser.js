@@ -2369,6 +2369,21 @@
       return out.filter(function (b) { return /^[0-9XY]*[pq][\d.]*$/i.test(b) && !/ter$/i.test(b); });
     }
     function splitBand(b) { var bm = /^([0-9XY]+)?([pq][\d.]*)$/i.exec(b); return bm ? { chrom: bm[1] || null, band: bm[2] } : null; }
+    // The junction ends of every piece that carries a centromere: a piece whose two
+    // ends lie on different arms (9p21.2→9qter, 9pter→9q31.1), the telomeres
+    // counting as their arm. Same filter as junctionBands, so the two agree on what
+    // a band is.
+    function centricJunctionBands(comp) {
+      var out = [];
+      var arm = function (end) { var am = /([pq])/i.exec(end.replace(/^[0-9XY]+/i, "")); return am ? am[1].toLowerCase() : ""; };
+      comp.split("::").forEach(function (piece, i, all) {
+        var ends = piece.replace(/^:|:$/g, "").split("→").map(function (t) { return t.trim(); });
+        if (ends.length !== 2 || !arm(ends[0]) || arm(ends[0]) === arm(ends[1])) return;
+        if (i > 0) out.push(ends[0]);
+        if (i < all.length - 1) out.push(ends[1]);
+      });
+      return out.filter(function (b) { return /^[0-9XY]*[pq][\d.]*$/i.test(b) && !/ter$/i.test(b); });
+    }
     var body;
     if (op === "der" && chroms.length === 1 && compositions.length === 1) {
       body = derShortBody(chroms[0], compositions[0]);
@@ -2411,14 +2426,26 @@
       var repeated = chroms.some(function (c, i) { return chroms.indexOf(c) !== i; });
       if (compositions.length === chroms.length && repeated) {
         // Composition k is the derivative of chroms[k], and its own breakpoint is
-        // the junction band on chroms[k]; where a homologue is named twice, the
-        // band no other occurrence has claimed (ISCN 5.5.18.3, t(3;9;9;22)).
+        // the junction band on chroms[k]. Where a homologue is named twice the
+        // number cannot tell the two apart, and in an exchange between homologues
+        // BOTH bands sit at the one junction of EACH derivative:
+        //   t(9;9)(p21.2;q31.1)  9qter→9q31.1::9p21.2→9qter;9pter→9q31.1::9p21.2→9pter
+        // (ISCN 2024 sequencing example v). What does tell them apart is the
+        // centromere: a derivative's own breakpoint is the junction end of the
+        // piece that carries it, the piece whose ends lie on different arms.
+        // Failing that (both pieces centric as typed), the band no other
+        // occurrence has claimed (ISCN 5.5.18.3, t(3;9;9;22)). The app's own
+        // copied line for a t(9;9) used to be refused when pasted back (2026-09-14).
         var claimed = {}, pending = [];
         compositions.forEach(function (comp, k) {
-          var own = chroms[k], uniq = [];
+          var own = chroms[k], uniq = [], centric = [];
           junctionBands(comp).map(splitBand).forEach(function (sb) {
             if (sb && sb.chrom === own && uniq.indexOf(sb.band) < 0) uniq.push(sb.band);
           });
+          centricJunctionBands(comp).map(splitBand).forEach(function (sb) {
+            if (sb && sb.chrom === own && centric.indexOf(sb.band) < 0) centric.push(sb.band);
+          });
+          if (centric.length === 1 && uniq.indexOf(centric[0]) >= 0) uniq = centric;
           if (uniq.length === 1) { groups[k] = uniq; claimed[own + "@" + uniq[0]] = 1; }
           else pending.push({ k: k, own: own, cands: uniq });
         });
