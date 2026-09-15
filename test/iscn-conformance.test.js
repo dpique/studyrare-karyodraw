@@ -20,9 +20,10 @@ const vm = require('node:vm');
 
 const win = {};
 const context = vm.createContext({ window: win });
-['ideogram-data.js', 'iscn-parser.js'].forEach((f) =>
+['ideogram-data.js', 'iscn-parser.js', 'karyo-render.js'].forEach((f) =>
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), context));
 const ISCN = win.ISCN;
+const Karyo = win.Karyo;
 const EXAMPLES = require('./iscn-2024-examples.js');
 
 // What the page's gate asks of the parser. Kept in the same shape as index.html's
@@ -296,4 +297,25 @@ test('a question mark inside a band is no longer dropped', () => {
   });
   // Gibberish that happens to sit where a band goes is still gibberish.
   assert.match(ISCN.parse('46,XY,del(5)(zzz)').warnings.join(' '), /is not a breakpoint/);
+});
+
+test('a printed band the map cannot place is a recorded erratum, and the page still draws it', () => {
+  // The parser accepts any well-formed band; the page then asks the ideogram. A
+  // printed example the ideogram cannot place is one of two things: the standard
+  // slipped (say so on the row, with the evidence, as the del(17)(p11.3) rows do) or
+  // the ideogram is missing a band (fix ideogram-data.js). Either way it is not
+  // allowed to sit unexplained, and the page must still draw it at the parent band
+  // rather than refuse a string the standard prints.
+  const label = (k) => Karyo.invalidBands(ISCN.parse(k)).map((b) => b.label).join(', ');
+  const misplaced = EXAMPLES.filter((e) => e.supported && Karyo.invalidBands(ISCN.parse(e.k)).length);
+  misplaced.forEach((e) => {
+    assert.ok(e.erratum,
+      `${e.k}: the ideogram has no ${label(e.k)}; either the standard slipped (add erratum: with the evidence) `
+      + 'or ideogram-data.js is missing a band');
+    assert.ok(Karyo.bandSnap(e.k, ISCN.parse(e.k), ISCN.parse),
+      `${e.k}: the page must draw it at the parent band, not refuse it`);
+  });
+  // The note is not allowed to outlive the gap: once the map places the band, drop it.
+  EXAMPLES.filter((e) => e.erratum && !Karyo.invalidBands(ISCN.parse(e.k)).length).forEach((e) =>
+    assert.fail(`${e.k}: the erratum note is stale; the ideogram now places every band in it`));
 });
