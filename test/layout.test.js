@@ -288,3 +288,21 @@ test('the amber CTA keeps deep navy text on generated pages', () => {
       `${f} re-asserts navy text on the CTA anchor`);
   }
 });
+
+// ---- the ploidy chip sits on the card's text inset ---------------------------
+// The "haploid baseline" chip is the first child of the karyogram host, which has
+// no padding of its own (the karyogram inside it centres itself), so a chip with
+// no left margin painted flush against the card's border while the title and the
+// action row above it sit 16px in (Dan, 2026-09-14: "looks off to the left").
+// The chip is header text and takes the header's inset.
+test('the ploidy chip shares the action row\'s left inset', () => {
+  const html = read('index.html');
+  const rule = (sel) => (html.match(new RegExp(`\\n {2}${sel.replace(/\\./g, '\\\\.')} \\{([^}]*)\\}`)) || [])[1];
+  const row = rule('.kactions');
+  const chip = rule('.kploidy');
+  assert.ok(row && chip, 'both the action row and the chip have a rule');
+  const inset = /padding: \d+px (\d+)px/.exec(row)[1];
+  const m = /margin: (?:\d+px|0) (?:\d+px|0) (?:\d+px|0) (\d+)px/.exec(chip);
+  assert.ok(m, `the chip needs a four-value margin so its left inset is explicit (has: ${chip.trim()})`);
+  assert.equal(m[1], inset, `the chip's left margin (${m[1]}px) must equal the action row's side padding (${inset}px)`);
+});

@@ -3,6 +3,21 @@
 Notable changes to KaryoDraw. The site is continuously deployed (every change to
 `main` goes live), so entries are grouped by date rather than by version.
 
+## 2026-09-14 (the baseline chip sits on the card's inset)
+
+- **The "haploid baseline" chip lines up with the title and the buttons above it.**
+  It sat flush against the card's left border, 16px to the left of everything else
+  in the card's header, because it was the first child of the karyogram host and
+  the host has no padding of its own. A layout test now holds the chip to the
+  action row's inset.
+- **The copy-line sweep counts what the page draws.** The three ISCN examples that
+  write del(17)(p11.3) were listed as gated, as if the page refused them; the page
+  draws them at 17p11 with a warning that the map has no 17p11.3, and the sweep now
+  runs on that drawn form and reports the rows as snapped. No ISCN ideogram or hg38
+  band map has a 17p11.3, so the corpus records the example as the standard's
+  slip, with the section and the evidence, and a conformance test requires that
+  of every printed band the ideogram cannot place.
+
 ## 2026-09-14 (a reciprocal insertion moves every segment)
 
 - **A complex reciprocal insertion draws the chromosomes ISCN describes.** In

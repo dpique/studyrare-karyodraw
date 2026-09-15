@@ -230,7 +230,7 @@ test('a derivative the composition does not determine is still explained, not gu
 });
 
 // A builder that cannot place its bands draws the untouched chromosome (17 has no
-// p11.3; the page's band gate catches it, the API does not), and the composition
+// p11.3; the page snaps it to 17p11 before drawing, the API does not), and the composition
 // used to state pter→qter for it, which pasted back as a normal 17. An abnormal
 // chromosome never serialises as the untouched one; the line keeps its short form.
 test('an abnormal chromosome never copies as the untouched one', () => {

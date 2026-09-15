@@ -14,12 +14,17 @@
 //            under a der() label (ISCN 5.5.3 d v says the composition does not
 //            settle it)
 //   plain    nothing structural to serialise, so the line IS the short form
-//   gated    the page's band gate (Karyo.invalidBands) refuses the short form, so
-//            the copy button never shows a line for it; listed, not swept
+//   snapped  a band the map does not have, under a real parent band: the page draws
+//            it at the parent with a warning (Karyo.bandSnap, the same call
+//            index.html makes), so the sweep runs on the drawn form and says so.
+//            The three today are ISCN's own del(17)(p11.3) (6.3.5 f), a band no
+//            ideogram has; test/iscn-2024-examples.js records the erratum
+//   gated    a band the map does not have and cannot snap, so the page refuses
+//            the short form and the copy button never shows a line; listed, not swept
 // The sweeps of 2026-09-14 found #347 (a t(9;9) refused), #348 (add, hsr and
 // del(5)(q13q13) copied as an untouched chromosome), the der() reader (#350) and
-// the reciprocal insertion drawn one-way (#351). After them: 328 supported, 198
-// same, 37 twin, 1 refused, 89 plain, 3 gated. A
+// the reciprocal insertion drawn one-way (#351). After them: 328 supported, 201
+// same, 37 twin, 1 refused, 89 plain, 3 snapped, 0 gated. A
 // "refused" line that names a whole chromosome (pter→qter) under an abnormal
 // label is the #348 bug class again.
 //
@@ -53,11 +58,21 @@ const draws = (m) => !!(m && m.ok && m.clones.length && m.clones.every((c) => !c
 const readBack = (m) => (/“([^”]*)”\.$/.exec((m.warnings || []).find((w) => /DETAILED/.test(w)) || '') || [])[1];
 
 const rows = EXAMPLES.filter((r) => r.supported && (!FILTER || r.k.includes(FILTER)));
-const same = [], twin = [], refused = [], plain = [], notDrawn = [], gated = [];
-for (const { k } of rows) {
-  const model = ISCN.parse(k);
+const same = [], twin = [], refused = [], plain = [], notDrawn = [], gated = [], snapped = [];
+for (const { k: printed } of rows) {
+  let k = printed;
+  let model = ISCN.parse(k);
   if (!draws(model)) { notDrawn.push(k); continue; }
-  if (Karyo.invalidBands(model).length) { gated.push(k); continue; }
+  if (Karyo.invalidBands(model).length) {
+    // The page does not refuse a sub-band the map does not divide: it draws the
+    // deepest real band containing it and says so (index.html, the bandSnap
+    // branch). Sweep what the page draws, not what it was handed; until
+    // 2026-09-14 this counted the snapped rows as gated, which read as a refusal.
+    const snap = Karyo.bandSnap(k, model, ISCN.parse);
+    if (!snap) { gated.push(k); continue; }
+    snapped.push({ k: printed, as: snap.k });
+    k = snap.k; model = snap.model;
+  }
   let line = '';
   try { line = Karyo.detailedKaryotype(model); } catch (e) { line = ''; }
   if (!/→|::/.test(line)) { plain.push(k); continue; }
@@ -68,7 +83,7 @@ for (const { k } of rows) {
 }
 
 const pad = (n) => String(n).padStart(4);
-console.log(`supported ${pad(rows.length)}   same ${pad(same.length)}   twin ${pad(twin.length)}   refused ${pad(refused.length)}   plain ${pad(plain.length)}   gated ${pad(gated.length)}` +
+console.log(`supported ${pad(rows.length)}   same ${pad(same.length)}   twin ${pad(twin.length)}   refused ${pad(refused.length)}   plain ${pad(plain.length)}   snapped ${pad(snapped.length)}   gated ${pad(gated.length)}` +
   (notDrawn.length ? `   not drawn ${pad(notDrawn.length)}` : ''));
 if (QUIET) process.exit(0);
 if (refused.length) {
@@ -78,6 +93,10 @@ if (refused.length) {
 if (twin.length) {
   console.log('\nTWIN (pastes back as a normalised twin):');
   for (const t of twin) console.log(`  ${t.k}\n      ${t.line}\n      read as ${t.as}`);
+}
+if (snapped.length) {
+  console.log('\nSNAPPED (the map has no such band; the page draws the parent band and says so, and that form was swept):');
+  for (const s of snapped) console.log(`  ${s.k}\n      drawn as ${s.as}`);
 }
 if (gated.length) {
   console.log('\nGATED (the page refuses the band, so no line is ever offered):');

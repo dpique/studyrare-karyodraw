@@ -20,6 +20,18 @@
 // example stops being accepted, and reports any unsupported one that starts being
 // accepted, so the flag gets flipped deliberately instead of drifting.
 'use strict';
+
+// `erratum` marks a printed example whose band no ideogram has. ISCN 2024 6.3.5 f
+// prints del(17)(p11.3) five times in one worked composite karyotype. No ISCN ideogram
+// at 400, 550 or 850 bands has a 17p11.3, and neither does hg38 cytoBandIdeo, which
+// ideogram-data.js is built from: 17p runs p13.3, p13.2, p13.1, p12, p11.2, p11.1. The
+// example is about gains and losses of the same chromosome and the band is incidental
+// to it, so it is the standard's slip, not a missing band. The page draws it at 17p11
+// with a warning that says the map has no 17p11.3 (Karyo.bandSnap), and
+// test/iscn-conformance.test.js holds every such row to that: a band the map cannot
+// place is either recorded here or a bug. Verified against the text on disk, 2026-09-14.
+const NO_17P11_3 = 'ISCN 2024 6.3.5 f; no ideogram has 17p11.3 (17p runs p13.3 to p11.1); drawn at 17p11';
+
 module.exports = [
   { k: '48,XX,+8,+21c[20]', supported: true },
   { k: '46,XXYc,-X[10]/47,XXYc[2]', supported: true },
@@ -382,11 +394,11 @@ module.exports = [
   { k: '46,X,-X,del(16)(q24),+21', supported: true },
   { k: '46,X,-X,+21', supported: true },
   { k: '44,X,-X,-7', supported: true },
-  { k: '45,XX,-15,del(17)(p11.3)', supported: true },
-  { k: '46,XX,+7,-15,del(17)(p11.3)', supported: true },
+  { k: '45,XX,-15,del(17)(p11.3)', supported: true, erratum: NO_17P11_3 },
+  { k: '46,XX,+7,-15,del(17)(p11.3)', supported: true, erratum: NO_17P11_3 },
   { k: '46,XX,+12,-15', supported: true },
   { k: '47,XX,+7', supported: true },
-  { k: '47,XX,+15,del(17)(p11.3)', supported: true },
+  { k: '47,XX,+15,del(17)(p11.3)', supported: true, erratum: NO_17P11_3 },
   { k: '48,XX,+12,+15', supported: true },
   { k: '46,XX,del(1)(q21),inc[4]', supported: true },
   { k: '46,XX,der(19)t(1;19)(q23;p13),inc[4]', supported: true },

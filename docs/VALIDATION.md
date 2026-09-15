@@ -716,8 +716,11 @@ stages, each a script, so a session picks it up instead of rebuilding it:
    supported ISCN 2024 example through `Karyo.detailedKaryotype` and back through the
    parser and sorts the results: read back as itself, read back as a normalised twin (a
    back-reference expanded, a range dropped), refused (a composition the reader cannot
-   reduce: a centromere of unknown origin, a ring, a lone change that is not a derivative), or nothing to
-   serialise. Run it after any change to the detailed-form serializer or reader; the
+   reduce: a centromere of unknown origin, a ring, a lone change that is not a derivative), nothing to
+   serialise, or snapped (a printed band the ideogram does not have, drawn at its parent
+   band as the page does and swept in that form; the three today are ISCN's own
+   del(17)(p11.3), recorded as an erratum on the corpus rows). Run it after any change to
+   the detailed-form serializer or reader; the
    unit test pins the standard's own pairs, this is the wider net, and its two sweeps on
    2026-09-14 found a refused t(9;9) (#347) and add, hsr and del(5)(q13q13) copied as an
    untouched chromosome (#348). `-- --quiet` prints the counts only, `-- --filter <text>`
